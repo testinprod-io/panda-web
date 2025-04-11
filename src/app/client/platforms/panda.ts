@@ -49,7 +49,7 @@ export interface RequestPayload {
 
 export class PandaApi implements LLMApi {
   private apiKey: string = "API_KEY";
-  private baseUrl: string = "/api/panda";
+  private baseUrl: string = PANDA_BASE_URL;
   private disableListModels: boolean = false;
 
   constructor(apiKey?: string, disableListModels?: boolean) {
@@ -79,7 +79,8 @@ export class PandaApi implements LLMApi {
     options.onController?.(controller);
 
     try {
-      console.log("[Panda Request] Sending request to:", this.baseUrl);
+      const requestUrl = this.path(PandaPath.ChatPath);
+      console.log("[Panda Request] Sending request to:", requestUrl);
       console.log("[Panda Request] Headers:", {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${this.apiKey}`,
@@ -92,7 +93,7 @@ export class PandaApi implements LLMApi {
         stream: options.config.stream ?? true,
       });
 
-      const response = await fetch(this.baseUrl, {
+      const response = await fetch(requestUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -207,7 +208,8 @@ export class PandaApi implements LLMApi {
     }
 
     try {
-      const response = await fetch(this.baseUrl, {
+      const requestUrl = this.path(PandaPath.ListModelPath);
+      const response = await fetch(requestUrl, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${this.apiKey}`,
