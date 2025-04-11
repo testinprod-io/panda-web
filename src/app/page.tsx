@@ -60,8 +60,8 @@ export default function Home() {
 
   // Chat configuration
   const chatConfig: ChatConfig = {
-    serviceProvider: ServiceProvider.OpenAI,
-    model: 'o1-pro-2025-03-19',
+    serviceProvider: ServiceProvider.Panda,
+    model: 'deepseek-ai/deepseek-coder-1.3b-instruct',
     temperature: 0.7,
     stream: true,
     maxRetries: 3,

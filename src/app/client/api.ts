@@ -2,6 +2,7 @@ import { ModelProvider, ServiceProvider } from "../constant";
 import { ChatMessage, ModelType } from "../store";
 import { ChatGPTApi } from "./platforms/openai";
 import { DeepSeekApi } from "./platforms/deepseek";
+import { PandaApi } from "./platforms/panda";
 
 export const ROLES = ["system", "user", "assistant"] as const;
 export type MessageRole = (typeof ROLES)[number];
@@ -74,6 +75,9 @@ export class ClientApi {
       case ModelProvider.DeepSeek:
         this.llm = new DeepSeekApi();
         break;
+      case ModelProvider.Panda:
+        this.llm = new PandaApi();
+        break;
       default:
         this.llm = new ChatGPTApi();
     }
@@ -103,6 +107,8 @@ export function getClientApi(provider: ServiceProvider): ClientApi {
   switch (provider) {
     case ServiceProvider.DeepSeek:
       return new ClientApi(ModelProvider.DeepSeek);
+    case ServiceProvider.Panda:
+      return new ClientApi(ModelProvider.Panda);
     default:
       return new ClientApi(ModelProvider.GPT);
   }
