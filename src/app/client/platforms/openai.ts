@@ -184,7 +184,7 @@ export class ChatGPTApi implements LLMApi {
           model: options.config.model,
           messages,
           temperature: options.config.temperature ?? 0.7,
-          stream: true,
+          stream: options.config.stream ?? true,
         }),
         signal: controller.signal,
       });

@@ -1,21 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SimpleChat, Message } from './components/SimpleChat';
-// import { v4 as uuidv4 } from 'uuid';  // We'll need this later for multiple chats
-// import Sidebar from './components/sidebar';
-// import Chat from './components/chat';
+import { SimpleChat } from './components/SimpleChat';
 import { ClientApi, getClientApi } from './client/api';
-import { ModelProvider, ServiceProvider } from './constant';
-
-// For future multi-chat support
-/*
-interface ChatSession {
-  id: string;
-  title: string;
-  messages: Message[];
-}
-*/
+import { ServiceProvider } from './constant';
+import { Message, ChatConfig } from './types/chat';
 
 // Helper function to delay execution
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -63,47 +52,25 @@ function logMessages(messages: Message[], label: string = 'Current Messages') {
 }
 
 export default function Home() {
-  // For future multi-chat support
-  /*
-  const [chats, setChats] = useState<ChatSession[]>([]);
-  const [activeChat, setActiveChat] = useState<string | null>(null);
-  */
-
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', text: 'Hello, how can I help you today?' },
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Chat configuration
+  const chatConfig: ChatConfig = {
+    serviceProvider: ServiceProvider.OpenAI,
+    model: 'o1-pro-2025-03-19',
+    temperature: 0.7,
+    stream: true,
+    maxRetries: 3,
+    retryDelay: 1000
+  };
+
   // Log messages whenever they change
   useEffect(() => {
     logMessages(messages);
-  }, [messages]);
-
-  // Add a global debug function to access messages from console
-  useEffect(() => {
-    // @ts-ignore - Adding to window for debugging
-    window.debugChat = {
-      getMessages: () => {
-        logMessages(messages, 'Debug: Current Messages');
-        return messages;
-      },
-      clearMessages: () => {
-        setMessages([{ role: 'assistant', text: 'Hello, how can I help you today?' }]);
-        console.log('Messages cleared');
-      },
-      addTestMessage: (text: string) => {
-        setMessages(prev => [...prev, { role: 'user', text }]);
-        console.log(`Test message added: ${text}`);
-      }
-    };
-    
-    console.log('Debug tools available. Use window.debugChat.getMessages() to view messages');
-    
-    return () => {
-      // @ts-ignore
-      delete window.debugChat;
-    };
   }, [messages]);
 
   const handleSendMessage = async (message: string) => {
@@ -117,7 +84,7 @@ export default function Home() {
     
     try {
       // Create API client
-      const client = getClientApi(ServiceProvider.OpenAI);
+      const client = getClientApi(chatConfig.serviceProvider);
       
       // Convert messages to format expected by API
       const chatMessages = messages.map(msg => ({
@@ -142,9 +109,9 @@ export default function Home() {
         await client.llm.chat({
           messages: chatMessages,
           config: {
-            model: 'gpt-3.5-turbo',
-            temperature: 0.7,
-            stream: true
+            model: chatConfig.model,
+            temperature: chatConfig.temperature,
+            stream: chatConfig.stream
           },
           onUpdate: (message, chunk) => {
             responseText = message;
@@ -180,15 +147,11 @@ export default function Home() {
           },
           onError: (error) => {
             console.error('Chat error:', error);
-            // Add error message to UI
-            setMessages(prev => [
-              ...prev,
-              { role: 'assistant', text: 'Sorry, there was an error processing your request.' }
-            ]);
+            setError('An error occurred while processing your request.');
             setIsLoading(false);
           }
         });
-      });
+      }, chatConfig.maxRetries, chatConfig.retryDelay);
     } catch (error: any) {
       console.error('Error sending message:', error);
       
@@ -221,7 +184,9 @@ export default function Home() {
       )}
       <SimpleChat
         messages={messages}
+        config={chatConfig}
         onSendMessage={handleSendMessage}
+        onError={(error) => setError(error.message)}
       />
     </div>
   );
