@@ -4,7 +4,8 @@ import { useState, KeyboardEvent, useRef, useEffect } from 'react';
 import styles from './SimpleChat.module.scss';
 import { ChatMessage } from '../store';
 import { ClientApi, getClientApi } from '../client/api';
-import { Message, ChatProps } from '../types/chat';
+import { Message as MessageType, ChatProps } from '../types/chat';
+import { Message } from './Message';
 
 // Helper function to delay execution
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -25,7 +26,7 @@ export function SimpleChat({ messages, config, onSendMessage, onError }: ChatPro
   }, [isLoading]);
   
   // Convert SimpleChat messages to ChatMessage format for API
-  const convertToChatMessages = (msgs: Message[]): ChatMessage[] => {
+  const convertToChatMessages = (msgs: MessageType[]): ChatMessage[] => {
     return msgs.map(msg => ({
       role: msg.role,
       content: msg.text,
@@ -81,18 +82,11 @@ export function SimpleChat({ messages, config, onSendMessage, onError }: ChatPro
     <div className={styles['chat-container']}>
       <div className={styles['messages-container']}>
         {messages.map((message, index) => (
-          <div
+          <Message
             key={index}
-            className={`${styles.message} ${
-              message.role === 'user' ? styles.user : styles.assistant
-            }`}
-          >
-            <div className={`${styles['message-content']} ${
-              message.role === 'user' ? styles.user : styles.assistant
-            }`}>
-              {message.text}
-            </div>
-          </div>
+            content={message.text}
+            isUser={message.role === 'user'}
+          />
         ))}
         <div ref={messagesEndRef} />
       </div>
