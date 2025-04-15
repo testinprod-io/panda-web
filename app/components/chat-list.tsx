@@ -103,15 +103,12 @@ export function ChatItem(props: {
 }
 
 export function ChatList(props: { narrow?: boolean }) {
-  const [sessions, selectedIndex, selectSession, moveSession, deleteSession] = useChatStore(
-    (state) => [
-      state.sessions,
-      state.currentSessionIndex,
-      state.selectSession,
-      state.moveSession,
-      state.deleteSession,
-    ],
-  );
+  const sessions = useChatStore((state) => state.sessions);
+  const selectedIndex = useChatStore((state) => state.currentSessionIndex);
+  const selectSession = useChatStore((state) => state.selectSession);
+  const moveSession = useChatStore((state) => state.moveSession);
+  const deleteSession = useChatStore((state) => state.deleteSession);
+  
   const navigate = useNavigate();
   const isMobileScreen = useMobileScreen();
 
@@ -136,22 +133,22 @@ export function ChatList(props: { narrow?: boolean }) {
       <Droppable droppableId="chat-list">
         {(provided) => (
           <div
-            {...provided.droppableProps}
-            ref={provided.innerRef}
             className={styles["chat-list"]}
+            ref={provided.innerRef}
+            {...provided.droppableProps}
           >
             {sessions.map((item, i) => (
               <ChatItem
-                key={item.id}
-                id={item.id}
                 title={item.topic}
                 time={new Date(item.lastUpdate).toLocaleString()}
                 count={item.messages.length}
+                key={item.id}
+                id={item.id}
                 index={i}
                 selected={i === selectedIndex}
                 onClick={() => {
-                  selectSession(i);
                   navigate(Path.Chat);
+                  selectSession(i);
                 }}
                 onDelete={async () => {
                   if (
@@ -162,6 +159,7 @@ export function ChatList(props: { narrow?: boolean }) {
                   }
                 }}
                 narrow={props.narrow}
+                // mask={item.mask}
               />
             ))}
             {provided.placeholder}

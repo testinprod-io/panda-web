@@ -250,13 +250,27 @@ export function SideBar(props: { className?: string }) {
       {...props}
     >
       <SideBarHeader
-        title="NextChat"
-        subTitle="Build your oawn AI assistant."
+        title="Panda AI"
+        subTitle="Chat with your own private AI assistant"
         logo={<ChatGptIcon />}
         shouldNarrow={shouldNarrow}
       >
         <div className={styles["sidebar-header-bar"]}>
           <IconButton
+            icon={<AddIcon />}
+            text={shouldNarrow ? undefined : Locale.Home.NewChat}
+            onClick={() => {
+              if (config.dontShowMaskSplashScreen) {
+                chatStore.newSession();
+                navigate(Path.Chat);
+              } else {
+                navigate(Path.NewChat);
+              }
+            }}
+            shadow
+          />
+
+          {/* <IconButton
             icon={<MaskIcon />}
             text={shouldNarrow ? undefined : Locale.Mask.Name}
             className={styles["sidebar-bar-button"]}
@@ -268,8 +282,8 @@ export function SideBar(props: { className?: string }) {
               }
             }}
             shadow
-          />
-          {mcpEnabled && (
+          /> */}
+          {/* {mcpEnabled && (
             <IconButton
               icon={<McpIcon />}
               text={shouldNarrow ? undefined : Locale.Mcp.Name}
@@ -279,14 +293,14 @@ export function SideBar(props: { className?: string }) {
               }}
               shadow
             />
-          )}
-          <IconButton
+          )} */}
+          {/* <IconButton
             icon={<DiscoveryIcon />}
             text={shouldNarrow ? undefined : Locale.Discovery.Name}
             className={styles["sidebar-bar-button"]}
             onClick={() => setshowDiscoverySelector(true)}
             shadow
-          />
+          /> */}
         </div>
         {showDiscoverySelector && (
           <Selector
@@ -305,7 +319,7 @@ export function SideBar(props: { className?: string }) {
           />
         )}
       </SideBarHeader>
-      {/* <SideBarBody
+      <SideBarBody
         onClick={(e) => {
           if (e.target === e.currentTarget) {
             navigate(Path.Home);
@@ -313,8 +327,8 @@ export function SideBar(props: { className?: string }) {
         }}
       >
         <ChatList narrow={shouldNarrow} />
-      </SideBarBody> */}
-      <SideBarTail
+      </SideBarBody>
+      {/* <SideBarTail
         primaryAction={
           <>
             <div className={clsx(styles["sidebar-action"], styles.mobile)}>
@@ -362,7 +376,7 @@ export function SideBar(props: { className?: string }) {
             shadow
           />
         }
-      />
+      /> */}
     </SideBarContainer>
   );
 }
