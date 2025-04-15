@@ -58,8 +58,8 @@ export default function Home() {
   const [isStarted, setIsStarted] = useState(false);
 
   const chatConfig: ChatConfig = {
-    serviceProvider: ServiceProvider.Panda,
-    model: 'deepseek-ai/deepseek-coder-1.3b-instruct',
+    serviceProvider: ServiceProvider.OpenAI,
+    model: 'gpt-4o-mini',
     temperature: 0.7,
     stream: true
   };

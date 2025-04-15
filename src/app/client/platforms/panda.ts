@@ -18,7 +18,7 @@ import {
   getBearerToken,
 } from "../api";
 
-import { ChatCompletionCreateParams, ChatCompletionMessageParam } from "openai/resources/chat/completions";
+// import { ChatCompletionCreateParams, ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
 export interface PandaListModelResponse {
   data: {
