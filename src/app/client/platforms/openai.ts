@@ -62,10 +62,10 @@ export interface RequestPayload {
   }[];
   stream?: boolean;
   model: string;
-  temperature: number;
-  presence_penalty: number;
-  frequency_penalty: number;
-  top_p: number;
+  temperature?: number;
+  presence_penalty?: number;
+  frequency_penalty?: number;
+  top_p?: number;
   max_tokens?: number;
   max_completion_tokens?: number;
 }
@@ -165,20 +165,21 @@ export class ChatGPTApi implements LLMApi {
   // }
 
   async chat(options: ChatOptions) {
-    const messages = options.messages.map((v) => ({
-      role: v.role,
-      content: v.content,
+    const messages = options.messages.map((m) => ({
+      role: m.role,
+      content: m.content,
     }));
 
     const controller = new AbortController();
     options.onController?.(controller);
 
     try {
-      const response = await fetch(`${OPENAI_BASE_URL}/${OpenaiPath.ChatPath}`, {
-        method: "POST",
+    // Use our API route instead of direct OpenAI API call
+    const response = await fetch('/api/openai', {
+      method: "POST",
         headers: {
           ...getHeaders(),
-          Authorization: getBearerToken(process.env.OPENAI_API_KEY || ""),
+          "Authorization": getBearerToken(process.env.NEXT_PUBLIC_OPENAI_API_KEY || ""),
         },
         body: JSON.stringify({
           model: options.config.model,
