@@ -1,11 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SimpleChat } from './components/SimpleChat';
+import { Chat } from './components/chat';
 import { LandingPage } from './components/LandingPage';
 import { ClientApi, getClientApi } from './client/api';
 import { ServiceProvider } from './constant';
 import { Message, ChatConfig } from './types/chat';
+import { useChatStore, ChatSession } from './store/chat';
+import { useAppConfig } from './store/config';
+import { useAccessStore } from './store/access';
 
 // Helper function to delay execution
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -64,6 +67,49 @@ export default function Home() {
     stream: true
   };
 
+  // Initialize stores
+  const chatStore = useChatStore();
+  const configStore = useAppConfig();
+  const accessStore = useAccessStore();
+
+  // Set up the chat session when started
+  useEffect(() => {
+    if (isStarted) {
+      // Clear any existing sessions
+      chatStore.clearSessions();
+      
+      // Create a new session
+      const session = chatStore.currentSession();
+      
+      // Update the session with the current messages
+      chatStore.updateTargetSession(session, (session: ChatSession) => {
+        session.messages = messages.map(msg => ({
+          id: `msg-${Math.random().toString(36).substring(2, 9)}`,
+          role: msg.role,
+          content: msg.text,
+          date: new Date().toLocaleString(),
+        }));
+      });
+      
+      // Update the model config
+      chatStore.updateTargetSession(session, (session: ChatSession) => {
+        session.modelConfig = {
+          ...session.modelConfig,
+          model: chatConfig.model,
+          providerName: chatConfig.serviceProvider as ServiceProvider,
+          temperature: chatConfig.temperature || 0.7,
+        };
+      });
+      
+      // Set up the API key if needed
+      if (chatConfig.serviceProvider === ServiceProvider.OpenAI) {
+        accessStore.update((access: any) => {
+          access.openaiApiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY || '';
+        });
+      }
+    }
+  }, [isStarted, messages]);
+
   const handleSendMessage = async (message: string) => {
     try {
       setError(null);
@@ -121,12 +167,9 @@ export default function Home() {
       {!isStarted ? (
         <LandingPage onStart={handleStart} />
       ) : (
-        <SimpleChat
-          messages={messages}
-          config={chatConfig}
-          onSendMessage={handleSendMessage}
-          onError={(error) => setError(error.message)}
-        />
+        <div className="h-full w-full">
+          <Chat />
+        </div>
       )}
     </div>
   );
