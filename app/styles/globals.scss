@@ -59,12 +59,12 @@
 :root {
   @include light;
 
-  --window-width: 90vw;
-  --window-height: 90vh;
+  --window-width: 100vw;
+  --window-height: 100vh;
   --sidebar-width: 300px;
   --window-content-width: calc(100% - var(--sidebar-width));
   --message-max-width: 80%;
-  --full-height: 100%;
+  --full-height: 100vh;
 }
 
 @media only screen and (max-width: 600px) {
@@ -99,7 +99,7 @@ body {
   color: var(--black);
   margin: 0;
   padding: 0;
-  height: var(--full-height);
+  height: 100vh;
   width: 100vw;
   display: flex;
   justify-content: center;
