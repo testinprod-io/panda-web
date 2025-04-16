@@ -4,17 +4,18 @@
   align-items: flex-end;
   background-color: #f3f3f3;
   border-radius: 24px;
-  padding: 8px 16px;
-  max-width: 48rem;
+  padding: 12px 20px;
+  max-width: 100%;
+  width: 100%;
   margin: 0 auto;
 }
 
 .input {
   flex: 1;
-  padding: 8px 0;
+  padding: 10px 0;
   border: none;
   background: transparent;
-  font-size: 14px;
+  font-size: 16px;
   outline: none;
   color: #000000;
   resize: none;
@@ -36,8 +37,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   background: transparent;
   border: none;
@@ -52,8 +53,8 @@
 }
 
 .sendIcon {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   filter: brightness(0);
   transition: filter 0.2s ease;
 } 
