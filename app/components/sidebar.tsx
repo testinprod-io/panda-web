@@ -252,7 +252,7 @@ export function SideBar(props: { className?: string }) {
       <SideBarHeader
         title="Panda AI"
         subTitle="Chat with your own private AI assistant"
-        logo={<ChatGptIcon />}
+        logo={undefined}
         shouldNarrow={shouldNarrow}
       >
         <div className={styles["sidebar-header-bar"]}>
