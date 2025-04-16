@@ -118,7 +118,7 @@ function createEmptySession(): ChatSession {
     lastSummarizeIndex: 0,
     modelConfig: { ...useAppConfig.getState().modelConfig },
     context: [],
-    hideContext: false,
+    hideContext: true,
     // mask: createEmptyMask(),
   };
 }

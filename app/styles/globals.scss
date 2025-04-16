@@ -59,12 +59,12 @@
 :root {
   @include light;
 
-  --window-width: 100vw;
-  --window-height: 100vh;
+  --window-width: 90vw;
+  --window-height: 90vh;
   --sidebar-width: 300px;
   --window-content-width: calc(100% - var(--sidebar-width));
   --message-max-width: 80%;
-  --full-height: 100vh;
+  --full-height: 100%;
 }
 
 @media only screen and (max-width: 600px) {
@@ -81,9 +81,9 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   :root {
-    @include dark;
+    @include light;
   }
 }
 
@@ -99,7 +99,7 @@ body {
   color: var(--black);
   margin: 0;
   padding: 0;
-  height: 100vh;
+  height: var(--full-height);
   width: 100vw;
   display: flex;
   justify-content: center;

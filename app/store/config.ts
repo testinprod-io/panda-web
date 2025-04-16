@@ -47,7 +47,7 @@ export const DEFAULT_CONFIG = {
   fontFamily: "",
   theme: Theme.Auto as Theme,
   tightBorder: false,//!!config?.isApp,
-  sendPreviewBubble: true,
+  sendPreviewBubble: false,
   enableAutoGenerateTitle: true,
   sidebarWidth: DEFAULT_SIDEBAR_WIDTH,
 
@@ -55,7 +55,7 @@ export const DEFAULT_CONFIG = {
 
   enableCodeFold: true, // code fold config
 
-  disablePromptHint: false,
+  disablePromptHint: true,
 
   dontShowMaskSplashScreen: false, // dont show splash screen when create chat
   hideBuiltinMasks: false, // dont add builtin masks
@@ -68,7 +68,7 @@ export const DEFAULT_CONFIG = {
     providerName: "OpenAI" as ServiceProvider,
     temperature: 0.5,
     top_p: 1,
-    max_tokens: 4000,
+    max_tokens: 16000,
     presence_penalty: 0,
     frequency_penalty: 0,
     sendMemory: true,

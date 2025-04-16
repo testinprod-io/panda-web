@@ -1335,19 +1335,20 @@ function _Chat() {
     return session.hideContext ? [] : session.context.slice();
   }, [session.context, session.hideContext]);
 
-  if (
-    context.length === 0 &&
-    session.messages.at(0)?.content !== BOT_HELLO.content
-  ) {
-    const copiedHello = Object.assign({}, BOT_HELLO);
-    if (!accessStore.isAuthorized()) {
-      copiedHello.content = Locale.Error.Unauthorized;
-    }
-    context.push(copiedHello);
-  }
+  // if (
+  //   context.length === 0 &&
+  //   session.messages.at(0)?.content !== BOT_HELLO.content
+  // ) {
+  //   const copiedHello = Object.assign({}, BOT_HELLO);
+  //   if (!accessStore.isAuthorized()) {
+  //     copiedHello.content = Locale.Error.Unauthorized;
+  //   }
+  //   context.push(copiedHello);
+  // }
 
   // preview messages
   const renderMessages = useMemo(() => {
+    console.log(config)
     return context
       .concat(session.messages as RenderMessage[])
       .concat(
@@ -1867,11 +1868,11 @@ function _Chat() {
                                 </>
                               )} */}
                             </div>
-                            {!isUser && (
-                              <div className={styles["chat-model-name"]}>
-                                {message.model}
-                              </div>
-                            )}
+                            {/* {!isUser && (
+                              // <div className={styles["chat-model-name"]}>
+                              //   {message.model}
+                              // </div>
+                            )} */}
 
                             {showActions && (
                               <div className={styles["chat-message-actions"]}>
@@ -2041,34 +2042,6 @@ function _Chat() {
                 })}
             </div>
             <div className={styles["chat-input-panel"]}>
-              {/* <PromptHints
-                prompts={promptHints}
-                onPromptSelect={onPromptSelect}
-              /> */}
-
-              {/* <ChatActions
-                uploadImage={uploadImage}
-                setAttachImages={setAttachImages}
-                setUploading={setUploading}
-                showPromptModal={() => setShowPromptModal(true)}
-                scrollToBottom={scrollToBottom}
-                hitBottom={hitBottom}
-                uploading={uploading}
-                showPromptHints={() => {
-                  // Click again to close
-                  if (promptHints.length > 0) {
-                    setPromptHints([]);
-                    return;
-                  }
-
-                  inputRef.current?.focus();
-                  setUserInput("/");
-                  onSearch("");
-                }}
-                setShowShortcutKeyModal={setShowShortcutKeyModal}
-                setUserInput={setUserInput}
-                setShowChatSidePanel={setShowChatSidePanel}
-              /> */}
               <label
                 className={clsx(styles["chat-input-panel-inner"], {
                   [styles["chat-input-panel-inner-attach"]]:
@@ -2092,6 +2065,16 @@ function _Chat() {
                   style={{
                     fontSize: config.fontSize,
                     fontFamily: config.fontFamily,
+                    resize: "none",
+                    padding: "12px 16px",
+                    borderRadius: "12px",
+                    border: "1px solid var(--border-color)",
+                    backgroundColor: "var(--white)",
+                    transition: "all 0.3s ease",
+                    minHeight: "24px",
+                    maxHeight: "200px",
+                    width: "100%",
+                    outline: "none",
                   }}
                 />
                 {attachImages.length != 0 && (
@@ -2123,6 +2106,18 @@ function _Chat() {
                   className={styles["chat-input-send"]}
                   type="primary"
                   onClick={() => doSubmit(userInput)}
+                  style={{
+                    position: "absolute",
+                    right: "8px",
+                    bottom: "8px",
+                    padding: "8px",
+                    borderRadius: "8px",
+                    backgroundColor: "var(--primary)",
+                    color: "var(--white)",
+                    transition: "all 0.3s ease",
+                    opacity: userInput.trim() ? 1 : 0.5,
+                    cursor: userInput.trim() ? "pointer" : "not-allowed",
+                  }}
                 />
               </label>
             </div>
