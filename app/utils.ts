@@ -1,17 +1,13 @@
 import { useEffect, useState } from "react";
-import { showToast } from "./components/ui-lib";
 import Locale from "./locales";
-import { RequestMessage } from "./client/api";
+import { RequestMessage } from "@/app/client/api";
 import {
   REQUEST_TIMEOUT_MS,
   REQUEST_TIMEOUT_MS_FOR_THINKING,
   ServiceProvider,
 } from "./constant";
-// import { fetch as tauriFetch, ResponseType } from "@tauri-apps/api/http";
 import { fetch as tauriStreamFetch } from "./utils/stream";
-import { VISION_MODEL_REGEXES, EXCLUDE_VISION_MODEL_REGEXES } from "./constant";
-import { useAccessStore } from "./store";
-import { ModelSize } from "./typing";
+import { ModelSize } from "@/app/types";
 
 export function trimTopic(topic: string) {
   // Fix an issue where double quotes still show in the Indonesian language
@@ -20,9 +16,19 @@ export function trimTopic(topic: string) {
   return (
     topic
       // fix for gemini
-      .replace(/^["“”*]+|["“”*]+$/g, "")
-      .replace(/[，。！？”“"、,.!?*]*$/, "")
+      .replace(/^["""*]+|["""*]+$/g, "")
+      .replace(/[，。！？"""、,.!?*]*$/, "")
   );
+}
+
+// Helper function to safely call the global snackbar
+export function safeShowSnackbar(message: string, severity?: import('@mui/material/Alert').AlertColor) {
+  if (typeof window !== 'undefined' && window.showSnackbar) {
+    window.showSnackbar(message, severity);
+  } else {
+    console.warn('Snackbar function not available on window:', message);
+    // Fallback or alternative logging if needed
+  }
 }
 
 export async function copyToClipboard(text: string) {
@@ -33,7 +39,7 @@ export async function copyToClipboard(text: string) {
       await navigator.clipboard.writeText(text);
     }
 
-    showToast(Locale.Copy.Success);
+    safeShowSnackbar(Locale.Copy.Success, 'success');
   } catch (error) {
     const textArea = document.createElement("textarea");
     textArea.value = text;
@@ -42,9 +48,9 @@ export async function copyToClipboard(text: string) {
     textArea.select();
     try {
       document.execCommand("copy");
-      showToast(Locale.Copy.Success);
+      safeShowSnackbar(Locale.Copy.Success, 'success');
     } catch (error) {
-      showToast(Locale.Copy.Failed);
+      safeShowSnackbar(Locale.Copy.Failed, 'error');
     }
     document.body.removeChild(textArea);
   }
@@ -69,12 +75,12 @@ export async function downloadAs(text: string, filename: string) {
     if (result !== null) {
       try {
         await window.__TAURI__.fs.writeTextFile(result, text);
-        showToast(Locale.Download.Success);
+        safeShowSnackbar(Locale.Download.Success, 'success');
       } catch (error) {
-        showToast(Locale.Download.Failed);
+        safeShowSnackbar(Locale.Download.Failed, 'error');
       }
     } else {
-      showToast(Locale.Download.Failed);
+      safeShowSnackbar(Locale.Download.Failed, 'error');
     }
   } else {
     const element = document.createElement("a");
@@ -120,11 +126,13 @@ export function isIOS() {
 
 export function useWindowSize() {
   const [size, setSize] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight,
+    width: typeof window !== "undefined" ? window.innerWidth : 0,
+    height: typeof window !== "undefined" ? window.innerHeight : 0,
   });
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    
     const onResize = () => {
       setSize({
         width: window.innerWidth,
@@ -144,6 +152,7 @@ export function useWindowSize() {
 
 export const MOBILE_MAX_WIDTH = 600;
 export function useMobileScreen() {
+  return false;
   const { width } = useWindowSize();
 
   return width <= MOBILE_MAX_WIDTH;
@@ -156,6 +165,8 @@ export function isFirefox() {
 }
 
 export function selectOrCopy(el: HTMLElement, content: string) {
+  if (typeof window === "undefined") return false;
+  
   const currentSelection = window.getSelection();
 
   if (currentSelection?.type === "Range") {
@@ -334,20 +345,10 @@ export function supportsCustomSize(model: string): boolean {
 }
 
 export function showPlugins(provider: ServiceProvider, model: string) {
-  if (
-    provider == ServiceProvider.OpenAI ||
-    provider == ServiceProvider.Azure ||
-    provider == ServiceProvider.Moonshot ||
-    provider == ServiceProvider.ChatGLM
-  ) {
+  if (provider == ServiceProvider.OpenAI ) {
     return true;
   }
-  if (provider == ServiceProvider.Anthropic && !model.includes("claude-2")) {
-    return true;
-  }
-  if (provider == ServiceProvider.Google && !model.includes("vision")) {
-    return true;
-  }
+  
   return false;
 }
 
@@ -456,17 +457,17 @@ export function clientUpdate() {
         window.__TAURI__?.updater
           .installUpdate()
           .then((result) => {
-            showToast(Locale.Settings.Update.Success);
+            safeShowSnackbar(Locale.Settings.Update.Success, 'success');
           })
           .catch((e) => {
             console.error("[Install Update Error]", e);
-            showToast(Locale.Settings.Update.Failed);
+            safeShowSnackbar(Locale.Settings.Update.Failed, 'error');
           });
       }
     })
     .catch((e) => {
       console.error("[Check Update Error]", e);
-      showToast(Locale.Settings.Update.Failed);
+      safeShowSnackbar(Locale.Settings.Update.Failed, 'error');
     });
 }
 

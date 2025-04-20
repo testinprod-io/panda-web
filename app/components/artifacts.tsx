@@ -5,21 +5,27 @@ import {
   useMemo,
   forwardRef,
   useImperativeHandle,
+  useCallback,
 } from "react";
-import { useParams } from "react-router";
-import { IconButton } from "./button";
+import { useParams } from "next/navigation";
 import { nanoid } from "nanoid";
-import ExportIcon from "../icons/share.svg";
-import CopyIcon from "../icons/copy.svg";
-import DownloadIcon from "../icons/download.svg";
-import GithubIcon from "../icons/github.svg";
-import LoadingButtonIcon from "../icons/loading.svg";
-import ReloadButtonIcon from "../icons/reload.svg";
 import Locale from "../locales";
-import { Modal, showToast } from "./ui-lib";
-import { copyToClipboard, downloadAs } from "../utils";
+import { copyToClipboard, downloadAs, safeShowSnackbar } from "../utils";
 import { Path, ApiPath, REPO_URL } from "../constant";
-import { Loading } from "./home";
+import { useSnackbar } from "./SnackbarProvider";
+import MuiIconButton from '@mui/material/IconButton';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
+import ShareIcon from '@mui/icons-material/Share';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import DownloadIcon from '@mui/icons-material/Download';
+import GitHubIcon from '@mui/icons-material/GitHub';
+import ReplayIcon from '@mui/icons-material/Replay';
 import styles from "./artifacts.module.scss";
 
 type HTMLPreviewProps = {
@@ -119,126 +125,157 @@ export function ArtifactsShareButton({
 }) {
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState(id);
-  const [show, setShow] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
+  const { showSnackbar } = useSnackbar();
+
   const shareUrl = useMemo(
     () => [location.origin, "#", Path.Artifacts, "/", name].join(""),
     [name],
   );
-  const upload = (code: string) =>
-    id
-      ? Promise.resolve({ id })
-      : fetch(ApiPath.Artifacts, {
-          method: "POST",
-          body: code,
-        })
-          .then((res) => res.json())
-          .then(({ id }) => {
-            if (id) {
-              return { id };
-            }
-            throw Error();
-          })
-          .catch((e) => {
-            showToast(Locale.Export.Artifacts.Error);
-          });
+
+  // const upload = useCallback((code: string) =>
+  //   id
+  //     ? Promise.resolve({ id })
+  //     : fetch(ApiPath.Artifacts, {
+  //         method: "POST",
+  //         body: code,
+  //       })
+  //         .then((res) => res.json())
+  //         .then(({ id: newId }) => {
+  //           if (newId) {
+  //             return { id: newId };
+  //           }
+  //           throw new Error("Upload failed, no ID returned");
+  //         })
+  //         .catch((e) => {
+  //           console.error("[Artifacts] Upload Error:", e);
+  //           showSnackbar(Locale.Export.Artifacts.Error, 'error');
+  //           return null;
+  //         }), [id, showSnackbar]
+  // );
+
+  // const handleShareClick = useCallback(() => {
+  //   if (loading) return;
+  //   setLoading(true);
+  //   upload(getCode())
+  //     .then((res) => {
+  //       if (res?.id) {
+  //         setShowDialog(true);
+  //         setName(res?.id);
+  //       }
+  //     })
+  //     .finally(() => setLoading(false));
+  // }, [loading, upload, getCode]);
+
+  const handleCloseDialog = () => {
+    setShowDialog(false);
+  };
+
+  const handleDownload = useCallback(() => {
+    downloadAs(getCode(), `${fileName || name}.html`);
+    handleCloseDialog();
+  }, [getCode, fileName, name]);
+
+  const handleCopy = useCallback(() => {
+    copyToClipboard(shareUrl);
+    handleCloseDialog();
+  }, [shareUrl, handleCloseDialog]);
+
   return (
     <>
-      <div className="window-action-button" style={style}>
-        <IconButton
-          icon={loading ? <LoadingButtonIcon /> : <ExportIcon />}
-          bordered
+      {/* <div className="window-action-button" style={style}>
+        <MuiIconButton
+          size="small"
           title={Locale.Export.Artifacts.Title}
-          onClick={() => {
-            if (loading) return;
-            setLoading(true);
-            upload(getCode())
-              .then((res) => {
-                if (res?.id) {
-                  setShow(true);
-                  setName(res?.id);
-                }
-              })
-              .finally(() => setLoading(false));
-          }}
-        />
-      </div>
-      {show && (
-        <div className="modal-mask">
-          <Modal
-            title={Locale.Export.Artifacts.Title}
-            onClose={() => setShow(false)}
-            actions={[
-              <IconButton
-                key="download"
-                icon={<DownloadIcon />}
-                bordered
-                text={Locale.Export.Download}
-                onClick={() => {
-                  downloadAs(getCode(), `${fileName || name}.html`).then(() =>
-                    setShow(false),
-                  );
-                }}
-              />,
-              <IconButton
-                key="copy"
-                icon={<CopyIcon />}
-                bordered
-                text={Locale.Chat.Actions.Copy}
-                onClick={() => {
-                  copyToClipboard(shareUrl).then(() => setShow(false));
-                }}
-              />,
-            ]}
+          onClick={handleShareClick}
+          disabled={loading}
+          aria-label={Locale.Export.Artifacts.Title}
+        >
+          {loading ? <CircularProgress size={20} /> : <ShareIcon fontSize="inherit" />}
+        </MuiIconButton>
+      </div> */}
+      <Dialog open={showDialog} onClose={handleCloseDialog}>
+        <DialogTitle>{Locale.Export.Artifacts.Title}</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ wordBreak: 'break-all' }}>
+            <a target="_blank" rel="noopener noreferrer" href={shareUrl}>
+              {shareUrl}
+            </a>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            key="download"
+            startIcon={<DownloadIcon />}
+            onClick={handleDownload}
           >
-            <div>
-              <a target="_blank" href={shareUrl}>
-                {shareUrl}
-              </a>
-            </div>
-          </Modal>
-        </div>
-      )}
+            {Locale.Export.Download}
+          </Button>
+          <Button
+            key="copy"
+            startIcon={<ContentCopyIcon />}
+            onClick={handleCopy}
+          >
+            {Locale.Chat.Actions.Copy}
+          </Button>
+          <Button onClick={handleCloseDialog}>{Locale.UI.Cancel}</Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
 
 export function Artifacts() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const { showSnackbar } = useSnackbar();
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(true);
   const [fileName, setFileName] = useState("");
   const previewRef = useRef<HTMLPreviewHander>(null);
 
-  useEffect(() => {
-    if (id) {
-      fetch(`${ApiPath.Artifacts}?id=${id}`)
-        .then((res) => {
-          if (res.status > 300) {
-            throw Error("can not get content");
-          }
-          return res;
-        })
-        .then((res) => res.text())
-        .then(setCode)
-        .catch((e) => {
-          showToast(Locale.Export.Artifacts.Error);
-        });
-    }
-  }, [id]);
+  // useEffect(() => {
+  //   if (id) {
+  //     setLoading(true);
+  //     fetch(`${ApiPath.Artifacts}?id=${id}`)
+  //       .then((res) => {
+  //         if (!res.ok) {
+  //           throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
+  //         }
+  //         return res.text();
+  //       })
+  //       .then(setCode)
+  //       .catch((e) => {
+  //         console.error("[Artifacts] Fetch Error:", e);
+  //         showSnackbar(Locale.Export.Artifacts.Error, 'error');
+  //       })
+  //       .finally(() => {
+  //         // Ensure loading is set to false even on error
+  //         // setLoading(false); // Moved setting false to onLoad of HTMLPreview
+  //       });
+  //   }
+  // }, [id, showSnackbar]);
 
   return (
     <div className={styles["artifacts"]}>
       <div className={styles["artifacts-header"]}>
         <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
-          <IconButton bordered icon={<GithubIcon />} shadow />
+          <MuiIconButton 
+            aria-label="GitHub Repository"
+            href={REPO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <GitHubIcon />
+          </MuiIconButton>
         </a>
-        <IconButton
-          bordered
+        <MuiIconButton
           style={{ marginLeft: 20 }}
-          icon={<ReloadButtonIcon />}
-          shadow
+          aria-label="Reload Preview"
           onClick={() => previewRef.current?.reload()}
-        />
+        >
+          <ReplayIcon />
+        </MuiIconButton>
         <div className={styles["artifacts-title"]}>NextChat Artifacts</div>
         <ArtifactsShareButton
           id={id}
@@ -247,8 +284,8 @@ export function Artifacts() {
         />
       </div>
       <div className={styles["artifacts-content"]}>
-        {loading && <Loading />}
-        {code && (
+        {loading && <div className={styles["loading-container"]}><CircularProgress /></div>}
+        {code && !loading && (
           <HTMLPreview
             code={code}
             ref={previewRef}

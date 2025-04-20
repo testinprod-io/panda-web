@@ -2,15 +2,15 @@ import {
   CACHE_URL_PREFIX,
   UPLOAD_URL,
   REQUEST_TIMEOUT_MS,
-} from "../constant";
-import { MultimodalContent, RequestMessage } from "../client/api";
-import Locale from "../locales";
+} from "@/app/constant";
+import { MultimodalContent, RequestMessage } from "@/app/client/api";
+import Locale from "@/app/locales";
 import {
   EventStreamContentType,
   fetchEventSource,
 } from "@fortaine/fetch-event-source";
-import { prettyObject } from "./format";
-import { fetch as tauriFetch } from "./stream";
+import { prettyObject } from "@/app/utils/format";
+import { fetch as tauriFetch } from "@/app/utils/stream";
 
 export function compressImage(file: Blob, maxSize: number): Promise<string> {
   return new Promise((resolve, reject) => {

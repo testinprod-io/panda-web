@@ -1,31 +1,5 @@
-"use client";
-// azure and openai, using same models. so using same LLMApi.
-import {
-  ApiPath,
-  OPENAI_BASE_URL,
-  // DEFAULT_MODELS,
-  OpenaiPath,
-  // Azure,
-  REQUEST_TIMEOUT_MS,
-  ServiceProvider,
-} from "../../constant";
-// import {
-//   ChatMessageTool,
-//   useAccessStore,
-//   useAppConfig,
-//   useChatStore,
-//   usePluginStore,
-// } from "@/app/store";
-// import { collectModelsWithDefaultModel } from "@/app/utils/model";
-// import {
-//   // preProcessImageContent,
-//   uploadImage,
-//   base64Image2Blob,
-//   streamWithThink,
-// } from "@/app/utils/chat";
-// import { cloudflareAIGatewayUrl } from "@/app/utils/cloudflare";
-// import { ModelSize, DalleQuality, DalleStyle } from "@/app/typing";
-
+import { OPENAI_BASE_URL, OpenaiPath } from "@/app/constant";
+import { uploadImage, base64Image2Blob } from "@/app/utils/chat";
 import {
   ChatOptions,
   getHeaders,
@@ -33,18 +7,8 @@ import {
   LLMModel,
   LLMUsage,
   MultimodalContent,
-  // SpeechOptions,
   getBearerToken,
-} from "../api";
-// import Locale from "../../locales";
-// import { getClientConfig } from "@/app/config/client";
-// import {
-//   getMessageTextContent,
-//   isVisionModel,
-//   isDalle3 as _isDalle3,
-//   getTimeoutMSByModel,
-// } from "@/app/utils";
-// import { fetch } from "@/app/utils/stream";
+} from "@/app/client/api";
 
 export interface OpenAIListModelResponse {
   object: string;
@@ -69,16 +33,6 @@ export interface RequestPayload {
   max_tokens?: number;
   max_completion_tokens?: number;
 }
-
-// export interface DalleRequestPayload {
-//   model: string;
-//   prompt: string;
-//   response_format: "url" | "b64_json";
-//   n: number;
-//   size: ModelSize;
-//   quality: DalleQuality;
-//   style: DalleStyle;
-// }
 
 export class ChatGPTApi implements LLMApi {
   private disableListModels = true;
@@ -110,59 +64,27 @@ export class ChatGPTApi implements LLMApi {
   //   return cloudflareAIGatewayUrl([baseUrl, path].join("/"));
   // }
 
-  // async extractMessage(res: any) {
-  //   if (res.error) {
-  //     return "```\n" + JSON.stringify(res, null, 4) + "\n```";
-  //   }
-  //   if (res.data) {
-  //     let url = res.data?.at(0)?.url ?? "";
-  //     const b64_json = res.data?.at(0)?.b64_json ?? "";
-  //     if (!url && b64_json) {
-  //       url = await uploadImage(base64Image2Blob(b64_json, "image/png"));
-  //     }
-  //     return [
-  //       {
-  //         type: "image_url",
-  //         image_url: {
-  //           url,
-  //         },
-  //       },
-  //     ];
-  //   }
-  //   return res.choices?.at(0)?.message?.content ?? res;
-  // }
-
-  // async speech(options: SpeechOptions): Promise<ArrayBuffer> {
-  //   const requestPayload = {
-  //     model: options.model,
-  //     input: options.input,
-  //     voice: options.voice,
-  //     response_format: options.response_format,
-  //     speed: options.speed,
-  //   };
-  //   console.log("[Request] openai speech payload: ", requestPayload);
-  //   const controller = new AbortController();
-  //   options.onController?.(controller);
-  //   try {
-  //     const speechPath = this.path(OpenaiPath.SpeechPath);
-  //     const speechPayload = {
-  //       method: "POST",
-  //       body: JSON.stringify(requestPayload),
-  //       signal: controller.signal,
-  //       headers: getHeaders(),
-  //     };
-  //     const requestTimeoutId = setTimeout(
-  //       () => controller.abort(),
-  //       REQUEST_TIMEOUT_MS,
-  //     );
-  //     const res = await fetch(speechPath, speechPayload);
-  //     clearTimeout(requestTimeoutId);
-  //     return await res.arrayBuffer();
-  //   } catch (e) {
-  //     console.log("[Request] failed to make a speech request", e);
-  //     throw e;
-  //   }
-  // }
+  async extractMessage(res: any) {
+    if (res.error) {
+      return "```\n" + JSON.stringify(res, null, 4) + "\n```";
+    }
+    if (res.data) {
+      let url = res.data?.at(0)?.url ?? "";
+      const b64_json = res.data?.at(0)?.b64_json ?? "";
+      if (!url && b64_json) {
+        url = await uploadImage(base64Image2Blob(b64_json, "image/png"));
+      }
+      return [
+        {
+          type: "image_url",
+          image_url: {
+            url,
+          },
+        },
+      ];
+    }
+    return res.choices?.at(0)?.message?.content ?? res;
+  }
 
   async chat(options: ChatOptions) {
     const messages = options.messages.map((m) => ({
@@ -221,7 +143,7 @@ export class ChatGPTApi implements LLMApi {
             responseText += content;
             options.onUpdate?.(responseText, content);
           } catch (e) {
-            console.error("[Request] parse error", line);
+            console.log("[Request] parse error", line);
           }
         }
       }

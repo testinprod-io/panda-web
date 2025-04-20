@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { combine, persist, createJSONStorage } from "zustand/middleware";
-import { Updater } from "../typing";
+import { Updater } from "@/app/types/common";
 import { deepClone } from "./clone";
 import { indexedDBStorage } from "./indexedDB-storage";
 
@@ -23,7 +23,7 @@ type MakeUpdater<T> = {
 
 type SetStoreState<T> = (
   partial: T | Partial<T> | ((state: T) => T | Partial<T>),
-  replace?: boolean | undefined,
+  replace?: boolean,
 ) => void;
 
 export function createPersistStore<T extends object, M>(
@@ -51,7 +51,7 @@ export function createPersistStore<T extends object, M>(
         },
         (set, get) => {
           return {
-            ...methods(set, get as any),
+            ...methods(set as SetStoreState<T & MakeUpdater<T>>, get as any),
 
             markUpdate() {
               set({ lastUpdateTime: Date.now() } as Partial<

@@ -1,63 +1,35 @@
-"use client";
 // azure and openai, using same models. so using same LLMApi.
-import { ApiPath, DEEPSEEK_BASE_URL } from "../../constant";
-// import {
-//   useAccessStore,
-//   useAppConfig,
-//   useChatStore,
-//   ChatMessageTool,
-//   usePluginStore,
-// } from "@/app/store";
-// import { streamWithThink } from "@/app/utils/chat";
-import {
-  ChatOptions,
-  getHeaders,
-  LLMApi,
-  LLMModel,
-  // SpeechOptions,
-  LLMUsage,
-  getBearerToken,
-} from "../api";
-// import { getClientConfig } from "@/app/config/client";
-// import {
-//   getMessageTextContent,
-//   getMessageTextContentWithoutThinking,
-//   getTimeoutMSByModel,
-// } from "@/app/utils";
-// import { RequestPayload } from "./openai";
-// import { fetch } from "@/app/utils/stream";
+import { ApiPath, DEEPSEEK_BASE_URL } from "@/app/constant";
+import { useAccessStore } from "@/app/store";
+import { ChatOptions, getHeaders, LLMApi, LLMModel, LLMUsage, getBearerToken } from "../api";
 
 export class DeepSeekApi implements LLMApi {
   private disableListModels = true;
 
   path(path: string): string {
-    // const accessStore = useAccessStore.getState();
+    const accessStore = useAccessStore.getState();
     let baseUrl = DEEPSEEK_BASE_URL;
-    // if (accessStore.useCustomConfig) {
-    //   baseUrl = accessStore.deepseekUrl;
-    // }
-    // if (baseUrl.length === 0) {
-    //   const isApp = !!getClientConfig()?.isApp;
-    //   const apiPath = ApiPath.DeepSeek;
-    //   baseUrl = isApp ? DEEPSEEK_BASE_URL : apiPath;
-    // }
+    if (accessStore.useCustomConfig) {
+      baseUrl = accessStore.deepseekUrl;
+    }
+    if (baseUrl.length === 0) {
+      const isApp = false; // !!getClientConfig()?.isApp;
+      const apiPath = ApiPath.DeepSeek;
+      baseUrl = isApp ? DEEPSEEK_BASE_URL : apiPath;
+    }
     if (baseUrl.endsWith("/")) {
       baseUrl = baseUrl.slice(0, baseUrl.length - 1);
     }
-    // if (!baseUrl.startsWith("http") && !baseUrl.startsWith(ApiPath.DeepSeek)) {
-    //   baseUrl = "https://" + baseUrl;
-    // }
+    if (!baseUrl.startsWith("http") && !baseUrl.startsWith(ApiPath.DeepSeek)) {
+      baseUrl = "https://" + baseUrl;
+    }
     console.log("[DeepSeek Endpoint] ", baseUrl, path);
     return [baseUrl, path].join("/");
   }
 
-  // extractMessage(res: any) {
-  //   return res.choices?.at(0)?.message?.content ?? "";
-  // }
-
-  // speech(options: SpeechOptions): Promise<ArrayBuffer> {
-  //   throw new Error("Method not implemented.");
-  // }
+  extractMessage(res: any) {
+    return res.choices?.at(0)?.message?.content ?? "";
+  }
 
   async chat(options: ChatOptions) {
     const messages = options.messages.map((v) => ({

@@ -1,12 +1,10 @@
 import {
-  ChatSession,
   useAccessStore,
   useAppConfig,
   useChatStore,
-} from "../store";
-// import { useMaskStore } from "../store/mask";
-import { usePromptStore } from "../store/prompt";
-import { StoreKey } from "../constant";
+} from "@/app/store";
+import { ChatSession } from "@/app/types/session";
+import { StoreKey } from "@/app/constant";
 import { merge } from "./merge";
 
 type NonFunctionKeys<T> = {
@@ -30,25 +28,22 @@ export type GetStoreState<T> = T extends { getState: () => infer U }
   ? NonFunctionFields<U>
   : never;
 
-const LocalStateSetters = {
+// Turn these into functions that retrieve the methods when called
+const getLocalStateSetters = () => ({
   [StoreKey.Chat]: useChatStore.setState,
   [StoreKey.Access]: useAccessStore.setState,
   [StoreKey.Config]: useAppConfig.setState,
-  // [StoreKey.Mask]: useMaskStore.setState,
-  [StoreKey.Prompt]: usePromptStore.setState,
-} as const;
+});
 
-const LocalStateGetters = {
+const getLocalStateGetters = () => ({
   [StoreKey.Chat]: () => getNonFunctionFileds(useChatStore.getState()),
   [StoreKey.Access]: () => getNonFunctionFileds(useAccessStore.getState()),
   [StoreKey.Config]: () => getNonFunctionFileds(useAppConfig.getState()),
-  // [StoreKey.Mask]: () => getNonFunctionFileds(useMaskStore.getState()),
-  [StoreKey.Prompt]: () => getNonFunctionFileds(usePromptStore.getState()),
-} as const;
+});
 
 export type AppState = {
-  [k in keyof typeof LocalStateGetters]: ReturnType<
-    (typeof LocalStateGetters)[k]
+  [k in keyof ReturnType<typeof getLocalStateGetters>]: ReturnType<
+    ReturnType<typeof getLocalStateGetters>[k]
   >;
 };
 
@@ -100,27 +95,14 @@ const MergeStates: StateMerger = {
 
     return localState;
   },
-  [StoreKey.Prompt]: (localState, remoteState) => {
-    localState.prompts = {
-      ...remoteState.prompts,
-      ...localState.prompts,
-    };
-    return localState;
-  },
-  // [StoreKey.Mask]: (localState, remoteState) => {
-  //   localState.masks = {
-  //     ...remoteState.masks,
-  //     ...localState.masks,
-    // };
-    // return localState;
-  // },
   [StoreKey.Config]: mergeWithUpdate<AppState[StoreKey.Config]>,
   [StoreKey.Access]: mergeWithUpdate<AppState[StoreKey.Access]>,
 };
 
 export function getLocalAppState() {
+  const getters = getLocalStateGetters(); // Get getters when needed
   const appState = Object.fromEntries(
-    Object.entries(LocalStateGetters).map(([key, getter]) => {
+    Object.entries(getters).map(([key, getter]) => {
       return [key, getter()];
     }),
   ) as AppState;
@@ -129,7 +111,8 @@ export function getLocalAppState() {
 }
 
 export function setLocalAppState(appState: AppState) {
-  Object.entries(LocalStateSetters).forEach(([key, setter]) => {
+  const setters = getLocalStateSetters(); // Get setters when needed
+  Object.entries(setters).forEach(([key, setter]) => {
     (setter as any)(appState[key as keyof AppState]);
   });
 }

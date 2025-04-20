@@ -1,46 +1,84 @@
+/* Import KaTeX CSS */
+@import "katex/dist/katex.min.css";
+
 @import "./animation.scss";
 @import "./window.scss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @mixin light {
   --theme: light;
 
   /* color */
   --white: white;
-  --black: rgb(48, 48, 48);
-  --gray: rgb(250, 250, 250);
-  --primary: rgb(29, 147, 171);
-  --second: rgb(231, 248, 255);
-  --hover-color: #f3f3f3;
+  --black: rgb(17, 24, 39);
+  --gray: rgb(249, 250, 251);
+  --primary: var(--black);
+  --second: var(--white);
+  --hover-color: rgb(243, 244, 246);
   --bar-color: rgba(0, 0, 0, 0.1);
-  --theme-color: var(--gray);
+  --theme-color: var(--bg-primary);
 
   /* shadow */
-  --shadow: 50px 50px 100px 10px rgb(0, 0, 0, 0.1);
-  --card-shadow: 0px 2px 4px 0px rgb(0, 0, 0, 0.05);
+  --shadow: 0px 10px 30px rgba(0, 0, 0, 0.07);
+  --card-shadow: 0px 1px 3px rgba(0, 0, 0, 0.05), 0px 1px 2px rgba(0, 0, 0, 0.06);
 
   /* stroke */
-  --border-in-light: 1px solid rgb(222, 222, 222);
+  --border-in-light: 1px solid var(--border-primary);
+
+  /* Added variables */
+  --text-primary: var(--black);
+  --text-secondary: rgb(75, 85, 99);
+  --text-disabled: rgb(156, 163, 175);
+  --bg-primary: rgb(249, 250, 251);
+  --bg-secondary: rgb(243, 244, 246);
+  --bg-tertiary: rgb(229, 231, 235);
+  --border-primary: rgb(229, 231, 235);
+  --border-secondary: rgb(209, 213, 219);
+  --icon-primary: var(--black);
+  --icon-secondary: var(--text-secondary);
+  --action-primary: var(--black);
+  --action-primary-hover: var(--text-secondary);
 }
 
 @mixin dark {
   --theme: dark;
 
   /* color */
-  --white: rgb(30, 30, 30);
-  --black: rgb(187, 187, 187);
-  --gray: rgb(21, 21, 21);
-  --primary: rgb(29, 147, 171);
-  --second: rgb(27 38 42);
-  --hover-color: #323232;
+  --white: rgb(31, 41, 55);
+  --black: rgb(243, 244, 246);
+  --gray: rgb(17, 24, 39);
+  --primary: var(--black);
+  --second: var(--bg-secondary);
+  --hover-color: rgb(55, 65, 81);
+  --bar-color: rgba(255, 255, 255, 0.15);
 
-  --bar-color: rgba(255, 255, 255, 0.1);
+  /* shadow - dark mode usually has less prominent shadows */
+  --shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+  --card-shadow: 0px 1px 2px rgba(0, 0, 0, 0.15), 0px 1px 1px rgba(0, 0, 0, 0.1);
 
-  --border-in-light: 1px solid rgba(255, 255, 255, 0.192);
+  /* stroke */
+  --border-in-light: 1px solid var(--border-primary);
 
-  --theme-color: var(--gray);
+  /* Added/Adjusted variables */
+  --text-primary: var(--black);
+  --text-secondary: rgb(156, 163, 175);
+  --text-disabled: rgb(107, 114, 128);
+  --bg-primary: rgb(17, 24, 39);
+  --bg-secondary: rgb(31, 41, 55);
+  --bg-tertiary: rgb(55, 65, 81);
+  --border-primary: rgb(55, 65, 81);
+  --border-secondary: rgb(75, 85, 99);
+  --icon-primary: var(--black);
+  --icon-secondary: var(--text-secondary);
+  --action-primary: var(--black);
+  --action-primary-hover: var(--text-secondary);
+
+  --theme-color: var(--bg-primary);
 
   div:not(.no-dark) > svg {
-    filter: invert(0.5);
+    filter: none;
   }
 }
 
@@ -59,12 +97,12 @@
 :root {
   @include light;
 
-  --window-width: 90vw;
-  --window-height: 90vh;
   --sidebar-width: 300px;
+  --window-width: 100vw;
+  --window-height: 100vh;
   --window-content-width: calc(100% - var(--sidebar-width));
+  --full-height: 100vh;
   --message-max-width: 80%;
-  --full-height: 100%;
 }
 
 @media only screen and (max-width: 600px) {
@@ -81,40 +119,39 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   :root {
-    @include dark;
+    @include light;
   }
 }
 
-html {
-  height: var(--full-height);
+@media (prefers-color-scheme: light) {
+  :root {
+    @include light;
+  }
+}
 
-  font-family: "Noto Sans", "SF Pro SC", "SF Pro Text", "SF Pro Icons",
-    "PingFang SC", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: "Roboto", "Noto Sans", "SF Pro SC", "SF Pro Text", "SF Pro Icons", "PingFang SC", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
 }
 
 body {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
   background-color: var(--gray);
   color: var(--black);
-  margin: 0;
-  padding: 0;
-  height: var(--full-height);
-  width: 100vw;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   user-select: none;
-  touch-action: pan-x pan-y;
-  overflow: hidden;
+}
 
-  @media only screen and (max-width: 600px) {
-    background-color: var(--second);
-  }
-
-  *:focus-visible {
-    outline: none;
-  }
+#__next, main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100%;
 }
 
 ::-webkit-scrollbar {
@@ -172,7 +209,7 @@ input[type="checkbox"]:checked::after {
   display: inline-block;
   width: 8px;
   height: 8px;
-  background-color: var(--primary);
+  background-color: var(--black);
   content: " ";
   border-radius: 2px;
 }
@@ -187,7 +224,7 @@ input[type="range"] {
   appearance: none;
   height: 8px;
   width: 20px;
-  background-color: var(--primary);
+  background-color: var(--black);
   border-radius: 10px;
   cursor: pointer;
   transition: all ease 0.3s;
@@ -237,6 +274,7 @@ input[type="password"] {
   padding: 0 10px;
   max-width: 50%;
   font-family: inherit;
+  text-align: left;
 }
 
 div.math {

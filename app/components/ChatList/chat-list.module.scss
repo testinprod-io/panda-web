@@ -1,0 +1,107 @@
+.chat-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  overflow-y: auto;
+  flex-grow: 1; /* Allow list to take available space */
+  min-height: 0; /* Prevent flexbox overflow issues */
+  /* Add some padding if needed */
+  /* padding: 10px 0; */
+}
+
+.chat-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  margin: 5px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  position: relative; /* Needed for absolute positioning of menu */
+  transition: background-color 0.2s ease;
+  user-select: none; /* Prevent text selection during drag */
+}
+
+.chat-item:hover {
+  background-color: rgba(0, 0, 0, 0.05); /* Adjust color based on theme */
+}
+
+.chat-item-selected {
+  background-color: rgba(0, 0, 0, 0.1); /* Adjust color based on theme */
+}
+
+.chat-item-title {
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 10px; /* Space before menu icon */
+}
+
+.chat-item-title-text {
+  display: block; /* Ensure it takes full width for ellipsis */
+}
+
+.chat-item-title-input {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid #ccc; /* Adjust style as needed */
+  border-radius: 4px;
+  font-size: inherit;
+  background-color: white; /* Ensure visibility */
+  color: black;
+}
+
+.chat-item-menu {
+  flex-shrink: 0;
+  padding: 5px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-item-menu:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.chat-item-menu svg {
+  width: 16px;
+  height: 16px;
+  opacity: 0.6;
+}
+
+.chat-item:hover .chat-item-menu svg,
+.chat-item-menu:hover svg {
+  opacity: 1;
+}
+
+.chat-item-menu-dropdown {
+  background-color: white; /* Or theme background */
+  border: 1px solid #eee; /* Or theme border */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  padding: 5px 0;
+  min-width: 120px;
+  z-index: 1000;
+  position: absolute; /* Should be handled by inline style */
+}
+
+.chat-item-menu-option {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333; /* Or theme text color */
+}
+
+.chat-item-menu-option:hover {
+  background-color: rgba(0, 0, 0, 0.05); /* Or theme hover color */
+}
+
+.chat-item-menu-option svg {
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  opacity: 0.7;
+} 

@@ -1,24 +1,5 @@
-"use client";
-
-import {
-  ApiPath,
-  REQUEST_TIMEOUT_MS,
-  ServiceProvider,
-  PANDA_BASE_URL,
-  PandaPath,
-} from "../../constant";
-
-import {
-  ChatOptions,
-  getHeaders,
-  LLMApi,
-  LLMModel,
-  LLMUsage,
-  MultimodalContent,
-  getBearerToken,
-} from "../api";
-
-// import { ChatCompletionCreateParams, ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import { PANDA_BASE_URL, PandaPath } from "@/app/constant";
+import { ChatOptions, LLMApi, LLMModel, LLMUsage, MultimodalContent } from "@/app/client/api";
 
 export interface PandaListModelResponse {
   data: {

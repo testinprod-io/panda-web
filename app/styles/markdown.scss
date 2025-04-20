@@ -113,9 +113,9 @@
   @include light;
 }
 
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   :root {
-    @include dark;
+    @include light;
   }
 }
 

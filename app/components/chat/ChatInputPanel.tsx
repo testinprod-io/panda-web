@@ -1,0 +1,326 @@
+import React, { forwardRef, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import clsx from "clsx";
+import { isEmpty } from "lodash-es";
+import { useDebouncedCallback } from "use-debounce";
+
+import {
+  useAppConfig,
+  useChatStore,
+  useAccessStore,
+  SubmitKey,
+} from "@/app/store"; // Adjust paths
+import { ChatSession, ChatMessage } from "@/app/types";
+// import { usePromptStore } from "@/app/store/prompt";
+import { ChatCommandPrefix, useChatCommand } from "@/app/command";
+import { UNFINISHED_INPUT } from "@/app/constant";
+import { autoGrowTextArea, isVisionModel, safeLocalStorage, useMobileScreen } from "@/app/utils";
+import { uploadImage as uploadImageRemote } from "@/app/utils/chat";
+import Locale from "@/app/locales";
+import { useSubmitHandler } from "@/app/hooks/useSubmitHandler";
+import { useSnackbar } from "@/app/components/SnackbarProvider"; // Added Snackbar hook
+import { ChatControllerPool } from "@/app/client/controller"; // Import ChatControllerPool
+
+import { ChatActions } from "@/app/components/chat/ChatActions";
+import { DeleteImageButton } from "@/app/components/chat/DeleteImageButton";
+import { ChatAction } from "@/app/components/chat/ChatAction"; // Import ChatAction for ScrollToBottom
+
+import ArrowUpwardRoundedIcon from '@mui/icons-material/ArrowUpwardRounded';
+import StopRoundedIcon from '@mui/icons-material/StopRounded';
+import Button from '@mui/material/Button'; // Added MUI Button
+
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'; // Import Scroll Down Icon
+
+import styles from "@/app/components/chat/chat.module.scss";
+
+const localStorage = safeLocalStorage();
+
+interface ChatInputPanelProps {
+  session?: ChatSession;
+  isLoading: boolean;
+  hitBottom: boolean;
+  onSubmit: (input: string, images: string[]) => void;
+  scrollToBottom: () => void;
+  setShowPromptModal: () => void;
+  setShowShortcutKeyModal: () => void;
+}
+
+// Use forwardRef to accept a ref from the parent
+export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
+  props,
+  ref // The forwarded ref
+) => {
+  const {
+    session,
+    isLoading,
+    hitBottom,
+    onSubmit,
+    scrollToBottom,
+    setShowPromptModal,
+    setShowShortcutKeyModal,
+  } = props;
+
+  const chatStore = useChatStore();
+  const config = useAppConfig();
+  const router = useRouter();
+  // const promptStore = usePromptStore();
+  const isMobileScreen = useMobileScreen();
+  const { submitKey, shouldSubmit } = useSubmitHandler();
+  const { showSnackbar } = useSnackbar(); // Use Snackbar hook
+
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [userInput, setUserInput] = useState("");
+  const [attachImages, setAttachImages] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [inputRows, setInputRows] = useState(2);
+
+  const autoFocus = !isMobileScreen;
+
+  // Function to stop generation
+  const stopGeneration = () => {
+    ChatControllerPool.stopAll();
+  };
+
+  // Debounced measure for textarea auto-grow
+  const measure = useDebouncedCallback(
+    () => {
+      const rows = inputRef.current ? autoGrowTextArea(inputRef.current) : 1;
+      const inputRows = Math.min(
+        20,
+        Math.max(2 + Number(!isMobileScreen), rows),
+      );
+      setInputRows(inputRows);
+    },
+    100,
+    {
+      leading: true,
+      trailing: true,
+    },
+  );
+
+  useEffect(measure, [userInput, isMobileScreen, measure]);
+
+  // Chat commands specific to input handling
+  const chatCommands = useChatCommand({
+    new: () => chatStore.newSession(),
+    newm: () => router.push("/new-chat"),
+    prev: () => chatStore.nextSession(-1),
+    next: () => chatStore.nextSession(1),
+    ...(session && {
+      clear: () =>
+        chatStore.updateTargetSession(session, (s) => {
+          if (s.clearContextIndex !== s.messages.length) {
+            s.clearContextIndex = s.messages.length;
+            s.memoryPrompt = "";
+          } else {
+            s.clearContextIndex = undefined;
+          }
+        }),
+      fork: () => chatStore.forkSession(),
+      del: () => chatStore.deleteSession(chatStore.currentSessionIndex),
+    }),
+  });
+  
+  // Handle text input changes
+  const SEARCH_TEXT_LIMIT = 30;
+  const onInput = (text: string) => {
+    setUserInput(text);
+  };
+
+  // Prepare submission
+  const doSubmit = () => {
+    if (isLoading || (userInput.trim() === "" && isEmpty(attachImages))) return;
+
+    const matchCommand = chatCommands.match(userInput);
+    if (matchCommand.matched) {
+      setUserInput("");
+      setAttachImages([]); // Also clear images on command match
+      matchCommand.invoke();
+      return;
+    }
+
+    onSubmit(userInput, attachImages);
+    // Clear input state after passing to parent
+    setUserInput("");
+    setAttachImages([]);
+    if (!isMobileScreen) inputRef.current?.focus();
+  };
+
+  // Handle keydown for submission or history
+  const onInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (
+      e.key === "ArrowUp" &&
+      userInput.length <= 0 &&
+      !(e.metaKey || e.altKey || e.ctrlKey)
+    ) {
+      setUserInput(chatStore.lastInput ?? "");
+      e.preventDefault();
+      return;
+    }
+    if (shouldSubmit(e)) {
+      doSubmit();
+      e.preventDefault();
+    }
+  };
+
+  // Handle image pasting
+  const handlePaste = useCallback(
+    async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      if (!session || !isVisionModel(session.modelConfig.model)) return;
+      const items = event.clipboardData?.items;
+      if (!items) return;
+
+      const imageFiles: File[] = [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.kind === "file" && item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) imageFiles.push(file);
+        }
+      }
+
+      if (imageFiles.length > 0) {
+        event.preventDefault();
+        setUploading(true);
+        try {
+          const filesToUpload = imageFiles.slice(0, 3 - attachImages.length);
+          const uploadPromises = filesToUpload.map(file => uploadImageRemote(file));
+          const dataUrls = await Promise.all(uploadPromises);
+          setAttachImages(prev => [...prev, ...dataUrls].slice(0, 3));
+        } catch (e) {
+          console.error("[Chat] Image paste upload failed:", e);
+          showSnackbar("Locale.Chat.ImageUploadFailed", 'error'); // Use Snackbar hook
+        } finally {
+          setUploading(false);
+        }
+      }
+    },
+    [session, attachImages.length, showSnackbar],
+  );
+
+  // Handle image uploading via button click
+  const uploadImage = useCallback(async () => {
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "image/png, image/jpeg, image/webp, image/heic, image/heif";
+    fileInput.multiple = true;
+    fileInput.onchange = async (event: any) => {
+      const files = event.target.files as FileList | null;
+      if (!files || files.length === 0) return;
+
+      setUploading(true);
+      try {
+        const filesToUpload = Array.from(files).slice(0, 3 - attachImages.length);
+        if (filesToUpload.length === 0) {
+          showSnackbar("Locale.Chat.ImageUploadLimit", 'warning'); // Use Snackbar hook
+          setUploading(false);
+          return;
+        }
+        const uploadPromises = filesToUpload.map(file => uploadImageRemote(file));
+        const dataUrls = await Promise.all(uploadPromises);
+        setAttachImages(prev => [...prev, ...dataUrls].slice(0, 3));
+      } catch (e) {
+        console.error("[Chat] Image upload failed:", e);
+        showSnackbar("Locale.Chat.ImageUploadFailed", 'error'); // Use Snackbar hook
+      } finally {
+        setUploading(false);
+      }
+    };
+    fileInput.click();
+  }, [attachImages.length, showSnackbar]); // Added showSnackbar dependency
+
+  // Remember unfinished input
+  useEffect(() => {
+    if (session) {
+      const key = UNFINISHED_INPUT(session.id);
+      // Load unfinished input only if not currently loading a response
+      if (!isLoading) {
+          const savedInput = localStorage.getItem(key);
+          if (savedInput && userInput.length === 0) {
+              setUserInput(savedInput);
+              localStorage.removeItem(key);
+          }
+      }
+
+      const currentInputRef = inputRef.current; // Capture ref value
+      return () => {
+        // Save input only if not loading and input is not empty
+        if (!isLoading && currentInputRef?.value && currentInputRef.value.trim() !== "") {
+          localStorage.setItem(key, currentInputRef.value);
+        } else {
+          // Clear saved input if component unmounts while loading or input is empty
+          localStorage.removeItem(key);
+        }
+      };
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, isLoading]); // Depend on session and isLoading
+
+  return (
+    <div className={styles["chat-input-panel"]} ref={ref}> {/* Attach the ref here */}
+      <ChatActions
+        session={session}
+        uploadImage={uploadImage}
+        setAttachImages={setAttachImages} // Pass state setter if needed by actions, though uploadImage handles it
+        setUploading={setUploading} // Pass state setter if needed by actions
+        uploading={uploading}
+      />
+      <div className={styles["chat-input-panel-inner-container"]}> {/* Wrapper for textarea and buttons */}
+        <label
+          htmlFor="chat-input"
+          className={clsx(styles["chat-input-panel-inner"], {
+            [styles["chat-input-panel-inner-attach"]]: attachImages.length > 0,
+          })}
+        >
+          <textarea
+            id="chat-input"
+            ref={inputRef}
+            className={styles["chat-input"]}
+            placeholder={Locale.Chat.Input(submitKey)}
+            onInput={(e) => setUserInput(e.currentTarget.value)}
+            value={userInput}
+            onKeyDown={onInputKeyDown}
+            onFocus={scrollToBottom} // Scroll to bottom on focus might be handled by parent now
+            onClick={scrollToBottom} // Scroll to bottom on click might be handled by parent now
+            onPaste={handlePaste}
+            rows={inputRows}
+            autoFocus={autoFocus}
+            aria-label={Locale.Chat.Input(submitKey)}
+            disabled={isLoading} // Disable textarea when loading
+          />
+          {attachImages.length > 0 && (
+            <div className={styles["attach-images"]}>
+              {attachImages.map((image, index) => (
+                <div
+                  key={index}
+                  className={styles["attach-image"]}
+                  style={{ backgroundImage: `url(\"${image}\")` }}
+                >
+                  <div className={styles["attach-image-mask"]}>
+                    <DeleteImageButton
+                      deleteImage={() => {
+                        setAttachImages((prev) => prev.filter((_, i) => i !== index));
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </label>
+      </div>
+      <Button
+          className={styles["chat-input-send"]}
+          variant="contained"
+          onClick={isLoading ? stopGeneration : doSubmit}
+          disabled={uploading || (!isLoading && (userInput ?? "").trim() === "" && attachImages.length === 0)}
+          aria-label={isLoading ? Locale.Chat.InputActions.Stop : Locale.Chat.Send}
+          sx={{ ml: 1 }}
+        >
+          {isLoading ? <StopRoundedIcon /> : <ArrowUpwardRoundedIcon />}
+        </Button>
+    </div>
+  );
+});
+
+ChatInputPanel.displayName = "ChatInputPanel"; // Add display name for DevTools 

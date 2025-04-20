@@ -1,8 +1,9 @@
-import { ModelProvider, ServiceProvider } from "../constant";
-import { ChatMessage, ModelType } from "../store";
-import { ChatGPTApi } from "./platforms/openai";
-import { DeepSeekApi } from "./platforms/deepseek";
-import { PandaApi } from "./platforms/panda";
+import { ModelProvider, ServiceProvider } from "@/app/constant";
+import { ModelType } from "@/app/store";
+import { ChatMessage } from "@/app/types";
+import { ChatGPTApi } from "@/app/client/platforms/openai";
+import { DeepSeekApi } from "@/app/client/platforms/deepseek";
+import { PandaApi } from "@/app/client/platforms/panda";
 
 export const ROLES = ["system", "user", "assistant"] as const;
 export type MessageRole = (typeof ROLES)[number];

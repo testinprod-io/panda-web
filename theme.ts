@@ -1,0 +1,28 @@
+import { createTheme } from '@mui/material/styles';
+
+const theme = createTheme({
+  palette: {
+    mode: 'light',
+    primary: {
+      main: '#10a37f',
+    },
+    background: {
+      default: '#ffffff',
+      paper: '#f7f7f8',
+    },
+  },
+  typography: {
+    fontFamily: 'Inter, system-ui, sans-serif',
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+        },
+      },
+    },
+  },
+});
+
+export default theme; 

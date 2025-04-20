@@ -1,17 +1,15 @@
-// import { getClientConfig } from "../config/client";
-import { ApiPath, STORAGE_KEY, StoreKey } from "../constant";
-import { createPersistStore } from "../utils/store";
+import { ApiPath, STORAGE_KEY, StoreKey } from "@/app/constant";
+import { createPersistStore } from "@/app/utils/store";
 import {
   AppState,
   getLocalAppState,
   GetStoreState,
   mergeAppState,
   setLocalAppState,
-} from "../utils/sync";
-import { downloadAs, readFromFile } from "../utils";
-import { showToast } from "../components/ui-lib";
-import Locale from "../locales";
-import { createSyncClient, ProviderType } from "../utils/cloud";
+} from "@/app/utils/sync";
+import { downloadAs, readFromFile, safeShowSnackbar } from "@/app/utils";
+import Locale from "@/app/locales";
+import { createSyncClient, ProviderType } from "@/app/utils/cloud";
 
 export interface WebDavConfig {
   server: string;
@@ -78,7 +76,7 @@ export const useSyncStore = createPersistStore(
         location.reload();
       } catch (e) {
         console.error("[Import]", e);
-        showToast(Locale.Settings.Sync.ImportFailed);
+        safeShowSnackbar(Locale.Settings.Sync.ImportFailed, 'error');
       }
     },
 
