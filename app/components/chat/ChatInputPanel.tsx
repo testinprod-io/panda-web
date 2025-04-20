@@ -1,7 +1,7 @@
-import React, { forwardRef, useCallback, useEffect, useRef, useState } from "react";
+import React, { forwardRef, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
-import { isEmpty } from "lodash-es";
+import { isEmpty, once } from "lodash-es";
 import { useDebouncedCallback } from "use-debounce";
 
 import {
@@ -34,6 +34,19 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'; // Import Scr
 import styles from "@/app/components/chat/chat.module.scss";
 
 const localStorage = safeLocalStorage();
+
+// Helper function to get initial input
+const getInitialInput = (sessionId?: string): string => {
+  if (!sessionId) return "";
+  const key = UNFINISHED_INPUT(sessionId);
+  const savedInput = localStorage.getItem(key);
+  if (savedInput) {
+    // Clear the saved input after reading it
+    localStorage.removeItem(key);
+    return savedInput;
+  }
+  return "";
+};
 
 interface ChatInputPanelProps {
   session?: ChatSession;
@@ -69,9 +82,12 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   const { showSnackbar } = useSnackbar(); // Use Snackbar hook
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const [userInput, setUserInput] = useState("");
+  // Initialize userInput directly using the helper function
+  const initialUserInput = React.useMemo(() => getInitialInput(session?.id), [session?.id]);
+  const [userInput, setUserInput] = useState(initialUserInput);
   const [attachImages, setAttachImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  // Initialize with default rows
   const [inputRows, setInputRows] = useState(2);
 
   const autoFocus = !isMobileScreen;
@@ -87,7 +103,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
       const rows = inputRef.current ? autoGrowTextArea(inputRef.current) : 1;
       const inputRows = Math.min(
         20,
-        Math.max(2 + Number(!isMobileScreen), rows),
+        Math.max(2, rows),
       );
       setInputRows(inputRows);
     },
@@ -99,6 +115,23 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   );
 
   useEffect(measure, [userInput, isMobileScreen, measure]);
+
+  // Calculate initial rows synchronously before paint
+  useLayoutEffect(() => {
+    if (initialUserInput && inputRef.current) {
+      const rows = autoGrowTextArea(inputRef.current);
+      const initialCalculatedRows = Math.min(
+        20,
+        Math.max(2, rows)
+      );
+      // Set the state only if it differs from the default initial state
+      if (initialCalculatedRows !== 2) { // Check against the default useState value
+        setInputRows(initialCalculatedRows);
+      }
+    }
+    // Run only once on mount, potentially recalculate if mobile screen status changes
+    // Though initialUserInput dependency ensures it runs if session changes causing input load
+  }, [initialUserInput, isMobileScreen]);
 
   // Chat commands specific to input handling
   const chatCommands = useChatCommand({
@@ -229,32 +262,37 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
     fileInput.click();
   }, [attachImages.length, showSnackbar]); // Added showSnackbar dependency
 
-  // Remember unfinished input
+  // Effect purely for saving unfinished input on cleanup (unmount or session change)
   useEffect(() => {
-    if (session) {
-      const key = UNFINISHED_INPUT(session.id);
-      // Load unfinished input only if not currently loading a response
-      if (!isLoading) {
-          const savedInput = localStorage.getItem(key);
-          if (savedInput && userInput.length === 0) {
-              setUserInput(savedInput);
-              localStorage.removeItem(key);
-          }
-      }
+    // DO NOT set input here. useState initializer handles the initial load.
+    // The primary purpose of this effect is now the cleanup function.
 
-      const currentInputRef = inputRef.current; // Capture ref value
-      return () => {
-        // Save input only if not loading and input is not empty
-        if (!isLoading && currentInputRef?.value && currentInputRef.value.trim() !== "") {
-          localStorage.setItem(key, currentInputRef.value);
-        } else {
-          // Clear saved input if component unmounts while loading or input is empty
-          localStorage.removeItem(key);
-        }
-      };
-    }
+    const currentInputRef = inputRef.current; // Capture ref value
+    const sessionId = session?.id; // Capture session ID
+
+    // Cleanup function: Save input on unmount or before the effect runs for a *new* session ID
+    return () => {
+      const currentVal = currentInputRef?.value;
+      if (sessionId && currentVal && currentVal.trim() !== "") {
+        // Save non-empty input
+        const key = UNFINISHED_INPUT(sessionId);
+        localStorage.setItem(key, currentVal);
+      } else if (sessionId) {
+        // If input is empty upon cleanup, remove any potentially stale saved item
+        const key = UNFINISHED_INPUT(sessionId);
+        localStorage.removeItem(key);
+      }
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, isLoading]); // Depend on session and isLoading
+  }, [session?.id]); // Rerun effect (and cleanup) only when session ID changes
+
+  // Effect to update input state if the external session.id changes *after* initial mount
+  // This is slightly redundant with the cleanup/setup in the above effect, but ensures reactivity
+  // if the component itself doesn't remount but the session prop changes.
+  // Consider if the above effect's dependency on session?.id is sufficient.
+  // useEffect(() => {
+  //   setUserInput(getInitialInput(session?.id));
+  // }, [session?.id]);
 
   return (
     <div className={styles["chat-input-panel"]} ref={ref}> {/* Attach the ref here */}

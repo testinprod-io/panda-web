@@ -38,7 +38,10 @@ interface ConfirmDialogState {
   onConfirm: () => void;
 }
 
+let renderCount = 0; // Module-level counter for renders
+
 export function Chat() {
+  renderCount++;
   const chatStore = useChatStore();
   const accessStore = useAccessStore();
   const router = useRouter();
@@ -49,6 +52,7 @@ export function Chat() {
   const sessionId = params?.sessionId as string | undefined;
   const isMobileScreen = useMobileScreen();
   const session = chatStore.currentSession(); // Get current session
+  console.log(`[Chat] Render #${renderCount}: Received session.id=${session?.id}, isLoading=${!session}`);
 
   // State for modals, managed by the parent component
   const [showEditMessageModal, setShowEditMessageModal] = useState(false);
@@ -78,44 +82,6 @@ export function Chat() {
     confirmDialogState.onConfirm();
     closeConfirmationDialog();
   }, [confirmDialogState, closeConfirmationDialog]);
-
-  const hasHandledSession = useRef(false); // Track initial session handling
-
-  // Handle session selection and redirection logic
-  useEffect(() => {
-    // Only run redirection logic if sessionId or pathname changes
-    if (sessionId) {
-      const sessions = chatStore.sessions;
-      const sessionIndex = sessions.findIndex(s => s.id === sessionId);
-
-      if (sessionIndex >= 0) {
-        // Session found, select it if not already selected
-        if (chatStore.currentSessionIndex !== sessionIndex) {
-          chatStore.selectSession(sessionIndex);
-        }
-        hasHandledSession.current = true; // Mark as handled
-      } else {
-        // Session ID in URL is invalid, redirect to default chat or new chat
-        console.warn(`[Chat] Session ID ${sessionId} not found, redirecting.`);
-        const latestSessionId = chatStore.sessions[0]?.id;
-        if (latestSessionId) {
-          router.replace(`/chat/${latestSessionId}`);
-        } else {
-          router.replace(Path.NewChat);
-        }
-      }
-    } else if (pathname === Path.Chat && !hasHandledSession.current) {
-      // On static /chat route, redirect to the latest session or new chat
-      const latestSessionId = chatStore.sessions[0]?.id;
-      if (latestSessionId) {
-        router.replace(`/chat/${latestSessionId}`);
-      } else {
-        router.replace(Path.NewChat);
-      }
-    }
-    // We don't include chatStore in dependency array to avoid loops on store updates
-    // We rely on sessionId and pathname
-  }, [sessionId, pathname, router]); // Removed chatStore
 
   // Handle Commands (like URL parameters)
   useCommand({
@@ -158,12 +124,15 @@ export function Chat() {
     },
   });
 
+  // Select only the newSession action for the keydown effect
+  const newSessionAction = useChatStore((state) => state.newSession);
+
   // Handle Global Keyboard Shortcuts (related to session management)
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'o') {
         event.preventDefault();
-        chatStore.newSession();
+        newSessionAction(); // Use the selected action
         router.push(Path.Chat); // Go to base chat path, will redirect to new session ID
       }
       // Add other global shortcuts if needed (e.g., switching sessions)
@@ -179,16 +148,21 @@ export function Chat() {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-    // Only depends on router and chatStore actions, not session details
-  }, [router, chatStore]);
+    // Only depends on router and the specific chatStore action
+  }, [router, newSessionAction]);
 
-  // If no session is found (e.g., during initial load or after deletion), show loading or redirect
+  // If no session is found (page.tsx should handle redirecting before this renders)
   if (!session) {
-    // You might want a loading indicator here
-    // Or ensure the useEffect redirect handles this case quickly
-    return <div>Loading session...</div>; // Placeholder
+    // This should ideally not be reached if page.tsx redirects correctly
+    // but keep a fallback loading state just in case.
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+         <p>Loading session...</p> {/* Or a spinner */}
+       </div>
+    );
   }
 
+  console.log(`[Chat] Render #${renderCount}: Rendering <ChatComponent /> with key=${session.id}`);
   return (
     <div className={styles.chat}>
       <div className={styles["window-content"]} id="chat-container">

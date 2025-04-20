@@ -1,6 +1,7 @@
-import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
+// import { shallow } from "zustand/shallow"; // Remove shallow import
 
 import {
 //   ChatMessage,
@@ -65,14 +66,25 @@ interface ChatComponentProps {
   setShowShortcutKeyModal: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+let renderCount = 0; // Module-level counter for renders
+
 // This component now focuses on rendering the message list and coordinating with the input panel
 export function ChatComponent(props: ChatComponentProps) {
+  renderCount++;
   type RenderMessage = ChatMessage & { preview?: boolean };
 
   const chatStore = useChatStore();
   const session = chatStore.currentSession();
   const config = useAppConfig();
   const { showSnackbar } = useSnackbar(); // Use Snackbar hook
+  // Select only the update action
+  const updateTargetSession = useChatStore((state) => state.updateTargetSession);
+  // const sessionMessages = useChatStore((state) => state.currentSession()?.messages, shallow); // Reverted
+  // const sessionId = useChatStore((state) => state.currentSession()?.id); // Reverted
+
+  // Log session ID received via prop at the start of render
+  console.log(`[ChatComponent] Render #${renderCount}: Received session.id=${session?.id} via prop`);
+
   const fontSize = config.fontSize;
   const fontFamily = config.fontFamily;
   const isMobileScreen = useMobileScreen();
@@ -126,9 +138,10 @@ export function ChatComponent(props: ChatComponentProps) {
 
   // Cleanup stale messages
   useEffect(() => {
-    if (!session) return; // Add session check
-    // console.log("[ChatComponent Effect] Checking for stale messages for session:", session.id); // Add logging if needed
-    // First, check if any message actually needs updating
+    // Use the session object from props
+    if (!session?.id || !session.messages) return; // Check session and messages exist
+    console.log(`[ChatComponent] Stale message check effect run for session.id=${session.id}`);
+
     let needsUpdate = false;
     const messagesToUpdate: { id: string; changes: Partial<ChatMessage> }[] = [];
     const stopTimingCheck = Date.now() - REQUEST_TIMEOUT_MS;
@@ -180,7 +193,8 @@ export function ChatComponent(props: ChatComponentProps) {
     // Only proceed to update if changes were detected
     if (needsUpdate && messagesToUpdate.length > 0) {
       // console.log("[ChatComponent Effect] Stale messages detected, applying updates:", messagesToUpdate);
-      chatStore.updateTargetSession(session, (s) => {
+      // Use the selected action, pass the full session from props
+      updateTargetSession(session, (s) => {
         messagesToUpdate.forEach(({ id, changes }) => {
           const messageIndex = s.messages.findIndex((msg) => msg.id === id);
           if (messageIndex !== -1) {
@@ -195,7 +209,8 @@ export function ChatComponent(props: ChatComponentProps) {
     }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, chatStore, REQUEST_TIMEOUT_MS]); // Depend on session directly
+  // Depend on session object (reference check) and the stable update action
+  }, [session, updateTargetSession, REQUEST_TIMEOUT_MS]);
 
   // Delete message handler
   const deleteMessage = useCallback(
@@ -397,31 +412,42 @@ export function ChatComponent(props: ChatComponentProps) {
   // Focus input on component mount (consider if needed)
   // useEffect(() => { ... focus logic ... }, []);
 
-  // Effect to calculate button position based on input panel height
-  useEffect(() => {
+  // Function to calculate button offset (extracted for reuse)
+  const calculateButtonOffset = useCallback(() => {
     const inputPanel = inputPanelRef.current;
     if (!inputPanel) return;
+    const panelHeight = inputPanel.offsetHeight;
+    const panelMarginTop = 32; // From .chat-input-panel margin: 32px auto;
+    const desiredGap = 10; // 10px gap above the panel
+    setButtonBottomOffset(panelHeight + panelMarginTop + desiredGap);
+  }, []); // Empty dependency array as it relies on the ref
 
-    const calculateOffset = () => {
-      // Get the input panel's height and margin-top (assuming default margin from CSS)
-      const panelHeight = inputPanel.offsetHeight;
-      const panelMarginTop = 32; // From .chat-input-panel margin: 32px auto;
-      const desiredGap = 10; // 10px gap above the panel
-      setButtonBottomOffset(panelHeight + panelMarginTop + desiredGap);
-    };
+  // Calculate initial button position synchronously before paint
+  useLayoutEffect(() => {
+    console.log(`[ChatComponent] useLayoutEffect run: Calculating button offset for session.id=${session?.id}`);
+    calculateButtonOffset();
+    // Dependencies: calculateButtonOffset is stable due to useCallback
+    // We might need session.id if the input panel potentially remounts/changes significantly with session
+  }, [calculateButtonOffset, session?.id]); // Recalculate if session changes
 
-    // Calculate initial position
-    calculateOffset();
+  // Observe input panel resize for subsequent updates after initial layout
+  useEffect(() => {
+    const inputPanel = inputPanelRef.current;
+    console.log(`[ChatComponent] Resize Observer useEffect run: inputPanel exists=${!!inputPanel} for session.id=${session?.id}`);
+    if (!inputPanel) return;
 
     // Observe input panel resize to recalculate
-    const resizeObserver = new ResizeObserver(calculateOffset);
+    const resizeObserver = new ResizeObserver(calculateButtonOffset);
     resizeObserver.observe(inputPanel);
 
     // Cleanup observer on unmount
     return () => {
       resizeObserver.disconnect();
     };
-  }, []); // Run only once on mount
+    // Dependency: Stable calculateButtonOffset function
+  }, [calculateButtonOffset]); 
+
+  console.log(`[ChatComponent] Render #${renderCount}: Finished render logic for session.id=${session?.id}`);
 
   // ---------- Render ----------
   // Render placeholder or loading if session is not available
