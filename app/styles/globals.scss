@@ -165,10 +165,22 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: var(--bar-color);
+  background-color: transparent;
   border-radius: 20px;
   background-clip: content-box;
   border: 1px solid transparent;
+  transition: all 2s linear !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--bg-tertiary);
+  transition: background-color 2s linear !important;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  // opacity: 1; 
+  background-color: var(--bg-tertiary);
+  transition: background-color 2s linear !important;
 }
 
 select {

@@ -39,16 +39,17 @@
 
 .chat-item-title-text {
   display: block; /* Ensure it takes full width for ellipsis */
+  font-size: 0.9rem;
 }
 
 .chat-item-title-input {
   width: 100%;
   padding: 4px 6px;
-  border: 1px solid #ccc; /* Adjust style as needed */
-  border-radius: 4px;
-  font-size: inherit;
-  background-color: white; /* Ensure visibility */
+  font-size: 0.9rem;
+  background-color: transparent; /* Ensure visibility */
   color: black;
+  outline: none;
+  border: none;
 }
 
 .chat-item-menu {
