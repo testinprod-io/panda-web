@@ -508,6 +508,21 @@ export const useChatStore = createPersistStore(
           };
         });
       },
+
+      // Action to update the model config for the current session
+      updateCurrentSessionModel(model: ModelType, providerName: ServiceProvider) {
+        const session = get().currentSession();
+        console.log("[Update Current Session Model] ", model, providerName);
+        if (!session) return;
+
+        get().updateTargetSession(session, (sess) => {
+          sess.modelConfig = {
+            ...sess.modelConfig, // Keep existing session settings like temp, etc.
+            model: model,
+            providerName: providerName,
+          };
+        });
+      },
     };
 
     return methods;

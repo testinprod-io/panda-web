@@ -118,25 +118,17 @@ export const useAppConfig = createPersistStore(
       set(() => ({ ...DEFAULT_CONFIG }));
     },
 
-    setApiProvider(provider: ServiceProvider) {
-      let defaultModelName = DEFAULT_OPENAI_MODEL_NAME;
-      let defaultProviderName = ServiceProvider.OpenAI;
-
-      if (provider === ServiceProvider.Panda) {
-        defaultModelName = DEFAULT_PANDA_MODEL_NAME;
-        defaultProviderName = ServiceProvider.Panda;
-      }
-
+    setApiProvider(model: ModelType, provider: ServiceProvider) {
       set((state) => ({
         apiProvider: provider,
         modelConfig: {
           ...state.modelConfig,
-          model: defaultModelName as ModelType,
-          providerName: defaultProviderName,
+          model: model,
+          providerName: provider,
         },
       }));
 
-      useChatStore.getState().updateCurrentSessionConfigForProvider(provider);
+      useChatStore.getState().updateCurrentSessionModel(model, provider);
     },
 
     mergeModels(newModels: LLMModel[]) {

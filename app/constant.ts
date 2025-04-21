@@ -195,28 +195,28 @@ const openaiModels = [
   // As of July 2024, gpt-4o-mini should be used in place of gpt-3.5-turbo,
   // as it is cheaper, more capable, multimodal, and just as fast. gpt-3.5-turbo is still available for use in the API.
   "gpt-3.5-turbo",
-  "gpt-3.5-turbo-1106",
-  "gpt-3.5-turbo-0125",
+  // "gpt-3.5-turbo-1106",
+  // "gpt-3.5-turbo-0125",
   "gpt-4",
-  "gpt-4-0613",
-  "gpt-4-32k",
-  "gpt-4-32k-0613",
+  // "gpt-4-0613",
+  // "gpt-4-32k",
+  // "gpt-4-32k-0613",
   "gpt-4-turbo",
-  "gpt-4-turbo-preview",
+  // "gpt-4-turbo-preview",
   "gpt-4o",
-  "gpt-4o-2024-05-13",
-  "gpt-4o-2024-08-06",
-  "gpt-4o-2024-11-20",
-  "chatgpt-4o-latest",
-  "gpt-4o-mini",
-  "gpt-4o-mini-2024-07-18",
-  "gpt-4-vision-preview",
-  "gpt-4-turbo-2024-04-09",
-  "gpt-4-1106-preview",
-  "dall-e-3",
-  "o1-mini",
-  "o1-preview",
-  "o3-mini",
+  // "gpt-4o-2024-05-13",
+  // "gpt-4o-2024-08-06",
+  // "gpt-4o-2024-11-20",
+  // "chatgpt-4o-latest",
+  // "gpt-4o-mini",
+  // "gpt-4o-mini-2024-07-18",
+  // "gpt-4-vision-preview",
+  // "gpt-4-turbo-2024-04-09",
+  // "gpt-4-1106-preview",
+  // "dall-e-3",
+  // "o1-mini",
+  // "o1-preview",
+  // "o3-mini",
 ];
 
 const deepseekModels = ["deepseek-chat", "deepseek-coder", "deepseek-reasoner"];
@@ -232,11 +232,50 @@ const xAIModes = [
   "grok-2-vision-latest",
 ];
 
+const PandaModels = [
+  "deepseek-ai/deepseek-coder-1.3b-instruct",
+  "deepseek-ai/deepseek-coder-6.7b-instruct",
+  "deepseek-ai/deepseek-coder-33b-instruct",
+];
+
 let seq = 1000;
 
 export type ModelType = 'gpt-3.5-turbo' | 'gpt-4' | 'deepseek-chat' | 'deepseek-ai/deepseek-coder-1.3b-instruct' | 'deepseek-ai/deepseek-coder-6.7b-instruct' | 'deepseek-ai/deepseek-coder-33b-instruct';
 
 export const DEFAULT_MODELS = [
+  ...PandaModels.map((name) => ({
+    name,
+    available: true,
+    sorted: seq++,
+    provider: {
+      id: "panda",
+      providerName: "Panda",
+      providerType: "panda",
+      sorted: 2,
+    },
+  })),
+  ...xAIModes.map((name) => ({
+    name,
+    available: false,
+    sorted: seq++,
+    provider: {
+      id: "xai",
+      providerName: "XAI",
+      providerType: "xai",
+      sorted: 3,
+    },
+  })),
+  ...deepseekModels.map((name) => ({
+    name,
+    available: false,
+    sorted: seq++,
+    provider: {
+      id: "deepseek",
+      providerName: "DeepSeek",
+      providerType: "deepseek",
+      sorted: 4,
+    },
+  })),
   ...openaiModels.map((name) => ({
     name,
     available: true,
@@ -246,39 +285,6 @@ export const DEFAULT_MODELS = [
       providerName: "OpenAI",
       providerType: "openai",
       sorted: 1, // 这里是固定的，确保顺序与之前内置的版本一致
-    },
-  })),
-  ...openaiModels.map((name) => ({
-    name,
-    available: true,
-    sorted: seq++,
-    provider: {
-      id: "azure",
-      providerName: "Azure",
-      providerType: "azure",
-      sorted: 2,
-    },
-  })),
-  ...xAIModes.map((name) => ({
-    name,
-    available: true,
-    sorted: seq++,
-    provider: {
-      id: "xai",
-      providerName: "XAI",
-      providerType: "xai",
-      sorted: 11,
-    },
-  })),
-  ...deepseekModels.map((name) => ({
-    name,
-    available: true,
-    sorted: seq++,
-    provider: {
-      id: "deepseek",
-      providerName: "DeepSeek",
-      providerType: "deepseek",
-      sorted: 13,
     },
   })),
 ] as const;
