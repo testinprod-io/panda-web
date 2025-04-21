@@ -1,6 +1,7 @@
 import React, { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
+import { useDebouncedCallback } from "use-debounce"; // Added import
 // import { shallow } from "zustand/shallow"; // Remove shallow import
 
 import {
@@ -371,24 +372,43 @@ export function ChatComponent(props: ChatComponentProps) {
       }
   }, [renderMessages.length, hitBottom]);
 
+  // Debounced pagination logic
+  const debouncedCheckEdges = useDebouncedCallback(
+    (scrollTop: number, scrollHeight: number, clientHeight: number) => {
+      const edgeThreshold = clientHeight;
+      const isTouchTopEdge = scrollTop <= edgeThreshold;
+      const isTouchBottomEdge = scrollHeight > 0 && scrollTop + clientHeight >= scrollHeight - edgeThreshold;
+
+      // Check if already loading the next page to prevent multiple triggers
+      // This might need refinement based on how loading state is tracked
+
+      if (isTouchTopEdge && msgRenderIndex > 0) {
+        console.log("[ChatComponent] Debounced: Touching top edge, loading previous messages");
+        setMsgRenderIndex(msgRenderIndex - CHAT_PAGE_SIZE);
+      } else if (
+        isTouchBottomEdge &&
+        msgRenderIndex + messagesToRender.length < renderMessages.length
+      ) {
+        console.log("[ChatComponent] Debounced: Touching bottom edge, loading next messages");
+        setMsgRenderIndex(msgRenderIndex + CHAT_PAGE_SIZE);
+      }
+    },
+    100, // Debounce time in ms
+    { leading: false, trailing: true } // Trigger on the trailing edge of the wait timeout
+  );
+
   // Scroll handler for message body
   const onChatBodyScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
-    const bottomHeight = target.scrollTop + target.clientHeight;
-    const edgeThreshold = target.clientHeight;
+    const { scrollTop, scrollHeight, clientHeight } = target;
+    const bottomHeight = scrollTop + clientHeight;
 
-    const isTouchTopEdge = target.scrollTop <= edgeThreshold;
-    const isTouchBottomEdge = bottomHeight >= target.scrollHeight - edgeThreshold;
-    const isHitBottom = bottomHeight >= target.scrollHeight - 10;
-
-    if (isTouchTopEdge && msgRenderIndex > 0) {
-      setMsgRenderIndex(msgRenderIndex - CHAT_PAGE_SIZE);
-    } else if (isTouchBottomEdge && msgRenderIndex + messagesToRender.length < renderMessages.length) {
-      setMsgRenderIndex(msgRenderIndex + CHAT_PAGE_SIZE);
-    }
-
+    // Calculate hitBottom immediately
+    const isHitBottom = scrollHeight > 0 && bottomHeight >= scrollHeight - 10;
     setHitBottom(isHitBottom);
-    setAutoScroll(isHitBottom);
+
+    // Call the debounced function for edge checks/pagination
+    debouncedCheckEdges(scrollTop, scrollHeight, clientHeight);
   };
 
   // Function to explicitly scroll to bottom

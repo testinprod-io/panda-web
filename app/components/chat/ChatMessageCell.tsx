@@ -18,6 +18,7 @@ import { useSnackbar } from "@/app/components/SnackbarProvider"; // Added Snackb
 
 import { ChatAction } from "@/app/components/chat/ChatAction";
 import { FormattedDate } from "@/app/components/FormattedDate"; // Import the new component
+import { LoadingAnimation } from "@/app/components/common/LoadingAnimation"; // Import the new animation
 
 // MUI Imports
 import { IconButton, TextField, Button, Box } from "@mui/material";
@@ -38,7 +39,7 @@ import styles from "./chat.module.scss";
 
 // Dynamic import for Markdown component
 const Markdown = dynamic(async () => (await import("../markdown")).Markdown, {
-  loading: () => <LoopIcon className={styles.loadingIcon}/>, // Use MUI LoopIcon for loading
+  loading: () => <LoadingAnimation />, // Use the new LoadingAnimation component
 });
 
 interface ChatMessageCellProps {
