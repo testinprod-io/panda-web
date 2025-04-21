@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   DragDropContext,
   Droppable,
@@ -12,6 +12,7 @@ import { useChatStore } from "@/app/store/chat";
 import type { ChatSession } from "@/app/types/session"; // Adjusted path
 import Locale from "@/app/locales"; // Adjusted path
 import { ChatItem } from "./ChatItem"; // Import from the same directory
+import { ChatListSkeleton } from "./ChatListSkeleton"; // Import the skeleton component
 import styles from "./chat-list.module.scss";
 
 // Assuming showConfirm is replaced by window.confirm or similar
@@ -32,6 +33,35 @@ export function ChatList(props: ChatListProps) {
   } = useChatStore();
 
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true); // Add loading state
+
+  // Effect to determine loading state based on sessions
+  useEffect(() => {
+    // Consider loaded if there's more than 1 session OR the only session is not empty (has messages)
+    const isActuallyEmpty = sessions.length === 1 && sessions[0].messages.length === 0 && sessions[0].topic === Locale.Store.DefaultTopic; 
+    if (sessions.length > 0 && !isActuallyEmpty) {
+        // Set a short delay to allow persistence hydration to potentially finish
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 100); // Adjust timeout as needed
+        return () => clearTimeout(timer);
+    } else if (sessions.length === 0) { 
+        // If somehow sessions array becomes totally empty, treat as loading? Or handle as error?
+        // For now, keep loading true if empty
+        setIsLoading(true);
+    } else { 
+        // If it's just the default empty session, keep loading for a bit longer 
+        // to see if persisted sessions load
+        const timer = setTimeout(() => {
+            // Re-check after timeout. If still the default empty session, assume loading finished (user has no sessions).
+            const stillDefaultEmpty = sessions.length === 1 && sessions[0].messages.length === 0 && sessions[0].topic === Locale.Store.DefaultTopic;
+            if (stillDefaultEmpty) {
+                setIsLoading(false);
+            }
+        }, 500); // Longer timeout for initial load check
+         return () => clearTimeout(timer);
+    }
+  }, [sessions]); // Re-run when sessions array reference changes
 
   const onDragEnd: OnDragEndResponder = (result) => {
     const { destination, source } = result;
@@ -78,6 +108,11 @@ export function ChatList(props: ChatListProps) {
       });
     }
   };
+
+  // Render Skeleton if loading
+  if (isLoading) {
+    return <ChatListSkeleton />;
+  }
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>

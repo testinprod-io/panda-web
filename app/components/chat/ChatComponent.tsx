@@ -56,6 +56,7 @@ import ArrowDownwardRoundedIcon from '@mui/icons-material/ArrowDownwardRounded';
 import styles from "./chat.module.scss";
 import { ChatAction } from "./ChatAction"; // Import ChatAction
 import { useApiClient } from "@/app/context/ApiProviderContext"; // <-- Import hook
+import { ChatComponentSkeleton } from "./ChatComponentSkeleton"; // <-- Import Skeleton
 
 // Dynamic import for Markdown component
 const Markdown = dynamic(async () => (await import("../markdown")).Markdown, {
@@ -478,11 +479,11 @@ export function ChatComponent(props: ChatComponentProps) {
   console.log(`[ChatComponent] Render #${renderCount}: Finished render logic for session.id=${session?.id}`);
 
   // ---------- Render ----------
-  // Render placeholder or loading if session is not available
+  // Render Skeleton if session is not available
   if (!session) {
     return (
-      <div className={styles["chat-body-container"]} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <p>{"Select or start a new chat."}</p> {/* Changed placeholder text */}
+      <div className={styles["chat-body-container"]}>
+          <ChatComponentSkeleton />
       </div>
     );
   }
