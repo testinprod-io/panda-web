@@ -112,43 +112,61 @@ export class ChatGPTApi implements LLMApi {
         signal: controller.signal,
       });
 
-      const reader = response.body?.getReader();
       const decoder = new TextDecoder();
+      if (options.config.stream) {
+        const reader = response.body?.getReader();
+        if (!reader) {
+          throw new Error("No response body available for streaming");
+        }
 
-      if (!reader) {
-        throw new Error("No response body");
-      }
+        let responseText = "";
 
-      let responseText = "";
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
 
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
+          const text = decoder.decode(value);
+          // Split by newlines and filter out empty lines
+          const lines = text.split("\n").filter((line) => line.trim());
 
-        const text = decoder.decode(value);
-        // Split by newlines and filter out empty lines
-        const lines = text.split("\n").filter((line) => line.trim());
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            
+            const data = line.slice(6);
+            if (data === "[DONE]") break;
 
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          
-          const data = line.slice(6);
-          if (data === "[DONE]") break;
+            try {
+              const json = JSON.parse(data);
+              const content = json.choices[0]?.delta?.content;
+              if (!content) continue;
 
-          try {
-            const json = JSON.parse(data);
-            const content = json.choices[0]?.delta?.content;
-            if (!content) continue;
-
-            responseText += content;
-            options.onUpdate?.(responseText, content);
-          } catch (e) {
-            console.log("[Request] parse error", line);
+              responseText += content;
+              options.onUpdate?.(responseText, content);
+            } catch (e) {
+              console.log("[Request] parse error", line);
+            }
           }
         }
-      }
+    
+        options.onFinish(responseText, response);
+      } else {
+        // Handle non-streaming response
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
+        }
+        const jsonResponse = await response.json();
+        console.log("[Request] Non-streaming JSON response:", jsonResponse);
+        const messageContent = jsonResponse.choices?.[0]?.message?.content;
 
-      options.onFinish(responseText, response);
+        if (typeof messageContent === 'string') {
+            console.log("[Request] Extracted non-streaming message:", messageContent);
+            options.onFinish(messageContent, response);
+        } else {
+            console.error("[Request] Could not extract message content from non-streaming response:", jsonResponse);
+            throw new Error("Could not extract message content from non-streaming response.");
+        }
+      } 
     } catch (error: any) {
       console.error("[Request] failed", error);
       options.onError?.(error);

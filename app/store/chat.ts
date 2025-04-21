@@ -313,13 +313,29 @@ export const useChatStore = createPersistStore(
             });
           },
           async onFinish(message) {
+            let finalBotMessage: ChatMessage | undefined;
             get().updateTargetSession(session, (sess) => {
-              const botMsgIndex = sess.messages.findIndex(m => m.id === botMessage.id);
-              if (botMsgIndex !== -1) {
-                const finalBotMessage = { ...sess.messages[botMsgIndex], content: message, streaming: false, date: new Date().toLocaleString() };
-                sess.messages = sess.messages.map((m, i) => i === botMsgIndex ? finalBotMessage : m);
-                get().onNewMessage(finalBotMessage, sess, api);
-              }
+                const botMsgIndex = sess.messages.findIndex(m => m.id === botMessage.id);
+                if (botMsgIndex !== -1) {
+                    finalBotMessage = { ...sess.messages[botMsgIndex], content: message, streaming: false, date: new Date().toLocaleString() };
+                    sess.messages = sess.messages.map((m, i) => i === botMsgIndex ? finalBotMessage! : m);
+                    get().onNewMessage(finalBotMessage!, sess, api);
+
+                    if (sess.messages.length === 2 && sess.topic === DEFAULT_TOPIC && finalBotMessage) {
+                        const userMsg = sess.messages[0];
+                        const userMsgContent = getMessageTextContent(userMsg);
+                        const assistantMsgContent = getMessageTextContent(finalBotMessage);
+
+                        if (userMsgContent.trim().length > 0 && assistantMsgContent.trim().length > 0) {
+                            console.log(`[ChatStore] Triggering title generation for session: ${sess.id}`);
+                            setTimeout(() => {
+                                methods.generateSessionTitle(sess.id, userMsgContent, assistantMsgContent, api);
+                            }, 0);
+                        } else {
+                            console.log(`[ChatStore] Skipping title generation for session ${sess.id} due to empty message(s).`);
+                        }
+                    }
+                }
             });
             ChatControllerPool.remove(session.id, botMessage.id);
           },
@@ -522,6 +538,75 @@ export const useChatStore = createPersistStore(
             providerName: providerName,
           };
         });
+      },
+
+      // New method for generating title asynchronously
+      async generateSessionTitle(sessionId: string, userMessageContent: string, assistantMessageContent: string, api: ClientApi) {
+          console.log(`[Title Generation] Starting for session: ${sessionId} with userMessageContent: ${userMessageContent} and assistantMessageContent: ${assistantMessageContent}`);
+          const prompt = `**Prompt**
+
+You are a chat‑title generator.
+
+Input
+User: ${userMessageContent}
+Assistant: ${assistantMessageContent}
+
+Task
+1. If the messages revolve around a specific topic, produce a short, informative title (3–6 words, Title Case, no trailing punctuation).
+2. If they are too vague or empty to summarize meaningfully, output exactly:
+   New Chat
+
+Rules
+- Output **only** the title text (or "New Chat")—no extra words or quotation marks.
+- Keep the title neutral and descriptive; do not include the words "user" or "assistant".
+`;
+
+          try {
+              const session = get().sessions.find(s => s.id === sessionId);
+              if (!session) {
+                  console.warn(`[Title Generation] Session not found: ${sessionId}`);
+                  return; // Session might have been deleted or not found
+              }
+
+              // Use a basic model configuration for title generation
+              const [titleModel, titleProvider] = get().getSummarizeModelConfig(session.modelConfig);
+              console.log(`[Title Generation] Using model: ${titleModel} (${titleProvider}) for session: ${sessionId}`);
+
+              const titleModelConfig = {
+                  ...session.modelConfig, // Inherit basic settings
+                  model: titleModel,
+                  providerName: titleProvider,
+                  stream: false,
+                  temperature: 0.3, // Lower temperature for more deterministic titles
+                  max_tokens: 1000, // Limit tokens for title generation
+              };
+
+              api.llm.chat({
+                  messages: [createMessage({ role: "user", content: prompt })], // Send only the title generation prompt
+                  config: titleModelConfig,
+                  onFinish(title) {
+                      console.log(`[Title Generation] Received potential title for session ${sessionId}: "${title}"`);
+                      if (title && title.length > 0) {
+                          const cleanedTitle = trimTopic(title);
+                          get().updateTargetSession(session, (sess) => {
+                             if (sess.topic === DEFAULT_TOPIC) {
+                                  sess.topic = cleanedTitle;
+                                  console.log(`[Title Generation] Updated topic for session ${sessionId} to: "${sess.topic}"`);
+                             } else {
+                                 console.log(`[Title Generation] Session ${sessionId} topic already changed to "${sess.topic}", skipping update.`);
+                             }
+                          });
+                      } else {
+                          console.log(`[Title Generation] Received "New Chat" or empty/invalid response for session ${sessionId}, keeping default title.`);
+                      }
+                  },
+                  onError(error) {
+                      console.error(`[Title Generation] LLM API failed for session ${sessionId}:`, error);
+                  },
+              });
+          } catch (error) {
+              console.error(`[Title Generation] Error initiating title generation for session ${sessionId}:`, error);
+          }
       },
     };
 

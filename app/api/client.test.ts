@@ -20,7 +20,7 @@ import { UUID, randomUUID } from 'crypto';
 const API_BASE_URL = 'http://3.15.240.252:8000'; 
 // WARNING: This token might be expired. Tests might fail with 401.
 // For robust testing, obtain a fresh token before running.
-const AUTH_TOKEN = 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IkZHMGZ1TE5pclhuU1FKMzBtTl9aSmhMQV9qZHB2RnJ6dC1CT3RmMnRJdlkifQ.eyJzaWQiOiJjbTlxcjVzNjEwMWNmangwbXc5ODJuamg5IiwiaXNzIjoicHJpdnkuaW8iLCJpYXQiOjE3NDUyMjAzOTEsImF1ZCI6ImNtOWk2cGV6eTA0MWlpZjBucG44NmN0anQiLCJzdWIiOiJkaWQ6cHJpdnk6Y205b2VvYXc1MDE4OGljMGxwdTdzeG9qcSIsImV4cCI6MTc0NTIyMzk5MX0.0JyldLYIdUQuXYf-ORE9QxE-ApWIpNVyTtHiBMJpVDHTZsE4MVt-whkUEJJidgvF-gMtfqmod9vN9dlI5zJgpA';
+const AUTH_TOKEN = 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IkZHMGZ1TE5pclhuU1FKMzBtTl9aSmhMQV9qZHB2RnJ6dC1CT3RmMnRJdlkifQ.eyJzaWQiOiJjbTlxcjVzNjEwMWNmangwbXc5ODJuamg5IiwiaXNzIjoicHJpdnkuaW8iLCJpYXQiOjE3NDUyMjM4OTUsImF1ZCI6ImNtOWk2cGV6eTA0MWlpZjBucG44NmN0anQiLCJzdWIiOiJkaWQ6cHJpdnk6Y205b2VvYXc1MDE4OGljMGxwdTdzeG9qcSIsImV4cCI6MTc0NTIyNzQ5NX0.Qw-T0gpGgzPrzHPhVq-ugQDRJadvIaF_DFGy9C5FLgPY4UCHWQinuOlG3gMYVcVYYAYPFO1GbWVXU2nUshuO_A';
 
 // Use real getAuthToken function (or a mock that returns a valid token)
 const getAuthToken = async (): Promise<string | null> => {
