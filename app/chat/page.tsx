@@ -6,12 +6,14 @@ import { useChatStore } from "@/app/store/chat"; // Assuming store path
 // import ChatInput from "@/app/components/ChatInput"; // Remove simple input
 import { ChatInputPanel } from "@/app/components/chat/ChatInputPanel"; // Import the panel
 import { Box, Typography } from "@mui/material";
+import { useApiClient } from "@/app/context/ApiProviderContext"; // <-- Import hook
 // import { Path } from "@/app/constant"; // Assuming constant path if needed for Path.Home
 // import Locale from "@/app/locales"; // Assuming locales path if needed
 
 export default function NewChatPage() {
   const chatStore = useChatStore();
   const router = useRouter();
+  const apiClient = useApiClient(); // <-- Use hook
   // const config = useAppConfig(); // If config is needed later
   // const pathname = usePathname(); // If pathname is needed later
 
@@ -35,7 +37,7 @@ export default function NewChatPage() {
 
     // 3. Add the initial message to the current session
     // Pass both input and images (images will be empty array here)
-    chatStore.onUserInput(input.trim(), images);
+    chatStore.onUserInput(input.trim(), apiClient, images);
 
     // 4. Navigate to the new session URL
     router.replace(`/chat/${currentSession.id}`);
@@ -47,6 +49,17 @@ export default function NewChatPage() {
   const dummyScrollToBottom = () => {};
   const dummySetShowPromptModal = () => {};
   const dummySetShowShortcutKeyModal = () => {};
+
+  // useEffect(() => {
+  //   const input = query.get("q");
+  //   const images = query.getAll("image");
+  //   if (input) {
+  //     chatStore.newSession();
+  //     // Pass apiClient to onUserInput
+  //     chatStore.onUserInput(input.trim(), apiClient, images);
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [apiClient]);
 
   // Basic structure for the new chat page
   return (
@@ -77,7 +90,7 @@ export default function NewChatPage() {
 
       {/* Input panel at the bottom */}
       {/* Ensure it takes full width within the main Box layout */}
-      <Box sx={{ width: '60%', flexShrink: 0 }}>
+      <Box sx={{ width: '100%', flexShrink: 0 }}>
         <ChatInputPanel
           session={undefined} // Pass undefined for session
           isLoading={false} // Not loading on this page

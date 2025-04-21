@@ -5,7 +5,7 @@ import { useRouter, usePathname, useParams } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth"; // Assuming Privy is used here
 
 import { useChatStore, useAccessStore } from "@/app/store"; // Adjust path, Import AccessControlStore type
-import { ChatSession } from "@/app/types"
+import { ChatSession, ChatMessage } from "@/app/types"
 import { useAppConfig } from "@/app/store"; // Adjust path
 import { Path, UNFINISHED_INPUT } from "@/app/constant"; // Adjust path
 import { safeLocalStorage, useMobileScreen } from "@/app/utils"; // Adjust path
@@ -54,7 +54,23 @@ export function Chat() {
   const session = chatStore.currentSession(); // Get current session
   console.log(`[Chat] Render #${renderCount}: Received session.id=${session?.id}, isLoading=${!session}`);
 
+  // Get the specific update action from the store
+  const updateTargetSessionAction = useChatStore((state) => state.updateTargetSession);
+
+  // Define the callback function for updating the session
+  const handleUpdateSession = useCallback((updatedSession: ChatSession) => {
+    // Use the selected action to update the store
+    // The updater function receives the session and modifies it
+    updateTargetSessionAction(updatedSession, (sess) => {
+        // Since the entire updatedSession is passed, just assign its properties
+        // This assumes debouncedUpdateSession passes the full session object
+        // If it only passes partial updates, this logic needs adjustment.
+        Object.assign(sess, updatedSession);
+    });
+  }, [updateTargetSessionAction]);
+
   // State for modals, managed by the parent component
+  const [editingMessage, setEditingMessage] = useState<ChatMessage | undefined>(); // Store the message being edited
   const [showEditMessageModal, setShowEditMessageModal] = useState(false);
   // const [showShortcutKeyModal, setShowShortcutKeyModal] = useState(false);
   const [showPromptModal, setShowPromptModal] = useState(false); // For SessionConfigModel
@@ -82,6 +98,12 @@ export function Chat() {
     confirmDialogState.onConfirm();
     closeConfirmationDialog();
   }, [confirmDialogState, closeConfirmationDialog]);
+
+  // Handler to open the edit message modal
+  const handleShowEditMessageModal = useCallback((message: ChatMessage) => {
+      setEditingMessage(message);
+      setShowEditMessageModal(true);
+  }, []);
 
   // Handle Commands (like URL parameters)
   useCommand({
@@ -169,6 +191,11 @@ export function Chat() {
         {/* Main Chat Area */} 
         <ChatComponent
           key={session.id} // Ensure re-render on session change
+          session={session} // Pass the current session object
+          onUpdateSession={handleUpdateSession} // Pass the update callback
+          onShowConfirmDialog={showConfirmationDialog} // Pass confirmation dialog handler
+          onShowEditMessageModal={handleShowEditMessageModal} // Pass edit modal handler
+          onShowPromptModal={() => setShowPromptModal(true)} // Pass prompt modal handler
           setShowPromptModal={setShowPromptModal}
           setShowShortcutKeyModal={() => {}}
         />
@@ -178,8 +205,13 @@ export function Chat() {
           <SessionConfigModel onClose={() => setShowPromptModal(false)} />
         )}
 
-        {showEditMessageModal && ( // This modal might need to be triggered from ChatComponent
-          <EditMessageModal onClose={() => setShowEditMessageModal(false)} />
+        {showEditMessageModal && editingMessage && ( 
+          <EditMessageModal 
+            onClose={() => {
+              setShowEditMessageModal(false);
+              setEditingMessage(undefined);
+            }}
+          />
         )}
 
         {/* {showShortcutKeyModal && (

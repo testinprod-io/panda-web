@@ -215,9 +215,7 @@ export function ArtifactsShareButton({
             key="copy"
             startIcon={<ContentCopyIcon />}
             onClick={handleCopy}
-          >
-            {Locale.Chat.Actions.Copy}
-          </Button>
+          />
           <Button onClick={handleCloseDialog}>{Locale.UI.Cancel}</Button>
         </DialogActions>
       </Dialog>

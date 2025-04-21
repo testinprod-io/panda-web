@@ -1,3 +1,5 @@
+'use client'
+
 import React, { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
@@ -53,6 +55,7 @@ import ArrowDownwardRoundedIcon from '@mui/icons-material/ArrowDownwardRounded';
 
 import styles from "./chat.module.scss";
 import { ChatAction } from "./ChatAction"; // Import ChatAction
+import { useApiClient } from "@/app/context/ApiProviderContext"; // <-- Import hook
 
 // Dynamic import for Markdown component
 const Markdown = dynamic(async () => (await import("../markdown")).Markdown, {
@@ -61,54 +64,68 @@ const Markdown = dynamic(async () => (await import("../markdown")).Markdown, {
 
 const localStorage = safeLocalStorage();
 
-// Props expected by the ChatComponent
+// Restore ChatComponentProps interface
 interface ChatComponentProps {
-  setShowPromptModal: React.Dispatch<React.SetStateAction<boolean>>;
-  setShowShortcutKeyModal: React.Dispatch<React.SetStateAction<boolean>>;
+    session: ChatSession | undefined; // Allow session to be potentially undefined initially
+    onUpdateSession: (session: ChatSession) => void; // Callback to update session state in parent
+    // Add missing props expected by Chat.tsx
+    onShowConfirmDialog: (title: string, content: string, onConfirm: () => void) => void; 
+    onShowEditMessageModal: (message: ChatMessage) => void;
+    onShowPromptModal: (session: ChatSession) => void;
+    setShowPromptModal: React.Dispatch<React.SetStateAction<boolean>>;
+    setShowShortcutKeyModal: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 let renderCount = 0; // Module-level counter for renders
 
 // This component now focuses on rendering the message list and coordinating with the input panel
 export function ChatComponent(props: ChatComponentProps) {
+  // Restore prop destructuring, including new props
+  const {
+    session, 
+    onUpdateSession, 
+    onShowConfirmDialog, // Destructure new prop
+    onShowEditMessageModal, // Destructure new prop
+    onShowPromptModal, // Destructure new prop
+    setShowPromptModal, 
+    setShowShortcutKeyModal
+  } = props;
+
   renderCount++;
   type RenderMessage = ChatMessage & { preview?: boolean };
 
   const chatStore = useChatStore();
-  const session = chatStore.currentSession();
+  // const session = chatStore.currentSession(); // Get session from props instead
   const config = useAppConfig();
   const { showSnackbar } = useSnackbar(); // Use Snackbar hook
-  // Select only the update action
   const updateTargetSession = useChatStore((state) => state.updateTargetSession);
-  // const sessionMessages = useChatStore((state) => state.currentSession()?.messages, shallow); // Reverted
-  // const sessionId = useChatStore((state) => state.currentSession()?.id); // Reverted
 
-  // Log session ID received via prop at the start of render
   console.log(`[ChatComponent] Render #${renderCount}: Received session.id=${session?.id} via prop`);
 
   const fontSize = config.fontSize;
   const fontFamily = config.fontFamily;
   const isMobileScreen = useMobileScreen();
 
-  const [isSubmitting, setIsSubmitting] = useState(false); // ADDED submitting state
+  const [isSubmitting, setIsSubmitting] = useState(false); 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [hitBottom, setHitBottom] = useState(true);
-  const inputPanelRef = useRef<HTMLDivElement>(null); // Ref for the input panel
-  const [buttonBottomOffset, setButtonBottomOffset] = useState<number | null>(null); // State for dynamic bottom style
+  const inputPanelRef = useRef<HTMLDivElement>(null);
+  const [buttonBottomOffset, setButtonBottomOffset] = useState<number | null>(null);
 
   // Derive streaming state from last message
   const lastMessage = session?.messages[session.messages.length - 1];
   const isBotStreaming = !!(lastMessage?.role === 'assistant' && lastMessage.streaming);
 
-  // Combine submitting and streaming states for the input panel
   const combinedIsLoading = isBotStreaming || isSubmitting;
 
   // Scroll handling
   const { scrollDomToBottom, setAutoScroll } = useScrollToBottom(
     scrollRef,
-    !hitBottom, // Detach scroll when not at bottom
-    session?.messages ?? [], // Provide default empty array if session is undefined
+    !hitBottom,
+    session?.messages ?? [],
   );
+
+  const apiClient = useApiClient(); 
 
   // Submit handler passed to ChatInputPanel
   const doSubmit = useCallback(
@@ -118,7 +135,7 @@ export function ChatComponent(props: ChatComponentProps) {
 
       setIsSubmitting(true); // Set submitting true
       chatStore
-        .onUserInput(input, images)
+        .onUserInput(input, apiClient, images)
         .then(() => setIsSubmitting(false)) // Set submitting false on success
         .catch((e) => {
           console.error("[Chat] Failed user input", e);
@@ -128,7 +145,7 @@ export function ChatComponent(props: ChatComponentProps) {
       chatStore.setLastInput(input); // Keep track of last input
       setAutoScroll(true);
     },
-    [session, combinedIsLoading, chatStore, setAutoScroll, showSnackbar], // ADDED combinedIsLoading dependency
+    [session, combinedIsLoading, chatStore, setAutoScroll, showSnackbar, apiClient], // ADDED combinedIsLoading dependency
   );
 
   // Stop response
@@ -272,7 +289,7 @@ export function ChatComponent(props: ChatComponentProps) {
       setIsSubmitting(true); // Set submitting true
       const textContent = getMessageTextContent(userMessage);
       const images = getMessageImages(userMessage);
-      chatStore.onUserInput(textContent, images)
+      chatStore.onUserInput(textContent, apiClient, images)
         .then(() => setIsSubmitting(false)) // Set submitting false
         .catch((e) => {
           console.error("[Chat] Failed resend", e);
@@ -282,7 +299,7 @@ export function ChatComponent(props: ChatComponentProps) {
 
       setAutoScroll(true);
     },
-    [session, combinedIsLoading, chatStore, showSnackbar, setAutoScroll], // ADDED combinedIsLoading dependency
+    [session, combinedIsLoading, chatStore, showSnackbar, setAutoScroll, apiClient], // ADDED combinedIsLoading dependency
   );
 
   // Edit Submit handler (user messages) - NEW
@@ -308,7 +325,7 @@ export function ChatComponent(props: ChatComponentProps) {
       }
 
       setIsSubmitting(true); // Set submitting true
-      chatStore.onUserInput(newText, []) 
+      chatStore.onUserInput(newText, apiClient, []) 
         .then(() => setIsSubmitting(false)) // Set submitting false
         .catch((e) => {
           console.error("[Chat] Failed edit submission", e);
@@ -320,7 +337,7 @@ export function ChatComponent(props: ChatComponentProps) {
       setAutoScroll(true);
       setTimeout(scrollDomToBottom, 0); // Scroll after state update
     },
-    [session, combinedIsLoading, chatStore, showSnackbar, setAutoScroll, scrollDomToBottom] // ADDED combinedIsLoading dependency
+    [session, combinedIsLoading, chatStore, showSnackbar, setAutoScroll, scrollDomToBottom, apiClient] // ADDED combinedIsLoading dependency
   );
 
   // Pin message handler
@@ -442,30 +459,21 @@ export function ChatComponent(props: ChatComponentProps) {
     setButtonBottomOffset(panelHeight + panelMarginTop + desiredGap);
   }, []); // Empty dependency array as it relies on the ref
 
-  // Calculate initial button position synchronously before paint
+  // Debounced session update
+  const debouncedUpdateSession = useDebouncedCallback(onUpdateSession, 200);
+
+  // Auto-scroll effect
   useLayoutEffect(() => {
-    console.log(`[ChatComponent] useLayoutEffect run: Calculating button offset for session.id=${session?.id}`);
-    calculateButtonOffset();
-    // Dependencies: calculateButtonOffset is stable due to useCallback
-    // We might need session.id if the input panel potentially remounts/changes significantly with session
-  }, [calculateButtonOffset, session?.id]); // Recalculate if session changes
+      // Add check for session before accessing messages
+      if (session) { 
+        scrollDomToBottom();
+      }
+  }, [session?.messages.length, scrollDomToBottom]); // Use optional chaining and correct dependency
 
-  // Observe input panel resize for subsequent updates after initial layout
-  useEffect(() => {
-    const inputPanel = inputPanelRef.current;
-    console.log(`[ChatComponent] Resize Observer useEffect run: inputPanel exists=${!!inputPanel} for session.id=${session?.id}`);
-    if (!inputPanel) return;
+  // Event handlers passed to ChatInputPanel
+  const onInput = useCallback((text: string) => {
 
-    // Observe input panel resize to recalculate
-    const resizeObserver = new ResizeObserver(calculateButtonOffset);
-    resizeObserver.observe(inputPanel);
-
-    // Cleanup observer on unmount
-    return () => {
-      resizeObserver.disconnect();
-    };
-    // Dependency: Stable calculateButtonOffset function
-  }, [calculateButtonOffset]); 
+  }, []);
 
   console.log(`[ChatComponent] Render #${renderCount}: Finished render logic for session.id=${session?.id}`);
 

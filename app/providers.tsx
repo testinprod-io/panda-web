@@ -9,6 +9,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import theme from '@/theme';
 import { SnackbarProvider } from '@/app/components/SnackbarProvider';
 import { AuthChatListener } from '@/app/store/chat';
+import { ApiClientProvider } from '@/app/context/ApiProviderContext';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   // TODO: Replace with your actual Privy App ID from environment variables
@@ -41,15 +42,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
               embeddedWallets: { createOnLogin: 'users-without-wallets' }, // Optional
             }}
           >
-            {/* AuthChatListener needs to be within PrivyProvider */}
-            <AuthChatListener />
-            <SnackbarProvider>
-              {children}
-            </SnackbarProvider>
+            {/* Wrap with ApiClientProvider inside PrivyProvider */}
+            <ApiClientProvider>
+              <AuthChatListener />
+              <SnackbarProvider>
+                {children}
+              </SnackbarProvider>
+            </ApiClientProvider>
           </PrivyProvider>
         ) : (
-          // Render children without Privy context if ID is missing
-          // Or render an error component
+          // Render children without Privy/Api context if ID is missing
           <SnackbarProvider>
             {children}
           </SnackbarProvider>

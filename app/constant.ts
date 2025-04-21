@@ -144,6 +144,10 @@ Latex inline: \\(x^2\\)
 Latex block: $$e=mc^2$$
 `;
 
+// Default model names for switching providers
+export const DEFAULT_OPENAI_MODEL_NAME = "gpt-4o-mini";
+export const DEFAULT_PANDA_MODEL_NAME = "deepseek-ai/deepseek-coder-1.3b-instruct";
+
 export const SUMMARIZE_MODEL = "gpt-4o-mini";
 export const GEMINI_SUMMARIZE_MODEL = "gemini-pro";
 export const DEEPSEEK_SUMMARIZE_MODEL = "deepseek-chat";

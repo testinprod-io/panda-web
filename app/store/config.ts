@@ -6,8 +6,11 @@ import {
   DEFAULT_SIDEBAR_WIDTH,
   StoreKey,
   ServiceProvider,
+  DEFAULT_OPENAI_MODEL_NAME,
+  DEFAULT_PANDA_MODEL_NAME,
 } from "@/app/constant";
 import { createPersistStore } from "@/app/utils/store";
+import { useChatStore } from "./chat";
 
 export type ModelType = (typeof DEFAULT_MODELS)[number]["name"];
 
@@ -37,6 +40,8 @@ export const DEFAULT_CONFIG = {
   sendPreviewBubble: false,
   enableAutoGenerateTitle: true,
   sidebarWidth: DEFAULT_SIDEBAR_WIDTH,
+
+  apiProvider: ServiceProvider.OpenAI,
 
   enableArtifacts: true, // show artifacts config
 
@@ -111,6 +116,27 @@ export const useAppConfig = createPersistStore(
   (set, get) => ({
     reset() {
       set(() => ({ ...DEFAULT_CONFIG }));
+    },
+
+    setApiProvider(provider: ServiceProvider) {
+      let defaultModelName = DEFAULT_OPENAI_MODEL_NAME;
+      let defaultProviderName = ServiceProvider.OpenAI;
+
+      if (provider === ServiceProvider.Panda) {
+        defaultModelName = DEFAULT_PANDA_MODEL_NAME;
+        defaultProviderName = ServiceProvider.Panda;
+      }
+
+      set((state) => ({
+        apiProvider: provider,
+        modelConfig: {
+          ...state.modelConfig,
+          model: defaultModelName as ModelType,
+          providerName: defaultProviderName,
+        },
+      }));
+
+      useChatStore.getState().updateCurrentSessionConfigForProvider(provider);
     },
 
     mergeModels(newModels: LLMModel[]) {

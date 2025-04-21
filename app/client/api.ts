@@ -3,7 +3,7 @@ import { ModelType } from "@/app/store";
 import { ChatMessage } from "@/app/types";
 import { ChatGPTApi } from "@/app/client/platforms/openai";
 import { DeepSeekApi } from "@/app/client/platforms/deepseek";
-import { PandaApi } from "@/app/client/platforms/panda";
+import { PandaApi, GetAccessTokenFn } from "@/app/client/platforms/panda";
 
 export const ROLES = ["system", "user", "assistant"] as const;
 export type MessageRole = (typeof ROLES)[number];
@@ -71,13 +71,16 @@ export abstract class LLMApi {
 export class ClientApi {
   public llm: LLMApi;
 
-  constructor(provider: ModelProvider = ModelProvider.GPT) {
+  constructor(provider: ModelProvider = ModelProvider.GPT, getAccessToken?: GetAccessTokenFn) {
     switch (provider) {
       case ModelProvider.DeepSeek:
         this.llm = new DeepSeekApi();
         break;
       case ModelProvider.Panda:
-        this.llm = new PandaApi();
+        if (!getAccessToken) {
+          throw new Error("getAccessToken function is required for Panda provider");
+        }
+        this.llm = new PandaApi(getAccessToken);
         break;
       default:
         this.llm = new ChatGPTApi();
@@ -104,12 +107,12 @@ export function getHeaders() {
   };
 }
 
-export function getClientApi(provider: ServiceProvider): ClientApi {
+export function getClientApi(provider: ServiceProvider, getAccessToken: GetAccessTokenFn): ClientApi {
   switch (provider) {
     case ServiceProvider.DeepSeek:
       return new ClientApi(ModelProvider.DeepSeek);
     case ServiceProvider.Panda:
-      return new ClientApi(ModelProvider.Panda);
+      return new ClientApi(ModelProvider.Panda, getAccessToken);
     default:
       return new ClientApi(ModelProvider.GPT);
   }

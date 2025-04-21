@@ -240,9 +240,7 @@ const PreCode = React.forwardRef<HTMLPreElement, React.HTMLAttributes<HTMLPreEle
                 );
               }
             }}
-          >
-            {Locale.Chat.Actions.Copy}
-          </button>
+          />
           {children}
         </pre>
         {mermaidCode && <Mermaid code={mermaidCode} />}

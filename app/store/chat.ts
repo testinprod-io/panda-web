@@ -11,8 +11,6 @@ import type {
   MultimodalContent,
   RequestMessage,
 } from "@/app/client/api";
-
-import { getClientApi } from "@/app/client/api";
 import { ChatControllerPool } from "@/app/client/controller";
 // import { showToast } from "../components/ui-lib";
 import {
@@ -23,6 +21,8 @@ import {
   ServiceProvider,
   StoreKey,
   SUMMARIZE_MODEL,
+  DEFAULT_OPENAI_MODEL_NAME,
+  DEFAULT_PANDA_MODEL_NAME,
 } from "../constant";
 import Locale, { getLang } from "../locales";
 import { prettyObject } from "../utils/format";
@@ -253,7 +253,7 @@ export const useChatStore = createPersistStore(
         }
         return sessions.at(index); // Use .at() for safety
       },
-      onNewMessage(message: ChatMessage, targetSession: ChatSession) {
+      onNewMessage(message: ChatMessage, targetSession: ChatSession, api: ClientApi) {
           get().updateTargetSession(targetSession, (session) => {
             session.messages = session.messages.concat(); // Trigger update
             session.lastUpdate = Date.now();
@@ -261,10 +261,10 @@ export const useChatStore = createPersistStore(
           get().updateStat(message, targetSession);
           const updatedSession = get().sessions.find(s => s.id === targetSession.id);
           if (updatedSession) {
-            get().summarizeSession(false, updatedSession);
+            get().summarizeSession(false, updatedSession, api);
           }
       },
-      async onUserInput(content: string, attachImages?: string[], isMcpResponse?: boolean) {
+      async onUserInput(content: string, api: ClientApi, attachImages?: string[], isMcpResponse?: boolean) {
         const session = get().currentSession();
         if (!session) return;
         const modelConfig = session.modelConfig;
@@ -300,7 +300,6 @@ export const useChatStore = createPersistStore(
            sess.messages = [...sess.messages, savedUserMessage, botMessage];
         });
 
-        const api: ClientApi = getClientApi(modelConfig.providerName);
         api.llm.chat({
           messages: sendMessages,
           config: { ...modelConfig, stream: true },
@@ -319,7 +318,7 @@ export const useChatStore = createPersistStore(
               if (botMsgIndex !== -1) {
                 const finalBotMessage = { ...sess.messages[botMsgIndex], content: message, streaming: false, date: new Date().toLocaleString() };
                 sess.messages = sess.messages.map((m, i) => i === botMsgIndex ? finalBotMessage : m);
-                get().onNewMessage(finalBotMessage, sess);
+                get().onNewMessage(finalBotMessage, sess, api);
               }
             });
             ChatControllerPool.remove(session.id, botMessage.id);
@@ -393,25 +392,24 @@ export const useChatStore = createPersistStore(
        resetSession(targetSession: ChatSession) {
             get().updateTargetSession(targetSession, (session) => { session.messages = []; session.memoryPrompt = ""; });
        },
-       summarizeSession(refreshTitle: boolean = false, targetSession: ChatSession) {
+       summarizeSession(refreshTitle: boolean = false, targetSession: ChatSession, api: ClientApi) {
             const config = useAppConfig.getState();
             const session = targetSession;
             const modelConfig = session.modelConfig;
             const [model, providerName] = get().getSummarizeModelConfig(modelConfig);
-            get().summarizeTopicIfNeeded(session, modelConfig, model, providerName, refreshTitle, config);
-            get().summarizeMessagesIfNeeded(session, modelConfig, model, providerName);
+            get().summarizeTopicIfNeeded(session, api, modelConfig, model, providerName, refreshTitle, config);
+            get().summarizeMessagesIfNeeded(session, api, modelConfig, model, providerName);
        },
        getSummarizeModelConfig(modelConfig: ModelConfig): [string, string] {
            const result = modelConfig.compressModel ? [modelConfig.compressModel, modelConfig.compressProviderName] : getSummarizeModel(modelConfig.model, modelConfig.providerName);
            return [result[0], result[1]];
        },
-       summarizeTopicIfNeeded(session: ChatSession, modelConfig: ModelConfig, model: string, providerName: string, refreshTitle: boolean, config: ReturnType<typeof useAppConfig.getState>) {
+       summarizeTopicIfNeeded(session: ChatSession, api: ClientApi, modelConfig: ModelConfig, model: string, providerName: string, refreshTitle: boolean, config: ReturnType<typeof useAppConfig.getState>) {
           const messages = session.messages;
           const SUMMARIZE_MIN_LEN = 50;
           if ((config.enableAutoGenerateTitle && session.topic === DEFAULT_TOPIC && countMessages(messages) >= SUMMARIZE_MIN_LEN) || refreshTitle) {
             const startIndex = Math.max(0, messages.length - modelConfig.historyMessageCount);
             const topicMessages = messages.slice(startIndex < messages.length ? startIndex : messages.length - 1).concat( createMessage({ role: "user", content: Locale.Store.Prompt.Topic }) );
-            const api: ClientApi = getClientApi(providerName as ServiceProvider);
             api.llm.chat({
               messages: topicMessages,
               config: { model, stream: false, providerName },
@@ -421,7 +419,7 @@ export const useChatStore = createPersistStore(
             });
           }
        },
-       summarizeMessagesIfNeeded(session: ChatSession, modelConfig: ModelConfig, model: string, providerName: string) {
+       summarizeMessagesIfNeeded(session: ChatSession, api: ClientApi, modelConfig: ModelConfig, model: string, providerName: string) {
           const messages = session.messages;
           const summarizeIndex = Math.max(session.lastSummarizeIndex, session.clearContextIndex ?? 0);
           let toBeSummarizedMsgs = messages.filter((msg) => !msg.isError).slice(summarizeIndex);
@@ -434,12 +432,11 @@ export const useChatStore = createPersistStore(
           if (memoryPrompt) { toBeSummarizedMsgs.unshift(memoryPrompt); }
           const lastSummarizeIndex = session.messages.length;
           if (historyMsgLength > modelConfig.compressMessageLengthThreshold && modelConfig.sendMemory) {
-            get().performSummarization(session, toBeSummarizedMsgs, modelConfig, model, providerName, lastSummarizeIndex);
+             get().performSummarization(session, api, toBeSummarizedMsgs, modelConfig, model, providerName, lastSummarizeIndex);
           }
        },
-       performSummarization(session: ChatSession, toBeSummarizedMsgs: ChatMessage[], modelConfig: ModelConfig, model: string, providerName: string, lastSummarizeIndex: number) {
+       performSummarization(session: ChatSession, api: ClientApi, toBeSummarizedMsgs: ChatMessage[], modelConfig: ModelConfig, model: string, providerName: string, lastSummarizeIndex: number) {
           const { max_tokens, ...modelcfg } = modelConfig;
-          const api: ClientApi = getClientApi(providerName as ServiceProvider);
           api.llm.chat({
             messages: toBeSummarizedMsgs.concat(createMessage({ role: "system", content: Locale.Store.Prompt.Summarize, date: "" })),
             config: { ...modelcfg, stream: true, model, providerName },
@@ -487,6 +484,29 @@ export const useChatStore = createPersistStore(
       },
       setLastInput(lastInput: string) {
         set({ lastInput });
+      },
+
+      // Action to update the current session's model config based on provider
+      updateCurrentSessionConfigForProvider(provider: ServiceProvider) {
+        const session = get().currentSession();
+        if (!session) return;
+
+        let defaultModelName = DEFAULT_OPENAI_MODEL_NAME;
+        let defaultProviderName = ServiceProvider.OpenAI;
+
+        if (provider === ServiceProvider.Panda) {
+          defaultModelName = DEFAULT_PANDA_MODEL_NAME;
+          defaultProviderName = ServiceProvider.Panda;
+        }
+        // Add cases for other providers if needed
+
+        get().updateTargetSession(session, (sess) => {
+          sess.modelConfig = {
+            ...sess.modelConfig, // Keep existing session settings like temp, etc.
+            model: defaultModelName as ModelType,
+            providerName: defaultProviderName,
+          };
+        });
       },
     };
 

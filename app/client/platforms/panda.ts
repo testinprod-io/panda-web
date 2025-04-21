@@ -1,6 +1,9 @@
 import { PANDA_BASE_URL, PandaPath } from "@/app/constant";
 import { ChatOptions, LLMApi, LLMModel, LLMUsage, MultimodalContent } from "@/app/client/api";
 
+// Type for the Privy getAccessToken function
+export type GetAccessTokenFn = () => Promise<string | null>;
+
 export interface PandaListModelResponse {
   data: {
     id: string;
@@ -29,14 +32,12 @@ export interface RequestPayload {
 }
 
 export class PandaApi implements LLMApi {
-  private apiKey: string = "API_KEY";
   private baseUrl: string = PANDA_BASE_URL;
   private disableListModels: boolean = false;
+  private getAccessToken: GetAccessTokenFn;
 
-  constructor(apiKey?: string, disableListModels?: boolean) {
-    if (apiKey) {
-      this.apiKey = apiKey;
-    }
+  constructor(getAccessToken: GetAccessTokenFn, disableListModels?: boolean) {
+    this.getAccessToken = getAccessToken;
     if (disableListModels) {
       this.disableListModels = disableListModels;
     }
@@ -60,11 +61,18 @@ export class PandaApi implements LLMApi {
     options.onController?.(controller);
 
     try {
+      // Get the access token
+      const accessToken = await this.getAccessToken();
+      if (!accessToken) {
+        throw new Error("Panda API requires authentication. Access token not available.");
+      }
+      const bearerToken = `Bearer ${accessToken}`;
+
       const requestUrl = this.path(PandaPath.ChatPath);
       console.log("[Panda Request] Sending request to:", requestUrl);
       console.log("[Panda Request] Headers:", {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${this.apiKey}`,
+        "Authorization": bearerToken,
         "Accept": "text/event-stream",
       });
       console.log("[Panda Request] Body:", {
@@ -78,7 +86,7 @@ export class PandaApi implements LLMApi {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${this.apiKey}`,
+          "Authorization": bearerToken,
           "Accept": "text/event-stream",
         },
         body: JSON.stringify({
@@ -189,17 +197,26 @@ export class PandaApi implements LLMApi {
     }
 
     try {
+      // Get the access token
+      const accessToken = await this.getAccessToken();
+      if (!accessToken) {
+        console.error("[Models] Panda API requires authentication. Access token not available.");
+        // Return empty or default models if token is not available
+        return [];
+      }
+      const bearerToken = `Bearer ${accessToken}`;
+
       const requestUrl = this.path(PandaPath.ListModelPath);
       const response = await fetch(requestUrl, {
         method: "GET",
         headers: {
-          "Authorization": `Bearer ${this.apiKey}`,
+          "Authorization": bearerToken,
         },
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Panda API error: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(`Panda API error fetching models: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const resJson = (await response.json()) as PandaListModelResponse;

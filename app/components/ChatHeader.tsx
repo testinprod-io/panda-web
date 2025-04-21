@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from 'react';
-import { Box, IconButton, Tooltip, Button, Avatar, Menu, MenuItem } from '@mui/material';
+import { Box, IconButton, Tooltip, Button, Avatar, Menu, MenuItem, FormControlLabel, Switch, Typography } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import Person2RoundedIcon from '@mui/icons-material/Person2Rounded';
 import LogoutIcon from '@mui/icons-material/Logout'; // Optional: Icon for logout
 import { usePrivy } from '@privy-io/react-auth';
 import { useAuthStatus } from '@/app/hooks/useAuthStatus'; // Adjust path if necessary
+import { useAppConfig } from '@/app/store'; // <-- Added import
+import { ServiceProvider } from '@/app/constant'; // <-- Added import
 
 interface ChatHeaderProps {
   isSidebarCollapsed: boolean;
@@ -16,6 +18,7 @@ interface ChatHeaderProps {
 export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar }: ChatHeaderProps) {
   const { login, logout, user } = usePrivy();
   const { isReady, isAuthenticated } = useAuthStatus();
+  const { apiProvider, setApiProvider } = useAppConfig(); // <-- Get store state and action
 
   // State for the profile menu
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -104,7 +107,47 @@ export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar }: Chat
                 },
               }}
             >
-              {/* Add other menu items here later (e.g., Profile) */}
+              {/* API Provider Toggle */}
+              <MenuItem 
+                // Prevent menu close on switch click
+                onClick={(e) => e.stopPropagation()}
+                sx={{ 
+                  padding: '0px 16px', // Adjust padding
+                  '&:hover': { backgroundColor: 'transparent' } // Disable hover effect on item itself
+                 }}
+              >
+                <FormControlLabel
+                  control={
+                    <Switch 
+                      checked={apiProvider === ServiceProvider.Panda}
+                      onChange={(event) => {
+                        const newProvider = event.target.checked ? ServiceProvider.Panda : ServiceProvider.OpenAI;
+                        setApiProvider(newProvider);
+                        // Optionally close menu after selection, or keep it open
+                        // handleClose(); 
+                      }}
+                      size="small"
+                      sx={{ 
+                        marginLeft: 'auto', // Push switch to the right
+                       }}
+                    />
+                  }
+                  labelPlacement="start" // Label on the left
+                  label={
+                     <Typography variant="body2" sx={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                      Use Panda Backend
+                    </Typography>
+                  }
+                  sx={{ 
+                    justifyContent: 'space-between', // Space out label and switch
+                    width: '100%', 
+                    marginLeft: 0, // Reset margin
+                    padding: '8px 0px', // Add padding inside the item
+                  }}
+                />
+              </MenuItem>
+
+              {/* Logout Button */}
               <MenuItem
                 onClick={handleLogout}
                 sx={{
