@@ -4,6 +4,7 @@ import { ChatMessage } from "@/app/types";
 import { ChatGPTApi } from "@/app/client/platforms/openai";
 import { DeepSeekApi } from "@/app/client/platforms/deepseek";
 import { PandaApi, GetAccessTokenFn } from "@/app/client/platforms/panda";
+import { ApiClient } from "@/app/client/client";
 
 export const ROLES = ["system", "user", "assistant"] as const;
 export type MessageRole = (typeof ROLES)[number];
@@ -70,6 +71,7 @@ export abstract class LLMApi {
 
 export class ClientApi {
   public llm: LLMApi;
+  public app: ApiClient;
 
   constructor(provider: ModelProvider = ModelProvider.GPT, getAccessToken?: GetAccessTokenFn) {
     switch (provider) {
@@ -85,6 +87,10 @@ export class ClientApi {
       default:
         this.llm = new ChatGPTApi();
     }
+    if (!getAccessToken) {
+      throw new Error("getAccessToken function is required for App backend client");
+    }
+    this.app = new ApiClient("http://3.15.240.252:8000", getAccessToken);
   }
 
   async share(messages: ChatMessage[], avatarUrl: string | null = null) {
@@ -114,6 +120,6 @@ export function getClientApi(provider: ServiceProvider, getAccessToken: GetAcces
     case ServiceProvider.Panda:
       return new ClientApi(ModelProvider.Panda, getAccessToken);
     default:
-      return new ClientApi(ModelProvider.GPT);
+      return new ClientApi(ModelProvider.GPT, getAccessToken);
   }
 }

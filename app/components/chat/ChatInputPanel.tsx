@@ -28,7 +28,7 @@ import { ChatAction } from "@/app/components/chat/ChatAction"; // Import ChatAct
 import ArrowUpwardRoundedIcon from '@mui/icons-material/ArrowUpwardRounded';
 import StopRoundedIcon from '@mui/icons-material/StopRounded';
 import Button from '@mui/material/Button'; // Added MUI Button
-
+import { useApiClient } from "@/app/context/ApiProviderContext";
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'; // Import Scroll Down Icon
 
 import styles from "@/app/components/chat/chat.module.scss";
@@ -73,6 +73,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
     setShowShortcutKeyModal,
   } = props;
 
+  const apiClient = useApiClient();
   const chatStore = useChatStore();
   const config = useAppConfig();
   const router = useRouter();
@@ -135,7 +136,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
 
   // Chat commands specific to input handling
   const chatCommands = useChatCommand({
-    new: () => chatStore.newSession(),
+    new: () => chatStore.newSession(apiClient),
     newm: () => router.push("/new-chat"),
     prev: () => chatStore.nextSession(-1),
     next: () => chatStore.nextSession(1),
@@ -150,7 +151,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
           }
         }),
       fork: () => chatStore.forkSession(),
-      del: () => chatStore.deleteSession(chatStore.currentSessionIndex),
+      del: () => chatStore.deleteSession(chatStore.currentSessionIndex, apiClient),
     }),
   });
   

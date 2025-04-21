@@ -14,6 +14,7 @@ import Locale from "@/app/locales"; // Adjusted path
 import { ChatItem } from "./ChatItem"; // Import from the same directory
 import { ChatListSkeleton } from "./ChatListSkeleton"; // Import the skeleton component
 import styles from "./chat-list.module.scss";
+import { useApiClient } from "@/app/context/ApiProviderContext";
 
 // Assuming showConfirm is replaced by window.confirm or similar
 // import { showConfirm } from "../components/ui-lib"; // Adjusted/removed path
@@ -33,6 +34,7 @@ export function ChatList(props: ChatListProps) {
   } = useChatStore();
 
   const router = useRouter();
+  const apiClient = useApiClient();
   const [isLoading, setIsLoading] = useState(true); // Add loading state
 
   // Effect to determine loading state based on sessions
@@ -90,7 +92,7 @@ export function ChatList(props: ChatListProps) {
     // Replace showConfirm with window.confirm or a project-specific modal
     if (window.confirm(Locale.Home.DeleteChat)) {
       const isCurrentSession = index === currentSessionIndex;
-      deleteSession(index);
+      deleteSession(index, apiClient);
       
       // Navigate to /chat if the deleted session was the current one
       // or if it was the last session available

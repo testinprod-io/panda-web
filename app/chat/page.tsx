@@ -22,7 +22,7 @@ export default function NewChatPage() {
     if (!input || input.trim() === "") return; // Don't start if input is empty
 
     // 1. Create a new session (this likely selects it as the current one)
-    chatStore.newSession(); 
+    chatStore.newSession(apiClient); 
 
     // 2. Get the *current* session from the store *after* the update
     // Accessing state directly might be necessary if selectors don't update instantly

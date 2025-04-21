@@ -11,6 +11,19 @@ import type {
   MultimodalContent,
   RequestMessage,
 } from "@/app/client/api";
+import {
+  Conversation,
+  ConversationCreateRequest,
+  ConversationUpdateRequest,
+  GetConversationMessagesParams,
+  Message as ApiMessage,
+  MessageCreateRequest,
+  PaginatedConversationsResponse,
+  PaginatedMessagesResponse,
+  HTTPValidationError,
+  SenderTypeEnum,
+} from "@/app/client/types";
+import { UUID } from "crypto";
 import { ChatControllerPool } from "@/app/client/controller";
 // import { showToast } from "../components/ui-lib";
 import {
@@ -32,10 +45,11 @@ import { ModelConfig, ModelType, useAppConfig } from "./config";
 import { useAccessStore } from "./access";
 import { collectModelsWithDefaultModel } from "../utils/model";
 
-import { ChatMessage, createMessage } from "@/app/types/chat";
+import { ChatMessage, createMessage, MessageRole } from "@/app/types/chat";
 import { ChatSession, createEmptySession } from "@/app/types/session";
 import { useState, useEffect } from "react";
 import { usePrivy } from "@privy-io/react-auth";
+import { useApiClient } from "../context/ApiProviderContext";
 
 const localStorage = safeLocalStorage();
 
@@ -45,17 +59,34 @@ export const BOT_HELLO: ChatMessage = createMessage({
   content: Locale.Store.BotHello,
 });
 
-/**
- * Gets the appropriate model for summarization based on the current model
- * @param currentModel - The current model being used
- * @param providerName - The provider name
- * @returns A tuple of [model, providerName]
- */
+function mapConversationToSession(conversation: Conversation): ChatSession {
+  const session = createEmptySession();
+  session.conversationId = conversation.conversation_id;
+  session.topic = conversation.title || DEFAULT_TOPIC;
+  session.lastUpdate = new Date(conversation.updated_at).getTime();
+  session.messages = [BOT_HELLO];
+  return session;
+}
+
+function mapApiMessageToChatMessage(message: ApiMessage): ChatMessage {
+  const role: MessageRole = message.sender_type === SenderTypeEnum.USER ? "user" : "assistant";
+
+  return createMessage({
+    id: message.message_id,
+    role: role,
+    content: message.content,
+    date: new Date(message.timestamp).toLocaleString(),
+  });
+}
+
+function mapRoleToSenderType(role: MessageRole): SenderTypeEnum {
+    return role === "user" ? SenderTypeEnum.USER : SenderTypeEnum.SYSTEM;
+}
+
 function getSummarizeModel(
   currentModel: string,
   providerName: string,
 ): string[] {
-  // if it is using gpt-* models, force to use 4o-mini to summarize
   if (currentModel.startsWith("gpt") || currentModel.startsWith("chatgpt")) {
     const configStore = useAppConfig.getState();
     const accessStore = useAccessStore.getState();
@@ -74,20 +105,9 @@ function getSummarizeModel(
       ];
     }
   }
-  // if (currentModel.startsWith("gemini")) {
-  //   return [GEMINI_SUMMARIZE_MODEL, ServiceProvider.Google];
-  // } else if (currentModel.startsWith("deepseek-")) {
-  //   return [DEEPSEEK_SUMMARIZE_MODEL, ServiceProvider.DeepSeek];
-  // }
-
   return [currentModel, providerName];
 }
 
-/**
- * Counts the estimated token length of messages
- * @param msgs - Array of chat messages
- * @returns The estimated token count
- */
 function countMessages(msgs: ChatMessage[]): number {
   return msgs.reduce(
     (pre, cur) => pre + estimateTokenLength(getMessageTextContent(cur)),
@@ -95,26 +115,14 @@ function countMessages(msgs: ChatMessage[]): number {
   );
 }
 
-/**
- * Fills a template with variables
- * @param input - The input text
- * @param modelConfig - The model configuration
- * @returns The filled template
- */
 function fillTemplateWith(input: string, modelConfig: ModelConfig): string {
   const cutoff =
     KnowledgeCutOffDate[modelConfig.model] ?? KnowledgeCutOffDate.default;
-  // Find the model in the DEFAULT_MODELS array that matches the modelConfig.model
   const modelInfo = DEFAULT_MODELS.find((m) => m.name === modelConfig.model);
-
   let serviceProvider = "OpenAI";
   if (modelInfo) {
-    // TODO: auto detect the providerName from the modelConfig.model
-
-    // Directly use the providerName from the modelInfo
     serviceProvider = modelInfo.provider.providerName;
   }
-
   const vars = {
     ServiceProvider: serviceProvider,
     cutoff,
@@ -123,25 +131,18 @@ function fillTemplateWith(input: string, modelConfig: ModelConfig): string {
     lang: getLang(),
     input: input,
   };
-
   let output = modelConfig.template ?? DEFAULT_INPUT_TEMPLATE;
-
-  // remove duplicate
   if (input.startsWith(output)) {
     output = "";
   }
-
-  // must contains {{input}}
   const inputVar = "{{input}}";
   if (!output.includes(inputVar)) {
     output += "\n" + inputVar;
   }
-
   Object.entries(vars).forEach(([name, value]) => {
     const regex = new RegExp(`{{${name}}}`, "g");
-    output = output.replace(regex, value.toString()); // Ensure value is a string
+    output = output.replace(regex, String(value));
   });
-
   return output;
 }
 
@@ -162,31 +163,35 @@ export const useChatStore = createPersistStore(
     }
 
     const methods = {
-      // --- Keep ALL original methods implementation ---
-      forkSession() {
-        // Ensure state updates are immutable if not using Immer
+      forkSession: function() {
         const currentSession = get().currentSession();
         if (!currentSession) return;
         const newSession = createEmptySession();
         newSession.topic = currentSession.topic;
-        newSession.messages = currentSession.messages.map((msg) => ({ ...msg, id: nanoid() }));
+        newSession.messages = currentSession.messages.map((msg: any) => ({ ...msg, id: nanoid() }));
         newSession.modelConfig = currentSession.modelConfig;
-        set(state => ({ // Immutable update
+        set((state: any) => ({
             sessions: [newSession, ...state.sessions],
             currentSessionIndex: 0,
         }));
       },
       clearSessions() {
-        set({ // Immutable update
+        set({
           sessions: [createEmptySession()],
           currentSessionIndex: 0,
         });
       },
       selectSession(index: number) {
         set({ currentSessionIndex: index });
+        const session = get().sessions[index];
+        const api = (window as any).chatApiClient as ClientApi;
+        if (api && session && session.conversationId && session.messages.length <= 1) {
+           console.log(`[ChatStore] Triggering message load for selected session ${session.conversationId}`);
+           get().loadMessagesForSession(session.conversationId, api);
+        }
       },
       moveSession(from: number, to: number) {
-        set(state => { // Immutable update
+        set(state => {
           const { sessions, currentSessionIndex: oldIndex } = state;
           const newSessions = [...sessions];
           const session = newSessions[from];
@@ -204,17 +209,33 @@ export const useChatStore = createPersistStore(
           };
         });
       },
-      newSession(modelConfig?: ModelConfig) {
+      newSession(api: ClientApi, modelConfig?: ModelConfig) {
+        console.log("[ChatStore] Creating new session...");
         const session = createEmptySession();
         if (modelConfig) {
           const config = useAppConfig.getState();
-          const globalModelConfig = config.modelConfig;
-          session.modelConfig = { ...globalModelConfig, ...modelConfig };
+          session.modelConfig = { ...config.modelConfig, ...modelConfig };
         }
-        set(state => ({ // Immutable update
+        const localSessionId = session.id;
+
+        set(state => ({
           sessions: [session, ...state.sessions],
           currentSessionIndex: 0,
         }));
+
+        const createRequest: ConversationCreateRequest = { title: session.topic };
+        api.app.createConversation(createRequest)
+            .then(newConversation => {
+                console.log("[ChatStore] Server session created:", newConversation);
+                get().updateTargetSession({ id: localSessionId }, (sess) => {
+                    sess.conversationId = newConversation.conversation_id;
+                    sess.topic = newConversation.title || sess.topic;
+                    sess.lastUpdate = new Date(newConversation.updated_at).getTime();
+                });
+            })
+            .catch(error => {
+                console.error("[ChatStore] Failed to create server session:", error);
+            });
       },
       nextSession(delta: number) {
          const n = get().sessions.length;
@@ -222,11 +243,17 @@ export const useChatStore = createPersistStore(
          const i = get().currentSessionIndex;
          get().selectSession(limit(i + delta));
       },
-      deleteSession(index: number) {
-          const state = _get(); // Use _get provided by Zustand
+      deleteSession(index: number, api: ClientApi) {
+          const state = _get();
+          const sessionToDelete = state.sessions.at(index);
+          if (!sessionToDelete) return;
+
+          console.log(`[ChatStore] Deleting session ${index} (ID: ${sessionToDelete.id}, ConvID: ${sessionToDelete.conversationId})`);
+
+          const conversationId = sessionToDelete.conversationId;
+          const localSessionId = sessionToDelete.id;
+
           const deletingLastSession = state.sessions.length === 1;
-          const deletedSession = state.sessions.at(index);
-          if (!deletedSession) return;
 
           const sessions = state.sessions.slice();
           sessions.splice(index, 1);
@@ -241,8 +268,19 @@ export const useChatStore = createPersistStore(
             nextIndex = 0;
             sessions.push(createEmptySession());
           }
-          set({ sessions, currentSessionIndex: nextIndex }); // Immutable update
-            // TODO: Restore state / Toast logic needs context or separate handling
+          set({ sessions, currentSessionIndex: nextIndex });
+
+          if (conversationId) {
+              api.app.deleteConversation(conversationId)
+                  .then(() => {
+                      console.log(`[ChatStore] Server session ${conversationId} deleted successfully.`);
+                  })
+                  .catch(error => {
+                      console.error(`[ChatStore] Failed to delete server session ${conversationId}:`, error);
+                  });
+          } else {
+              console.log(`[ChatStore] Session ${localSessionId} was local-only, no server deletion needed.`);
+          }
       },
       currentSession() {
         let index = get().currentSessionIndex;
@@ -251,23 +289,27 @@ export const useChatStore = createPersistStore(
           index = Math.min(sessions.length - 1, Math.max(0, index));
           set({ currentSessionIndex: index });
         }
-        return sessions.at(index); // Use .at() for safety
+        return sessions.at(index);
       },
       onNewMessage(message: ChatMessage, targetSession: ChatSession, api: ClientApi) {
           get().updateTargetSession(targetSession, (session) => {
-            session.messages = session.messages.concat(); // Trigger update
+            session.messages = session.messages.concat();
             session.lastUpdate = Date.now();
           });
           get().updateStat(message, targetSession);
-          const updatedSession = get().sessions.find(s => s.id === targetSession.id);
+          const updatedSession = get().sessions.find(s => s.id === targetSession.id || (s.conversationId && s.conversationId === targetSession.conversationId));
           if (updatedSession) {
             get().summarizeSession(false, updatedSession, api);
           }
       },
       async onUserInput(content: string, api: ClientApi, attachImages?: string[], isMcpResponse?: boolean) {
-        const session = get().currentSession();
-        if (!session) return;
-        const modelConfig = session.modelConfig;
+        const currentSession = get().currentSession();
+        if (!currentSession || !currentSession.conversationId) {
+          console.error("[ChatStore] Cannot send message: Session or conversationId missing.");
+          return;
+        }
+        const conversationId = currentSession.conversationId;
+        const modelConfig = currentSession.modelConfig;
 
         let mContent: string | MultimodalContent[] = content;
         if (!isMcpResponse) {
@@ -282,7 +324,7 @@ export const useChatStore = createPersistStore(
 
         const userMessage: ChatMessage = createMessage({
           role: "user",
-          content: mContent as any, // Use as any or adjust based on ChatMessage['content'] type
+          content: mContent as any,
         });
 
         const botMessage: ChatMessage = createMessage({
@@ -291,70 +333,72 @@ export const useChatStore = createPersistStore(
           model: modelConfig.model,
         });
 
-        const recentMessages = await get().getMessagesWithMemory();
-        const sendMessages = recentMessages.concat(userMessage);
-        const messageIndex = session.messages.length + 1;
+        const sendMessages = await get().getMessagesWithMemory();
+        const messageIndex = currentSession.messages.length + 1;
 
-        get().updateTargetSession(session, (sess) => {
-           const savedUserMessage = { ...userMessage, content: mContent as any };
-           sess.messages = [...sess.messages, savedUserMessage, botMessage];
+        get().updateTargetSession(currentSession, (sessionState) => {
+          sessionState.messages = [...sessionState.messages, userMessage, botMessage];
         });
 
         api.llm.chat({
           messages: sendMessages,
           config: { ...modelConfig, stream: true },
           onUpdate(message) {
-            get().updateTargetSession(session, (sess) => {
-              const botMsgIndex = sess.messages.findIndex(m => m.id === botMessage.id);
+            get().updateTargetSession(currentSession, (sessionState) => {
+              const botMsgIndex = sessionState.messages.findIndex(m => m.id === botMessage.id);
               if (botMsgIndex !== -1) {
-                const updatedMsg = { ...sess.messages[botMsgIndex], content: message, streaming: true };
-                sess.messages = sess.messages.map((m, i) => i === botMsgIndex ? updatedMsg : m);
+                sessionState.messages = sessionState.messages.map((m, i) => i === botMsgIndex ? { ...m, content: message, streaming: true } : m);
               }
             });
           },
           async onFinish(message) {
             let finalBotMessage: ChatMessage | undefined;
-            get().updateTargetSession(session, (sess) => {
-                const botMsgIndex = sess.messages.findIndex(m => m.id === botMessage.id);
-                if (botMsgIndex !== -1) {
-                    finalBotMessage = { ...sess.messages[botMsgIndex], content: message, streaming: false, date: new Date().toLocaleString() };
-                    sess.messages = sess.messages.map((m, i) => i === botMsgIndex ? finalBotMessage! : m);
-                    get().onNewMessage(finalBotMessage!, sess, api);
+            let finalUserMessage: ChatMessage | undefined;
 
-                    if (sess.messages.length === 2 && sess.topic === DEFAULT_TOPIC && finalBotMessage) {
-                        const userMsg = sess.messages[0];
-                        const userMsgContent = getMessageTextContent(userMsg);
-                        const assistantMsgContent = getMessageTextContent(finalBotMessage);
+            get().updateTargetSession(currentSession, (sessionState) => {
+              const botMsgIndex = sessionState.messages.findIndex(m => m.id === botMessage.id);
+              const userMsgIndex = sessionState.messages.findIndex(m => m.id === userMessage.id);
 
-                        if (userMsgContent.trim().length > 0 && assistantMsgContent.trim().length > 0) {
-                            console.log(`[ChatStore] Triggering title generation for session: ${sess.id}`);
-                            setTimeout(() => {
-                                methods.generateSessionTitle(sess.id, userMsgContent, assistantMsgContent, api);
-                            }, 0);
-                        } else {
-                            console.log(`[ChatStore] Skipping title generation for session ${sess.id} due to empty message(s).`);
-                        }
-                    }
+              if (userMsgIndex !== -1) finalUserMessage = sessionState.messages[userMsgIndex];
+
+              if (botMsgIndex !== -1) {
+                finalBotMessage = { ...sessionState.messages[botMsgIndex], content: message, streaming: false, date: new Date().toLocaleString() };
+                sessionState.messages = sessionState.messages.map((m, i) => i === botMsgIndex ? finalBotMessage! : m);
+
+                get().onNewMessage(finalBotMessage!, sessionState, api);
+
+                if (conversationId && finalUserMessage && finalBotMessage) {
+                  get().saveMessageToServer(conversationId, finalUserMessage, api);
+                  get().saveMessageToServer(conversationId, finalBotMessage, api);
                 }
+
+                if (sessionState.messages.length === 2 && sessionState.topic === DEFAULT_TOPIC && finalUserMessage && finalBotMessage) {
+                  const userMsgContent = getMessageTextContent(finalUserMessage);
+                  const assistantMsgContent = getMessageTextContent(finalBotMessage);
+                  if (userMsgContent.trim().length > 0 && assistantMsgContent.trim().length > 0) {
+                     setTimeout(() => { methods.generateSessionTitle(sessionState.id, userMsgContent, assistantMsgContent, api); }, 0);
+                  }
+                }
+              }
             });
-            ChatControllerPool.remove(session.id, botMessage.id);
+            ChatControllerPool.remove(currentSession.id, botMessage.id);
           },
           onError(error) {
              const isAborted = error.message?.includes?.("aborted");
-            get().updateTargetSession(session, (sess) => {
-               const userMsgIndex = sess.messages.findIndex(m => m.id === userMessage.id);
-               const botMsgIndex = sess.messages.findIndex(m => m.id === botMessage.id);
-               const newMessages = [...sess.messages];
+            get().updateTargetSession(currentSession, (sessionState) => {
+               const userMsgIndex = sessionState.messages.findIndex(m => m.id === userMessage.id);
+               const botMsgIndex = sessionState.messages.findIndex(m => m.id === botMessage.id);
+               const newMessages = [...sessionState.messages];
                if (userMsgIndex !== -1) { newMessages[userMsgIndex] = { ...newMessages[userMsgIndex], isError: !isAborted }; }
                if (botMsgIndex !== -1) { newMessages[botMsgIndex] = { ...newMessages[botMsgIndex], content: (newMessages[botMsgIndex].content || "") + "\n\n" + prettyObject({ error: true, message: error.message }), streaming: false, isError: !isAborted }; }
-               sess.messages = newMessages;
+               sessionState.messages = newMessages;
             });
-            ChatControllerPool.remove(session.id, botMessage.id ?? messageIndex);
+            ChatControllerPool.remove(currentSession.id, botMessage.id ?? messageIndex);
             console.error("[Chat] failed ", error);
           },
           onController(controller) {
-            ChatControllerPool.addController(session.id, botMessage.id ?? messageIndex, controller);
-          },
+            ChatControllerPool.addController(currentSession.id, botMessage.id ?? messageIndex, controller);
+          }
         });
       },
       getMemoryPrompt() {
@@ -413,7 +457,6 @@ export const useChatStore = createPersistStore(
             const session = targetSession;
             const modelConfig = session.modelConfig;
             const [model, providerName] = get().getSummarizeModelConfig(modelConfig);
-            get().summarizeTopicIfNeeded(session, api, modelConfig, model, providerName, refreshTitle, config);
             get().summarizeMessagesIfNeeded(session, api, modelConfig, model, providerName);
        },
        getSummarizeModelConfig(modelConfig: ModelConfig): [string, string] {
@@ -430,7 +473,22 @@ export const useChatStore = createPersistStore(
               messages: topicMessages,
               config: { model, stream: false, providerName },
               onFinish(message: string, responseRes: { status: number }) {
-                if (responseRes?.status === 200) { get().updateTargetSession(session, (sess) => sess.topic = message.length > 0 ? trimTopic(message) : DEFAULT_TOPIC); }
+                if (responseRes?.status === 200) {
+                    const newTopic = message.length > 0 ? trimTopic(message) : DEFAULT_TOPIC;
+                    get().updateTargetSession(session, (sess) => sess.topic = newTopic);
+                    if (session.conversationId && newTopic !== session.topic) {
+                         const updateReq: ConversationUpdateRequest = { title: newTopic };
+                         api.app.updateConversation(session.conversationId, updateReq)
+                           .then(updatedConv => {
+                                console.log(`[ChatStore] Server session topic updated for ${session.conversationId} to "${updatedConv.title}"`);
+                                get().updateTargetSession(session, (sess) => {
+                                    sess.topic = updatedConv.title || sess.topic;
+                                    sess.lastUpdate = new Date(updatedConv.updated_at).getTime();
+                                });
+                           })
+                           .catch(error => console.error(`[ChatStore] Failed to update server session topic for ${session.conversationId}:`, error));
+                    }
+                }
               },
             });
           }
@@ -476,11 +534,22 @@ export const useChatStore = createPersistStore(
             };
           });
       },
-      updateTargetSession(targetSession: ChatSession, updater: (session: ChatSession) => void) {
+      updateTargetSession(targetSession: Partial<ChatSession> & { id?: string; conversationId?: UUID }, updater: (session: ChatSession) => void) {
           set(state => {
-             const index = state.sessions.findIndex(s => s.id === targetSession.id);
-             if (index < 0) return state;
-             const newSessions = state.sessions.slice();
+             let index = -1;
+             if (targetSession.id) {
+                 index = state.sessions.findIndex(s => s.id === targetSession.id);
+             }
+             if (index === -1 && targetSession.conversationId) {
+                 index = state.sessions.findIndex(s => s.conversationId === targetSession.conversationId);
+             }
+
+             if (index === -1) {
+                 console.warn(`[updateTargetSession] Session not found for`, targetSession);
+                 return state;
+             }
+
+             const newSessions = [...state.sessions];
              const sessionToUpdate = { ...newSessions[index] };
              updater(sessionToUpdate);
              newSessions[index] = sessionToUpdate;
@@ -488,7 +557,6 @@ export const useChatStore = createPersistStore(
           });
       },
 
-      // --- Auth related actions (Keep as is) ---
       clearCurrentStateToDefault() {
         console.log("[ChatStore] Clearing in-memory state to default.");
         set(DEFAULT_CHAT_STATE);
@@ -502,7 +570,6 @@ export const useChatStore = createPersistStore(
         set({ lastInput });
       },
 
-      // Action to update the current session's model config based on provider
       updateCurrentSessionConfigForProvider(provider: ServiceProvider) {
         const session = get().currentSession();
         if (!session) return;
@@ -514,18 +581,16 @@ export const useChatStore = createPersistStore(
           defaultModelName = DEFAULT_PANDA_MODEL_NAME;
           defaultProviderName = ServiceProvider.Panda;
         }
-        // Add cases for other providers if needed
 
         get().updateTargetSession(session, (sess) => {
           sess.modelConfig = {
-            ...sess.modelConfig, // Keep existing session settings like temp, etc.
+            ...sess.modelConfig,
             model: defaultModelName as ModelType,
             providerName: defaultProviderName,
           };
         });
       },
 
-      // Action to update the model config for the current session
       updateCurrentSessionModel(model: ModelType, providerName: ServiceProvider) {
         const session = get().currentSession();
         console.log("[Update Current Session Model] ", model, providerName);
@@ -533,16 +598,15 @@ export const useChatStore = createPersistStore(
 
         get().updateTargetSession(session, (sess) => {
           sess.modelConfig = {
-            ...sess.modelConfig, // Keep existing session settings like temp, etc.
+            ...sess.modelConfig,
             model: model,
             providerName: providerName,
           };
         });
       },
 
-      // New method for generating title asynchronously
       async generateSessionTitle(sessionId: string, userMessageContent: string, assistantMessageContent: string, api: ClientApi) {
-          console.log(`[Title Generation] Starting for session: ${sessionId} with userMessageContent: ${userMessageContent} and assistantMessageContent: ${assistantMessageContent}`);
+          console.log(`[Title Generation] Starting for session: ${sessionId}`);
           const prompt = `**Prompt**
 
 You are a chat‑title generator.
@@ -564,53 +628,107 @@ Rules
           try {
               const session = get().sessions.find(s => s.id === sessionId);
               if (!session) {
-                  console.warn(`[Title Generation] Session not found: ${sessionId}`);
-                  return; // Session might have been deleted or not found
+                  console.warn(`[Title Generation] Session not found: ${sessionId}.`);
+                  return;
               }
-
-              // Use a basic model configuration for title generation
               const [titleModel, titleProvider] = get().getSummarizeModelConfig(session.modelConfig);
-              console.log(`[Title Generation] Using model: ${titleModel} (${titleProvider}) for session: ${sessionId}`);
-
               const titleModelConfig = {
-                  ...session.modelConfig, // Inherit basic settings
-                  model: titleModel,
+                  ...session.modelConfig,
+                  model: titleModel as ModelType,
                   providerName: titleProvider,
                   stream: false,
-                  temperature: 0.3, // Lower temperature for more deterministic titles
-                  max_tokens: 1000, // Limit tokens for title generation
+                  temperature: 0.3,
+                  max_tokens: 1000,
               };
 
               api.llm.chat({
-                  messages: [createMessage({ role: "user", content: prompt })], // Send only the title generation prompt
+                  messages: [createMessage({ role: "user", content: prompt })],
                   config: titleModelConfig,
                   onFinish(title) {
-                      console.log(`[Title Generation] Received potential title for session ${sessionId}: "${title}"`);
-                      if (title && title.length > 0) {
-                          const cleanedTitle = trimTopic(title);
-                          get().updateTargetSession(session, (sess) => {
-                             if (sess.topic === DEFAULT_TOPIC) {
+                      const cleanedTitle = title && title.length > 0 ? trimTopic(title) : DEFAULT_TOPIC;
+                      if (cleanedTitle !== DEFAULT_TOPIC) {
+                          get().updateTargetSession({ id: sessionId }, (sess) => {
+                              if (sess.topic === DEFAULT_TOPIC) {
                                   sess.topic = cleanedTitle;
-                                  console.log(`[Title Generation] Updated topic for session ${sessionId} to: "${sess.topic}"`);
-                             } else {
-                                 console.log(`[Title Generation] Session ${sessionId} topic already changed to "${sess.topic}", skipping update.`);
-                             }
+                                  console.log(`[Title Generation] Updated local topic: "${sess.topic}"`);
+                                  if (sess.conversationId) {
+                                      const updateReq: ConversationUpdateRequest = { title: cleanedTitle };
+                                      api.app.updateConversation(sess.conversationId, updateReq)
+                                          .then(updatedConv => {
+                                              console.log(`[ChatStore] Server topic updated: "${updatedConv.title}"`);
+                                              get().updateTargetSession({ id: sessionId }, s => {
+                                                  s.topic = updatedConv.title || s.topic;
+                                                  s.lastUpdate = new Date(updatedConv.updated_at).getTime();
+                                              });
+                                          })
+                                          .catch(error => console.error(`Failed server topic update:`, error));
+                                  }
+                              }
                           });
-                      } else {
-                          console.log(`[Title Generation] Received "New Chat" or empty/invalid response for session ${sessionId}, keeping default title.`);
                       }
                   },
                   onError(error) {
-                      console.error(`[Title Generation] LLM API failed for session ${sessionId}:`, error);
+                      console.error(`[Title Generation] LLM API failed:`, error);
                   },
               });
+          } catch (error) { console.error(`[Title Generation] Error:`, error); }
+      },
+
+      async loadSessionsFromServer(api: ClientApi) {
+          console.log("[ChatStore] Loading sessions from server...");
+          try {
+              const params = { limit: 100 };
+              const response = await api.app.getConversations(params);
+              const serverSessions = response.data.map(mapConversationToSession);
+              set({
+                  sessions: serverSessions.length > 0 ? serverSessions : [createEmptySession()],
+                  currentSessionIndex: 0,
+              });
           } catch (error) {
-              console.error(`[Title Generation] Error initiating title generation for session ${sessionId}:`, error);
+              console.error("[ChatStore] Failed to load sessions from server:", error);
+              if (get().sessions.length === 0) {
+                  set({ sessions: [createEmptySession()], currentSessionIndex: 0 });
+              }
           }
       },
+
+      async loadMessagesForSession(conversationId: UUID, api: ClientApi, params?: GetConversationMessagesParams) {
+          console.log(`[ChatStore] Loading messages for ${conversationId}`);
+          try {
+              const loadParams = params || { limit: 50 };
+              const response = await api.app.getConversationMessages(conversationId, loadParams);
+              const serverMessages = response.data.map(mapApiMessageToChatMessage);
+              get().updateTargetSession({ conversationId }, (sess) => {
+                   sess.messages = serverMessages;
+              });
+          } catch (error) {
+              console.error(`[ChatStore] Failed loading messages for ${conversationId}:`, error);
+          }
+      },
+
+      async saveMessageToServer(conversationId: UUID, message: ChatMessage, api: ClientApi) {
+        const content = getMessageTextContent(message);
+        if (!content || message.streaming || message.isError) return;
+
+        const messageId = crypto.randomUUID() as UUID;
+
+        console.log(`[ChatStore] Saving message ${message.id} (Client) / ${messageId} (Server)`);
+        const createRequest: MessageCreateRequest = {
+            message_id: messageId,
+            sender_type: mapRoleToSenderType(message.role),
+            content: content
+        };
+        try {
+            const savedMessage = await api.app.createMessage(conversationId, createRequest);
+            console.log(`[ChatStore] Message saved (Server ID: ${savedMessage.message_id})`);
+        } catch (error: any) {
+            console.error(`[ChatStore] Failed saving message ${message.id}:`, error);
+        }
+      },
+
     };
 
-    return methods;
+    return { ...methods };
   },
   {
     name: StoreKey.Chat,
@@ -619,14 +737,34 @@ Rules
   },
 );
 
-// --- Auth Listener Component (to be placed in providers.tsx) ---
-
 export function AuthChatListener() {
-  const { ready, authenticated } = usePrivy();
+  const { ready, authenticated, getAccessToken } = usePrivy();
   const clearCurrentStateToDefault = useChatStore((state: any) => state.clearCurrentStateToDefault);
+  const apiClient = useApiClient();
+  const loadSessionsFromServer = useChatStore((state: any) => state.loadSessionsFromServer);
+  // const [apiClient, setApiClient] = useState<ApiClient | null>(null);
+  // const originalApiPlaceholder = { llm: null as any, share: null as any };
+
+  // useEffect(() => {
+  //     if (ready && !apiClient) {
+  //         const getAuthToken = async () => {
+  //             try {
+  //                 return await getAccessToken();
+  //             } catch (error) {
+  //                 console.error("[AuthChatListener] Failed to get access token:", error);
+  //                 return null;
+  //             }
+  //         };
+  //         const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '/api/v1';
+  //         const client = new ApiClient(baseUrl, getAuthToken);
+  //         setApiClient(client);
+  //         console.log("[AuthChatListener] ApiClient initialized.");
+  //     }
+  // }, [ready, apiClient, getAccessToken]);
 
   const [prevAuthState, setPrevAuthState] = useState<boolean | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [initialLoadTriggered, setInitialLoadTriggered] = useState(false);
 
   useEffect(() => {
     if (!ready) return;
@@ -635,11 +773,21 @@ export function AuthChatListener() {
       setPrevAuthState(authenticated);
       setIsInitialLoad(false);
       console.log("[AuthChatListener] Initial auth state:", authenticated);
-      return;
     }
 
-    if (authenticated !== prevAuthState) {
+    if (authenticated && apiClient && !initialLoadTriggered && typeof loadSessionsFromServer === 'function') {
+        console.log("[AuthChatListener] Authenticated and ready. Triggering initial session load.");
+        // const clientApi: ClientApi = {
+        //      ...originalApiPlaceholder,
+        //      chat: apiClient,
+        //  };
+        loadSessionsFromServer(apiClient);
+        setInitialLoadTriggered(true);
+    }
+
+    if (!isInitialLoad && authenticated !== prevAuthState) {
       console.log(`[AuthChatListener] Auth state changed from ${prevAuthState} to ${authenticated}. Reloading page.`);
+      setInitialLoadTriggered(false);
       if (typeof clearCurrentStateToDefault === 'function') {
           clearCurrentStateToDefault();
       } else {
@@ -648,7 +796,7 @@ export function AuthChatListener() {
       window.location.reload();
     }
 
-  }, [ready, authenticated, prevAuthState, isInitialLoad, clearCurrentStateToDefault]);
+  }, [ready, authenticated, prevAuthState, isInitialLoad, loadSessionsFromServer, clearCurrentStateToDefault, initialLoadTriggered, apiClient]);
 
-  return null; // No UI
+  return null;
 }

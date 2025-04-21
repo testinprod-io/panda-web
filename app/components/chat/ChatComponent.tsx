@@ -120,7 +120,7 @@ export function ChatComponent(props: ChatComponentProps) {
 
   const combinedIsLoading = isBotStreaming || isSubmitting;
 
-  console.log("access token", getAccessToken());
+  console.log("access token", getAccessToken)
   // Scroll handling
   const { scrollDomToBottom, setAutoScroll } = useScrollToBottom(
     scrollRef,

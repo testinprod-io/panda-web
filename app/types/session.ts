@@ -3,6 +3,7 @@ import { ModelConfig } from "../store/config";
 import { nanoid } from "nanoid";
 import { DEFAULT_TOPIC } from "../store/chat";
 import { useAppConfig } from "../store/config";
+import { UUID } from "crypto";
 
 /**
  * Statistics for a chat session
@@ -18,6 +19,7 @@ export interface ChatStat {
  */
 export interface ChatSession {
   id: string;
+  conversationId?: UUID;
   topic: string;
   memoryPrompt: string;
   messages: ChatMessage[];

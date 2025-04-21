@@ -150,28 +150,28 @@ export function Chat() {
   const newSessionAction = useChatStore((state) => state.newSession);
 
   // Handle Global Keyboard Shortcuts (related to session management)
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'o') {
-        event.preventDefault();
-        newSessionAction(); // Use the selected action
-        router.push(Path.Chat); // Go to base chat path, will redirect to new session ID
-      }
-      // Add other global shortcuts if needed (e.g., switching sessions)
-      // Consider moving shortcuts specific to chat interaction (copy, clear) to ChatComponentInternal
-      // Show Shortcut Key Modal
-      else if ((event.metaKey || event.ctrlKey) && event.key === '/') {
-        event.preventDefault();
-        // setShowShortcutKeyModal(true);
-      }
-    };
+  // useEffect(() => {
+  //   const handleKeyDown = (event: KeyboardEvent) => {
+  //     if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'o') {
+  //       event.preventDefault();
+  //       newSessionAction(); // Use the selected action
+  //       router.push(Path.Chat); // Go to base chat path, will redirect to new session ID
+  //     }
+  //     // Add other global shortcuts if needed (e.g., switching sessions)
+  //     // Consider moving shortcuts specific to chat interaction (copy, clear) to ChatComponentInternal
+  //     // Show Shortcut Key Modal
+  //     else if ((event.metaKey || event.ctrlKey) && event.key === '/') {
+  //       event.preventDefault();
+  //       // setShowShortcutKeyModal(true);
+  //     }
+  //   };
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-    // Only depends on router and the specific chatStore action
-  }, [router, newSessionAction]);
+  //   document.addEventListener("keydown", handleKeyDown);
+  //   return () => {
+  //     document.removeEventListener("keydown", handleKeyDown);
+  //   };
+  //   // Only depends on router and the specific chatStore action
+  // }, [router, newSessionAction]);
 
   // If no session is found (page.tsx should handle redirecting before this renders)
   if (!session) {
