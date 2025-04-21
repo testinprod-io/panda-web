@@ -40,8 +40,8 @@ export function ChatList(props: ChatListProps) {
   // Effect to determine loading state based on sessions
   useEffect(() => {
     // Consider loaded if there's more than 1 session OR the only session is not empty (has messages)
-    const isActuallyEmpty = sessions.length === 1 && sessions[0].messages.length === 0 && sessions[0].topic === Locale.Store.DefaultTopic; 
-    if (sessions.length > 0 && !isActuallyEmpty) {
+    // const isActuallyEmpty = sessions.length === 1 && sessions[0].messages.length === 0 && sessions[0].topic === Locale.Store.DefaultTopic; 
+    if (sessions.length > 0) { // } && !isActuallyEmpty) {
         // Set a short delay to allow persistence hydration to potentially finish
         const timer = setTimeout(() => {
             setIsLoading(false);
@@ -132,7 +132,7 @@ export function ChatList(props: ChatListProps) {
                 index={i}
                 selected={i === currentSessionIndex}
                 onClick={() => {
-                  selectSession(i);
+                  selectSession(i, apiClient);
                   handleSelectItem(item);
                 }}
                 onDelete={() => handleDeleteItem(item, i)}

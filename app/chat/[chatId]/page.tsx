@@ -61,7 +61,7 @@ export default function ChatPage() {
       console.log(`[ChatPage] useEffect: Found sessionIndex=${sessionIndex}. Current selected session ID=${currentSessionId}`);
       if (currentSessionId !== chatId) {
          console.log(`[ChatPage] useEffect: Calling selectSession(${sessionIndex}) for chatId=${chatId}`);
-         selectSession(sessionIndex);
+         selectSession(sessionIndex, null);
          console.log(`[ChatPage] useEffect: Called selectSession(${sessionIndex})`);
          // Note: selectSession itself will trigger a re-render eventually
       }

@@ -47,6 +47,8 @@ export type ChatMessageTool = {
  errorMsg?: string;
 };
 
+export type MessageSyncState = 'synced' | 'pending_create' | 'error';
+
 /**
 * Represents a chat message with additional metadata
 */
@@ -56,9 +58,11 @@ export type ChatMessage = RequestMessage & {
  isError?: boolean;
  id: string;
  model?: ModelType;
- // tools?: ChatMessageTool[];
- // audio_url?: string;
- // isMcpResponse?: boolean;
+
+ // --- NEW STATE FIELDS ---
+ /** Tracks synchronization status of the message with the server */
+ syncState?: MessageSyncState;
+ // serverId?: UUID; // Optional: Can be used if we need to track both local and server ID separately
 };
 
 /**
@@ -72,6 +76,7 @@ export function createMessage(override: Partial<ChatMessage>): ChatMessage {
    date: new Date().toLocaleString(),
    role: "user",
    content: "",
+   syncState: 'pending_create',
    ...override,
  };
 }

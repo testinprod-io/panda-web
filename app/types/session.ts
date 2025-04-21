@@ -5,6 +5,9 @@ import { DEFAULT_TOPIC } from "../store/chat";
 import { useAppConfig } from "../store/config";
 import { UUID } from "crypto";
 
+export type SessionSyncState = 'synced' | 'pending_create' | 'pending_update' | 'error';
+export type MessagesLoadState = 'none' | 'loading' | 'partial' | 'full' | 'error';
+
 /**
  * Statistics for a chat session
  */
@@ -31,6 +34,14 @@ export interface ChatSession {
   modelConfig: ModelConfig;
   context: ChatMessage[];
   hideContext: boolean;
+
+  // --- NEW STATE FIELDS ---
+  /** Tracks synchronization status of the session metadata (e.g., title) with the server */
+  syncState?: SessionSyncState;
+  /** Tracks the loading status of messages from the server for this session */
+  messagesLoadState?: MessagesLoadState;
+  /** Stores the pagination cursor received from the server for loading older messages */
+  serverMessagesCursor?: string | null;
 }
 
 /**
@@ -53,5 +64,8 @@ export function createEmptySession(): ChatSession {
     modelConfig: { ...useAppConfig.getState().modelConfig },
     context: [],
     hideContext: true,
+    syncState: 'pending_create',
+    messagesLoadState: 'none',
+    serverMessagesCursor: null,
   };
 }

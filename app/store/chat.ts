@@ -45,8 +45,8 @@ import { ModelConfig, ModelType, useAppConfig } from "./config";
 import { useAccessStore } from "./access";
 import { collectModelsWithDefaultModel } from "../utils/model";
 
-import { ChatMessage, createMessage, MessageRole } from "@/app/types/chat";
-import { ChatSession, createEmptySession } from "@/app/types/session";
+import { ChatMessage, createMessage, MessageRole, MessageSyncState } from "@/app/types/chat";
+import { ChatSession, createEmptySession, SessionSyncState, MessagesLoadState } from "@/app/types/session";
 import { useState, useEffect } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useApiClient } from "../context/ApiProviderContext";
@@ -162,6 +162,67 @@ export const useChatStore = createPersistStore(
       };
     }
 
+    function mergeSessions(localSessions: ChatSession[], serverConvos: Conversation[]): ChatSession[] {
+        const serverConvoMap = new Map(serverConvos.map(c => [c.conversation_id, c]));
+        const mergedSessions: ChatSession[] = [];
+        const usedServerIds = new Set<UUID>();
+
+        localSessions.forEach(localSession => {
+            const serverId = localSession.conversationId;
+            if (serverId && serverConvoMap.has(serverId)) {
+                const serverConvo = serverConvoMap.get(serverId)!;
+                mergedSessions.push({
+                    ...localSession,
+                    topic: serverConvo.title || localSession.topic,
+                    lastUpdate: Math.max(localSession.lastUpdate, new Date(serverConvo.updated_at).getTime()),
+                    syncState: 'synced',
+                });
+                usedServerIds.add(serverId);
+            } else if (!serverId && localSession.syncState === 'pending_create') {
+                mergedSessions.push(localSession);
+            } else {
+                 console.warn(`[Merge] Keeping local session ${localSession.id} (ConvID: ${serverId}) with state ${localSession.syncState}.`);
+                 mergedSessions.push(localSession);
+            }
+        });
+
+        serverConvoMap.forEach((serverConvo, serverId) => {
+            if (!usedServerIds.has(serverId)) {
+                const newLocalSession = mapConversationToSession(serverConvo);
+                newLocalSession.syncState = 'synced';
+                newLocalSession.messagesLoadState = 'none';
+                mergedSessions.push(newLocalSession);
+            }
+        });
+
+         if (mergedSessions.length === 0) {
+             mergedSessions.push(createEmptySession());
+         }
+
+        mergedSessions.sort((a, b) => b.lastUpdate - a.lastUpdate);
+
+        return mergedSessions;
+    }
+
+    function mergeMessages(localMessages: ChatMessage[], serverMessages: ChatMessage[]): ChatMessage[] {
+        const messageMap = new Map<string, ChatMessage>();
+
+        localMessages.forEach(msg => {
+            messageMap.set(msg.id, msg);
+        });
+
+        serverMessages.forEach(msg => {
+            const existing = messageMap.get(msg.id);
+            if (!existing || existing.syncState !== 'synced') {
+                 messageMap.set(msg.id, { ...msg, syncState: 'synced' });
+            }
+        });
+
+        const merged = Array.from(messageMap.values());
+        merged.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        return merged;
+    }
+
     const methods = {
       forkSession: function() {
         const currentSession = get().currentSession();
@@ -181,12 +242,15 @@ export const useChatStore = createPersistStore(
           currentSessionIndex: 0,
         });
       },
-      selectSession(index: number) {
+      selectSession(index: number, api: ClientApi | null) {
         set({ currentSessionIndex: index });
         const session = get().sessions[index];
-        const api = (window as any).chatApiClient as ClientApi;
-        if (api && session && session.conversationId && session.messages.length <= 1) {
-           console.log(`[ChatStore] Triggering message load for selected session ${session.conversationId}`);
+        // const api = getcli
+
+        console.log(`[ChatStore] Triggering message load for selected session ${session.conversationId} api: ${api} session: ${session} session.conversationId: ${session.conversationId} session.messagesLoadState: ${session.messagesLoadState}`);
+
+        if (api && session && session.conversationId && session.messagesLoadState === 'none') {
+           console.log(`[ChatStore] Triggered message load for selected session ${session.conversationId}`);
            get().loadMessagesForSession(session.conversationId, api);
         }
       },
@@ -210,7 +274,7 @@ export const useChatStore = createPersistStore(
         });
       },
       newSession(api: ClientApi, modelConfig?: ModelConfig) {
-        console.log("[ChatStore] Creating new session...");
+        console.log("[ChatStore] Creating new session locally...");
         const session = createEmptySession();
         if (modelConfig) {
           const config = useAppConfig.getState();
@@ -224,41 +288,44 @@ export const useChatStore = createPersistStore(
         }));
 
         const createRequest: ConversationCreateRequest = { title: session.topic };
+        console.log("[ChatStore] Attempting to create session on server...");
         api.app.createConversation(createRequest)
             .then(newConversation => {
-                console.log("[ChatStore] Server session created:", newConversation);
-                get().updateTargetSession({ id: localSessionId }, (sess) => {
+                console.log("[ChatStore] Server session created successfully:", newConversation.conversation_id);
+                get().updateTargetSession({ id: localSessionId }, (sess: ChatSession) => {
                     sess.conversationId = newConversation.conversation_id;
                     sess.topic = newConversation.title || sess.topic;
                     sess.lastUpdate = new Date(newConversation.updated_at).getTime();
+                    sess.syncState = 'synced';
                 });
             })
             .catch(error => {
                 console.error("[ChatStore] Failed to create server session:", error);
+                get().updateTargetSession({ id: localSessionId }, (sess: ChatSession) => {
+                    sess.syncState = 'error';
+                });
             });
       },
       nextSession(delta: number) {
          const n = get().sessions.length;
          const limit = (x: number) => (x + n) % n;
          const i = get().currentSessionIndex;
-         get().selectSession(limit(i + delta));
+         get().selectSession(limit(i + delta), null);
       },
       deleteSession(index: number, api: ClientApi) {
-          const state = _get();
-          const sessionToDelete = state.sessions.at(index);
+          const sessionToDelete = get().sessions.at(index);
           if (!sessionToDelete) return;
-
-          console.log(`[ChatStore] Deleting session ${index} (ID: ${sessionToDelete.id}, ConvID: ${sessionToDelete.conversationId})`);
-
           const conversationId = sessionToDelete.conversationId;
-          const localSessionId = sessionToDelete.id;
+          const localId = sessionToDelete.id;
 
-          const deletingLastSession = state.sessions.length === 1;
+          console.log(`[ChatStore] Deleting session ${index} (ID: ${localId}, ConvID: ${conversationId})`);
 
-          const sessions = state.sessions.slice();
+          const deletingLastSession = get().sessions.length === 1;
+
+          const sessions = get().sessions.slice();
           sessions.splice(index, 1);
 
-          const currentIndex = state.currentSessionIndex;
+          const currentIndex = get().currentSessionIndex;
           let nextIndex = Math.min(
             currentIndex - Number(index < currentIndex),
             sessions.length - 1,
@@ -270,16 +337,16 @@ export const useChatStore = createPersistStore(
           }
           set({ sessions, currentSessionIndex: nextIndex });
 
-          if (conversationId) {
+          if (conversationId && sessionToDelete.syncState !== 'pending_create') {
               api.app.deleteConversation(conversationId)
                   .then(() => {
-                      console.log(`[ChatStore] Server session ${conversationId} deleted successfully.`);
+                      console.log(`[ChatStore] Server session ${conversationId} deleted.`);
                   })
                   .catch(error => {
                       console.error(`[ChatStore] Failed to delete server session ${conversationId}:`, error);
                   });
           } else {
-              console.log(`[ChatStore] Session ${localSessionId} was local-only, no server deletion needed.`);
+             console.log(`[ChatStore] Session ${localId} was local-only or pending creation, no server deletion needed.`);
           }
       },
       currentSession() {
@@ -292,8 +359,7 @@ export const useChatStore = createPersistStore(
         return sessions.at(index);
       },
       onNewMessage(message: ChatMessage, targetSession: ChatSession, api: ClientApi) {
-          get().updateTargetSession(targetSession, (session) => {
-            session.messages = session.messages.concat();
+        get().updateTargetSession(targetSession, (session: ChatSession) => {
             session.lastUpdate = Date.now();
           });
           get().updateStat(message, targetSession);
@@ -304,10 +370,15 @@ export const useChatStore = createPersistStore(
       },
       async onUserInput(content: string, api: ClientApi, attachImages?: string[], isMcpResponse?: boolean) {
         const currentSession = get().currentSession();
-        if (!currentSession || !currentSession.conversationId) {
-          console.error("[ChatStore] Cannot send message: Session or conversationId missing.");
-          return;
+        if (!currentSession) {
+            console.error("[ChatStore] No current session found for user input.");
+            return;
         }
+        if (!currentSession.conversationId) {
+             console.warn(`[ChatStore] Cannot send message: Session ${currentSession.id} has no conversationId (state: ${currentSession.syncState}). Message not sent.`);
+             return;
+        }
+
         const conversationId = currentSession.conversationId;
         const modelConfig = currentSession.modelConfig;
 
@@ -325,79 +396,88 @@ export const useChatStore = createPersistStore(
         const userMessage: ChatMessage = createMessage({
           role: "user",
           content: mContent as any,
+          syncState: 'pending_create',
         });
+        const localUserMessageId = userMessage.id;
 
         const botMessage: ChatMessage = createMessage({
           role: "assistant",
           streaming: true,
           model: modelConfig.model,
+          syncState: 'pending_create',
         });
+        const localBotMessageId = botMessage.id;
 
-        const sendMessages = await get().getMessagesWithMemory();
+        const recentMessages = await get().getMessagesWithMemory();
+        const sendMessages = recentMessages.concat(userMessage);
         const messageIndex = currentSession.messages.length + 1;
 
-        get().updateTargetSession(currentSession, (sessionState) => {
+        get().updateTargetSession(currentSession, (sessionState: ChatSession) => {
           sessionState.messages = [...sessionState.messages, userMessage, botMessage];
         });
 
         api.llm.chat({
           messages: sendMessages,
           config: { ...modelConfig, stream: true },
-          onUpdate(message) {
-            get().updateTargetSession(currentSession, (sessionState) => {
-              const botMsgIndex = sessionState.messages.findIndex(m => m.id === botMessage.id);
+          onUpdate(message: string) {
+            get().updateTargetSession(currentSession, (sessionState: ChatSession) => {
+              const botMsgIndex = sessionState.messages.findIndex(m => m.id === localBotMessageId);
               if (botMsgIndex !== -1) {
                 sessionState.messages = sessionState.messages.map((m, i) => i === botMsgIndex ? { ...m, content: message, streaming: true } : m);
               }
             });
           },
-          async onFinish(message) {
+          async onFinish(message: string) {
             let finalBotMessage: ChatMessage | undefined;
             let finalUserMessage: ChatMessage | undefined;
 
-            get().updateTargetSession(currentSession, (sessionState) => {
-              const botMsgIndex = sessionState.messages.findIndex(m => m.id === botMessage.id);
-              const userMsgIndex = sessionState.messages.findIndex(m => m.id === userMessage.id);
+            get().updateTargetSession(currentSession, (sessionState: ChatSession) => {
+              const botMsgIndex = sessionState.messages.findIndex(m => m.id === localBotMessageId);
+              const userMsgIndex = sessionState.messages.findIndex(m => m.id === localUserMessageId);
 
-              if (userMsgIndex !== -1) finalUserMessage = sessionState.messages[userMsgIndex];
-
+              if (userMsgIndex !== -1) {
+                 finalUserMessage = { ...sessionState.messages[userMsgIndex] };
+              }
               if (botMsgIndex !== -1) {
-                finalBotMessage = { ...sessionState.messages[botMsgIndex], content: message, streaming: false, date: new Date().toLocaleString() };
+                finalBotMessage = { ...sessionState.messages[botMsgIndex], content: message, streaming: false, date: new Date().toLocaleString(), syncState: 'pending_create' };
                 sessionState.messages = sessionState.messages.map((m, i) => i === botMsgIndex ? finalBotMessage! : m);
-
                 get().onNewMessage(finalBotMessage!, sessionState, api);
-
-                if (conversationId && finalUserMessage && finalBotMessage) {
-                  get().saveMessageToServer(conversationId, finalUserMessage, api);
-                  get().saveMessageToServer(conversationId, finalBotMessage, api);
-                }
-
-                if (sessionState.messages.length === 2 && sessionState.topic === DEFAULT_TOPIC && finalUserMessage && finalBotMessage) {
-                  const userMsgContent = getMessageTextContent(finalUserMessage);
-                  const assistantMsgContent = getMessageTextContent(finalBotMessage);
-                  if (userMsgContent.trim().length > 0 && assistantMsgContent.trim().length > 0) {
-                     setTimeout(() => { methods.generateSessionTitle(sessionState.id, userMsgContent, assistantMsgContent, api); }, 0);
-                  }
-                }
               }
             });
-            ChatControllerPool.remove(currentSession.id, botMessage.id);
+
+            if (conversationId && finalUserMessage && finalBotMessage) {
+                console.log(`[ChatStore] Triggering server save for user msg ${finalUserMessage.id} and bot msg ${finalBotMessage.id}`);
+                get().saveMessageToServer(conversationId, finalUserMessage, api);
+                get().saveMessageToServer(conversationId, finalBotMessage, api);
+            }
+
+            if (currentSession.messages.length === 2 && currentSession.topic === DEFAULT_TOPIC && finalUserMessage && finalBotMessage) {
+               const userMsgContent = getMessageTextContent(finalUserMessage);
+               const assistantMsgContent = getMessageTextContent(finalBotMessage);
+               if (userMsgContent.trim().length > 0 && assistantMsgContent.trim().length > 0) {
+                  setTimeout(() => { get().generateSessionTitle(currentSession.id, userMsgContent, assistantMsgContent, api); }, 0);
+               }
+            }
+            ChatControllerPool.remove(currentSession.id, localBotMessageId);
           },
-          onError(error) {
-             const isAborted = error.message?.includes?.("aborted");
-            get().updateTargetSession(currentSession, (sessionState) => {
-               const userMsgIndex = sessionState.messages.findIndex(m => m.id === userMessage.id);
-               const botMsgIndex = sessionState.messages.findIndex(m => m.id === botMessage.id);
-               const newMessages = [...sessionState.messages];
-               if (userMsgIndex !== -1) { newMessages[userMsgIndex] = { ...newMessages[userMsgIndex], isError: !isAborted }; }
-               if (botMsgIndex !== -1) { newMessages[botMsgIndex] = { ...newMessages[botMsgIndex], content: (newMessages[botMsgIndex].content || "") + "\n\n" + prettyObject({ error: true, message: error.message }), streaming: false, isError: !isAborted }; }
-               sessionState.messages = newMessages;
-            });
-            ChatControllerPool.remove(currentSession.id, botMessage.id ?? messageIndex);
-            console.error("[Chat] failed ", error);
+          onError(error: Error) {
+            get().updateTargetSession(currentSession, (sessionState: ChatSession) => {
+                const userMsgIndex = sessionState.messages.findIndex(m => m.id === localUserMessageId);
+                const botMsgIndex = sessionState.messages.findIndex(m => m.id === localBotMessageId);
+                const isAborted = error.message?.includes?.("aborted");
+                const errorContent = "\n\n" + prettyObject({ error: true, message: error.message });
+
+                sessionState.messages = sessionState.messages.map((m, index) => {
+                    if (index === userMsgIndex) return { ...m, isError: !isAborted, syncState: 'error' };
+                    if (index === botMsgIndex) return { ...m, content: (m.content || "") + errorContent, streaming: false, isError: !isAborted, syncState: 'error' };
+                    return m;
+                });
+             });
+             ChatControllerPool.remove(currentSession.id, localBotMessageId ?? messageIndex);
+             console.error("[Chat] LLM call failed ", error);
           },
-          onController(controller) {
-            ChatControllerPool.addController(currentSession.id, botMessage.id ?? messageIndex, controller);
+          onController(controller: any) {
+             ChatControllerPool.addController(currentSession.id, localBotMessageId ?? messageIndex, controller);
           }
         });
       },
@@ -424,6 +504,7 @@ export const useChatStore = createPersistStore(
         const recentMessages = get().getRecentMessages(messages, totalMessageCount, contextStartIndex, maxTokenThreshold);
         return [ ...systemPrompts, ...longTermMemoryPrompts, ...contextPrompts, ...recentMessages ];
       },
+      
        getSystemPrompts(modelConfig: ModelConfig): ChatMessage[] {
           const systemPrompts: ChatMessage[] = [];
           systemPrompts.push(createMessage({ role: "system", content: fillTemplateWith("", { ...modelConfig, template: DEFAULT_SYSTEM_TEMPLATE }) }));
@@ -450,7 +531,7 @@ export const useChatStore = createPersistStore(
           return reversedRecentMessages.reverse();
        },
        resetSession(targetSession: ChatSession) {
-            get().updateTargetSession(targetSession, (session) => { session.messages = []; session.memoryPrompt = ""; });
+        get().updateTargetSession(targetSession, (session) => { session.messages = []; session.memoryPrompt = ""; });
        },
        summarizeSession(refreshTitle: boolean = false, targetSession: ChatSession, api: ClientApi) {
             const config = useAppConfig.getState();
@@ -676,53 +757,123 @@ Rules
 
       async loadSessionsFromServer(api: ClientApi) {
           console.log("[ChatStore] Loading sessions from server...");
+          let currentLocalSessions = _get().sessions;
           try {
-              const params = { limit: 100 };
+              const params = { limit: 20 };
               const response = await api.app.getConversations(params);
-              const serverSessions = response.data.map(mapConversationToSession);
+              const serverConvos = response.data;
+              console.log(`[ChatStore] Received ${serverConvos.length} sessions from server.`);
+
+              const mergedSessions = mergeSessions(currentLocalSessions, serverConvos);
+
+              let currentSessionStillExists = false;
+              let newCurrentIndex = 0;
+              const currentSession = get().currentSession();
+
+              if (currentSession) {
+                 const idx = mergedSessions.findIndex(s => s.id === currentSession.id || (s.conversationId && s.conversationId === currentSession.conversationId));
+                 if (idx !== -1) {
+                     currentSessionStillExists = true;
+                     newCurrentIndex = idx;
+                 }
+              }
+
               set({
-                  sessions: serverSessions.length > 0 ? serverSessions : [createEmptySession()],
-                  currentSessionIndex: 0,
+                  sessions: mergedSessions,
+                  currentSessionIndex: newCurrentIndex,
               });
-          } catch (error) {
-              console.error("[ChatStore] Failed to load sessions from server:", error);
-              if (get().sessions.length === 0) {
+
+              console.log("[ChatStore] Sessions merged and updated.");
+
+          } catch (error: any) {
+              console.error("[ChatStore] Failed to load or merge sessions from server:", error);
+              if (_get().sessions.length === 0) {
                   set({ sessions: [createEmptySession()], currentSessionIndex: 0 });
               }
           }
       },
 
       async loadMessagesForSession(conversationId: UUID, api: ClientApi, params?: GetConversationMessagesParams) {
-          console.log(`[ChatStore] Loading messages for ${conversationId}`);
+          console.log(`[ChatStore] Loading messages for conversation ${conversationId}`);
+          get().updateTargetSession({ conversationId }, (sess: ChatSession) => { sess.messagesLoadState = 'loading'; });
+
           try {
-              const loadParams = params || { limit: 50 };
+              const session = get().sessions.find(s => s.conversationId === conversationId);
+              const cursor = params?.cursor ?? session?.serverMessagesCursor;
+              const loadParams = { ...(params ?? {}), limit: 20, cursor: cursor };
+
               const response = await api.app.getConversationMessages(conversationId, loadParams);
-              const serverMessages = response.data.map(mapApiMessageToChatMessage);
-              get().updateTargetSession({ conversationId }, (sess) => {
-                   sess.messages = serverMessages;
+              const serverApiMessages = response.data;
+              console.log(`[ChatStore] Received ${serverApiMessages.length} messages for ${conversationId}. Has more: ${response.pagination.has_more}`);
+
+              const serverMessages = serverApiMessages.map(mapApiMessageToChatMessage);
+
+              get().updateTargetSession({ conversationId }, (sess: ChatSession) => {
+                  const localMessages = sess.messages;
+                  const mergedMessages = mergeMessages(localMessages, serverMessages);
+
+                  sess.messages = mergedMessages;
+                  sess.messagesLoadState = response.pagination.has_more ? 'partial' : 'full';
+                  sess.serverMessagesCursor = response.pagination.next_cursor;
               });
-          } catch (error) {
+
+          } catch (error: any) {
               console.error(`[ChatStore] Failed loading messages for ${conversationId}:`, error);
+              get().updateTargetSession({ conversationId }, (sess: ChatSession) => { sess.messagesLoadState = 'error'; });
           }
       },
 
       async saveMessageToServer(conversationId: UUID, message: ChatMessage, api: ClientApi) {
+        const localMessageId = message.id;
+        if (!localMessageId) {
+            console.error("[saveMessageToServer] Message missing local ID, cannot save.", message);
+            return;
+        }
+
+        if (message.syncState === 'synced') return;
+
         const content = getMessageTextContent(message);
-        if (!content || message.streaming || message.isError) return;
+        if (!content) return;
 
-        const messageId = crypto.randomUUID() as UUID;
+        const messageIdForServer = crypto.randomUUID() as UUID;
 
-        console.log(`[ChatStore] Saving message ${message.id} (Client) / ${messageId} (Server)`);
+        console.log(`[ChatStore] Saving message ${localMessageId} (Client) / ${messageIdForServer} (Server) to conversation ${conversationId}`);
         const createRequest: MessageCreateRequest = {
-            message_id: messageId,
+            message_id: messageIdForServer,
             sender_type: mapRoleToSenderType(message.role),
             content: content
         };
+
         try {
             const savedMessage = await api.app.createMessage(conversationId, createRequest);
-            console.log(`[ChatStore] Message saved (Server ID: ${savedMessage.message_id})`);
+            console.log(`[ChatStore] Message ${localMessageId} saved successfully (Server ID: ${savedMessage.message_id})`);
+
+            get().updateTargetSession({ conversationId }, (sess: ChatSession) => {
+                const msgIndex = sess.messages.findIndex(m => m.id === localMessageId);
+                if (msgIndex !== -1) {
+                    sess.messages[msgIndex] = {
+                       ...sess.messages[msgIndex],
+                       id: savedMessage.message_id,
+                       syncState: 'synced',
+                       isError: false,
+                    };
+                     console.log(`[ChatStore] Updated local message ${localMessageId} to server ID ${savedMessage.message_id} and state 'synced'`);
+                } else {
+                    console.warn(`[ChatStore] Could not find local message ${localMessageId} to update after server save.`);
+                }
+            });
         } catch (error: any) {
-            console.error(`[ChatStore] Failed saving message ${message.id}:`, error);
+            console.error(`[ChatStore] Failed saving message ${localMessageId}:`, error);
+            get().updateTargetSession({ conversationId }, (sess: ChatSession) => {
+                const msgIndex = sess.messages.findIndex(m => m.id === localMessageId);
+                if (msgIndex !== -1) {
+                    sess.messages[msgIndex] = {
+                       ...sess.messages[msgIndex],
+                       syncState: 'error',
+                       isError: true,
+                    };
+                }
+            });
         }
       },
 
@@ -738,29 +889,10 @@ Rules
 );
 
 export function AuthChatListener() {
-  const { ready, authenticated, getAccessToken } = usePrivy();
+  const { ready, authenticated } = usePrivy();
   const clearCurrentStateToDefault = useChatStore((state: any) => state.clearCurrentStateToDefault);
-  const apiClient = useApiClient();
   const loadSessionsFromServer = useChatStore((state: any) => state.loadSessionsFromServer);
-  // const [apiClient, setApiClient] = useState<ApiClient | null>(null);
-  // const originalApiPlaceholder = { llm: null as any, share: null as any };
-
-  // useEffect(() => {
-  //     if (ready && !apiClient) {
-  //         const getAuthToken = async () => {
-  //             try {
-  //                 return await getAccessToken();
-  //             } catch (error) {
-  //                 console.error("[AuthChatListener] Failed to get access token:", error);
-  //                 return null;
-  //             }
-  //         };
-  //         const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '/api/v1';
-  //         const client = new ApiClient(baseUrl, getAuthToken);
-  //         setApiClient(client);
-  //         console.log("[AuthChatListener] ApiClient initialized.");
-  //     }
-  // }, [ready, apiClient, getAccessToken]);
+  const apiClient = useApiClient();
 
   const [prevAuthState, setPrevAuthState] = useState<boolean | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -777,25 +909,29 @@ export function AuthChatListener() {
 
     if (authenticated && apiClient && !initialLoadTriggered && typeof loadSessionsFromServer === 'function') {
         console.log("[AuthChatListener] Authenticated and ready. Triggering initial session load.");
-        // const clientApi: ClientApi = {
-        //      ...originalApiPlaceholder,
-        //      chat: apiClient,
-        //  };
         loadSessionsFromServer(apiClient);
         setInitialLoadTriggered(true);
     }
 
     if (!isInitialLoad && authenticated !== prevAuthState) {
-      console.log(`[AuthChatListener] Auth state changed from ${prevAuthState} to ${authenticated}. Reloading page.`);
+      console.log(`[AuthChatListener] Auth state changed: ${prevAuthState} -> ${authenticated}.`);
       setInitialLoadTriggered(false);
-      if (typeof clearCurrentStateToDefault === 'function') {
-          clearCurrentStateToDefault();
-      } else {
-          console.warn("[AuthChatListener] clearCurrentStateToDefault action not available or not a function yet.");
-      }
-      window.location.reload();
-    }
+      setPrevAuthState(authenticated);
 
+      if (!authenticated) {
+          console.log("[AuthChatListener] User logged out. Clearing local chat state.");
+          if (typeof clearCurrentStateToDefault === 'function') {
+              clearCurrentStateToDefault();
+          }
+      } else {
+          console.log("[AuthChatListener] User is now authenticated.");
+          if (apiClient && typeof loadSessionsFromServer === 'function') {
+              console.log("[AuthChatListener] Reloading data on re-authentication.");
+              loadSessionsFromServer(apiClient);
+              setInitialLoadTriggered(true);
+          }
+      }
+    }
   }, [ready, authenticated, prevAuthState, isInitialLoad, loadSessionsFromServer, clearCurrentStateToDefault, initialLoadTriggered, apiClient]);
 
   return null;
