@@ -57,6 +57,7 @@ import styles from "./chat.module.scss";
 import { ChatAction } from "./ChatAction"; // Import ChatAction
 import { useApiClient } from "@/app/context/ApiProviderContext"; // <-- Import hook
 import { ChatComponentSkeleton } from "./ChatComponentSkeleton"; // <-- Import Skeleton
+import { getAccessToken } from "@privy-io/react-auth";
 
 // Dynamic import for Markdown component
 const Markdown = dynamic(async () => (await import("../markdown")).Markdown, {
@@ -119,6 +120,7 @@ export function ChatComponent(props: ChatComponentProps) {
 
   const combinedIsLoading = isBotStreaming || isSubmitting;
 
+  console.log("access token", getAccessToken());
   // Scroll handling
   const { scrollDomToBottom, setAutoScroll } = useScrollToBottom(
     scrollRef,
