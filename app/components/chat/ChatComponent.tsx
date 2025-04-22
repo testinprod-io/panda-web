@@ -58,7 +58,7 @@ import { ChatAction } from "./ChatAction"; // Import ChatAction
 import { useApiClient } from "@/app/context/ApiProviderContext"; // <-- Import hook
 import { ChatComponentSkeleton } from "./ChatComponentSkeleton"; // <-- Import Skeleton
 import { getAccessToken } from "@privy-io/react-auth";
-
+import { useChatActions } from "@/app/hooks/useChatActions";
 // Dynamic import for Markdown component
 const Markdown = dynamic(async () => (await import("../markdown")).Markdown, {
   loading: () => <LoopIcon className={styles.loadingIcon}/>, // Use MUI LoopIcon for loading
@@ -77,9 +77,6 @@ interface ChatComponentProps {
     setShowPromptModal: React.Dispatch<React.SetStateAction<boolean>>;
     setShowShortcutKeyModal: React.Dispatch<React.SetStateAction<boolean>>;
 }
-
-let renderCount = 0; // Module-level counter for renders
-
 // This component now focuses on rendering the message list and coordinating with the input panel
 export function ChatComponent(props: ChatComponentProps) {
   // Restore prop destructuring, including new props
@@ -93,7 +90,6 @@ export function ChatComponent(props: ChatComponentProps) {
     setShowShortcutKeyModal
   } = props;
 
-  renderCount++;
   type RenderMessage = ChatMessage & { preview?: boolean };
 
   const chatStore = useChatStore();
@@ -101,8 +97,6 @@ export function ChatComponent(props: ChatComponentProps) {
   const config = useAppConfig();
   const { showSnackbar } = useSnackbar(); // Use Snackbar hook
   const updateTargetSession = useChatStore((state) => state.updateTargetSession);
-
-  console.log(`[ChatComponent] Render #${renderCount}: Received session.id=${session?.id} via prop`);
 
   const fontSize = config.fontSize;
   const fontFamily = config.fontFamily;
@@ -129,7 +123,7 @@ export function ChatComponent(props: ChatComponentProps) {
   );
 
   const apiClient = useApiClient(); 
-
+  const { onUserInput } = useChatActions();
   // Submit handler passed to ChatInputPanel
   const doSubmit = useCallback(
     (input: string, images: string[]) => {
@@ -137,8 +131,7 @@ export function ChatComponent(props: ChatComponentProps) {
       if (combinedIsLoading) return; // Prevent submission if already loading/submitting
 
       setIsSubmitting(true); // Set submitting true
-      chatStore
-        .onUserInput(input, apiClient, images)
+      onUserInput(input, images)
         .then(() => setIsSubmitting(false)) // Set submitting false on success
         .catch((e) => {
           console.error("[Chat] Failed user input", e);
@@ -292,7 +285,7 @@ export function ChatComponent(props: ChatComponentProps) {
       setIsSubmitting(true); // Set submitting true
       const textContent = getMessageTextContent(userMessage);
       const images = getMessageImages(userMessage);
-      chatStore.onUserInput(textContent, apiClient, images)
+      onUserInput(textContent, images)
         .then(() => setIsSubmitting(false)) // Set submitting false
         .catch((e) => {
           console.error("[Chat] Failed resend", e);
@@ -328,7 +321,7 @@ export function ChatComponent(props: ChatComponentProps) {
       }
 
       setIsSubmitting(true); // Set submitting true
-      chatStore.onUserInput(newText, apiClient, []) 
+      onUserInput(newText, []) 
         .then(() => setIsSubmitting(false)) // Set submitting false
         .catch((e) => {
           console.error("[Chat] Failed edit submission", e);
@@ -477,8 +470,6 @@ export function ChatComponent(props: ChatComponentProps) {
   const onInput = useCallback((text: string) => {
 
   }, []);
-
-  console.log(`[ChatComponent] Render #${renderCount}: Finished render logic for session.id=${session?.id}`);
 
   // ---------- Render ----------
   // Render Skeleton if session is not available

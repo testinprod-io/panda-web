@@ -52,8 +52,6 @@ export function Chat() {
   const sessionId = params?.sessionId as string | undefined;
   const isMobileScreen = useMobileScreen();
   const session = chatStore.currentSession(); // Get current session
-  console.log(`[Chat] Render #${renderCount}: Received session.id=${session?.id}, isLoading=${!session}`);
-
   // Get the specific update action from the store
   const updateTargetSessionAction = useChatStore((state) => state.updateTargetSession);
 
@@ -147,7 +145,7 @@ export function Chat() {
   });
 
   // Select only the newSession action for the keydown effect
-  const newSessionAction = useChatStore((state) => state.newSession);
+  // const newSessionAction = useChatStore((state) => state.newSession);
 
   // Handle Global Keyboard Shortcuts (related to session management)
   // useEffect(() => {

@@ -40,7 +40,7 @@ export function useChatActions() {
         }
         console.log("[ChatActions] Loading sessions from server...");
         try {
-            const params = { limit: 100 }; // Load more sessions
+            const params = { limit: 20 }; // Load more sessions
             const response = await ChatApiService.fetchConversations(apiClient, params);
             const serverConvos = response.data;
             console.log(`[ChatActions] Received ${serverConvos.length} sessions from server.`);
@@ -89,27 +89,27 @@ export function useChatActions() {
         // Add to store immediately for responsiveness
         store.addSession(session);
 
-        const createRequest: ConversationCreateRequest = { title: session.topic };
-        console.log("[ChatActions] Attempting to create session on server...");
+        // const createRequest: ConversationCreateRequest = { title: session.topic };
+        // console.log("[ChatActions] Attempting to create session on server...");
 
-        try {
-            const newConversation = await ChatApiService.createConversation(apiClient, createRequest);
-            console.log("[ChatActions] Server session created successfully:", newConversation.conversation_id);
-            // Update the existing session in the store with server data
-            store.updateTargetSession({ id: localSessionId }, (sess) => {
-                sess.conversationId = newConversation.conversation_id;
-                sess.topic = newConversation.title || sess.topic;
-                sess.lastUpdate = new Date(newConversation.updated_at).getTime();
-                sess.syncState = 'synced';
-            });
-        } catch (error) {
-            console.error("[ChatActions] Failed to create server session:", error);
-            // Mark the session in the store as having an error
-            store.updateTargetSession({ id: localSessionId }, (sess) => {
-                sess.syncState = 'error';
-            });
-            // Optionally show error to user
-        }
+        // try {
+        //     const newConversation = await ChatApiService.createConversation(apiClient, createRequest);
+        //     console.log("[ChatActions] Server session created successfully:", newConversation.conversation_id);
+        //     // Update the existing session in the store with server data
+        //     store.updateTargetSession({ id: localSessionId }, (sess) => {
+        //         sess.conversationId = newConversation.conversation_id;
+        //         sess.topic = newConversation.title || sess.topic;
+        //         sess.lastUpdate = new Date(newConversation.updated_at).getTime();
+        //         sess.syncState = 'synced';
+        //     });
+        // } catch (error) {
+        //     console.error("[ChatActions] Failed to create server session:", error);
+        //     // Mark the session in the store as having an error
+        //     store.updateTargetSession({ id: localSessionId }, (sess) => {
+        //         sess.syncState = 'error';
+        //     });
+        //     // Optionally show error to user
+        // }
     }, [apiClient, store, appConfig.modelConfig]);
 
      const loadMessagesForSession = useCallback(async (conversationId: UUID, params?: { cursor?: string, limit?: number }) => {
@@ -246,7 +246,7 @@ export function useChatActions() {
 
         try {
             const savedMessage = await ChatApiService.createMessage(apiClient, conversationId, createRequest);
-            console.log(`[ChatActions] Message ${localMessageId} saved successfully (Server ID: ${savedMessage.message_id})`);
+            console.log(`[ChatActions] Message ${localMessageId} saved successfully (Server ID: ${savedMessage.message_id} TS: ${savedMessage.timestamp} ${savedMessage.sender_type})`);
             // Update store state on success
             store._onMessageSyncSuccess(conversationId, localMessageId, savedMessage);
         } catch (error: any) {
@@ -264,9 +264,10 @@ export function useChatActions() {
              return;
         }
 
-        const session = store.sessions.find(s => s.id === sessionId);
+        // Fetch the latest session state when the action executes
+        const session = useChatStore.getState().sessions.find(s => s.id === sessionId);
         if (!session) {
-            console.warn(`[Title Generation Action] Session not found: ${sessionId}.`);
+            console.warn(`[Title Generation Action] Session not found (using getState): ${sessionId}.`);
             return;
         }
 
@@ -310,18 +311,7 @@ export function useChatActions() {
                 if (session.conversationId) {
                     console.log(`[Title Generation Action] Attempting to update server title for ConvID: ${session.conversationId}`);
                     const updateReq: ConversationUpdateRequest = { title: generatedTitle };
-                    try {
-                        const updatedConv = await ChatApiService.updateConversation(apiClient, session.conversationId, updateReq);
-                        console.log(`[Title Generation Action] Server topic updated successfully to: "${updatedConv.title}"`);
-                        // Update store again with potentially modified server title and timestamp
-                        store.updateTargetSession({ id: sessionId }, s => {
-                           s.topic = updatedConv.title || generatedTitle; // Prefer server response
-                           s.lastUpdate = new Date(updatedConv.updated_at).getTime();
-                        });
-                    } catch (serverUpdateError) {
-                         console.error(`[Title Generation Action] Failed to update server title for ConvID ${session.conversationId}:`, serverUpdateError);
-                         // Local state still has the generated title, which might be acceptable
-                    }
+                    updateConversation(session.conversationId, updateReq);
                 }
             } else {
                  console.log(`[Title Generation Action] Generated title is default or unchanged, not updating.`);
@@ -332,6 +322,36 @@ export function useChatActions() {
             // Optionally notify the user
         }
 
+    }, [apiClient, store]);
+
+    const updateConversation = useCallback(async (sessionId: string, conversationData: ConversationUpdateRequest) => {
+        if (!apiClient) {
+            console.warn("[ChatActions] API client not available, cannot update conversation.");
+            return;
+        }
+
+        const session = store.sessions.find(s => s.id === sessionId);
+        if (!session) {
+            console.warn(`[ChatActions] Session not found: ${sessionId}`);
+            return;
+        }
+
+        const conversationId = session.conversationId;
+        if (!conversationId) {
+            console.warn(`[ChatActions] Session ${sessionId} has no conversationId, cannot update.`);
+            return;
+        }
+
+        try {
+            const updatedConv = await ChatApiService.updateConversation(apiClient, conversationId, conversationData);
+            console.log(`[ChatActions] Server title updated successfully to: "${updatedConv.title}"`);
+            store.updateTargetSession({ id: sessionId }, (sess) => {
+                sess.topic = updatedConv.title || sess.topic;
+                sess.lastUpdate = new Date(updatedConv.updated_at).getTime();
+            });
+        } catch (error) {
+            console.error(`[ChatActions] Failed to update server title for ConvID ${conversationId}:`, error);
+        }
     }, [apiClient, store]);
 
     const onUserInput = useCallback(async (content: string, attachImages?: string[]) => {
@@ -423,6 +443,9 @@ export function useChatActions() {
             userMessage // The new user message
         ].map(m => ({ role: m.role, content: m.content })); // Map to RequestMessage format
 
+        // Trigger saving user message (which was added earlier)
+        saveMessageToServer(conversationId!, userMessage);
+
         // --- Call LLM Service --- 
         ChatApiService.callLlmChat(apiClient, {
             messages: messagesForApi,
@@ -447,9 +470,6 @@ export function useChatActions() {
                     finalBotMsg = { ...msg }; // Capture the final state
                 });
 
-                // Trigger saving user message (which was added earlier)
-                saveMessageToServer(conversationId!, userMessage);
-
                 // Trigger saving final bot message
                 if (finalBotMsg) {
                     saveMessageToServer(conversationId!, finalBotMsg);
@@ -461,7 +481,7 @@ export function useChatActions() {
                 const updatedSessionState = useChatStore.getState().sessions.find(s => s.id === currentSession.id);
                 if (
                     updatedSessionState &&
-                    updatedSessionState.messages.filter(m => !m.isError).length === 3 &&
+                    updatedSessionState.messages.filter(m => !m.isError).length === 2 &&
                     updatedSessionState.topic === DEFAULT_TOPIC
                 ) {
                     const userMsgContent = getMessageTextContent(userMessage);
@@ -502,7 +522,7 @@ export function useChatActions() {
             }
         });
 
-    }, [apiClient, store, appConfig, saveMessageToServer, generateSessionTitle]);
+    }, [apiClient, store, appConfig, saveMessageToServer]);
 
     return {
         loadSessionsFromServer,
@@ -513,6 +533,7 @@ export function useChatActions() {
         saveMessageToServer,
         onUserInput,
         generateSessionTitle,
+        updateConversation,
         // ...export other actions
     };
 } 

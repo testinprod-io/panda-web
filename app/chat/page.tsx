@@ -18,20 +18,22 @@ export default function NewChatPage() {
   const apiClient = useApiClient(); // <-- Use hook
   // const config = useAppConfig(); // If config is needed later
   // const pathname = usePathname(); // If pathname is needed later
-
+  chatStore.currentSessionIndex = -1;
   // startChat now needs to accept input and images, although images will be empty here
   const startChat = (input: string, images: string[]) => {
     if (!input || input.trim() === "") return; // Don't start if input is empty
 
     // 1. Create a new session (this likely selects it as the current one)
-    newSession(); 
+    newSession();
 
     // 2. Get the *current* session from the store *after* the update
     // Accessing state directly might be necessary if selectors don't update instantly
-    const currentSession = useChatStore.getState().currentSession(); 
+    const currentSession = useChatStore.getState().currentSession();
 
     if (!currentSession) {
-      console.error("[NewChatPage] Failed to retrieve current session after creation.");
+      console.error(
+        "[NewChatPage] Failed to retrieve current session after creation."
+      );
       // Handle error, maybe show a message or redirect home
       // router.push(Path.Home);
       return;
@@ -67,24 +69,36 @@ export default function NewChatPage() {
   return (
     <Box
       sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
         // Adjusted layout: Center content, push input to bottom
-        justifyContent: 'space-between', // Push title up, input down
-        alignItems: 'center',
+        justifyContent: "space-between", // Push title up, input down
+        alignItems: "center",
       }}
     >
       {/* Optional Title - Ensure it doesn't overlap with input */}
-      <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-        <Typography variant="h2" gutterBottom sx={{
-          textAlign: 'center',
-          mt: 4,
-          mb: '1.5rem', // Applied margin-bottom
-          fontSize: '1.75rem', // Applied font-size
-          fontWeight: 'bold', // Applied font-weight
-          color: '#333' // Applied color
-        }}>
+      <Box
+        sx={{
+          flexGrow: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
+        }}
+      >
+        <Typography
+          variant="h2"
+          gutterBottom
+          sx={{
+            textAlign: "center",
+            mt: 4,
+            mb: "1.5rem", // Applied margin-bottom
+            fontSize: "1.75rem", // Applied font-size
+            fontWeight: "bold", // Applied font-weight
+            color: "#333", // Applied color
+          }}
+        >
           {/* {Locale.NewChat.Title} */}
           How can I help you today?
         </Typography>
@@ -92,7 +106,7 @@ export default function NewChatPage() {
 
       {/* Input panel at the bottom */}
       {/* Ensure it takes full width within the main Box layout */}
-      <Box sx={{ width: '100%', flexShrink: 0 }}>
+      <Box sx={{ width: "100%", flexShrink: 0 }}>
         <ChatInputPanel
           session={undefined} // Pass undefined for session
           isLoading={false} // Not loading on this page
@@ -105,4 +119,4 @@ export default function NewChatPage() {
       </Box>
     </Box>
   );
-} 
+}

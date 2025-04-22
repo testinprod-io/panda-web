@@ -50,6 +50,7 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useApiClient } from "../context/ApiProviderContext";
 import type { ClientApi, MultimodalContent } from "@/app/client/api"; // Added MultimodalContent
 import { Conversation, Message as ApiMessage, SenderTypeEnum } from "@/app/client/types"; // Added SenderTypeEnum
+import { useChatActions } from "@/app/hooks/useChatActions"; // Import the actions hook
 
 const localStorage = safeLocalStorage();
 
@@ -755,69 +756,63 @@ export const useChatStore = createPersistStore(
 );
 
 // --- Auth Listener ---
-// Stays here for now, but will be modified to call actions instead of store methods directly
+// Uses the action hook to trigger data loading/clearing based on auth state.
 export function AuthChatListener() {
-  const { ready, authenticated, user } = usePrivy(); // Get user object
+  const { ready, authenticated } = usePrivy();
   const apiClient = useApiClient();
 
-  // Selectors for state change triggers, not direct method calls anymore
-  const storeInitialized = useChatStore((state) => state.sessions.length > 0 || state.currentSessionIndex !== -1);
-  const clearState = useChatStore((state) => state.clearCurrentStateToDefault); // Keep for logout
+  // Direct store access for synchronous state clearing on logout
+  const clearState = useChatStore((state) => state.clearCurrentStateToDefault);
 
-  // Placeholder for actions - these would come from useChatActions() hook
-  const actions = {
-      loadInitialSessions: (api: ClientApi) => { console.log("[Auth Listener Action Stub] Load Initial Sessions called"); /* Real action needed */ },
-      clearLocalChatData: () => { console.log("[Auth Listener Action Stub] Clear Local Chat Data called"); clearState(); /* Simple clear is okay */ },
-      synchronizePendingData: (api: ClientApi) => { console.log("[Auth Listener Action Stub] Sync Pending Data called"); /* Real action needed */ },
-  };
+  // Get actions from the hook
+  const actions = useChatActions();
 
   const [prevAuthState, setPrevAuthState] = useState<boolean | null>(null);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   useEffect(() => {
+    // Wait for Privy readiness and API client availability
     if (!ready || !apiClient) {
-        console.log("[AuthChatListener] Waiting for Privy ready and API client...");
-        return; // Wait for both Privy and API client
+        // console.log("[AuthChatListener] Waiting for Privy ready and API client...");
+        return;
     }
 
     const isInitialCheck = prevAuthState === null;
     const authChanged = !isInitialCheck && authenticated !== prevAuthState;
 
-    console.log(`[AuthChatListener] Status: ready=${ready}, authenticated=${authenticated}, prevAuth=${prevAuthState}, initialLoadDone=${initialLoadDone}, apiClient=${!!apiClient}`);
+    // console.log(`[AuthChatListener] Status: ready=${ready}, authenticated=${authenticated}, prevAuth=${prevAuthState}, initialLoadDone=${initialLoadDone}, apiClient=${!!apiClient}`);
 
     if (isInitialCheck) {
-        console.log("[AuthChatListener] Initial check. Setting prevAuthState.");
+        // console.log("[AuthChatListener] Initial check. Setting prevAuthState.");
         setPrevAuthState(authenticated);
     }
 
-    if (authenticated && !initialLoadDone) {
-        console.log("[AuthChatListener] Authenticated and initial load not done. Triggering load/sync...");
-        actions.loadInitialSessions(apiClient);
-        // Optionally: Add a check for pending data after initial load
-        // actions.synchronizePendingData(apiClient);
-        setInitialLoadDone(true); // Mark initial load attempt
-    } else if (authChanged) {
-        console.log(`[AuthChatListener] Auth state changed: ${prevAuthState} -> ${authenticated}.`);
-        setPrevAuthState(authenticated); // Update previous state
-        setInitialLoadDone(false); // Reset initial load flag on auth change
-
-        if (!authenticated) {
-            console.log("[AuthChatListener] User logged out. Clearing local chat state via action.");
-            actions.clearLocalChatData(); // Call action to clear data
-        } else {
-             console.log("[AuthChatListener] User re-authenticated. Triggering load/sync...");
-             actions.loadInitialSessions(apiClient);
-             // actions.synchronizePendingData(apiClient);
-             setInitialLoadDone(true);
-        }
+    // Load data on initial authentication or if auth changes to authenticated
+    if (authenticated && (!initialLoadDone || authChanged)) {
+        console.log("[AuthChatListener] User authenticated. Triggering load/sync...");
+        // Use the action from the hook
+        actions.loadSessionsFromServer();
+        // We could add sync logic here if needed: actions.synchronizePendingData();
+        setInitialLoadDone(true); // Mark initial load attempt as done
+    } else if (authChanged && !authenticated) {
+        // User logged out
+        console.log(`[AuthChatListener] Auth state changed: ${prevAuthState} -> ${authenticated}. Clearing local state.`);
+        // Use the synchronous store method for clearing state on logout
+        clearState();
+        setInitialLoadDone(false); // Reset initial load flag
     } else if (!authenticated && !isInitialCheck && initialLoadDone) {
-         // If somehow we are logged out, but initialLoadDone is true (e.g., state persisted), clear data.
+         // Edge case: Logged out state detected after initial load was marked done
          console.log("[AuthChatListener] State inconsistency detected (logged out but initialLoadDone=true). Clearing data.");
-         actions.clearLocalChatData();
+         clearState();
          setInitialLoadDone(false); // Reset flag
     }
 
-  }, [ready, authenticated, prevAuthState, initialLoadDone, apiClient, actions]); // Add actions to dependency array
+    // Update prevAuthState if auth state changed
+    if (authChanged) {
+        setPrevAuthState(authenticated);
+    }
+
+  }, [ready, authenticated, prevAuthState, initialLoadDone, apiClient, actions, clearState]); // Add actions and clearState to dependencies
 
   return null; // Component doesn't render anything
 }

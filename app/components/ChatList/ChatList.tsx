@@ -6,7 +6,7 @@ import {
   Droppable,
   OnDragEndResponder,
 } from "@hello-pangea/dnd";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 
 import { useChatStore } from "@/app/store/chat";
 import { useChatActions } from "@/app/hooks/useChatActions";
@@ -15,7 +15,6 @@ import Locale from "@/app/locales"; // Adjusted path
 import { ChatItem } from "./ChatItem"; // Import from the same directory
 import { ChatListSkeleton } from "./ChatListSkeleton"; // Import the skeleton component
 import styles from "./chat-list.module.scss";
-import { useApiClient } from "@/app/context/ApiProviderContext";
 
 // Assuming showConfirm is replaced by window.confirm or similar
 // import { showConfirm } from "../components/ui-lib"; // Adjusted/removed path
@@ -31,18 +30,19 @@ export function ChatList(props: ChatListProps) {
     // selectSession,
     moveSession,
     // deleteSession,
-    updateTargetSession,
+    // updateTargetSession, // Removed updateTargetSession from useChatStore import as it's not used directly here
   } = useChatStore();
 
-  const { 
+  const {
     deleteSession,
     selectSession,
+    updateConversation,
     // moveSession: moveSessionAction,
     // updateTargetSession: updateTargetSessionAction,
   } = useChatActions();
 
   const router = useRouter();
-  const apiClient = useApiClient();
+  // const apiClient = useApiClient();
   const [isLoading, setIsLoading] = useState(true); // Add loading state
 
   // Effect to determine loading state based on sessions
@@ -75,32 +75,22 @@ export function ChatList(props: ChatListProps) {
 
   const onDragEnd: OnDragEndResponder = (result) => {
     const { destination, source } = result;
-    if (!destination) {
+    if (!destination || destination.index === source.index) {
       return;
     }
-
-    if (
-      destination.droppableId === source.droppableId &&
-      destination.index === source.index
-    ) {
-      return;
-    }
-
     moveSession(source.index, destination.index);
   };
 
   const handleSelectItem = (session: ChatSession) => {
+    // Navigation triggers useParams update, which triggers Effect 1 to update highlight
     router.push(`/chat/${session.id}`);
-    // Find the index of the selected session if needed (though selectSession uses index)
-    // const index = sessions.findIndex((s) => s.id === session.id);
-    // selectSession(index); // selectSession expects index, which we already have from mapping
   };
 
   const handleDeleteItem = async (session: ChatSession, index: number) => {
     // Replace showConfirm with window.confirm or a project-specific modal
     if (window.confirm(Locale.Home.DeleteChat)) {
       const isCurrentSession = index === currentSessionIndex;
-      deleteSession(index, apiClient);
+      deleteSession(index);
       
       // Navigate to /chat if the deleted session was the current one
       // or if it was the last session available
@@ -112,10 +102,10 @@ export function ChatList(props: ChatListProps) {
   };
 
   const handleRenameItem = (session: ChatSession, newName: string) => {
-    if (newName && newName.trim() !== "") {
-      updateTargetSession(session, (s) => {
-        s.topic = newName.trim();
-      });
+    const trimmedName = newName.trim();
+    if (trimmedName) {
+      // Assuming updateConversation handles both topic and potential backend updates
+      updateConversation(session.id, { title: trimmedName });
     }
   };
 
@@ -135,7 +125,7 @@ export function ChatList(props: ChatListProps) {
           >
             {sessions.map((item, i) => (
               <ChatItem
-                session={item} // Pass the full session object
+                session={item}
                 key={item.id}
                 index={i}
                 selected={i === currentSessionIndex}
@@ -154,4 +144,4 @@ export function ChatList(props: ChatListProps) {
       </Droppable>
     </DragDropContext>
   );
-} 
+}
