@@ -5,7 +5,7 @@ import { DEFAULT_TOPIC } from "../store/chat";
 import { useAppConfig } from "../store/config";
 import { UUID } from "crypto";
 
-export type SessionSyncState = 'synced' | 'pending_create' | 'pending_update' | 'error';
+export type SessionSyncState = 'synced' | 'pending_create' | 'pending_update' | 'error' | 'local';
 export type MessagesLoadState = 'none' | 'loading' | 'partial' | 'full' | 'error';
 
 /**

@@ -12,6 +12,9 @@ import {
 import { createPersistStore } from "@/app/utils/store";
 import { useChatStore } from "./chat";
 
+// Re-export ServiceProvider if it's defined in constant.ts
+export { ServiceProvider } from "@/app/constant";
+
 export type ModelType = (typeof DEFAULT_MODELS)[number]["name"];
 
 export enum SubmitKey {

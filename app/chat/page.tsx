@@ -7,11 +7,13 @@ import { useChatStore } from "@/app/store/chat"; // Assuming store path
 import { ChatInputPanel } from "@/app/components/chat/ChatInputPanel"; // Import the panel
 import { Box, Typography } from "@mui/material";
 import { useApiClient } from "@/app/context/ApiProviderContext"; // <-- Import hook
+import { useChatActions } from "@/app/hooks/useChatActions";
 // import { Path } from "@/app/constant"; // Assuming constant path if needed for Path.Home
 // import Locale from "@/app/locales"; // Assuming locales path if needed
 
 export default function NewChatPage() {
   const chatStore = useChatStore();
+  const { newSession, onUserInput } = useChatActions();
   const router = useRouter();
   const apiClient = useApiClient(); // <-- Use hook
   // const config = useAppConfig(); // If config is needed later
@@ -22,7 +24,7 @@ export default function NewChatPage() {
     if (!input || input.trim() === "") return; // Don't start if input is empty
 
     // 1. Create a new session (this likely selects it as the current one)
-    chatStore.newSession(apiClient); 
+    newSession(); 
 
     // 2. Get the *current* session from the store *after* the update
     // Accessing state directly might be necessary if selectors don't update instantly
@@ -37,7 +39,7 @@ export default function NewChatPage() {
 
     // 3. Add the initial message to the current session
     // Pass both input and images (images will be empty array here)
-    chatStore.onUserInput(input.trim(), apiClient, images);
+    onUserInput(input.trim(), images);
 
     // 4. Navigate to the new session URL
     router.replace(`/chat/${currentSession.id}`);

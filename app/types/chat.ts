@@ -1,6 +1,7 @@
 import { ServiceProvider } from '../constant';
 import { ModelType } from '../store/config';
 import { nanoid } from 'nanoid';
+import { MultimodalContent } from "@/app/client/api";
 
 export interface Message {
   role: 'user' | 'assistant';
@@ -12,7 +13,7 @@ export type MessageRole = (typeof ROLES)[number];
 
 export interface RequestMessage {
   role: MessageRole;
-  content: string;
+  content: string | MultimodalContent[];
 }
 
 export interface ChatConfig {

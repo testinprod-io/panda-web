@@ -9,6 +9,7 @@ import {
 import { useRouter } from "next/navigation";
 
 import { useChatStore } from "@/app/store/chat";
+import { useChatActions } from "@/app/hooks/useChatActions";
 import type { ChatSession } from "@/app/types/session"; // Adjusted path
 import Locale from "@/app/locales"; // Adjusted path
 import { ChatItem } from "./ChatItem"; // Import from the same directory
@@ -27,11 +28,18 @@ export function ChatList(props: ChatListProps) {
   const {
     sessions,
     currentSessionIndex,
-    selectSession,
+    // selectSession,
     moveSession,
-    deleteSession,
+    // deleteSession,
     updateTargetSession,
   } = useChatStore();
+
+  const { 
+    deleteSession,
+    selectSession,
+    // moveSession: moveSessionAction,
+    // updateTargetSession: updateTargetSessionAction,
+  } = useChatActions();
 
   const router = useRouter();
   const apiClient = useApiClient();
@@ -132,8 +140,8 @@ export function ChatList(props: ChatListProps) {
                 index={i}
                 selected={i === currentSessionIndex}
                 onClick={() => {
-                  selectSession(i, apiClient);
                   handleSelectItem(item);
+                  selectSession(i);
                 }}
                 onDelete={() => handleDeleteItem(item, i)}
                 onRename={(newTitle) => handleRenameItem(item, newTitle)}

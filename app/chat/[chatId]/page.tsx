@@ -3,6 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import { useChatStore } from '@/app/store/chat';
+import { useChatActions } from '@/app/hooks/useChatActions';
 import { ChatSession } from '@/app/types';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Chat } from '@/app/components/chat/Chat';
@@ -19,7 +20,7 @@ export default function ChatPage() {
   const router = useRouter();
   const chatId = params?.chatId as string | undefined;
   const sessions = useChatStore((state) => state.sessions);
-  const selectSession = useChatStore((state) => state.selectSession);
+  const { selectSession } = useChatActions();
   const currentSessionId = useChatStore((state) => state.currentSession()?.id);
   const { isReady: isAuthReady, isAuthenticated } = useAuthStatus();
   const [isLoading, setIsLoading] = useState(true);
@@ -61,7 +62,7 @@ export default function ChatPage() {
       console.log(`[ChatPage] useEffect: Found sessionIndex=${sessionIndex}. Current selected session ID=${currentSessionId}`);
       if (currentSessionId !== chatId) {
          console.log(`[ChatPage] useEffect: Calling selectSession(${sessionIndex}) for chatId=${chatId}`);
-         selectSession(sessionIndex, null);
+         selectSession(sessionIndex);
          console.log(`[ChatPage] useEffect: Called selectSession(${sessionIndex})`);
          // Note: selectSession itself will trigger a re-render eventually
       }
