@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  DragDropContext,
-  Droppable,
-  OnDragEndResponder,
-} from "@hello-pangea/dnd";
+// Removed DND imports
+// import {
+//   DragDropContext,
+//   Droppable,
+//   OnDragEndResponder,
+// } from "@hello-pangea/dnd";
 import { useRouter, useParams } from "next/navigation";
 
 import { useChatStore } from "@/app/store/chat";
@@ -27,18 +28,13 @@ export function ChatList(props: ChatListProps) {
   const {
     sessions,
     currentSessionIndex,
-    // selectSession,
-    moveSession,
-    // deleteSession,
-    // updateTargetSession, // Removed updateTargetSession from useChatStore import as it's not used directly here
+    // Removed moveSession from store import as DND is removed
   } = useChatStore();
 
   const {
     deleteSession,
     selectSession,
     updateConversation,
-    // moveSession: moveSessionAction,
-    // updateTargetSession: updateTargetSessionAction,
   } = useChatActions();
 
   const router = useRouter();
@@ -69,17 +65,9 @@ export function ChatList(props: ChatListProps) {
                 setIsLoading(false);
             }
         }, 500); // Longer timeout for initial load check
-         return () => clearTimeout(timer);
+        return () => clearTimeout(timer);
     }
   }, [sessions]); // Re-run when sessions array reference changes
-
-  const onDragEnd: OnDragEndResponder = (result) => {
-    const { destination, source } = result;
-    if (!destination || destination.index === source.index) {
-      return;
-    }
-    moveSession(source.index, destination.index);
-  };
 
   const handleSelectItem = (session: ChatSession) => {
     // Navigation triggers useParams update, which triggers Effect 1 to update highlight
@@ -103,45 +91,40 @@ export function ChatList(props: ChatListProps) {
 
   const handleRenameItem = (session: ChatSession, newName: string) => {
     const trimmedName = newName.trim();
-    if (trimmedName) {
-      // Assuming updateConversation handles both topic and potential backend updates
+    if (trimmedName && session.id) { // Ensure session.id exists
       updateConversation(session.id, { title: trimmedName });
+    } else if (trimmedName && session.conversationId) {
+        // Fallback: If purely server-side session without local ID yet (less likely)
+        // console.warn("[ChatList] Renaming session using conversationId as fallback");
+        updateConversation(session.conversationId, { title: trimmedName });
+    }
+     else {
+        console.error("[ChatList] Cannot rename session - missing identifier");
     }
   };
 
-  // Render Skeleton if loading
   if (isLoading) {
     return <ChatListSkeleton />;
   }
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <Droppable droppableId="chat-list">
-        {(provided) => (
-          <div
-            className={styles["chat-list"]}
-            ref={provided.innerRef}
-            {...provided.droppableProps}
-          >
-            {sessions.map((item, i) => (
-              <ChatItem
-                session={item}
-                key={item.id}
-                index={i}
-                selected={i === currentSessionIndex}
-                onClick={() => {
-                  handleSelectItem(item);
-                  selectSession(i);
-                }}
-                onDelete={() => handleDeleteItem(item, i)}
-                onRename={(newTitle) => handleRenameItem(item, newTitle)}
-                narrow={props.narrow}
-              />
-            ))}
-            {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
-    </DragDropContext>
+    // Removed DragDropContext and Droppable wrappers
+    <div className={styles["chat-list"]}>
+      {sessions.map((item, i) => (
+        <ChatItem
+          session={item}
+          key={item.id} // Use local ID as key
+          index={i}
+          selected={i === currentSessionIndex} // Highlight directly based on URL chatId
+          onClick={() => {
+            selectSession(i);
+            handleSelectItem(item);
+          }}
+          onDelete={() => handleDeleteItem(item, i)}
+          onRename={(newTitle) => handleRenameItem(item, newTitle)}
+          narrow={props.narrow}
+        />
+      ))}
+    </div>
   );
 }

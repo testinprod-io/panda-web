@@ -18,7 +18,6 @@ export default function NewChatPage() {
   const apiClient = useApiClient(); // <-- Use hook
   // const config = useAppConfig(); // If config is needed later
   // const pathname = usePathname(); // If pathname is needed later
-  chatStore.currentSessionIndex = -1;
   // startChat now needs to accept input and images, although images will be empty here
   const startChat = (input: string, images: string[]) => {
     if (!input || input.trim() === "") return; // Don't start if input is empty

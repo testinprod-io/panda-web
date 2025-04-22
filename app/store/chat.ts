@@ -90,7 +90,7 @@ type HydratedChatState = ChatState & MakeUpdater<ChatState>;
 // Define the shape of the state part we want to encrypt/decrypt in storage
 // Includes sessions with topic and messages (specifically message content)
 interface ChatStateForStorage {
-  sessions: Array<Pick<ChatSession, 'id' | 'topic' | 'messages' | 'conversationId' | 'syncState' | 'messagesLoadState'>>; // Added more fields for potential migration/checks
+  sessions: Array<Pick<ChatSession, 'id' | 'topic' | 'encryptedTopic' | 'messages' | 'conversationId' | 'syncState' | 'messagesLoadState'>>; // Added more fields for potential migration/checks
   // Include other top-level fields of DEFAULT_CHAT_STATE if they were persisted and need encryption
   currentSessionIndex?: number; // Add other persisted fields
   lastInput?: string;
@@ -110,11 +110,13 @@ const encryptedFieldsStorage: StateStorage = {
       if (stateFromStorage.state?.sessions) {
         stateFromStorage.state.sessions.forEach(session => {
           // Decrypt session topic
+          session.encryptedTopic = session.topic;
           if (typeof session.topic === 'string') { // Check if topic exists and is a string
             session.topic = EncryptionService.decrypt(session.topic);
           } else {
              session.topic = session.topic || DEFAULT_TOPIC; // Assign default if missing
           }
+          
           // Decrypt message content within the session
           if (Array.isArray(session.messages)) {
             session.messages.forEach(message => {

@@ -311,7 +311,7 @@ export function useChatActions() {
                 if (session.conversationId) {
                     console.log(`[Title Generation Action] Attempting to update server title for ConvID: ${session.conversationId}`);
                     const updateReq: ConversationUpdateRequest = { title: generatedTitle };
-                    updateConversation(session.conversationId, updateReq);
+                    updateConversation(session.id, updateReq);
                 }
             } else {
                  console.log(`[Title Generation Action] Generated title is default or unchanged, not updating.`);
@@ -330,7 +330,7 @@ export function useChatActions() {
             return;
         }
 
-        const session = store.sessions.find(s => s.id === sessionId);
+        const session = useChatStore.getState().sessions.find(s => s.id === sessionId);
         if (!session) {
             console.warn(`[ChatActions] Session not found: ${sessionId}`);
             return;

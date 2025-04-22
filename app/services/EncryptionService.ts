@@ -42,10 +42,10 @@ export const EncryptionService = {
 
   decrypt(encryptedText: string): string {
     // Only attempt decryption if it looks like base64, otherwise return as is
-    // if (!isLikelyBase64(encryptedText)) {
-        // console.warn(`[EncryptionService] Skipping decryption for non-base64 string: ${encryptedText.substring(0, 50)}...`);
+    if (!isLikelyBase64(encryptedText)) {
+        console.warn(`[EncryptionService] Skipping decryption for non-base64 string: ${encryptedText.substring(0, 50)}...`);
         return encryptedText;
-    // }
+    }
 
     try {
       const decrypted = CryptoJS.AES.decrypt(encryptedText, parsedKey, {

@@ -12,29 +12,51 @@
 .chat-item {
   display: flex;
   align-items: center;
-  padding: 10px 15px;
+  padding: 5px; /* Add outer padding */
   margin: 5px 10px;
-  border-radius: 8px;
+  border-radius: 8px; /* Keep outer radius if desired, or remove if highlight provides shape */
   cursor: pointer;
   position: relative; /* Needed for absolute positioning of menu */
-  transition: background-color 0.2s ease;
   user-select: none; /* Prevent text selection during drag */
+  /* Remove hover effect if selection provides enough feedback */
+  /* &:hover {
+    background-color: rgba(0, 0, 0, 0.05); 
+  } */
 }
 
-.chat-item:hover {
-  background-color: rgba(0, 0, 0, 0.05); /* Adjust color based on theme */
+/* New style for the highlighted background container */
+.chat-item-highlight {
+  /* background-color: rgba(0, 0, 0, 0.08); */ /* REMOVE default background */
+  border-radius: 6px; /* Rounded corners for the highlight area */
+  padding: 10px 15px; /* Inner padding - defines the size of the highlight area */
+  width: 100%; /* Ensure it fills the padded chat-item */
+  height: 100%; /* Ensure it fills the padded chat-item */
+  display: flex; /* Use flex to align content within highlight */
+  align-items: center;
 }
 
-.chat-item-selected {
-  background-color: rgba(0, 0, 0, 0.1); /* Adjust color based on theme */
+/* Style for the highlighted background ONLY when selected */
+.chat-item-selected-highlight {
+  background-color: rgba(0, 0, 0, 0.08); /* Use the lighter shade for selected */
 }
+
+/* Hover effect ONLY for non-selected items */
+.chat-item:hover .chat-item-highlight:not(.chat-item-selected-highlight) {
+   background-color: rgba(0, 0, 0, 0.05); /* Lighter hover background */
+}
+
+/* Remove the old selected style */
+/* .chat-item-selected {
+  background-color: rgba(0, 0, 0, 0.1);
+} */
 
 .chat-item-title {
   flex-grow: 1;
+  width: 100%;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-right: 10px; /* Space before menu icon */
 }
 
 .chat-item-title-text {
@@ -44,12 +66,24 @@
 
 .chat-item-title-input {
   width: 100%;
-  padding: 4px 6px;
-  font-size: 0.9rem;
-  background-color: transparent; /* Ensure visibility */
-  color: black;
+  position: relative;
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block; /* Ensure it takes full width for ellipsis */
+  padding: 0; /* Remove specific padding */
+  margin: 0; /* Remove specific margin */
+  font-size: inherit; /* Inherit from parent */
+  font-family: inherit; /* Inherit from parent */
+  font-weight: inherit; /* Inherit from parent */
+  line-height: inherit; /* Inherit from parent */
+  color: inherit; /* Inherit from parent */
+  background-color: transparent;
   outline: none;
-  border: none;
+  border: none; /* Explicitly remove border */
+  /* Remove underline - This might need !important or specific targeting if Mui adds it */
+  text-decoration: none; 
 }
 
 .chat-item-menu {

@@ -50,10 +50,10 @@ export default function ChatPage() {
       // Access latest currentSession directly from store inside effect
       // const currentSessionId = useChatStore.getState().currentSession()?.id;
       // Use the selected currentSessionId from component scope
-      if (currentSessionId !== chatId) {
-         selectSession(sessionIndex);
-        // Note: selectSession itself will trigger a re-render eventually
-      }
+      // REMOVED: We assume ChatList onClick already called selectSession
+      // if (currentSessionId !== chatId) {
+      //    selectSession(sessionIndex);
+      // }
       // Only set loading false if it's currently true
       if (isLoading) setIsLoading(false);
     } else {

@@ -24,6 +24,7 @@ export interface ChatSession {
   id: string;
   conversationId?: UUID;
   topic: string;
+  encryptedTopic: string;
   memoryPrompt: string;
   messages: ChatMessage[];
   stat: ChatStat;
@@ -52,6 +53,7 @@ export function createEmptySession(): ChatSession {
   return {
     id: nanoid(),
     topic: DEFAULT_TOPIC,
+    encryptedTopic: "",
     memoryPrompt: "",
     messages: [],
     stat: {

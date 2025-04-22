@@ -339,9 +339,9 @@
   // position: sticky; // Keep sticky behavior if needed - User commented out
   bottom: 0;
   z-index: 1;
-  &:focus-within {
-    border-color: var(--black);
-  }
+  // &:focus-within {
+  //   border-color: var(--black);
+  // }
 }
 
 /* Inner container holding textarea, actions, etc. */
