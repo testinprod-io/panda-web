@@ -36,7 +36,7 @@ import {
 } from "../constant";
 import Locale, { getLang } from "../locales";
 import { prettyObject } from "../utils/format";
-import { createPersistStore } from "../utils/store";
+import { createPersistStore, MakeUpdater } from "../utils/store";
 // import { estimateTokenLength } from "../utils/token"; // Moved to countMessages in chatUtils
 import { ModelConfig, ModelType, useAppConfig } from "./config";
 // import { useAccessStore } from "./access"; // Needed for getSummarizeModel? No, moved.
@@ -51,6 +51,8 @@ import { useApiClient } from "../context/ApiProviderContext";
 import type { ClientApi, MultimodalContent } from "@/app/client/api"; // Added MultimodalContent
 import { Conversation, Message as ApiMessage, SenderTypeEnum } from "@/app/client/types"; // Added SenderTypeEnum
 import { useChatActions } from "@/app/hooks/useChatActions"; // Import the actions hook
+import { createJSONStorage, StateStorage } from "zustand/middleware"; // Added StateStorage
+import { EncryptionService } from "@/app/services/EncryptionService";
 
 const localStorage = safeLocalStorage();
 
@@ -76,6 +78,101 @@ const DEFAULT_CHAT_STATE = {
   currentSessionIndex: -1, // Start with no session selected
   lastInput: "",
 };
+
+// Define the core chat state type
+type ChatState = typeof DEFAULT_CHAT_STATE;
+
+// Define the fully hydrated state type including MakeUpdater
+type HydratedChatState = ChatState & MakeUpdater<ChatState>;
+
+// --- Zustand Storage Encryption Wrapper ---
+
+// Define the shape of the state part we want to encrypt/decrypt in storage
+// Includes sessions with topic and messages (specifically message content)
+interface ChatStateForStorage {
+  sessions: Array<Pick<ChatSession, 'id' | 'topic' | 'messages' | 'conversationId' | 'syncState' | 'messagesLoadState'>>; // Added more fields for potential migration/checks
+  // Include other top-level fields of DEFAULT_CHAT_STATE if they were persisted and need encryption
+  currentSessionIndex?: number; // Add other persisted fields
+  lastInput?: string;
+}
+
+// Create a storage wrapper for encryption/decryption, typed correctly
+const encryptedFieldsStorage: StateStorage = {
+  getItem: async (name: string): Promise<string | null> => {
+    const encryptedString = await indexedDBStorage.getItem(name);
+    if (!encryptedString) return null;
+
+    try {
+      // Parse the potentially encrypted state from storage
+      const stateFromStorage = JSON.parse(encryptedString) as { state: ChatStateForStorage; version: number };
+
+      // Decrypt relevant fields if they exist
+      if (stateFromStorage.state?.sessions) {
+        stateFromStorage.state.sessions.forEach(session => {
+          // Decrypt session topic
+          if (typeof session.topic === 'string') { // Check if topic exists and is a string
+            session.topic = EncryptionService.decrypt(session.topic);
+          } else {
+             session.topic = session.topic || DEFAULT_TOPIC; // Assign default if missing
+          }
+          // Decrypt message content within the session
+          if (Array.isArray(session.messages)) {
+            session.messages.forEach(message => {
+              if (message.content) { // Check if content exists
+                message.content = EncryptionService.decryptChatMessageContent(message.content);
+              } else {
+                 message.content = message.content || ""; // Assign empty string if missing
+              }
+            });
+          } else {
+              session.messages = session.messages || []; // Initialize if missing
+          }
+        });
+      } else {
+          stateFromStorage.state.sessions = stateFromStorage.state.sessions || [];
+      }
+      // Return the decrypted state (still stringified for zustand)
+      return JSON.stringify(stateFromStorage); // Return the full object {state: ..., version: ...}
+    } catch (error) {
+      console.error(`[ChatStore Decrypt] Failed to decrypt state from storage '${name}':`, error);
+      return null;
+    }
+  },
+  setItem: async (name: string, value: string): Promise<void> => {
+    try {
+       // Parse the current in-memory state (which includes {state: ..., version: ...})
+      const stateWithValue = JSON.parse(value) as { state: ChatStateForStorage; version: number };
+
+      // Create a deep copy to encrypt without mutating the in-memory state
+      const stateToEncrypt = JSON.parse(value) as { state: ChatStateForStorage; version: number };
+
+      // Encrypt relevant fields in the copied state's `state` property
+       if (stateToEncrypt.state?.sessions) {
+          stateToEncrypt.state.sessions.forEach(session => {
+              if (typeof session.topic === 'string') {
+                  session.topic = EncryptionService.encrypt(session.topic);
+              }
+              if (Array.isArray(session.messages)) {
+                 session.messages.forEach(message => {
+                   if (message.content) {
+                       message.content = EncryptionService.encryptChatMessageContent(message.content);
+                   }
+                 });
+              }
+          });
+       }
+      const encryptedValue = JSON.stringify(stateToEncrypt);
+      await indexedDBStorage.setItem(name, encryptedValue);
+    } catch (error) {
+      console.error(`[ChatStore Encrypt] Failed to encrypt state for storage '${name}':`, error);
+    }
+  },
+  removeItem: async (name: string): Promise<void> => {
+    await indexedDBStorage.removeItem(name);
+  },
+};
+
+// --- End Zustand Storage Encryption Wrapper ---
 
 export const useChatStore = createPersistStore(
   DEFAULT_CHAT_STATE,
@@ -248,17 +345,19 @@ export const useChatStore = createPersistStore(
       setSessions(sessions: ChatSession[], currentSessionIndex?: number) {
           const newIndex = currentSessionIndex ?? (sessions.length > 0 ? 0 : -1);
           set({
-              sessions: sessions,
+              sessions: sessions, // Assumes sessions are already decrypted
               currentSessionIndex: newIndex
           });
       },
 
       // Adds a new session to the beginning of the list and selects it
       addSession(session: ChatSession) {
+         // Session is added in its decrypted form to the in-memory state
          set(state => ({
              sessions: [session, ...state.sessions],
              currentSessionIndex: 0, // Select the new session
          }));
+         // Encryption happens when this state is persisted by the storage wrapper
       },
 
       // Removes a session by index
@@ -293,7 +392,7 @@ export const useChatStore = createPersistStore(
       // Updates a session identified by its local id or conversationId
       updateTargetSession(
           identifier: { id?: string; conversationId?: UUID },
-          updater: (session: ChatSession) => void // Can modify session draft
+          updater: (session: ChatSession) => void // Can modify session draft (in decrypted form)
       ) {
           set(state => {
              let index = -1;
@@ -311,27 +410,29 @@ export const useChatStore = createPersistStore(
              }
 
              const newSessions = [...state.sessions];
-             const sessionToUpdate = { ...newSessions[index] }; // Shallow copy to modify
+             const sessionToUpdate = { ...newSessions[index] }; // Shallow copy to modify (decrypted form)
 
-             // Apply the updates immutably
+             // Apply the updates immutably to the decrypted draft
              updater(sessionToUpdate);
 
              // Create a new object reference for the updated session
              newSessions[index] = sessionToUpdate;
 
-             // Return the new state
+             // Return the new state (with updated decrypted session)
+             // Encryption happens when this state is persisted by the storage wrapper
              return { ...state, sessions: newSessions };
           });
       },
 
-      // Example: Add a message to the current session (synchronous part)
+      // Add a user message to the current session (synchronous part)
       addUserMessage(content: string | MultimodalContent[]) {
+          // Content here is the raw, unencrypted user input
           const currentSession = get().currentSession();
           if (!currentSession) return null;
 
           const userMessage = createMessage({
               role: "user",
-              content: content,
+              content: content, // Store unencrypted content in memory
               syncState: 'pending_create', // Mark as needing to be sent
           });
 
@@ -339,17 +440,18 @@ export const useChatStore = createPersistStore(
               session.messages = [...session.messages, userMessage];
               session.lastUpdate = Date.now(); // Update timestamp
           });
-          return userMessage; // Return the created message for potential use in actions
+          // Encryption of content happens when saving state via wrapper OR sending via ApiService
+          return userMessage; // Return the created message (decrypted form)
       },
 
-      // Example: Add a placeholder for bot response (synchronous part)
+      // Add a placeholder for bot response (synchronous part)
       addBotMessagePlaceholder(model: ModelType | string) {
           const currentSession = get().currentSession();
           if (!currentSession) return null;
 
           const botMessage = createMessage({
               role: "assistant",
-              content: "", // Start empty
+              content: "", // Start empty (decrypted)
               streaming: true,
               model: model as ModelType, // Store the model used
               syncState: 'pending_create', // Also needs saving eventually
@@ -359,14 +461,15 @@ export const useChatStore = createPersistStore(
               session.messages = [...session.messages, botMessage];
               // Don't update lastUpdate here, wait for bot response finish
           });
-          return botMessage; // Return the placeholder
+          // Encryption happens when saving state via wrapper OR receiving final message via ApiService
+          return botMessage; // Return the placeholder (decrypted form)
       },
 
       // Update a specific message (e.g., for streaming updates, setting sync state)
       updateMessage(
           sessionId: string | undefined,
           messageId: string,
-          updater: (message: ChatMessage) => void
+          updater: (message: ChatMessage) => void // Operates on decrypted message draft
       ) {
           const sessionIdentifier = sessionId ? { id: sessionId } : get().currentSession();
           if (!sessionIdentifier) return;
@@ -374,8 +477,8 @@ export const useChatStore = createPersistStore(
           get().updateTargetSession(sessionIdentifier, (session) => {
               const msgIndex = session.messages.findIndex(m => m.id === messageId);
               if (msgIndex !== -1) {
-                  const messageToUpdate = { ...session.messages[msgIndex] }; // Shallow copy
-                  updater(messageToUpdate);
+                  const messageToUpdate = { ...session.messages[msgIndex] }; // Shallow copy (decrypted)
+                  updater(messageToUpdate); // Apply updates to decrypted draft
                   session.messages = [
                       ...session.messages.slice(0, msgIndex),
                       messageToUpdate,
@@ -389,6 +492,7 @@ export const useChatStore = createPersistStore(
                    console.warn(`[updateMessage] Message ${messageId} not found in session ${sessionId || sessionIdentifier.id}`);
               }
           });
+          // Encryption happens when saving state via wrapper
       },
 
       // Moves a session from one index to another
@@ -445,6 +549,7 @@ export const useChatStore = createPersistStore(
         if (currentSessionIndex < 0 || currentSessionIndex >= sessions.length) {
           return undefined; // No valid session selected
         }
+        // Returns the decrypted session from in-memory state
         return sessions[currentSessionIndex];
       },
 
@@ -453,17 +558,19 @@ export const useChatStore = createPersistStore(
 
       // --- Memory/Prompt Related (Keep simple getters/setters if state-related) ---
 
-      // Gets the memory prompt string if it exists
+      // Gets the memory prompt string if it exists (assumed decrypted)
       getMemoryPromptContent(): string | undefined {
           return get().currentSession()?.memoryPrompt;
       },
 
       // Updates memory prompt and related indices (used after summarization action)
       updateMemoryPrompt(sessionId: string, prompt: string, lastSummarizeIndex: number) {
+          // Prompt is likely generated and used in decrypted form
           get().updateTargetSession({ id: sessionId }, (session) => {
               session.memoryPrompt = prompt;
               session.lastSummarizeIndex = lastSummarizeIndex;
           });
+          // Encryption happens when saving state via wrapper
       },
 
       // Clears context up to a certain message index
@@ -482,7 +589,7 @@ export const useChatStore = createPersistStore(
         const session = get().currentSession();
         if (!session) return;
         get().updateTargetSession(session, (sess) => {
-            sess.messages = [BOT_HELLO];
+            sess.messages = [BOT_HELLO]; // BOT_HELLO content is static, assumed decrypted
             sess.memoryPrompt = "";
             sess.clearContextIndex = 0;
             sess.lastSummarizeIndex = 0;
@@ -498,12 +605,12 @@ export const useChatStore = createPersistStore(
       // Removed summarizeMessagesIfNeeded - complex logic moved to actions
       // Removed performSummarization - complex logic moved to actions
 
-      // Updates session stats (synchronous)
+      // Updates session stats (synchronous) - operates on decrypted message content
       updateStat(message: ChatMessage) {
           const session = get().currentSession();
           if (!session || message.isError || message.streaming) return; // Only update for final, non-error messages
 
-          const content = getMessageTextContent(message); // Use util
+          const content = getMessageTextContent(message); // Use util on decrypted content
           const wordCount = content.split(/\s+/).filter(Boolean).length;
           // We need estimateTokenLength back or handled in actions
           // For now, let's assume token count update happens in actions or isn't critical here
@@ -527,7 +634,7 @@ export const useChatStore = createPersistStore(
       },
 
       setLastInput(lastInput: string) {
-        set({ lastInput });
+        set({ lastInput }); // lastInput is likely fine unencrypted
       },
 
       updateCurrentSessionConfigForProvider(provider: ServiceProvider) {
@@ -570,6 +677,7 @@ export const useChatStore = createPersistStore(
       // --- Server Interaction State Updates (called by actions) ---
 
       // Called by loadSessionsFromServer action after successful API call
+      // Expects serverConvos to have titles already decrypted by ApiService
       _onServerSessionsLoaded(serverConvos: Conversation[]) {
           const localSessions = _get().sessions;
           const { mergedSessions, newCurrentIndex } = mergeSessions(localSessions, serverConvos);
@@ -587,27 +695,25 @@ export const useChatStore = createPersistStore(
       },
 
       // Called by loadMessagesForSession action after successful API call
+      // Expects serverApiMessages to have content already decrypted by ApiService
       _onServerMessagesLoaded(
           conversationId: UUID,
           serverApiMessages: ApiMessage[],
           hasMore: boolean,
           nextCursor: string | null
       ) {
-          // Need mapApiMessageToChatMessage from service
-          // This suggests mapping might belong elsewhere or passed in
-          // For now, assume the action layer does the mapping before calling this
-          // Let's adjust signature later if needed. Assume serverMessages are ChatMessage[]
-          const serverMessages = serverApiMessages.map(m => ({ // Temporary mapping here
+          // Map API messages (decrypted by ApiService) to ChatMessage format
+          const serverMessages = serverApiMessages.map(m => ({
               id: m.message_id,
-              role: m.sender_type === SenderTypeEnum.USER ? 'user' : 'assistant', // Fixed: Use imported SenderTypeEnum
-              content: m.content,
+              role: m.sender_type === SenderTypeEnum.USER ? 'user' : 'assistant',
+              content: m.content, // Assumes m.content is already decrypted string | MultimodalContent[]
               date: new Date(m.timestamp).toLocaleString(),
               syncState: 'synced'
           } as ChatMessage));
 
 
           get().updateTargetSession({ conversationId }, (sess) => {
-              // Fixed: Provide default for potentially undefined messagesLoadState
+              // Merge decrypted server messages with decrypted local messages
               const { mergedMessages } = mergeMessages(sess.messages, serverMessages, sess.messagesLoadState ?? 'none');
               sess.messages = mergedMessages;
               sess.messagesLoadState = hasMore ? 'partial' : 'full';
@@ -623,12 +729,14 @@ export const useChatStore = createPersistStore(
       },
 
       // Called by saveMessageToServer action after successful API call
+      // Expects savedMessage to have content already decrypted by ApiService
       _onMessageSyncSuccess(conversationId: UUID, localMessageId: string, savedMessage: ApiMessage) {
           get().updateTargetSession({ conversationId }, (sess) => {
               const msgIndex = sess.messages.findIndex(m => m.id === localMessageId);
               if (msgIndex !== -1) {
                   const updatedMessage: ChatMessage = {
-                     ...sess.messages[msgIndex],
+                     ...sess.messages[msgIndex], // Keep local decrypted content until next fetch? Or update with decrypted server content?
+                     content: savedMessage.content, // Update with decrypted content from server response
                      id: savedMessage.message_id, // Update ID to server ID
                      syncState: 'synced',
                      isError: false, // Clear error on success
@@ -670,7 +778,7 @@ export const useChatStore = createPersistStore(
 
       // --- Getters needed by Actions/Components ---
 
-      // Simplified getMessagesWithMemory - only prepares context/memory prompts based on state
+      // Simplified getMessagesWithMemory - operates on decrypted state
       // Actual token counting / message slicing for API call should happen in actions
       getMemoryContextPrompts(modelConfig: ModelConfig): { systemPrompts: ChatMessage[], memoryPrompt?: ChatMessage, contextPrompts: ChatMessage[] } {
         const session = get().currentSession();
@@ -678,25 +786,27 @@ export const useChatStore = createPersistStore(
 
         const systemPrompts: ChatMessage[] = [];
         // Simplified system prompt creation - fillTemplateWith moved, assume action handles it
+        // Content here is assumed decrypted for LLM processing
         systemPrompts.push(createMessage({ role: "system", content: `System prompt for ${modelConfig.model}` })); // Placeholder content
 
         let memoryPrompt: ChatMessage | undefined = undefined;
         const shouldSendLongTermMemory = modelConfig.sendMemory && session.memoryPrompt && session.memoryPrompt.length > 0;
         if (shouldSendLongTermMemory) {
+            // Memory prompt content is assumed decrypted
             memoryPrompt = createMessage({ role: "system", content: Locale.Store.Prompt.History(session.memoryPrompt), date: "" });
         }
-
+        // Context messages are assumed decrypted
         const contextPrompts = session.context.slice(); // Assuming context is already ChatMessage[]
 
         return { systemPrompts, memoryPrompt, contextPrompts };
       },
 
       // Retrieves recent messages based on count, skipping errors
-      // Used by actions before sending to API
+      // Used by actions before sending to API (content will be encrypted by ApiService)
       getRecentMessagesForApi(count: number): ChatMessage[] {
           const session = get().currentSession();
           if (!session) return [];
-          const messages = session.messages;
+          const messages = session.messages; // Decrypted messages
           const recentMessages: ChatMessage[] = [];
           for (let i = messages.length - 1; i >= 0 && recentMessages.length < count; i--) {
               const msg = messages[i];
@@ -704,7 +814,7 @@ export const useChatStore = createPersistStore(
                   recentMessages.push(msg);
               }
           }
-          return recentMessages.reverse(); // Return in chronological order
+          return recentMessages.reverse(); // Return in chronological order (decrypted)
       },
 
       // --- Removed complex methods involving API calls or heavy logic ---
@@ -721,36 +831,66 @@ export const useChatStore = createPersistStore(
   },
   {
     name: StoreKey.Chat,
-    version: 1.1, // Incremented version due to state structure changes (removed direct API deps)
-    storage: indexedDBStorage as any, // Use indexedDB
-    migrate(persistedState: any, version: number) {
-        if (version < 1.1) {
-             // Migration logic if needed from v1.0 to v1.1
-             // e.g., initialize new state fields, clean up old ones
+    version: 2.0,
+
+    storage: createJSONStorage(() => encryptedFieldsStorage),
+
+    migrate(persistedState: unknown, version: number): HydratedChatState | Promise<HydratedChatState> {
+        let state = persistedState as Partial<ChatState>; // State read from storage (potentially old version)
+
+        // Apply migration from v1.0 to v1.1 if necessary
+        if (version < 1.1 && state) {
              console.log("[ChatStore Migration] Migrating state from version < 1.1");
-             const state = persistedState as typeof DEFAULT_CHAT_STATE;
-             // Example: ensure sessions is always an array
              if (!Array.isArray(state.sessions)) {
                  state.sessions = [createEmptySession()];
                  state.currentSessionIndex = 0;
              }
-             // Ensure syncState exists on sessions
-             state.sessions.forEach(s => {
-                 if (!s.syncState) s.syncState = s.conversationId ? 'synced' : 'local';
-                 if (!s.messagesLoadState) s.messagesLoadState = 'none';
-             });
-             // Ensure syncState exists on messages
-              state.sessions.forEach(s => {
-                 s.messages.forEach(m => {
-                     if (!m.syncState) m.syncState = 'synced'; // Assume old messages were synced
-                 });
+             state.sessions?.forEach(s => {
+                 if (s) {
+                    if (!s.syncState) s.syncState = s.conversationId ? 'synced' : 'local';
+                    if (!s.messagesLoadState) s.messagesLoadState = 'none';
+                    s.messages?.forEach(m => {
+                        if (m && !m.syncState) m.syncState = 'synced';
+                    });
+                 }
              });
         }
-        return persistedState;
+
+        // Handle migration from pre-encryption (v1.x) to encryption (v2.0)
+        if (version < 2.0 && state) {
+            console.log("[ChatStore Migration] Migrating state from version < 2.0 (Pre-Encryption)");
+            // No transformation needed here - decryption handled by storage.getItem
+        }
+
+        // Ensure the migrated state conforms to the full default structure
+        // and add placeholder MakeUpdater fields required by the return type
+        const migratedState: HydratedChatState = {
+            ...DEFAULT_CHAT_STATE, // Start with defaults
+            ...(state ?? {}), // Apply migrated fields
+            // Add required MakeUpdater fields (these will be properly set by persist later)
+            lastUpdateTime: 0,
+            _hasHydrated: false,
+            markUpdate: () => {},
+            update: () => {},
+            setHasHydrated: () => {},
+        };
+
+        return migratedState;
     },
+
     onRehydrateStorage: (state) => {
-      console.log("[ChatStore] Hydration finished");
-      // Optional: Perform actions after hydration, e.g., initial load trigger moved to listener/actions
+      console.log("[ChatStore] Hydration finished (Encryption Applied on Load)");
+      // State here is the fully hydrated state, including MakeUpdater methods
+      return (hydratedState, error) => {
+          if (error) {
+              console.error("[ChatStore] Error during rehydration:", error);
+              // Removed direct call to state.clearCurrentStateToDefault() as it's problematic here.
+              // Consider alternative error handling if needed.
+          } else {
+               console.log("[ChatStore] Rehydration successful.");
+               // hydratedState contains the fully initialized store state if needed
+          }
+      }
     },
   },
 );

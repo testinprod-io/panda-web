@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { combine, persist, createJSONStorage } from "zustand/middleware";
+import { combine, persist, createJSONStorage, StateStorage } from "zustand/middleware";
 import { Updater } from "@/app/types/common";
 import { deepClone } from "./clone";
 import { indexedDBStorage } from "./indexedDB-storage";
@@ -12,6 +12,7 @@ type SecondParam<T> = T extends (
   ? S
   : never;
 
+// Original MakeUpdater (not exported)
 type MakeUpdater<T> = {
   lastUpdateTime: number;
   _hasHydrated: boolean;
@@ -26,19 +27,32 @@ type SetStoreState<T> = (
   replace?: boolean,
 ) => void;
 
+
 export function createPersistStore<T extends object, M>(
   state: T,
   methods: (
     set: SetStoreState<T & MakeUpdater<T>>,
     get: () => T & MakeUpdater<T>,
   ) => M,
-  persistOptions: SecondParam<typeof persist<T & M & MakeUpdater<T>>>,
+  // Use the original simpler type for persistOptions
+  persistOptions: SecondParam<typeof persist<T & M & MakeUpdater<T>, unknown>>,
 ) {
-  persistOptions.storage = createJSONStorage(() => indexedDBStorage);
-  const oldOonRehydrateStorage = persistOptions?.onRehydrateStorage;
+  // Use createJSONStorage directly if storage isn't provided, assuming indexedDB
+  persistOptions.storage = persistOptions.storage ?? createJSONStorage(() => indexedDBStorage);
+  const oldOnRehydrateStorage = persistOptions?.onRehydrateStorage;
   persistOptions.onRehydrateStorage = (state) => {
-    oldOonRehydrateStorage?.(state);
-    return () => state.setHasHydrated(true);
+    // Original simplified rehydration logic
+    oldOnRehydrateStorage?.(state);
+    // Return the function that sets hydration state
+    return (_hydratedState, error) => {
+        if (error) {
+            console.error(`[createPersistStore] Error during rehydration for store ${persistOptions.name}:`, error);
+            // Optionally handle the error further
+        }
+        // Ensure setHasHydrated is called after rehydration attempt
+        // Need to cast state because TS doesn't know it has setHasHydrated here
+        (state as unknown as MakeUpdater<T>)?.setHasHydrated(true);
+    };
   };
 
   return create(
@@ -72,7 +86,8 @@ export function createPersistStore<T extends object, M>(
           } as M & MakeUpdater<T>;
         },
       ),
-      persistOptions as any,
+      // Pass persistOptions directly, potentially casting if needed but try without first
+      persistOptions as any, // Use 'as any' here as the specific type can be complex
     ),
   );
 }
