@@ -22,24 +22,107 @@ import { ModelConfig, ModelType } from "@/app/store/config";
 import Locale from "@/app/locales";
 import { DEFAULT_TOPIC, BOT_HELLO } from "@/app/store/chat"; // Assuming these are exported from store
 import { trimTopic, getMessageTextContent } from "@/app/utils"; // Import from utils
+import { EncryptionService } from "@/app/services/EncryptionService";
+
+// Helper to encrypt/decrypt conversation data
+function encryptConversationData(conversation: Conversation): Conversation {
+  // Make a copy to avoid mutating the original
+  const encryptedConvo = { ...conversation };
+  
+  // Only encrypt the title
+  if (encryptedConvo.title) {
+    try {
+      encryptedConvo.title = EncryptionService.encrypt(encryptedConvo.title);
+    } catch (err) {
+      console.error("[ChatApiService] Error encrypting conversation title:", err);
+      // Fall back to unencrypted but log the error
+    }
+  }
+  
+  return encryptedConvo;
+}
+
+function decryptConversationData(conversation: Conversation): Conversation {
+  // Make a copy to avoid mutating the original
+  const decryptedConvo = { ...conversation };
+  
+  // Decrypt title if it exists
+  if (decryptedConvo.title) {
+    try {
+      decryptedConvo.title = EncryptionService.decrypt(decryptedConvo.title);
+    } catch (err) {
+      console.error("[ChatApiService] Error decrypting conversation title:", err);
+      // Keep the encrypted title if decryption fails
+    }
+  }
+  
+  return decryptedConvo;
+}
+
+// Type that can handle both ApiMessage and MessageCreateRequest
+type MessageWithContent = {
+  content: string | MultimodalContent[];
+  [key: string]: any;
+};
+
+// Helper to encrypt/decrypt message data
+function encryptMessageData<T extends MessageWithContent>(message: T): T {
+  // Make a copy to avoid mutating the original
+  const encryptedMsg = { ...message };
+  
+  // Encrypt content if it exists
+  if (encryptedMsg.content) {
+    try {
+      encryptedMsg.content = EncryptionService.encryptChatMessageContent(encryptedMsg.content);
+    } catch (err) {
+      console.error("[ChatApiService] Error encrypting message content:", err);
+      // Fall back to unencrypted but log the error
+    }
+  }
+  
+  return encryptedMsg;
+}
+
+function decryptMessageData<T extends MessageWithContent>(message: T): T {
+  // Make a copy to avoid mutating the original
+  const decryptedMsg = { ...message };
+  
+  // Decrypt content if it exists
+  if (decryptedMsg.content) {
+    try {
+      decryptedMsg.content = EncryptionService.decryptChatMessageContent(decryptedMsg.content);
+    } catch (err) {
+      console.error("[ChatApiService] Error decrypting message content:", err);
+      // Keep the encrypted content if decryption fails
+    }
+  }
+  
+  return decryptedMsg;
+}
 
 export function mapConversationToSession(conversation: Conversation): ChatSession {
+  // Decrypt the conversation first
+  const decryptedConvo = decryptConversationData(conversation);
+  
   const session = createEmptySession();
-  session.conversationId = conversation.conversation_id;
-  session.topic = conversation.title || DEFAULT_TOPIC;
-  session.lastUpdate = new Date(conversation.updated_at).getTime();
+  session.conversationId = decryptedConvo.conversation_id;
+  session.topic = decryptedConvo.title || DEFAULT_TOPIC;
+  session.lastUpdate = new Date(decryptedConvo.updated_at).getTime();
   session.messages = [BOT_HELLO];
   return session;
 }
 
 export function mapApiMessageToChatMessage(message: ApiMessage): ChatMessage {
-  const role: MessageRole = message.sender_type === SenderTypeEnum.USER ? "user" : "assistant";
+  // Decrypt the message first
+  const decryptedMsg = decryptMessageData(message);
+  
+  const role: MessageRole = decryptedMsg.sender_type === SenderTypeEnum.USER ? "user" : "assistant";
 
   return createMessage({
-    id: message.message_id,
+    id: decryptedMsg.message_id,
     role: role,
-    content: message.content,
-    date: new Date(message.timestamp).toLocaleString(),
+    content: decryptedMsg.content,
+    date: new Date(decryptedMsg.timestamp).toLocaleString(),
   });
 }
 
@@ -56,7 +139,17 @@ export const ChatApiService = {
     try {
       const response = await api.app.getConversations(params);
       console.log(`[ChatApiService] Received ${response.data.length} conversations.`);
-      return response;
+      
+      // Decrypt conversation data
+      const decryptedData = response.data.map(convo => decryptConversationData(convo));
+      
+      // Create a new response with decrypted data
+      const decryptedResponse = {
+        ...response,
+        data: decryptedData
+      };
+      
+      return decryptedResponse;
     } catch (error) {
       console.error("[ChatApiService] Failed to fetch conversations:", error);
       throw error; // Re-throw to be handled by the caller
@@ -69,9 +162,19 @@ export const ChatApiService = {
   ): Promise<Conversation> {
     console.log("[ChatApiService] Creating conversation:", createRequest);
     try {
-      const newConversation = await api.app.createConversation(createRequest);
+      // Encrypt the conversation data before sending to server
+      const encryptedRequest = { 
+        ...createRequest,
+        title: createRequest.title ? EncryptionService.encrypt(createRequest.title) : createRequest.title
+      };
+      
+      const newConversation = await api.app.createConversation(encryptedRequest);
       console.log("[ChatApiService] Conversation created:", newConversation.conversation_id);
-      return newConversation;
+      
+      // Decrypt the returned data
+      const decryptedConversation = decryptConversationData(newConversation);
+      
+      return decryptedConversation;
     } catch (error) {
       console.error("[ChatApiService] Failed to create conversation:", error);
       throw error;
@@ -85,9 +188,19 @@ export const ChatApiService = {
   ): Promise<Conversation> {
     console.log(`[ChatApiService] Updating conversation ${conversationId}:`, updateRequest);
     try {
-      const updatedConversation = await api.app.updateConversation(conversationId, updateRequest);
+      // Encrypt the update data
+      const encryptedRequest = { 
+        ...updateRequest,
+        title: updateRequest.title ? EncryptionService.encrypt(updateRequest.title) : updateRequest.title
+      };
+      
+      const updatedConversation = await api.app.updateConversation(conversationId, encryptedRequest);
       console.log(`[ChatApiService] Conversation ${conversationId} updated.`);
-      return updatedConversation;
+      
+      // Decrypt the returned data
+      const decryptedConversation = decryptConversationData(updatedConversation);
+      
+      return decryptedConversation;
     } catch (error) {
       console.error(`[ChatApiService] Failed to update conversation ${conversationId}:`, error);
       throw error;
@@ -123,7 +236,17 @@ export const ChatApiService = {
       // Now apiParams.cursor is either string or undefined
       const response = await api.app.getConversationMessages(conversationId, apiParams);
       console.log(`[ChatApiService] Received ${response.data.length} messages for ${conversationId}.`);
-      return response;
+      
+      // Decrypt the message data
+      const decryptedData = response.data.map(msg => decryptMessageData(msg));
+      
+      // Create a new response with decrypted data
+      const decryptedResponse = {
+        ...response,
+        data: decryptedData
+      };
+      
+      return decryptedResponse;
     } catch (error) {
       console.error(`[ChatApiService] Failed to fetch messages for ${conversationId}:`, error);
       throw error;
@@ -137,9 +260,16 @@ export const ChatApiService = {
   ): Promise<ApiMessage> {
     console.log(`[ChatApiService] Creating message for conversation ${conversationId}:`, createRequest.message_id);
     try {
-      const savedMessage = await api.app.createMessage(conversationId, createRequest);
+      // Encrypt the message content before sending to server
+      const encryptedRequest = encryptMessageData(createRequest) as MessageCreateRequest;
+      
+      const savedMessage = await api.app.createMessage(conversationId, encryptedRequest);
       console.log(`[ChatApiService] Message ${savedMessage.message_id} created successfully.`);
-      return savedMessage;
+      
+      // Decrypt the returned message
+      const decryptedMessage = decryptMessageData(savedMessage);
+      
+      return decryptedMessage;
     } catch (error) {
       console.error(`[ChatApiService] Failed to create message ${createRequest.message_id}:`, error);
       throw error;
@@ -163,7 +293,8 @@ export const ChatApiService = {
   ): Promise<void> {
     console.log("[ChatApiService] Calling LLM chat:", { messagesCount: args.messages.length, config: args.config });
     try {
-      // Assuming api.llm.chat handles the streaming and callbacks internally
+      // Note: LLM messages should NOT be encrypted as they need to be processed by the LLM
+      // They're only used for model inference, not stored in the database
       await api.llm.chat(args);
       console.log("[ChatApiService] LLM chat call initiated.");
     } catch (error) {
