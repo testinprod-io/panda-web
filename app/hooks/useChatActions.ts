@@ -457,15 +457,15 @@ export function useChatActions() {
                     msg.streaming = true;
                 });
             },
-            onFinish(finalMessage: string) {
+            onFinish(finalMessage: string, response: Response) {
                 console.log("[ChatActions] LLM stream finished.");
                 // Update final bot message state in store
                 let finalBotMsg: ChatMessage | undefined;
-                store.updateMessage(currentSession.id, localBotMessageId, (msg) => {
+                store.updateMessage(currentSession.id, localBotMessageId, async (msg) => {
                     msg.content = finalMessage;
                     msg.streaming = false;
                     msg.syncState = 'pending_create'; // Mark for saving
-                    msg.date = new Date().toLocaleString(); // Final timestamp
+                    msg.date = new Date((await response.json()).timestamp);
                     msg.isError = false;
                     finalBotMsg = { ...msg }; // Capture the final state
                 });
@@ -511,7 +511,7 @@ export function useChatActions() {
                     msg.streaming = false;
                     msg.isError = !isAborted;
                     msg.syncState = 'error';
-                    msg.date = new Date().toLocaleString(); // Final timestamp for error message
+                    msg.date = new Date(); // Final timestamp for error message
                 });
 
                 ChatControllerPool.remove(currentSession.id, localBotMessageId);

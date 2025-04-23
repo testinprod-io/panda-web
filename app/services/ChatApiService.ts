@@ -122,7 +122,7 @@ export function mapApiMessageToChatMessage(message: ApiMessage): ChatMessage {
     id: decryptedMsg.message_id,
     role: role,
     content: decryptedMsg.content,
-    date: new Date(decryptedMsg.timestamp).toLocaleString(),
+    date: new Date(decryptedMsg.timestamp),
   });
 }
 
@@ -315,7 +315,7 @@ export const ChatApiService = {
     console.log("[ChatApiService] Calling LLM summarize:", { messagesCount: messages.length, config });
     return new Promise((resolve, reject) => {
       api.llm.chat({
-        messages: messages.concat(createMessage({ role: "system", content: prompt, date: "" })),
+        messages: messages.concat(createMessage({ role: "system", content: prompt, date: new Date() })),
         config: { ...config, stream: false }, // Ensure stream is false
         onUpdate: (msg) => { /* Summarize shouldn't stream */ },
         onFinish: (message, responseRes) => {

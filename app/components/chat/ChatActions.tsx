@@ -32,14 +32,14 @@ export function ChatActions(props: {
   const router = useRouter();
   const isMobileScreen = useMobileScreen();
 
-  const [showUploadImage, setShowUploadImage] = useState(false);
+  // const [showUploadImage, setShowUploadImage] = useState(false);
 
   const prevPropsAndStateRef = useRef<any>(null);
 
   useEffect(() => {
     const currentPropsAndState = {
       uploading: props.uploading,
-      showUploadImage,
+      // showUploadImage,
       sessionId: props.session?.id,
       model: props.session?.modelConfig.model,
       // Add other props/state if needed
@@ -89,7 +89,7 @@ export function ChatActions(props: {
     // Show upload image only if session exists and model is vision capable
     // Check props.session exists before accessing its properties
     const show = !!props.session && isVisionModel(props.session.modelConfig.model);
-    setShowUploadImage(show);
+    // setShowUploadImage(show);
     if (!show) {
       props.setAttachImages([]);
       props.setUploading(false);
@@ -100,13 +100,13 @@ export function ChatActions(props: {
   return (
     <div className={styles["chat-input-actions"]}>
       <>
-        {showUploadImage && (
+        {/* {showUploadImage && (
           <ChatAction
             onClick={props.uploadImage}
             text={Locale.Chat.InputActions.UploadImage}
             icon={props.uploading ? <CircularProgress size={20} /> : <MuiImageIcon />}
           />
-        )}
+        )} */}
       </>
     </div>
   );

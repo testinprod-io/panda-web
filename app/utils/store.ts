@@ -13,7 +13,7 @@ type SecondParam<T> = T extends (
   : never;
 
 // Original MakeUpdater (not exported)
-type MakeUpdater<T> = {
+export type MakeUpdater<T> = {
   lastUpdateTime: number;
   _hasHydrated: boolean;
 
@@ -35,7 +35,7 @@ export function createPersistStore<T extends object, M>(
     get: () => T & MakeUpdater<T>,
   ) => M,
   // Use the original simpler type for persistOptions
-  persistOptions: SecondParam<typeof persist<T & M & MakeUpdater<T>, unknown>>,
+  persistOptions: SecondParam<typeof persist>,
 ) {
   // Use createJSONStorage directly if storage isn't provided, assuming indexedDB
   persistOptions.storage = persistOptions.storage ?? createJSONStorage(() => indexedDBStorage);

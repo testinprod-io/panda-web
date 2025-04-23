@@ -531,8 +531,8 @@ export const useChatStore = createPersistStore(
           console.log("[ChatStore] Clearing sessions, adding one default local session.");
           const newSession = createEmptySession(); // Creates a 'local' session
           set({
-            sessions: [newSession],
-            currentSessionIndex: 0,
+            sessions: [],
+            currentSessionIndex: -1,
             lastInput: "", // Also clear last input
           });
       },
@@ -709,7 +709,7 @@ export const useChatStore = createPersistStore(
               id: m.message_id,
               role: m.sender_type === SenderTypeEnum.USER ? 'user' : 'assistant',
               content: m.content, // Assumes m.content is already decrypted string | MultimodalContent[]
-              date: new Date(m.timestamp).toLocaleString(),
+              date: new Date(m.timestamp),
               syncState: 'synced'
           } as ChatMessage));
 
@@ -742,7 +742,7 @@ export const useChatStore = createPersistStore(
                      id: savedMessage.message_id, // Update ID to server ID
                      syncState: 'synced',
                      isError: false, // Clear error on success
-                     date: new Date(savedMessage.timestamp).toLocaleString(), // Update timestamp from server
+                     date: new Date(savedMessage.timestamp), // Update timestamp from server
                   };
                   sess.messages = [
                       ...sess.messages.slice(0, msgIndex),
@@ -795,7 +795,7 @@ export const useChatStore = createPersistStore(
         const shouldSendLongTermMemory = modelConfig.sendMemory && session.memoryPrompt && session.memoryPrompt.length > 0;
         if (shouldSendLongTermMemory) {
             // Memory prompt content is assumed decrypted
-            memoryPrompt = createMessage({ role: "system", content: Locale.Store.Prompt.History(session.memoryPrompt), date: "" });
+            memoryPrompt = createMessage({ role: "system", content: Locale.Store.Prompt.History(session.memoryPrompt), date: new Date() });
         }
         // Context messages are assumed decrypted
         const contextPrompts = session.context.slice(); // Assuming context is already ChatMessage[]

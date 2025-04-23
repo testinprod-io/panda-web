@@ -54,7 +54,7 @@ export type MessageSyncState = 'synced' | 'pending_create' | 'error';
 * Represents a chat message with additional metadata
 */
 export type ChatMessage = RequestMessage & {
- date: string;
+ date: Date;
  streaming?: boolean;
  isError?: boolean;
  id: string;
@@ -74,7 +74,7 @@ export type ChatMessage = RequestMessage & {
 export function createMessage(override: Partial<ChatMessage>): ChatMessage {
  return {
    id: nanoid(),
-   date: new Date().toLocaleString(),
+   date: new Date(),
    role: "user",
    content: "",
    syncState: 'pending_create',
