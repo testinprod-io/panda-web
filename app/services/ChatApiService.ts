@@ -286,7 +286,7 @@ export const ChatApiService = {
       messages: RequestMessage[];
       config: ModelConfig & { stream?: boolean };
       onUpdate: (message: string) => void;
-      onFinish: (message: string, responseRes?: any) => void;
+      onFinish: (message: string, date: Date, responseRes?: any) => void;
       onError: (error: Error) => void;
       onController?: (controller: AbortController) => void;
     }
@@ -311,17 +311,17 @@ export const ChatApiService = {
     messages: RequestMessage[],
     config: ModelConfig,
     prompt: string
-  ): Promise<string> {
+  ): Promise<{ message: string, date: Date }> {
     console.log("[ChatApiService] Calling LLM summarize:", { messagesCount: messages.length, config });
     return new Promise((resolve, reject) => {
       api.llm.chat({
         messages: messages.concat(createMessage({ role: "system", content: prompt, date: new Date() })),
         config: { ...config, stream: false }, // Ensure stream is false
         onUpdate: (msg) => { /* Summarize shouldn't stream */ },
-        onFinish: (message, responseRes) => {
+        onFinish: (message, date, responseRes) => {
           if (responseRes?.status === 200) {
             console.log("[ChatApiService] LLM summarize finished successfully.");
-            resolve(message);
+            resolve({ message, date });
           } else {
             console.error("[ChatApiService] LLM summarize finished with non-200 status:", responseRes?.status);
             reject(new Error(`Summarization failed with status: ${responseRes?.status}`));
@@ -347,7 +347,7 @@ export const ChatApiService = {
         messages: [createMessage({ role: "user", content: prompt })],
         config: { ...config, stream: false }, // Ensure stream is false
         onUpdate: (msg) => { /* Title generation shouldn't stream */ },
-        onFinish: (title, responseRes) => {
+        onFinish: (title, date, responseRes) => {
           if (responseRes?.status === 200) {
             const cleanedTitle = title && title.length > 0 ? trimTopic(title) : DEFAULT_TOPIC;
             console.log(`[ChatApiService] LLM generated title: "${cleanedTitle}"`);

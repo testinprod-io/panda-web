@@ -5,14 +5,15 @@ import { useRouter } from 'next/navigation';
 import { useChatStore } from '@/app/store'; // Adjust path if necessary
 import { Path } from '@/app/constant'; // Adjust path if necessary
 import { CircularProgress, Box } from '@mui/material'; // For loading indicator
-
+import { useChatActions } from '@/app/hooks/useChatActions';
 export default function NewChatPage() {
   const router = useRouter();
   const chatStore = useChatStore();
-
+  const { newSession } = useChatActions();
   useEffect(() => {
+    
     // Create a new session (this likely updates the store's state)
-    chatStore.newSession();
+    newSession();
     
     // Get the newly created (and likely selected) session from the store
     const currentSession = chatStore.currentSession();

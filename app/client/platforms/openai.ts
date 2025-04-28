@@ -120,6 +120,7 @@ export class ChatGPTApi implements LLMApi {
         }
 
         let responseText = "";
+        let timestamp = new Date();
 
         while (true) {
           const { value, done } = await reader.read();
@@ -128,7 +129,6 @@ export class ChatGPTApi implements LLMApi {
           const text = decoder.decode(value);
           // Split by newlines and filter out empty lines
           const lines = text.split("\n").filter((line) => line.trim());
-
           for (const line of lines) {
             if (!line.startsWith("data: ")) continue;
             
@@ -138,6 +138,7 @@ export class ChatGPTApi implements LLMApi {
             try {
               const json = JSON.parse(data);
               const content = json.choices[0]?.delta?.content;
+              timestamp = new Date(json.timestamp);
               if (!content) continue;
 
               responseText += content;
@@ -148,7 +149,7 @@ export class ChatGPTApi implements LLMApi {
           }
         }
     
-        options.onFinish(responseText, response);
+        options.onFinish(responseText, timestamp, response);
       } else {
         // Handle non-streaming response
         if (!response.ok) {
@@ -161,7 +162,7 @@ export class ChatGPTApi implements LLMApi {
 
         if (typeof messageContent === 'string') {
             console.log("[Request] Extracted non-streaming message:", messageContent);
-            options.onFinish(messageContent, response);
+            options.onFinish(messageContent, new Date(jsonResponse.timestamp), response);
         } else {
             console.error("[Request] Could not extract message content from non-streaming response:", jsonResponse);
             throw new Error("Could not extract message content from non-streaming response.");

@@ -457,7 +457,7 @@ export function useChatActions() {
                     msg.streaming = true;
                 });
             },
-            onFinish(finalMessage: string, response: Response) {
+            onFinish(finalMessage: string, timestamp: Date, response: Response) {
                 console.log("[ChatActions] LLM stream finished.");
                 // Update final bot message state in store
                 let finalBotMsg: ChatMessage | undefined;
@@ -465,7 +465,7 @@ export function useChatActions() {
                     msg.content = finalMessage;
                     msg.streaming = false;
                     msg.syncState = 'pending_create'; // Mark for saving
-                    msg.date = new Date((await response.json()).timestamp);
+                    msg.date = new Date(timestamp);
                     msg.isError = false;
                     finalBotMsg = { ...msg }; // Capture the final state
                 });

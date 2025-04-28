@@ -113,6 +113,7 @@ export class PandaApi implements LLMApi {
       }
 
       let responseText = "";
+      let timestamp = new Date();
 
       while (true) {
         const { value, done } = await reader.read();
@@ -133,6 +134,7 @@ export class PandaApi implements LLMApi {
           try {
             const json = JSON.parse(data);
             const content = json.choices[0]?.delta?.content;
+            timestamp = new Date(json.timestamp);
             if (!content) continue;
 
             responseText += content;
@@ -143,7 +145,7 @@ export class PandaApi implements LLMApi {
         }
       }
 
-      options.onFinish(responseText, response);
+      options.onFinish(responseText, timestamp, response);
     } catch (error: any) {
       console.error("[Request] failed", error);
       options.onError?.(error);

@@ -174,12 +174,12 @@ export const EncryptionService = {
     // Only attempt decryption if it looks like base64
     if (!isLikelyBase64(encryptedText)) {
       // Special case for our error placeholders
-      if (encryptedText.startsWith("[") && encryptedText.endsWith("]")) {
+      // if (encryptedText.startsWith("[") && encryptedText.endsWith("]")) {
         return encryptedText; // Return error placeholders as-is
-      }
+      // }
       
-      console.warn(`[EncryptionService] Data not in encrypted format: ${encryptedText.substring(0, 30)}...`);
-      throw new Error("Data is not in encrypted format");
+      // console.warn(`[EncryptionService] Data not in encrypted format: ${encryptedText.substring(0, 30)}...`);
+      // throw new Error("Data is not in encrypted format");
     }
 
     try {

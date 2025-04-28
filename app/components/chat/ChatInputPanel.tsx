@@ -30,7 +30,7 @@ import StopRoundedIcon from '@mui/icons-material/StopRounded';
 import Button from '@mui/material/Button'; // Added MUI Button
 import { useApiClient } from "@/app/context/ApiProviderContext";
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'; // Import Scroll Down Icon
-
+import { useChatActions } from "@/app/hooks/useChatActions";
 import styles from "@/app/components/chat/chat.module.scss";
 
 const localStorage = safeLocalStorage();
@@ -81,7 +81,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   const isMobileScreen = useMobileScreen();
   const { submitKey, shouldSubmit } = useSubmitHandler();
   const { showSnackbar } = useSnackbar(); // Use Snackbar hook
-
+  const { newSession, deleteSession } = useChatActions();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   // Initialize userInput directly using the helper function
   const initialUserInput = React.useMemo(() => getInitialInput(session?.id), [session?.id]);
@@ -136,10 +136,10 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
 
   // Chat commands specific to input handling
   const chatCommands = useChatCommand({
-    new: () => chatStore.newSession(apiClient),
+    new: () => newSession(),
     newm: () => router.push("/new-chat"),
-    prev: () => chatStore.nextSession(-1),
-    next: () => chatStore.nextSession(1),
+    // prev: () => nextSession(-1),
+    // next: () => nextSession(1),
     ...(session && {
       clear: () =>
         chatStore.updateTargetSession(session, (s) => {
@@ -150,8 +150,8 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
             s.clearContextIndex = undefined;
           }
         }),
-      fork: () => chatStore.forkSession(),
-      del: () => chatStore.deleteSession(chatStore.currentSessionIndex, apiClient),
+      // fork: () => forkSession(),
+      del: () => deleteSession(chatStore.currentSessionIndex),
     }),
   });
   

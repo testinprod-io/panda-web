@@ -64,7 +64,7 @@ export class DeepSeekApi implements LLMApi {
       }
 
       let responseText = "";
-
+      let timestamp = new Date();
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
@@ -81,6 +81,7 @@ export class DeepSeekApi implements LLMApi {
           try {
             const json = JSON.parse(data);
             const content = json.choices[0]?.delta?.content;
+            timestamp = new Date(json.timestamp);
             if (!content) continue;
 
             responseText += content;
@@ -91,7 +92,7 @@ export class DeepSeekApi implements LLMApi {
         }
       }
 
-      options.onFinish(responseText, response);
+      options.onFinish(responseText, timestamp, response);
     } catch (error: any) {
       console.error("[Request] failed", error);
       options.onError?.(error);

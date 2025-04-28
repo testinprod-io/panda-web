@@ -38,7 +38,7 @@ export interface ChatOptions {
   messages: RequestMessage[];
   config: LLMConfig;
   onUpdate?: (message: string, chunk: string) => void;
-  onFinish: (message: string, responseRes: Response) => void;
+  onFinish: (message: string, date: Date, responseRes: Response) => void;
   onError?: (err: Error) => void;
   onController?: (controller: AbortController) => void;
 }
