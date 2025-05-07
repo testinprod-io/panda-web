@@ -1,19 +1,13 @@
 import { useCallback } from 'react';
 import { useChatStore } from '@/app/store/chat';
-import {
-    ChatApiService,
-    mapApiMessageToChatMessage,
-    mapConversationToSession,
-    mapRoleToSenderType // Import mapping function
-} from '@/app/services/ChatApiService';
+import { ChatApiService, mapConversationToSession, mapRoleToSenderType} from '@/app/services/ChatApiService';
 import { useApiClient } from '@/app/context/ApiProviderContext';
-import { ChatSession, createEmptySession } from '@/app/types/session';
-import { ChatMessage, createMessage, MessageRole, MessageSyncState } from '@/app/types/chat';
+import { ChatMessage, MessageSyncState } from '@/app/types/chat';
+import { MessagesLoadState, SessionSyncState } from '@/app/types/session';
 import { ModelConfig, useAppConfig } from '@/app/store/config';
 import {
     ConversationCreateRequest,
     MessageCreateRequest,
-    SenderTypeEnum,
     GetConversationMessagesParams,
     ConversationUpdateRequest
 } from '@/app/client/types';
@@ -24,9 +18,9 @@ import { getMessageTextContent, trimTopic } from "@/app/utils";
 import { fillTemplateWith, getSummarizeModel } from "@/app/utils/chatUtils";
 import { ChatControllerPool } from "@/app/client/controller";
 import { prettyObject } from "@/app/utils/format";
-import Locale from "@/app/locales";
 import { ModelType } from "@/app/store/config";
 import { ServiceProvider } from "@/app/store/config";
+import { EncryptionService } from '../services/EncryptionService';
 
 export function useChatActions() {
     const store = useChatStore();
@@ -44,89 +38,70 @@ export function useChatActions() {
             const response = await ChatApiService.fetchConversations(apiClient, params);
             const serverConvos = response.data;
             console.log(`[ChatActions] Received ${serverConvos.length} sessions from server.`);
+            
             // Call the store's internal method to merge and update state
             store._onServerSessionsLoaded(serverConvos);
             console.log("[ChatActions] Sessions merged and updated in store.");
 
             // After loading sessions, trigger loading messages for the current session if needed
             const currentSession = store.currentSession();
-            if (currentSession?.conversationId && currentSession.messagesLoadState === 'none') {
-                 console.log(`[ChatActions] Triggering message load for current session ${currentSession.conversationId} after initial session load.`);
-                 loadMessagesForSession(currentSession.conversationId); // Call the action
+            if (currentSession && currentSession.messagesLoadState === 'none') {
+                 console.log(`[ChatActions] Triggering message load for current session ${currentSession.id} after initial session load.`);
+                 loadMessagesForSession(currentSession.id); // Call the action
             }
 
         } catch (error) {
             console.error("[ChatActions] Failed to load sessions from server:", error);
             // Handle error state in UI? For now, just log.
              // Ensure there's at least one session even on error
-            if (store.sessions.length === 0) {
-                 store.addSession(createEmptySession());
-            }
+            // if (store.sessions.length === 0) {
+            //      store.addSession(createEmptySession());
+            // }
         }
     }, [apiClient, store]);
 
     const newSession = useCallback(async (modelConfig?: ModelConfig) => {
         if (!apiClient) {
             console.warn("[ChatActions] API client not available, cannot create session on server.");
-            // Create a local session anyway
-            const localSession = createEmptySession();
-            if (modelConfig) {
-                localSession.modelConfig = { ...appConfig.modelConfig, ...modelConfig };
-            }
-            localSession.syncState = 'local'; // Mark as local since server creation will fail
-            store.addSession(localSession);
-            return;
+            throw new Error("API client not available");
         }
 
-        console.log("[ChatActions] Creating new session locally...");
-        const session = createEmptySession();
-        if (modelConfig) {
-          session.modelConfig = { ...appConfig.modelConfig, ...modelConfig };
+        console.log("[ChatActions] Creating new session...");
+        
+        const createRequest: ConversationCreateRequest = { title: DEFAULT_TOPIC };
+
+        try {
+            const newConversation = await ChatApiService.createConversation(apiClient, createRequest);
+            const session = mapConversationToSession(newConversation);
+
+            // Update the existing session in the store with server data
+            session.syncState = SessionSyncState.SYNCED;
+            session.modelConfig = { ...appConfig.modelConfig, ...modelConfig };
+            store.addSession(session);
+            
+            console.log("[ChatActions] Server session created successfully:", newConversation.conversation_id);
+            return session;
+        } catch (error) {
+            console.error("[ChatActions] Failed to create server session:", error);
+            // Optionally show error to user
         }
-        session.syncState = 'pending_create'; // Mark as pending
-        const localSessionId = session.id;
-
-        // Add to store immediately for responsiveness
-        store.addSession(session);
-
-        // const createRequest: ConversationCreateRequest = { title: session.topic };
-        // console.log("[ChatActions] Attempting to create session on server...");
-
-        // try {
-        //     const newConversation = await ChatApiService.createConversation(apiClient, createRequest);
-        //     console.log("[ChatActions] Server session created successfully:", newConversation.conversation_id);
-        //     // Update the existing session in the store with server data
-        //     store.updateTargetSession({ id: localSessionId }, (sess) => {
-        //         sess.conversationId = newConversation.conversation_id;
-        //         sess.topic = newConversation.title || sess.topic;
-        //         sess.lastUpdate = new Date(newConversation.updated_at).getTime();
-        //         sess.syncState = 'synced';
-        //     });
-        // } catch (error) {
-        //     console.error("[ChatActions] Failed to create server session:", error);
-        //     // Mark the session in the store as having an error
-        //     store.updateTargetSession({ id: localSessionId }, (sess) => {
-        //         sess.syncState = 'error';
-        //     });
-        //     // Optionally show error to user
-        // }
     }, [apiClient, store, appConfig.modelConfig]);
 
-     const loadMessagesForSession = useCallback(async (conversationId: UUID, params?: { cursor?: string, limit?: number }) => {
+     const loadMessagesForSession = useCallback(async (id: UUID, params?: { cursor?: string, limit?: number }) => {
         if (!apiClient) {
             console.warn("[ChatActions] API client not available, cannot load messages.");
             return;
         }
 
-        const session = store.sessions.find(s => s.conversationId === conversationId);
+        const session = store.sessions.find(s => s.id === id);
         if (!session || session.messagesLoadState === 'loading' || session.messagesLoadState === 'full') {
-            console.log(`[ChatActions] Skipping message load for ${conversationId}. State: ${session?.messagesLoadState}`);
+            console.log(`[ChatActions] Skipping message load for ${id}. State: ${session?.messagesLoadState}`);
             return; // Already loading, fully loaded, or session doesn't exist
         }
 
-        console.log(`[ChatActions] Loading messages for conversation ${conversationId}`);
+        console.log(`[ChatActions] Loading messages for conversation ${id}`);
         // Update store state to loading
-        store._setMessagesLoading(conversationId);
+        store._setMessagesLoadState(id, MessagesLoadState.LOADING);
 
         // Revert to simpler params construction - service layer handles null cursor
         const loadParams: GetConversationMessagesParams = {
@@ -138,18 +113,18 @@ export function useChatActions() {
 
         try {
             // Service layer's fetchMessages will handle null cursor before calling api.app method
-            const response = await ChatApiService.fetchMessages(apiClient, conversationId, loadParams);
+            const response = await ChatApiService.fetchMessages(apiClient, id, loadParams);
             const serverApiMessages = response.data;
             const pagination = response.pagination;
-            console.log(`[ChatActions] Received ${serverApiMessages.length} messages for ${conversationId}. Has more: ${pagination.has_more}`);
+            console.log(`[ChatActions] Received ${serverApiMessages.length} messages for ${id}. Has more: ${pagination.has_more}`);
 
             // Call store's internal method to merge messages and update state
-            store._onServerMessagesLoaded(conversationId, serverApiMessages, pagination.has_more, pagination.next_cursor);
+            store._onServerMessagesLoaded(id, serverApiMessages, pagination.has_more, pagination.next_cursor);
 
         } catch (error: any) {
-            console.error(`[ChatActions] Failed loading messages for ${conversationId}:`, error);
+            console.error(`[ChatActions] Failed loading messages for ${id}:`, error);
             // Update store state to error
-            store._setMessagesError(conversationId);
+            store._setMessagesLoadState(id, MessagesLoadState.ERROR);
             // Optionally show error to user
         }
     }, [apiClient, store]);
@@ -167,9 +142,9 @@ export function useChatActions() {
         store.setCurrentSessionIndex(index);
 
         // Trigger message loading if needed
-        if (targetSession.conversationId && targetSession.messagesLoadState === 'none') {
-            console.log(`[ChatActions] Session ${targetSession.conversationId} selected, triggering message load.`);
-            loadMessagesForSession(targetSession.conversationId);
+        if (targetSession.id && targetSession.messagesLoadState === 'none') {
+            console.log(`[ChatActions] Session ${targetSession.id} selected, triggering message load.`);
+            loadMessagesForSession(targetSession.id);
         }
     }, [store, loadMessagesForSession]);
 
@@ -184,26 +159,25 @@ export function useChatActions() {
             return;
         }
 
-        const conversationId = sessionToDelete.conversationId;
-        const localId = sessionToDelete.id;
+        const id = sessionToDelete.id;
 
-        console.log(`[ChatActions] Deleting session ${index} (ID: ${localId}, ConvID: ${conversationId})`);
+        console.log(`[ChatActions] Deleting session ${index} (ID: ${id})`);
 
         // Remove from store immediately
         store.removeSession(index);
 
         // Attempt server deletion if applicable
-        if (apiClient && conversationId && sessionToDelete.syncState !== 'pending_create' && sessionToDelete.syncState !== 'local') {
+        if (apiClient && sessionToDelete.syncState !== 'pending_create' && sessionToDelete.syncState !== 'local') {
             try {
-                await ChatApiService.deleteConversation(apiClient, conversationId);
-                console.log(`[ChatActions] Server session ${conversationId} deleted.`);
+                await ChatApiService.deleteConversation(apiClient, id);
+                console.log(`[ChatActions] Server session ${id} deleted.`);
             } catch (error) {
-                console.error(`[ChatActions] Failed to delete server session ${conversationId}:`, error);
+                console.error(`[ChatActions] Failed to delete server session ${id}:`, error);
                 // How to handle? Maybe notify user? Re-add local session?
                 // For now, just log error. The session is already removed locally.
             }
         } else {
-           console.log(`[ChatActions] Session ${localId} was local-only or pending creation, no server deletion needed.`);
+           console.log(`[ChatActions] Session ${id} was local-only or pending creation, no server deletion needed.`);
         }
     }, [apiClient, store]);
 
@@ -258,7 +232,7 @@ export function useChatActions() {
     }, [apiClient, store]);
 
     // --- Title Generation Action --- 
-    const generateSessionTitle = useCallback(async (sessionId: string, userMessageContent: string, assistantMessageContent: string) => {
+    const generateSessionTitle = useCallback(async (sessionId: UUID, userMessageContent: string, assistantMessageContent: string) => {
         if (!apiClient) {
              console.warn("[ChatActions] API client not available, cannot generate title.");
              return;
@@ -308,11 +282,9 @@ export function useChatActions() {
                 });
 
                 // Update server state if conversation exists
-                if (session.conversationId) {
-                    console.log(`[Title Generation Action] Attempting to update server title for ConvID: ${session.conversationId}`);
-                    const updateReq: ConversationUpdateRequest = { title: generatedTitle };
-                    updateConversation(session.id, updateReq);
-                }
+                console.log(`[Title Generation Action] Attempting to update server title for ConvID: ${session.id}`);
+                const updateReq: ConversationUpdateRequest = { title: generatedTitle };
+                updateConversation(session.id, updateReq);
             } else {
                  console.log(`[Title Generation Action] Generated title is default or unchanged, not updating.`);
             }
@@ -324,33 +296,27 @@ export function useChatActions() {
 
     }, [apiClient, store]);
 
-    const updateConversation = useCallback(async (sessionId: string, conversationData: ConversationUpdateRequest) => {
+    const updateConversation = useCallback(async (id: UUID, conversationData: ConversationUpdateRequest) => {
         if (!apiClient) {
             console.warn("[ChatActions] API client not available, cannot update conversation.");
             return;
         }
 
-        const session = useChatStore.getState().sessions.find(s => s.id === sessionId);
+        const session = useChatStore.getState().sessions.find(s => s.id === id);
         if (!session) {
-            console.warn(`[ChatActions] Session not found: ${sessionId}`);
-            return;
-        }
-
-        const conversationId = session.conversationId;
-        if (!conversationId) {
-            console.warn(`[ChatActions] Session ${sessionId} has no conversationId, cannot update.`);
+            console.warn(`[ChatActions] Session not found: ${id}`);
             return;
         }
 
         try {
-            const updatedConv = await ChatApiService.updateConversation(apiClient, conversationId, conversationData);
+            const updatedConv = await ChatApiService.updateConversation(apiClient, session.id, conversationData);
             console.log(`[ChatActions] Server title updated successfully to: "${updatedConv.title}"`);
-            store.updateTargetSession({ id: sessionId }, (sess) => {
+            store.updateTargetSession({ id: id }, (sess) => {
                 sess.topic = updatedConv.title || sess.topic;
                 sess.lastUpdate = new Date(updatedConv.updated_at).getTime();
             });
         } catch (error) {
-            console.error(`[ChatActions] Failed to update server title for ConvID ${conversationId}:`, error);
+            console.error(`[ChatActions] Failed to update server title for ConvID ${id}:`, error);
         }
     }, [apiClient, store]);
 
@@ -368,52 +334,52 @@ export function useChatActions() {
 
         // Ensure session is synced or ready to be created before sending messages
         // This prevents sending messages to a session stuck in an error state after creation failed.
-        if (!currentSession.conversationId && currentSession.syncState !== 'pending_create' && currentSession.syncState !== 'local') {
-             console.warn(`[ChatActions] Cannot send message: Session ${currentSession.id} has no conversationId and is in state: ${currentSession.syncState}. Message not sent.`);
-             // TODO: Notify user?
-             return;
-        }
+        // if (!currentSession.conversationId && currentSession.syncState !== 'pending_create' && currentSession.syncState !== 'local') {
+        //      console.warn(`[ChatActions] Cannot send message: Session ${currentSession.id} has no conversationId and is in state: ${currentSession.syncState}. Message not sent.`);
+        //      // TODO: Notify user?
+        //      return;
+        // }
 
         // If the session is local/pending_create, create it on the server first.
         // This might introduce slight delay for the first message.
-        let conversationId = currentSession.conversationId;
-        if (!conversationId) {
-            console.log(`[ChatActions] Session ${currentSession.id} is local, creating on server before sending message...`);
-            try {
-                const createRequest: ConversationCreateRequest = { title: currentSession.topic };
-                const newConversation = await ChatApiService.createConversation(apiClient, createRequest);
-                conversationId = newConversation.conversation_id;
-                store.updateTargetSession({ id: currentSession.id }, (sess) => {
-                    sess.conversationId = newConversation.conversation_id;
-                    sess.topic = newConversation.title || sess.topic;
-                    sess.lastUpdate = new Date(newConversation.updated_at).getTime();
-                    sess.syncState = 'synced';
-                });
-                console.log(`[ChatActions] Server session ${conversationId} created for local session ${currentSession.id}.`);
-            } catch (error) {
-                console.error("[ChatActions] Failed to auto-create server session before sending message:", error);
-                store.updateTargetSession({ id: currentSession.id }, (sess) => { sess.syncState = 'error'; });
-                // TODO: Notify user of the failure
-                return; // Stop if session creation failed
-            }
-        }
+        // let conversationId = currentSession.conversationId;
+        // if (!conversationId) {
+        //     console.log(`[ChatActions] Session ${currentSession.id} is local, creating on server before sending message...`);
+        //     try {
+        //         const createRequest: ConversationCreateRequest = { title: currentSession.topic };
+        //         const newConversation = await ChatApiService.createConversation(apiClient, createRequest);
+        //         conversationId = newConversation.conversation_id;
+        //         store.updateTargetSession({ id: currentSession.id }, (sess) => {
+        //             sess.conversationId = newConversation.conversation_id;
+        //             sess.topic = newConversation.title || sess.topic;
+        //             sess.lastUpdate = new Date(newConversation.updated_at).getTime();
+        //             sess.syncState = 'synced';
+        //         });
+        //         console.log(`[ChatActions] Server session ${conversationId} created for local session ${currentSession.id}.`);
+        //     } catch (error) {
+        //         console.error("[ChatActions] Failed to auto-create server session before sending message:", error);
+        //         store.updateTargetSession({ id: currentSession.id }, (sess) => { sess.syncState = 'error'; });
+        //         // TODO: Notify user of the failure
+        //         return; // Stop if session creation failed
+        //     }
+        // }
 
         // Proceed only if we have a valid conversationId now
-        if (!conversationId) {
-             console.error("[ChatActions] Fatal: Could not obtain conversationId for message sending.");
-             return;
-        }
+        // if (!conversationId) {
+        //      console.error("[ChatActions] Fatal: Could not obtain conversationId for message sending.");
+        //      return;
+        // }
 
         const modelConfig = currentSession.modelConfig;
 
         // Prepare message content (apply template, handle images)
-        let userContent: string | MultimodalContent[] = fillTemplateWith(content, modelConfig);
-        if (attachImages && attachImages.length > 0) {
-            userContent = [
-                ...(content ? [{ type: "text" as const, text: userContent as string }] : []), // Use templated content if text exists
-                ...attachImages.map((url) => ({ type: "image_url" as const, image_url: { url }})),
-            ];
-        }
+        let userContent: string = fillTemplateWith(content, modelConfig);
+        // if (attachImages && attachImages.length > 0) {
+        //     userContent = [
+        //         ...(content ? [{ type: "text" as const, text: userContent as string }] : []), // Use templated content if text exists
+        //         ...attachImages.map((url) => ({ type: "image_url" as const, image_url: { url }})),
+        //     ];
+        // }
 
         // Add user message to store
         const userMessage = store.addUserMessage(userContent);
@@ -444,7 +410,7 @@ export function useChatActions() {
         ].map(m => ({ role: m.role, content: m.content })); // Map to RequestMessage format
 
         // Trigger saving user message (which was added earlier)
-        saveMessageToServer(conversationId!, userMessage);
+        saveMessageToServer(currentSession.id, userMessage);
 
         // --- Call LLM Service --- 
         ChatApiService.callLlmChat(apiClient, {
@@ -464,7 +430,7 @@ export function useChatActions() {
                 store.updateMessage(currentSession.id, localBotMessageId, async (msg) => {
                     msg.content = finalMessage;
                     msg.streaming = false;
-                    msg.syncState = 'pending_create'; // Mark for saving
+                    msg.syncState = MessageSyncState.PENDING_CREATE; // Mark for saving
                     msg.date = new Date(timestamp);
                     msg.isError = false;
                     finalBotMsg = { ...msg }; // Capture the final state
@@ -472,7 +438,7 @@ export function useChatActions() {
 
                 // Trigger saving final bot message
                 if (finalBotMsg) {
-                    saveMessageToServer(conversationId!, finalBotMsg);
+                    saveMessageToServer(currentSession.id, finalBotMsg);
                     // Update session stats with final bot message
                     store.updateStat(finalBotMsg);
                 }
@@ -502,7 +468,7 @@ export function useChatActions() {
                 // Update user message state to error
                 store.updateMessage(currentSession.id, localUserMessageId, (msg) => {
                     msg.isError = !isAborted;
-                    msg.syncState = 'error';
+                    msg.syncState = MessageSyncState.ERROR;
                 });
 
                 // Update bot message placeholder state to error
@@ -510,7 +476,7 @@ export function useChatActions() {
                     msg.content = (msg.content || "") + errorContent;
                     msg.streaming = false;
                     msg.isError = !isAborted;
-                    msg.syncState = 'error';
+                    msg.syncState = MessageSyncState.ERROR;
                     msg.date = new Date(); // Final timestamp for error message
                 });
 

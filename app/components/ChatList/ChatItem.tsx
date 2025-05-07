@@ -192,7 +192,7 @@ export function ChatItem({
     if (session.topic && session.topic !== Locale.Store.DefaultTopic) {
       setIsAnimating(true);
       // 1. Get the temporary encrypted representation for the animation start
-      const encryptedDisplay = session.encryptedTopic;
+      const encryptedDisplay = session.topic;
       setDisplayedTitle(encryptedDisplay); // Show encrypted version first
 
       // Clear any existing interval

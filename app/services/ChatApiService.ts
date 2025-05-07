@@ -17,10 +17,10 @@ import {
 } from "@/app/client/types";
 import { UUID } from "crypto";
 import { ChatMessage, createMessage, MessageRole } from "@/app/types/chat";
-import { ChatSession, createEmptySession } from "@/app/types/session";
+import { ChatSession, createNewSession } from "@/app/types/session";
 import { ModelConfig, ModelType } from "@/app/store/config";
 import Locale from "@/app/locales";
-import { DEFAULT_TOPIC, BOT_HELLO } from "@/app/store/chat"; // Assuming these are exported from store
+import { DEFAULT_TOPIC } from "@/app/store/chat"; // Assuming these are exported from store
 import { trimTopic, getMessageTextContent } from "@/app/utils"; // Import from utils
 import { EncryptionService } from "@/app/services/EncryptionService";
 
@@ -61,7 +61,7 @@ function decryptConversationData(conversation: Conversation): Conversation {
 
 // Type that can handle both ApiMessage and MessageCreateRequest
 type MessageWithContent = {
-  content: string | MultimodalContent[];
+  content: string
   [key: string]: any;
 };
 
@@ -104,11 +104,10 @@ export function mapConversationToSession(conversation: Conversation): ChatSessio
   // Decrypt the conversation first
   const decryptedConvo = decryptConversationData(conversation);
   
-  const session = createEmptySession();
-  session.conversationId = decryptedConvo.conversation_id;
+  const session = createNewSession(decryptedConvo.conversation_id);
   session.topic = decryptedConvo.title || DEFAULT_TOPIC;
   session.lastUpdate = new Date(decryptedConvo.updated_at).getTime();
-  session.messages = [BOT_HELLO];
+  session.messages = [];
   return session;
 }
 
@@ -183,10 +182,10 @@ export const ChatApiService = {
 
   async updateConversation(
     api: ClientApi,
-    conversationId: UUID,
+    id: UUID,
     updateRequest: ConversationUpdateRequest
   ): Promise<Conversation> {
-    console.log(`[ChatApiService] Updating conversation ${conversationId}:`, updateRequest);
+    console.log(`[ChatApiService] Updating conversation ${id}:`, updateRequest);
     try {
       // Encrypt the update data
       const encryptedRequest = { 
@@ -194,39 +193,39 @@ export const ChatApiService = {
         title: updateRequest.title ? EncryptionService.encrypt(updateRequest.title) : updateRequest.title
       };
       
-      const updatedConversation = await api.app.updateConversation(conversationId, encryptedRequest);
-      console.log(`[ChatApiService] Conversation ${conversationId} updated.`);
+      const updatedConversation = await api.app.updateConversation(id, encryptedRequest);
+      console.log(`[ChatApiService] Conversation ${id} updated.`);
       
       // Decrypt the returned data
       const decryptedConversation = decryptConversationData(updatedConversation);
       
       return decryptedConversation;
     } catch (error) {
-      console.error(`[ChatApiService] Failed to update conversation ${conversationId}:`, error);
+      console.error(`[ChatApiService] Failed to update conversation ${id}:`, error);
       throw error;
     }
   },
 
   async deleteConversation(
     api: ClientApi,
-    conversationId: UUID
+    id: UUID
   ): Promise<void> {
-    console.log(`[ChatApiService] Deleting conversation ${conversationId}`);
+    console.log(`[ChatApiService] Deleting conversation ${id}`);
     try {
-      await api.app.deleteConversation(conversationId);
-      console.log(`[ChatApiService] Conversation ${conversationId} deleted.`);
+      await api.app.deleteConversation(id);
+      console.log(`[ChatApiService] Conversation ${id} deleted.`);
     } catch (error) {
-      console.error(`[ChatApiService] Failed to delete conversation ${conversationId}:`, error);
+      console.error(`[ChatApiService] Failed to delete conversation ${id}:`, error);
       throw error;
     }
   },
 
   async fetchMessages(
     api: ClientApi,
-    conversationId: UUID,
+    id: UUID,
     params?: GetConversationMessagesParams
   ): Promise<PaginatedMessagesResponse> {
-    console.log(`[ChatApiService] Fetching messages for conversation ${conversationId}:`, params);
+    console.log(`[ChatApiService] Fetching messages for conversation ${id}:`, params);
     try {
       // Explicitly handle null cursor before calling API
       const apiParams: GetConversationMessagesParams = { ...params };
@@ -234,8 +233,8 @@ export const ChatApiService = {
         delete apiParams.cursor; // Remove cursor property entirely if null
       }
       // Now apiParams.cursor is either string or undefined
-      const response = await api.app.getConversationMessages(conversationId, apiParams);
-      console.log(`[ChatApiService] Received ${response.data.length} messages for ${conversationId}.`);
+      const response = await api.app.getConversationMessages(id, apiParams);
+      console.log(`[ChatApiService] Received ${response.data.length} messages for ${id}.`);
       
       // Decrypt the message data
       const decryptedData = response.data.map(msg => decryptMessageData(msg));
@@ -248,22 +247,22 @@ export const ChatApiService = {
       
       return decryptedResponse;
     } catch (error) {
-      console.error(`[ChatApiService] Failed to fetch messages for ${conversationId}:`, error);
+      console.error(`[ChatApiService] Failed to fetch messages for ${id}:`, error);
       throw error;
     }
   },
 
   async createMessage(
     api: ClientApi,
-    conversationId: UUID,
+    id: UUID,
     createRequest: MessageCreateRequest
   ): Promise<ApiMessage> {
-    console.log(`[ChatApiService] Creating message for conversation ${conversationId}:`, createRequest.message_id);
+    console.log(`[ChatApiService] Creating message for conversation ${id}:`, createRequest.message_id);
     try {
       // Encrypt the message content before sending to server
       const encryptedRequest = encryptMessageData(createRequest) as MessageCreateRequest;
       
-      const savedMessage = await api.app.createMessage(conversationId, encryptedRequest);
+      const savedMessage = await api.app.createMessage(id, encryptedRequest);
       console.log(`[ChatApiService] Message ${savedMessage.message_id} created successfully.`);
       
       // Decrypt the returned message

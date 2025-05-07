@@ -1,6 +1,6 @@
 export const OPENAI_BASE_URL = "https://api.openai.com";
 export const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
-export const PANDA_BASE_URL = "http://20.115.208.193:8000";
+export const PANDA_BASE_URL = "http://4.246.68.189:8000/";
 export const XAI_BASE_URL = "https://api.x.ai";
 
 export const OWNER = "ChatGPTNextWeb";

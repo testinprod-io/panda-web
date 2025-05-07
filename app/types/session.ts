@@ -1,12 +1,24 @@
-import { ChatMessage } from "./chat";
-import { ModelConfig } from "../store/config";
-import { nanoid } from "nanoid";
-import { DEFAULT_TOPIC } from "../store/chat";
-import { useAppConfig } from "../store/config";
 import { UUID } from "crypto";
+import { ModelConfig, useAppConfig } from "../store/config";
+import { DEFAULT_TOPIC } from "../store/chat";
+import { ChatMessage } from "./chat";
 
-export type SessionSyncState = 'synced' | 'pending_create' | 'pending_update' | 'error' | 'local';
-export type MessagesLoadState = 'none' | 'loading' | 'partial' | 'full' | 'error';
+export enum SessionSyncState {
+  SYNCED = 'synced',
+  PENDING_CREATE = 'pending_create',
+  PENDING_UPDATE = 'pending_update',
+  PENDING_DELETE = 'pending_delete',
+  ERROR = 'error',
+  LOCAL = 'local',
+}
+
+export enum MessagesLoadState {
+  NONE = 'none',
+  LOADING = 'loading',
+  PARTIAL = 'partial',
+  FULL = 'full',
+  ERROR = 'error',
+}
 
 /**
  * Statistics for a chat session
@@ -21,10 +33,8 @@ export interface ChatStat {
  * Represents a chat session with messages and configuration
  */
 export interface ChatSession {
-  id: string;
-  conversationId?: UUID;
+  id: UUID;
   topic: string;
-  encryptedTopic: string;
   memoryPrompt: string;
   messages: ChatMessage[];
   stat: ChatStat;
@@ -32,42 +42,40 @@ export interface ChatSession {
   lastSummarizeIndex: number;
   clearContextIndex?: number;
   
+  maskAvatar: boolean;
   modelConfig: ModelConfig;
   context: ChatMessage[];
   hideContext: boolean;
 
-  // --- NEW STATE FIELDS ---
-  /** Tracks synchronization status of the session metadata (e.g., title) with the server */
-  syncState?: SessionSyncState;
-  /** Tracks the loading status of messages from the server for this session */
-  messagesLoadState?: MessagesLoadState;
-  /** Stores the pagination cursor received from the server for loading older messages */
-  serverMessagesCursor?: string | null;
+  /** Tracks synchronization status of the entire session with the server */
+  syncState: SessionSyncState;
+  /** Tracks the loading state of messages from the server */
+  messagesLoadState: MessagesLoadState;
+  /** Stores the cursor for fetching next page of messages from server */
+  serverMessagesCursor?: string;
 }
 
 /**
  * Creates an empty chat session with default values
  * @returns A new empty chat session
  */
-export function createEmptySession(): ChatSession {
+export function createNewSession(id: UUID): ChatSession {
+  const now = Date.now();
   return {
-    id: nanoid(),
+    id: id,
     topic: DEFAULT_TOPIC,
-    encryptedTopic: "",
     memoryPrompt: "",
     messages: [],
-    stat: {
-      tokenCount: 0,
-      wordCount: 0,
-      charCount: 0,
-    },
-    lastUpdate: Date.now(),
+    stat: { tokenCount: 0, wordCount: 0, charCount: 0 },
+    lastUpdate: now,
     lastSummarizeIndex: 0,
-    modelConfig: { ...useAppConfig.getState().modelConfig },
+    clearContextIndex: 0,
+    maskAvatar: false,
     context: [],
     hideContext: true,
-    syncState: 'pending_create',
-    messagesLoadState: 'none',
-    serverMessagesCursor: null,
+    modelConfig: { ...useAppConfig.getState().modelConfig },
+    syncState: SessionSyncState.LOCAL,
+    messagesLoadState: MessagesLoadState.FULL,
+    serverMessagesCursor: undefined,
   };
 }

@@ -15,7 +15,7 @@ import {
   // StoreKey, // Removed unused import
 } from "@/app/store"; // Adjust path
 import { MultimodalContent } from "@/app/client/api";
-import { ChatMessage, ChatSession, createMessage } from "@/app/types";
+import { EncryptedMessage, ChatSession, createEncryptedMessage, MessageRole, ChatMessage } from "@/app/types";
 
 import {
   copyToClipboard,
@@ -40,6 +40,7 @@ import { ClearContextDivider } from "@/app/components/chat/ClearContextDivider";
 import { ChatInputPanel } from "@/app/components/chat/ChatInputPanel"; // Import the new input panel
 import { FormattedDate } from "@/app/components/FormattedDate"; // Import the new component
 import { ChatMessageCell } from "@/app/components/chat/ChatMessageCell"; // Import the new cell component
+import { ChatMessageCellSkeleton } from "@/app/components/chat/ChatMessageCellSkeleton"; // Import the new skeleton component
 
 // MUI Imports
 import { 
@@ -59,6 +60,8 @@ import { useApiClient } from "@/app/context/ApiProviderContext"; // <-- Import h
 import { ChatComponentSkeleton } from "./ChatComponentSkeleton"; // <-- Import Skeleton
 import { getAccessToken } from "@privy-io/react-auth";
 import { useChatActions } from "@/app/hooks/useChatActions";
+import { useDecryptionManager } from "@/app/hooks/useDecryptionManager"; // <-- Import the hook
+
 // Dynamic import for Markdown component
 const Markdown = dynamic(async () => (await import("../markdown")).Markdown, {
   loading: () => <LoopIcon className={styles.loadingIcon}/>, // Use MUI LoopIcon for loading
@@ -72,7 +75,7 @@ interface ChatComponentProps {
     onUpdateSession: (session: ChatSession) => void; // Callback to update session state in parent
     // Add missing props expected by Chat.tsx
     onShowConfirmDialog: (title: string, content: string, onConfirm: () => void) => void; 
-    onShowEditMessageModal: (message: ChatMessage) => void;
+    onShowEditMessageModal: (message: EncryptedMessage) => void;
     onShowPromptModal: (session: ChatSession) => void;
     setShowPromptModal: React.Dispatch<React.SetStateAction<boolean>>;
     setShowShortcutKeyModal: React.Dispatch<React.SetStateAction<boolean>>;
@@ -90,13 +93,34 @@ export function ChatComponent(props: ChatComponentProps) {
     setShowShortcutKeyModal
   } = props;
 
-  type RenderMessage = ChatMessage & { preview?: boolean };
+  // Use EncryptedMessage for stored/rendered messages
+  // type RenderMessage = EncryptedMessage & { preview?: boolean };
 
   const chatStore = useChatStore();
   // const session = chatStore.currentSession(); // Get session from props instead
   const config = useAppConfig();
   const { showSnackbar } = useSnackbar(); // Use Snackbar hook
   const updateTargetSession = useChatStore((state) => state.updateTargetSession);
+
+  // ** Decryption Hook Integration **
+  const { decryptMessages, getDecryptedContent, clearCache, isLoading: isDecryptingMessage } = useDecryptionManager();
+
+  // Get Encrypted Messages from session
+  const encryptedMessages = useMemo(() => session?.messages ?? [], [session?.messages]);
+
+  // ** Trigger Decryption **
+  useEffect(() => {
+    if (encryptedMessages.length > 0) {
+      console.log('[ChatComponent] Decrypting messages:', encryptedMessages.map(m => m.id));
+      decryptMessages(encryptedMessages);
+    }
+
+    // ** Cleanup: Clear cache only on unmount or session change **
+    return () => {
+      console.log('[ChatComponent] Clearing decryption cache.');
+      clearCache();
+    };
+  }, [session?.id, session?.messages, clearCache]); // Only depend on session ID, not the messages array
 
   const fontSize = config.fontSize;
   const fontFamily = config.fontFamily;
@@ -108,9 +132,9 @@ export function ChatComponent(props: ChatComponentProps) {
   const inputPanelRef = useRef<HTMLDivElement>(null);
   const [buttonBottomOffset, setButtonBottomOffset] = useState<number | null>(null);
 
-  // Derive streaming state from last message
-  const lastMessage = session?.messages[session.messages.length - 1];
-  const isBotStreaming = !!(lastMessage?.role === 'assistant' && lastMessage.streaming);
+  // Derive streaming state from last *encrypted* message
+  const lastEncryptedMessage = encryptedMessages[encryptedMessages.length - 1];
+  const isBotStreaming = !!(lastEncryptedMessage?.role === 'assistant' && lastEncryptedMessage.streaming);
 
   const combinedIsLoading = isBotStreaming || isSubmitting;
 
@@ -119,7 +143,7 @@ export function ChatComponent(props: ChatComponentProps) {
   const { scrollDomToBottom, setAutoScroll } = useScrollToBottom(
     scrollRef,
     !hitBottom,
-    session?.messages ?? [],
+    encryptedMessages as any, // Cast to any as workaround if hook expects ChatMessage[]
   );
 
   const apiClient = useApiClient(); 
@@ -131,7 +155,7 @@ export function ChatComponent(props: ChatComponentProps) {
       if (combinedIsLoading) return; // Prevent submission if already loading/submitting
 
       setIsSubmitting(true); // Set submitting true
-      onUserInput(input, images)
+      onUserInput(input, images) // This action now internally handles encryption
         .then(() => setIsSubmitting(false)) // Set submitting false on success
         .catch((e) => {
           console.error("[Chat] Failed user input", e);
@@ -153,38 +177,33 @@ export function ChatComponent(props: ChatComponentProps) {
   // Cleanup stale messages
   useEffect(() => {
     // Use the session object from props
-    if (!session?.id || !session.messages) return; // Check session and messages exist
+    if (!session?.id || !encryptedMessages) return; // Check session and messages exist
     console.log(`[ChatComponent] Stale message check effect run for session.id=${session.id}`);
 
     let needsUpdate = false;
-    const messagesToUpdate: { id: string; changes: Partial<ChatMessage> }[] = [];
+    const messagesToUpdate: { id: string; changes: Partial<EncryptedMessage> }[] = [];
     const stopTimingCheck = Date.now() - REQUEST_TIMEOUT_MS;
 
-    for (const m of session.messages) {
+    for (const m of encryptedMessages) {
       // Ensure message has an ID before proceeding
       if (!m.id) continue;
 
-      const messageText = getMessageTextContent(m); // Get text content once
       const isTimedOut = m.streaming && new Date(m.date).getTime() < stopTimingCheck;
-      // Check if it's streaming, empty, and NOT already an error
-      const isEmptyStreaming = m.streaming && messageText.length === 0 && !m.isError; // Renamed for clarity
+      // Check if it's streaming AND already marked as error (transient state)
+      const isEmptyStreaming = m.streaming && !m.isError; // Simpler check based on transient state
 
-      let currentChanges: Partial<ChatMessage> = {};
+      let currentChanges: Partial<EncryptedMessage> = {};
 
       // Condition 1: Message has timed out
       if (isTimedOut) {
         currentChanges.streaming = false; // Stop streaming if timed out
 
-        // Also mark as error if it was empty AND timed out
-        if (isEmptyStreaming) {
+        // Mark as error ONLY if it was streaming and timed out (regardless of content presence)
+        // We cannot check content length here easily.
+        if (m.streaming) {
              currentChanges.isError = true;
-             currentChanges.content = prettyObject({
-               error: true,
-               message: "empty response and timed out", // More specific error message
-             });
+             // Cannot set content here, error is just a flag
         }
-        // Optional: Handle timeout even if content exists, maybe just stop streaming?
-        // If just timed out but had content, only `streaming = false` is set.
       }
       // Condition 2: Already marked as error, but somehow still streaming
       else if (m.isError && m.streaming) {
@@ -208,7 +227,7 @@ export function ChatComponent(props: ChatComponentProps) {
     if (needsUpdate && messagesToUpdate.length > 0) {
       // console.log("[ChatComponent Effect] Stale messages detected, applying updates:", messagesToUpdate);
       // Use the selected action, pass the full session from props
-      updateTargetSession(session, (s) => {
+      updateTargetSession({ id: session.id }, (s) => {
         messagesToUpdate.forEach(({ id, changes }) => {
           const messageIndex = s.messages.findIndex((msg) => msg.id === id);
           if (messageIndex !== -1) {
@@ -224,18 +243,18 @@ export function ChatComponent(props: ChatComponentProps) {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   // Depend on session object (reference check) and the stable update action
-  }, [session, updateTargetSession, REQUEST_TIMEOUT_MS]);
+  }, [session?.id, encryptedMessages, updateTargetSession, REQUEST_TIMEOUT_MS]);
 
   // Delete message handler
   const deleteMessage = useCallback(
     (msgId?: string) => {
       if (!session) return; // Add session check
       chatStore.updateTargetSession(
-        session,
+        { id: session.id },
         (s) => (s.messages = s.messages.filter((m) => m.id !== msgId)),
       );
     },
-    [chatStore, session],
+    [chatStore, session?.id],
   );
 
   const onDelete = (msgId: string) => {
@@ -244,16 +263,17 @@ export function ChatComponent(props: ChatComponentProps) {
 
   // Resend message handler (bot messages)
   const onResend = useCallback(
-    (message: ChatMessage) => {
+    async (message: EncryptedMessage) => {
       if (!session || message.role !== 'assistant') return; // Only allow resend for bot messages
-      const resendingIndex = session.messages.findIndex((m) => m.id === message.id);
+      const resendingMessageId = message.id;
+      const resendingIndex = encryptedMessages.findIndex((m) => m.id === resendingMessageId);
       if (resendingIndex <= 0) return; // Need a preceding message
 
-      let userMessage: ChatMessage | undefined;
+      let userMessage: EncryptedMessage | undefined;
       // Find the preceding user message
       for (let i = resendingIndex - 1; i >= 0; i--) {
-        if (session.messages[i].role === "user") {
-          userMessage = session.messages[i];
+        if (encryptedMessages[i].role === "user") {
+          userMessage = encryptedMessages[i];
           break;
         }
       }
@@ -266,18 +286,18 @@ export function ChatComponent(props: ChatComponentProps) {
       if (combinedIsLoading) return; // Use combined state to prevent multiple resends
 
       // Find the index of the user message
-      const startIndex = session.messages.findIndex((m) => m.id === userMessage!.id);
+      const startIndex = encryptedMessages.findIndex((m) => m.id === userMessage!.id);
       if (startIndex === -1) {
           console.error("[Chat] Could not find start index for resend");
           return;
       }
 
       // Mark all messages from the user message onwards for deletion
-      const messagesToDelete = session.messages.slice(startIndex).map(m => m.id).filter(id => !!id) as string[];
+      const messagesToDelete = encryptedMessages.slice(startIndex).map(m => m.id).filter(id => !!id) as string[];
 
       if (messagesToDelete.length > 0) {
         chatStore.updateTargetSession(
-          session,
+          { id: session.id },
           (s) => (s.messages = s.messages.filter((m) => !messagesToDelete.includes(m.id!))),
         );
       }
@@ -300,22 +320,22 @@ export function ChatComponent(props: ChatComponentProps) {
 
   // Edit Submit handler (user messages) - NEW
   const onEditSubmit = useCallback(
-    (originalMessage: ChatMessage, newText: string) => {
+    async (originalMessage: EncryptedMessage, newText: string) => {
       if (!session || originalMessage.role !== 'user') return; 
       if (combinedIsLoading) return; // Use combined state
 
-      const editIndex = session.messages.findIndex((m) => m.id === originalMessage.id);
+      const editIndex = encryptedMessages.findIndex((m) => m.id === originalMessage.id);
       if (editIndex < 0) {
         console.error("[Chat] Cannot find message to edit:", originalMessage);
         return;
       }
 
       // Remove messages from the edit index onwards
-      const messagesToDelete = session.messages.slice(editIndex).map(m => m.id).filter(id => !!id) as string[];
+      const messagesToDelete = encryptedMessages.slice(editIndex).map(m => m.id).filter(id => !!id) as string[];
 
       if (messagesToDelete.length > 0) {
         chatStore.updateTargetSession(
-          session,
+          { id: session.id },
           (s) => (s.messages = s.messages.filter((m) => !messagesToDelete.includes(m.id!))),
         );
       }
@@ -336,26 +356,19 @@ export function ChatComponent(props: ChatComponentProps) {
     [session, combinedIsLoading, chatStore, showSnackbar, setAutoScroll, scrollDomToBottom, apiClient] // ADDED combinedIsLoading dependency
   );
 
-  // Pin message handler
-  const onPinMessage = (message: ChatMessage) => {
-    if (!session) return; // Add session check
-    chatStore.updateTargetSession(session, (s) => s.context.push(message));
-    showSnackbar(Locale.Chat.Actions.PinToastContent, 'success'); // Simple success message for pin
-  };
-
   // Message rendering logic
   const context = useMemo(() => {
     if (!session) return []; // Default to empty array if no session
-    return session.hideContext ? [] : session.context.slice();
+    console.warn("[Chat] Context feature needs review with encrypted messages.")
+    return []; // Placeholder: Disable context for now
   }, [session]); // Depend on session
 
   // Compute messages to render, including context, session messages, and loading state
   const renderMessages = useMemo(() => {
-      const sessionMessages = session?.messages ?? [];
-      const messages: RenderMessage[] = context.concat(sessionMessages as RenderMessage[]);
-      
-      return messages;
-  }, [context, session?.messages]);
+      // const messages = context.concat(encryptedMessages);
+    return encryptedMessages;
+      // return messages;
+  }, [context, encryptedMessages]);
 
   // Paginated message rendering
   const [msgRenderIndex, _setMsgRenderIndex] = useState(
@@ -464,7 +477,7 @@ export function ChatComponent(props: ChatComponentProps) {
       if (session) { 
         scrollDomToBottom();
       }
-  }, [session?.messages.length, scrollDomToBottom]); // Use optional chaining and correct dependency
+  }, [session?.id, encryptedMessages.length, scrollDomToBottom]); // Use optional chaining and correct dependency
 
   // Event handlers passed to ChatInputPanel
   const onInput = useCallback((text: string) => {
@@ -492,34 +505,56 @@ export function ChatComponent(props: ChatComponentProps) {
           setAutoScroll(false);
         }}
       >
-        {messagesToRender.map((message, i) => {
+        {messagesToRender.map((encryptedMsg, i) => {
           const globalMessageIndex = msgRenderIndex + i;
-          const isUser = message.role === "user";
-          const isContext = globalMessageIndex < context.length;
-          // Show actions for non-context, non-preview, non-empty, non-error messages
-          // Let ChatMessageCell handle conditional rendering based on role
-          const showActions =
-            !isContext &&
-            !(message.preview || message.content.length === 0 || message.isError) &&
-            globalMessageIndex >= 0;
+          const isContext = false;
 
+          const decryptedContent = getDecryptedContent(encryptedMsg.id);
+          const isMessageDecrypting = isDecryptingMessage(encryptedMsg.id);
+
+          console.log(`[ChatComponent] Message ${encryptedMsg.id}:`, {
+            isDecrypting: isMessageDecrypting,
+            hasDecryptedContent: !!decryptedContent,
+            role: encryptedMsg.role,
+            contentLength: decryptedContent?.length
+          });
+
+          if (isMessageDecrypting) {
+            console.log(`[ChatComponent] Showing skeleton for message ${encryptedMsg.id}`);
+            return <ChatMessageCellSkeleton key={`${encryptedMsg.id}-loading`} role={encryptedMsg.role} />;
+          }
+
+          const showActions = !isContext && !(encryptedMsg.isError || decryptedContent === null);
+          const clearContextIndex = -1;
           const shouldShowClearContextDivider = globalMessageIndex === clearContextIndex;
 
+          console.log(`[ChatComponent] Rendering full message ${encryptedMsg.id}:`, {
+            showActions,
+            isError: encryptedMsg.isError || decryptedContent === null,
+            contentLength: decryptedContent?.length
+          });
+
           return (
-            <Fragment key={message.id || `msg-${globalMessageIndex}`}> 
+            <Fragment key={encryptedMsg.id || `msg-${globalMessageIndex}`}>
               <ChatMessageCell
-                message={message}
+                messageId={encryptedMsg.id}
+                role={encryptedMsg.role}
+                date={encryptedMsg.date}
+                decryptedContent={decryptedContent}
+                encryptedMessage={encryptedMsg}
+                isStreaming={encryptedMsg.streaming}
+                isError={encryptedMsg.isError || decryptedContent === null}
+                model={encryptedMsg.model}
                 index={globalMessageIndex}
-                isUser={isUser}
                 isContext={isContext}
-                isLoading={combinedIsLoading} // Pass combined loading state down if needed by actions inside cell
+                isLoading={combinedIsLoading}
                 showActions={showActions}
                 fontSize={fontSize}
                 fontFamily={fontFamily}
                 scrollRef={scrollRef}
                 renderMessagesLength={renderMessages.length}
                 onResend={onResend}
-                onDelete={onDelete}
+                onDelete={() => onDelete(encryptedMsg.id)}
                 onUserStop={onUserStop}
                 onEditSubmit={onEditSubmit}
               />

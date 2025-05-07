@@ -6,7 +6,7 @@ import {
   useAppConfig,
   useChatStore,
 } from "@/app/store"; // Adjust path
-import { ChatMessage } from "@/app/types";
+import { ChatMessage, EncryptedMessage, MessageRole } from "@/app/types";
 import {
   copyToClipboard,
   getMessageImages,
@@ -15,6 +15,7 @@ import {
 } from "@/app/utils"; // Adjust path
 import Locale from "@/app/locales"; // Adjust path
 import { useSnackbar } from "@/app/components/SnackbarProvider"; // Added Snackbar hook
+import { MultimodalContent } from "@/app/client/api"; // Import MultimodalContent
 
 import { ChatAction } from "@/app/components/chat/ChatAction";
 import { FormattedDate } from "@/app/components/FormattedDate"; // Import the new component
@@ -43,27 +44,60 @@ const Markdown = dynamic(async () => (await import("../markdown")).Markdown, {
 });
 
 interface ChatMessageCellProps {
-  message: ChatMessage & { preview?: boolean };
+  messageId: string;
+  role: MessageRole;
+  date: Date;
+  decryptedContent: string | MultimodalContent[] | null;
+  encryptedMessage: EncryptedMessage;
+  isStreaming?: boolean;
+  isError?: boolean;
+  preview?: boolean;
+  model?: string;
   index: number; // Global index
-  isUser: boolean;
   isContext: boolean;
-  isLoading: boolean; // Pass isLoading to conditionally render actions
+  isLoading: boolean; // Overall chat loading state
   showActions: boolean;
   fontSize: number;
   fontFamily: string;
   scrollRef: React.RefObject<HTMLDivElement | null>;
   renderMessagesLength: number; // Total number of messages being rendered currently
-  onResend: (message: ChatMessage) => void;
-  onDelete: (messageId: string) => void; // Kept for now, can be removed if not needed for bot
+  onResend: (message: EncryptedMessage) => void;
+  onDelete: (messageId: string) => void;
   onUserStop: (messageId: string) => void;
-  onEditSubmit: (originalMessage: ChatMessage, newText: string) => void;
+  onEditSubmit: (originalMessage: EncryptedMessage, newText: string) => void;
+}
+
+// Helper to extract text content safely from decrypted data
+function getDecryptedText(content: string | MultimodalContent[] | null): string {
+    if (content === null) return "Error: Could not decrypt content";
+    if (typeof content === 'string') return content;
+    if (Array.isArray(content)) {
+        // Find the first text part or return a placeholder
+        return content.find(item => item.type === 'text')?.text || "[Non-text content]";
+    }
+    return "";
+}
+
+// Helper to extract images safely from decrypted data
+function getDecryptedImages(content: string | MultimodalContent[] | null): string[] {
+    if (content === null || typeof content === 'string' || !Array.isArray(content)) {
+        return [];
+    }
+    return content.filter(item => item.type === 'image_url' && item.image_url?.url).map(item => item.image_url!.url);
 }
 
 export function ChatMessageCell(props: ChatMessageCellProps) {
   const {
-    message,
+    messageId,
+    role,
+    date,
+    decryptedContent,
+    encryptedMessage,
+    isStreaming,
+    isError,
+    preview,
+    model,
     index,
-    isUser,
     isContext,
     isLoading,
     showActions,
@@ -72,18 +106,22 @@ export function ChatMessageCell(props: ChatMessageCellProps) {
     scrollRef,
     renderMessagesLength,
     onResend,
-    onDelete, // Kept
+    onDelete,
     onUserStop,
     onEditSubmit,
   } = props;
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState("");
+  const isUser = role === "user";
+  const config = useAppConfig();
 
-  const messageDate = typeof message.date === 'string' ? new Date(message.date) : message.date;
+  // Extract text and images using helpers
+  const textContent = getDecryptedText(decryptedContent);
+  const images = getDecryptedImages(decryptedContent);
 
   const handleEditClick = () => {
-    setEditedText(getMessageTextContent(message));
+    setEditedText(textContent);
     setIsEditing(true);
   };
 
@@ -92,12 +130,11 @@ export function ChatMessageCell(props: ChatMessageCellProps) {
   };
 
   const handleSendClick = () => {
-    if (editedText.trim() === getMessageTextContent(message).trim()) {
-        // If text hasn't changed, just cancel editing
+    if (editedText.trim() === textContent.trim()) {
         setIsEditing(false);
         return;
     }
-    onEditSubmit(message, editedText);
+    onEditSubmit(encryptedMessage, editedText);
     setIsEditing(false);
   };
 
@@ -106,7 +143,7 @@ export function ChatMessageCell(props: ChatMessageCellProps) {
       className={clsx(
         styles["chat-message"],
         isUser && styles["chat-message-user"],
-        message.streaming && styles["chat-message-streaming"],
+        isStreaming && styles["chat-message-streaming"],
       )}
     >
       <div className={styles["chat-message-container"]}>
@@ -160,19 +197,19 @@ export function ChatMessageCell(props: ChatMessageCellProps) {
           ) : (
             <>
               <Markdown
-                key={`${message.id}-${message.streaming ? "streaming" : "done"}`}
-                content={getMessageTextContent(message)}
+                key={`${messageId}-${isStreaming ? "streaming" : "done"}`}
+                content={textContent}
                 loading={
-                  (message.preview || message.streaming) &&
+                  (preview || isStreaming) &&
                   !isUser &&
-                  getMessageTextContent(message).length === 0
+                  textContent.length === 0
                 }
                 fontSize={fontSize}
                 fontFamily={fontFamily}
                 parentRef={scrollRef as React.RefObject<HTMLDivElement>}
                 defaultShow={index >= renderMessagesLength - 6}
               />
-              {getMessageImages(message).map((image, imgIndex) => (
+              {images.map((image, imgIndex) => (
                  <Image
                    key={imgIndex}
                    className={styles["chat-message-item-image"]}
@@ -190,53 +227,53 @@ export function ChatMessageCell(props: ChatMessageCellProps) {
         {showActions && !isEditing && (
           <div className={styles["chat-message-actions"]}>
             <div className={styles["chat-input-actions"]}>
-              {/* REMOVED Streaming Stop Button - Handled by Input Panel Now */}
-              {/* {message.streaming && !isUser ? (
+              {isStreaming && !isUser ? (
                 <ChatAction
-                  text={Locale.Chat.Actions.Stop}
+                  text={null}
                   icon={<StopCircleIcon />}
-                  onClick={() => onUserStop(message.id!)}
+                  onClick={() => onUserStop(messageId)}
                 />
-              ) : ( */} 
-              <>
-                {!isUser && (
-                  <>
-                    <ChatAction
-                      text={null}
-                      icon={<ReplayRoundedIcon/>}
-                      onClick={() => onResend(message)}
-                      disabled={isLoading}
-                    />
-                    <ChatAction
-                      text={null}
-                      icon={<ContentCopyRoundedIcon/>}
-                      onClick={() => copyToClipboard(getMessageTextContent(message))}
-                    />
-                  </>
-                )}
-                {isUser && (
-                  <>
-                    <ChatAction
-                      text={null}
-                      icon={<ModeEditRoundedIcon/>}
-                      onClick={handleEditClick}
-                      disabled={isLoading}
-                    />
-                    <ChatAction
-                      text={null}
-                      icon={<ContentCopyRoundedIcon/>}
-                      onClick={() => copyToClipboard(getMessageTextContent(message))}
-                    />
-                  </>
-                )}
-              </>
+              ) : (
+                <>
+                  {!isUser && (
+                    <>
+                      <ChatAction
+                        text={null}
+                        icon={<ReplayRoundedIcon/>}
+                        onClick={() => onResend(encryptedMessage)}
+                        disabled={isLoading}
+                      />
+                      <ChatAction
+                        text={null}
+                        icon={<ContentCopyRoundedIcon/>}
+                        onClick={() => copyToClipboard(textContent)}
+                      />
+                    </>
+                  )}
+                  {isUser && (
+                    <>
+                      <ChatAction
+                        text={null}
+                        icon={<ModeEditRoundedIcon/>}
+                        onClick={handleEditClick}
+                        disabled={isLoading}
+                      />
+                      <ChatAction
+                        text={null}
+                        icon={<ContentCopyRoundedIcon/>}
+                        onClick={() => copyToClipboard(textContent)}
+                      />
+                    </>
+                  )}
+                </>
+              )}
             </div>
           </div>
         )}
         {/* Date remains at the bottom */}
         {/* {!isEditing && (
           <div className={styles["chat-message-action-date"]}>
-            {isContext ? Locale.Chat.IsContext : <FormattedDate date={messageDate} />}
+            {isContext ? Locale.Chat.IsContext : <FormattedDate date={date} />}
           </div>
         )} */}
       </div>

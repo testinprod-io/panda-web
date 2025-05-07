@@ -1,29 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useChatStore } from "@/app/store/chat"; // Assuming store path
-// import ChatInput from "@/app/components/ChatInput"; // Remove simple input
 import { ChatInputPanel } from "@/app/components/chat/ChatInputPanel"; // Import the panel
 import { Box, Typography } from "@mui/material";
 import { useApiClient } from "@/app/context/ApiProviderContext"; // <-- Import hook
 import { useChatActions } from "@/app/hooks/useChatActions";
-// import { Path } from "@/app/constant"; // Assuming constant path if needed for Path.Home
-// import Locale from "@/app/locales"; // Assuming locales path if needed
 
 export default function NewChatPage() {
-  const chatStore = useChatStore();
   const { newSession, onUserInput } = useChatActions();
   const router = useRouter();
-  const apiClient = useApiClient(); // <-- Use hook
-  // const config = useAppConfig(); // If config is needed later
-  // const pathname = usePathname(); // If pathname is needed later
-  // startChat now needs to accept input and images, although images will be empty here
-  const startChat = (input: string, images: string[]) => {
-    if (!input || input.trim() === "") return; // Don't start if input is empty
+  
+  const startChat = async (input: string, images: string[]) => {
+    if (!input || input.trim() === "") return;
 
-    // 1. Create a new session (this likely selects it as the current one)
-    newSession();
+    await newSession();
 
     // 2. Get the *current* session from the store *after* the update
     // Accessing state directly might be necessary if selectors don't update instantly

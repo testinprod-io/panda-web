@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const PANDA_BASE_URL = "http://20.115.208.193:8000";
+const PANDA_BASE_URL = "http://4.246.68.189:8000/";
 
 export async function POST(request: NextRequest) {
   try {

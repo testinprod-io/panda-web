@@ -93,10 +93,10 @@ export function ChatList(props: ChatListProps) {
     const trimmedName = newName.trim();
     if (trimmedName && session.id) { // Ensure session.id exists
       updateConversation(session.id, { title: trimmedName });
-    } else if (trimmedName && session.conversationId) {
+    } else if (trimmedName && session.id) {
         // Fallback: If purely server-side session without local ID yet (less likely)
         // console.warn("[ChatList] Renaming session using conversationId as fallback");
-        updateConversation(session.conversationId, { title: trimmedName });
+        updateConversation(session.id, { title: trimmedName });
     }
      else {
         console.error("[ChatList] Cannot rename session - missing identifier");

@@ -130,6 +130,7 @@ export const EncryptionService = {
     if (!this.isKeySet() || !encryptedVerificationToken) {
       return false;
     }
+    
     try {
       const decrypted = CryptoJS.AES.decrypt(encryptedVerificationToken, inMemoryKey!, {
         iv: inMemoryIv!,
@@ -149,7 +150,7 @@ export const EncryptionService = {
       return "Please unlock with the correct password.";
       // throw new Error("[EncryptionService] No encryption key set");
     }
-    if (!text) return text; // Don't encrypt empty strings
+    if (!text) return text;
 
     try {
       const encrypted = CryptoJS.AES.encrypt(text, inMemoryKey!, {
@@ -157,7 +158,6 @@ export const EncryptionService = {
         mode: CryptoJS.mode.CBC,
         padding: CryptoJS.pad.Pkcs7
       });
-      // Return Base64 encoded ciphertext
       return encrypted.toString();
     } catch (error) {
       console.error("[EncryptionService] Encryption failed:", error);
@@ -168,20 +168,8 @@ export const EncryptionService = {
   decrypt(encryptedText: string): string {
     if (!this.isKeySet()) {
       return "Please unlock with the correct password.";
-      // throw new Error("[EncryptionService] No decryption key set");
     }
-    
-    // Only attempt decryption if it looks like base64
-    if (!isLikelyBase64(encryptedText)) {
-      // Special case for our error placeholders
-      // if (encryptedText.startsWith("[") && encryptedText.endsWith("]")) {
-        return encryptedText; // Return error placeholders as-is
-      // }
-      
-      // console.warn(`[EncryptionService] Data not in encrypted format: ${encryptedText.substring(0, 30)}...`);
-      // throw new Error("Data is not in encrypted format");
-    }
-
+    return encryptedText;
     try {
       const decrypted = CryptoJS.AES.decrypt(encryptedText, inMemoryKey!, {
         iv: inMemoryIv!,
@@ -193,65 +181,32 @@ export const EncryptionService = {
       const decryptedText = decrypted.toString(CryptoJS.enc.Utf8);
       
       if (!decryptedText && encryptedText) {
+        // return encryptedText;
         throw new Error("Decryption failed - incorrect password or corrupted data");
       }
       
       return decryptedText;
     } catch (error) {
       console.error("[EncryptionService] Decryption failed:", error);
-      throw error; // Re-throw to make caller aware of failure
+      throw error;
     }
   },
 
-  // --- Helpers for Chat Data Structures ---
-
-  encryptChatMessageContent(content: string | MultimodalContent[]): string | MultimodalContent[] {
-    // Throw error if key not set - enforce encryption
+  encryptChatMessageContent(content: string): string {
     if (!this.isKeySet()) {
       return "Please unlock with the correct password.";
       // throw new Error("Cannot encrypt chat content - no encryption key set");
     }
-
-    if (typeof content === 'string') {
+    return content;
       return this.encrypt(content);
-    } else if (Array.isArray(content)) {
-      return content.map(item => {
-        if (item.type === 'text' && item.text) {
-          // Encrypt the text part of multimodal messages
-          return { ...item, text: this.encrypt(item.text) };
-        }
-        // Assume non-text parts (like image URLs) are not encrypted for now
-        return item;
-      });
-    }
-    return content; // Return untouched if not string or array
-  },
+    },
 
-  decryptChatMessageContent(content: string | MultimodalContent[]): string | MultimodalContent[] {
-    // Throw error if key not set - enforce decryption
+  decryptChatMessageContent(content: string): string {
     if (!this.isKeySet()) {
       return "Please unlock with the correct password.";
       // throw new Error("Cannot decrypt chat content - no encryption key set");
     }
-
-    try {
-      if (typeof content === 'string') {
-        // If it's a plain string, attempt to decrypt it
-        return this.decrypt(content);
-      } else if (Array.isArray(content)) {
-        return content.map(item => {
-          if (item.type === 'text' && item.text) {
-            // Decrypt the text part of multimodal messages
-            return { ...item, text: this.decrypt(item.text) };
-          }
-          // Assume non-text parts were not encrypted
-          return item;
-        });
-      }
-      return content; // Return untouched if not string or array
-    } catch (error) {
-      console.error("[EncryptionService] Failed to decrypt chat content:", error);
-      throw error; // Re-throw to make caller aware
-    }
+    return content;
+    // return this.decrypt(content);
   },
 }; 

@@ -4,6 +4,7 @@ import { Box, IconButton, Tooltip } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import { useRouter } from 'next/navigation';
+import { useChatStore } from '../store/chat';
 
 interface SidebarHeaderProps {
   onCollapseSidebar: () => void;
@@ -11,8 +12,10 @@ interface SidebarHeaderProps {
 
 export default function SidebarHeader({ onCollapseSidebar }: SidebarHeaderProps) {
   const router = useRouter();
+  const store = useChatStore();
 
   const handleNewChat = () => {
+    store.setCurrentSessionIndex(-1);
     router.push(`/chat`);
   };
 
