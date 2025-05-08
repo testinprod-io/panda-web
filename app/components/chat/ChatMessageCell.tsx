@@ -1,36 +1,25 @@
-import React, { Fragment, useState } from "react";
+import React, { useState, useCallback } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
-import {
-  useAppConfig,
-  useChatStore,
-} from "@/app/store"; // Adjust path
-import { ChatMessage, EncryptedMessage, MessageRole } from "@/app/types";
+import { useAppConfig } from "@/app/store"; 
+import { EncryptedMessage, MessageRole } from "@/app/types"; 
 import {
   copyToClipboard,
-  getMessageImages,
-  getMessageTextContent,
-  useMobileScreen,
 } from "@/app/utils"; // Adjust path
 import Locale from "@/app/locales"; // Adjust path
-import { useSnackbar } from "@/app/components/SnackbarProvider"; // Added Snackbar hook
-import { MultimodalContent } from "@/app/client/api"; // Import MultimodalContent
+import { useSnackbar } from "@/app/components/SnackbarProvider"; 
+import { MultimodalContent } from "@/app/client/api";
 
 import { ChatAction } from "@/app/components/chat/ChatAction";
-import { FormattedDate } from "@/app/components/FormattedDate"; // Import the new component
-import { LoadingAnimation } from "@/app/components/common/LoadingAnimation"; // Import the new animation
+import { LoadingAnimation } from "@/app/components/common/LoadingAnimation"; 
 
 // MUI Imports
-import { IconButton, TextField, Button, Box } from "@mui/material";
-import EditIcon from '@mui/icons-material/Edit';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import LoopIcon from '@mui/icons-material/Loop'; // Loading icon alternative
-import ReplayIcon from '@mui/icons-material/Replay'; // Reset/Retry icon
-
+import { TextField, Button, Box } from "@mui/material"; // IconButton not used
 import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded';
 import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 import ModeEditRoundedIcon from '@mui/icons-material/ModeEditRounded';
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'; // Added for delete action
 
 import StopCircleIcon from '@mui/icons-material/StopCircle';
 import SendIcon from '@mui/icons-material/Send';
@@ -38,47 +27,39 @@ import CancelIcon from '@mui/icons-material/Cancel';
 
 import styles from "./chat.module.scss";
 
-// Dynamic import for Markdown component
 const Markdown = dynamic(async () => (await import("../markdown")).Markdown, {
-  loading: () => <LoadingAnimation />, // Use the new LoadingAnimation component
+  loading: () => <LoadingAnimation />, 
 });
 
 interface ChatMessageCellProps {
   messageId: string;
   role: MessageRole;
-  date: Date;
   decryptedContent: string | MultimodalContent[] | null;
   encryptedMessage: EncryptedMessage;
   isStreaming?: boolean;
   isError?: boolean;
-  preview?: boolean;
-  model?: string;
-  index: number; // Global index
-  isContext: boolean;
-  isLoading: boolean; // Overall chat loading state
+  index: number; 
+  isLoading: boolean; 
   showActions: boolean;
   fontSize: number;
   fontFamily: string;
   scrollRef: React.RefObject<HTMLDivElement | null>;
-  renderMessagesLength: number; // Total number of messages being rendered currently
+  renderMessagesLength: number; 
   onResend: (message: EncryptedMessage) => void;
   onDelete: (messageId: string) => void;
   onUserStop: (messageId: string) => void;
   onEditSubmit: (originalMessage: EncryptedMessage, newText: string) => void;
 }
 
-// Helper to extract text content safely from decrypted data
 function getDecryptedText(content: string | MultimodalContent[] | null): string {
-    if (content === null) return "Error: Could not decrypt content";
+    if (content === null) return Locale.Store.Error; // Use a valid Locale key for error
     if (typeof content === 'string') return content;
     if (Array.isArray(content)) {
-        // Find the first text part or return a placeholder
         return content.find(item => item.type === 'text')?.text || "[Non-text content]";
     }
     return "";
 }
 
-// Helper to extract images safely from decrypted data
 function getDecryptedImages(content: string | MultimodalContent[] | null): string[] {
     if (content === null || typeof content === 'string' || !Array.isArray(content)) {
         return [];
@@ -86,20 +67,16 @@ function getDecryptedImages(content: string | MultimodalContent[] | null): strin
     return content.filter(item => item.type === 'image_url' && item.image_url?.url).map(item => item.image_url!.url);
 }
 
-export function ChatMessageCell(props: ChatMessageCellProps) {
+export const ChatMessageCell = React.memo(function ChatMessageCell(props: ChatMessageCellProps) {
   const {
     messageId,
     role,
-    date,
     decryptedContent,
     encryptedMessage,
     isStreaming,
     isError,
-    preview,
-    model,
     index,
-    isContext,
-    isLoading,
+    isLoading, 
     showActions,
     fontSize,
     fontFamily,
@@ -110,33 +87,62 @@ export function ChatMessageCell(props: ChatMessageCellProps) {
     onUserStop,
     onEditSubmit,
   } = props;
+  
+  // Actions specific to ChatMessageCell, using props for callbacks
+  const handleResend = useCallback(() => onResend(encryptedMessage), [onResend, encryptedMessage]);
+  const handleDelete = useCallback(() => {
+    // Potentially add a confirmation here using showSnackbar or a modal if desired
+    // For now, directly calls onDelete
+    onDelete(messageId);
+  }, [onDelete, messageId]);
+  const handleUserStop = useCallback(() => onUserStop(messageId), [onUserStop, messageId]);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState("");
   const isUser = role === "user";
-  const config = useAppConfig();
 
-  // Extract text and images using helpers
   const textContent = getDecryptedText(decryptedContent);
   const images = getDecryptedImages(decryptedContent);
 
-  const handleEditClick = () => {
+  const handleEditClick = useCallback(() => {
     setEditedText(textContent);
     setIsEditing(true);
-  };
+  }, [textContent]);
 
-  const handleCancelClick = () => {
+  const handleCancelClick = useCallback(() => {
     setIsEditing(false);
-  };
+  }, []);
 
-  const handleSendClick = () => {
+  const handleSendClick = useCallback(() => {
     if (editedText.trim() === textContent.trim()) {
         setIsEditing(false);
         return;
     }
     onEditSubmit(encryptedMessage, editedText);
     setIsEditing(false);
-  };
+  }, [editedText, textContent, onEditSubmit, encryptedMessage]);
+
+  if (isError) {
+    return (
+      <div className={clsx(styles["chat-message"], styles["chat-message-error"]) }>
+        <div className={styles["chat-message-container"]}>
+          <div className={styles["chat-message-item"]}>
+            {/* Use textContent which already defaults to an error string from getDecryptedText if needed */}
+            <Markdown content={textContent} /> 
+          </div>
+          <div className={styles["chat-message-actions"]}>
+             {!isUser && (
+                <ChatAction
+                    text={null}
+                    icon={<ReplayRoundedIcon/>}
+                    onClick={handleResend}
+                />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -148,11 +154,7 @@ export function ChatMessageCell(props: ChatMessageCellProps) {
     >
       <div className={styles["chat-message-container"]}>
         <div className={styles["chat-message-header"]}>
-          <div className={styles["chat-message-avatar"]}>
-            {/* Avatar Logic Here - Removed Role Label */}
-            {/* {isUser ? "You" : "Bot"} */}
-          </div>
-          {/* Actions div removed from header */}
+          <div className={styles["chat-message-avatar"]}></div>
         </div>
         <div className={styles["chat-message-item"]}>
           {isEditing ? (
@@ -175,21 +177,10 @@ export function ChatMessageCell(props: ChatMessageCellProps) {
                 sx={{ marginBottom: 1 }}
               />
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                <Button 
-                  variant="outlined" 
-                  size="small" 
-                  onClick={handleCancelClick} 
-                  startIcon={<CancelIcon />}
-                >
+                <Button variant="outlined" size="small" onClick={handleCancelClick} startIcon={<CancelIcon />}>
                   {Locale.UI.Cancel}
                 </Button>
-                <Button 
-                  variant="contained" 
-                  size="small" 
-                  onClick={handleSendClick} 
-                  disabled={editedText.trim() === ""}
-                  startIcon={<SendIcon />}
-                >
+                <Button variant="contained" size="small" onClick={handleSendClick} disabled={editedText.trim() === ""} startIcon={<SendIcon />}>
                   {Locale.UI.Confirm}
                 </Button>
               </Box>
@@ -200,7 +191,7 @@ export function ChatMessageCell(props: ChatMessageCellProps) {
                 key={`${messageId}-${isStreaming ? "streaming" : "done"}`}
                 content={textContent}
                 loading={
-                  (preview || isStreaming) &&
+                  (isStreaming) &&
                   !isUser &&
                   textContent.length === 0
                 }
@@ -223,7 +214,6 @@ export function ChatMessageCell(props: ChatMessageCellProps) {
             </>
           )}
         </div>
-        {/* Actions div moved below chat-message-item */}
         {showActions && !isEditing && (
           <div className={styles["chat-message-actions"]}>
             <div className={styles["chat-input-actions"]}>
@@ -231,38 +221,23 @@ export function ChatMessageCell(props: ChatMessageCellProps) {
                 <ChatAction
                   text={null}
                   icon={<StopCircleIcon />}
-                  onClick={() => onUserStop(messageId)}
+                  onClick={handleUserStop} 
                 />
               ) : (
                 <>
                   {!isUser && (
                     <>
-                      <ChatAction
-                        text={null}
-                        icon={<ReplayRoundedIcon/>}
-                        onClick={() => onResend(encryptedMessage)}
-                        disabled={isLoading}
-                      />
-                      <ChatAction
-                        text={null}
-                        icon={<ContentCopyRoundedIcon/>}
-                        onClick={() => copyToClipboard(textContent)}
-                      />
+                      <ChatAction text={null} icon={<ReplayRoundedIcon/>} onClick={handleResend} disabled={isLoading}/>
+                      <ChatAction text={null} icon={<ContentCopyRoundedIcon/>} onClick={() => copyToClipboard(textContent)}/>
+                      {/* Add Delete button for bot messages if needed */}
+                      {/* <ChatAction text={null} icon={<DeleteOutlineRoundedIcon />} onClick={handleDelete} disabled={isLoading} /> */}
                     </>
                   )}
                   {isUser && (
                     <>
-                      <ChatAction
-                        text={null}
-                        icon={<ModeEditRoundedIcon/>}
-                        onClick={handleEditClick}
-                        disabled={isLoading}
-                      />
-                      <ChatAction
-                        text={null}
-                        icon={<ContentCopyRoundedIcon/>}
-                        onClick={() => copyToClipboard(textContent)}
-                      />
+                      <ChatAction text={null} icon={<ModeEditRoundedIcon/>} onClick={handleEditClick} disabled={isLoading}/>
+                      <ChatAction text={null} icon={<ContentCopyRoundedIcon/>} onClick={() => copyToClipboard(textContent)}/>
+                      <ChatAction text={null} icon={<DeleteOutlineRoundedIcon />} onClick={handleDelete} disabled={isLoading} />
                     </>
                   )}
                 </>
@@ -270,13 +245,7 @@ export function ChatMessageCell(props: ChatMessageCellProps) {
             </div>
           </div>
         )}
-        {/* Date remains at the bottom */}
-        {/* {!isEditing && (
-          <div className={styles["chat-message-action-date"]}>
-            {isContext ? Locale.Chat.IsContext : <FormattedDate date={date} />}
-          </div>
-        )} */}
       </div>
     </div>
   );
-} 
+}); 

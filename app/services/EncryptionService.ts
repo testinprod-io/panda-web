@@ -147,8 +147,10 @@ export const EncryptionService = {
 
   encrypt(text: string): string {
     if (!this.isKeySet()) {
-      return "Please unlock with the correct password.";
-      // throw new Error("[EncryptionService] No encryption key set");
+      // Return the original text if no key is set, assuming it might be a passthrough scenario.
+      // The caller is responsible for ensuring encryption happens when intended if a key becomes available.
+      // console.warn("[EncryptionService] encrypt called but no key set. Returning plain text.");
+      return text; 
     }
     if (!text) return text;
 
@@ -167,9 +169,17 @@ export const EncryptionService = {
 
   decrypt(encryptedText: string): string {
     if (!this.isKeySet()) {
-      return "Please unlock with the correct password.";
+      // Return the original text if no key is set, assuming it might already be decrypted.
+      // console.warn("[EncryptionService] decrypt called but no key set. Returning plain text.");
+      return encryptedText;
     }
-    return encryptedText;
+    // If the text doesn't look like our encrypted format, return it as is.
+    // This prevents errors if trying to decrypt already plain text.
+    if (!isLikelyBase64(encryptedText)) {
+        // console.log("[EncryptionService] decrypt called but text does not look like base64. Returning as is.");
+        return encryptedText;
+    }
+
     try {
       const decrypted = CryptoJS.AES.decrypt(encryptedText, inMemoryKey!, {
         iv: inMemoryIv!,
@@ -194,19 +204,25 @@ export const EncryptionService = {
 
   encryptChatMessageContent(content: string): string {
     if (!this.isKeySet()) {
-      return "Please unlock with the correct password.";
-      // throw new Error("Cannot encrypt chat content - no encryption key set");
+      // console.log("[EncryptionService] No key set, encryptChatMessageContent passing through.");
+      return content;
     }
-    return content;
-      return this.encrypt(content);
+    // console.log("[EncryptionService] Key set, encryptChatMessageContent actually encrypting.");
+    return this.encrypt(content); 
     },
 
   decryptChatMessageContent(content: string): string {
     if (!this.isKeySet()) {
-      return "Please unlock with the correct password.";
-      // throw new Error("Cannot decrypt chat content - no encryption key set");
+      // console.log("[EncryptionService] No key set, decryptChatMessageContent passing through.");
+      return content;
     }
-    return content;
-    // return this.decrypt(content);
+    // If content is not likely base64, it's probably already decrypted or plain text.
+    // console.log("[EncryptionService] Key set, decryptChatMessageContent checking if needs decryption.");
+    if (!isLikelyBase64(content)) {
+        // console.log("[EncryptionService] Content does not look like base64, returning as is.");
+        return content;
+    }
+    // console.log("[EncryptionService] Content looks like base64, attempting decryption.");
+    return this.decrypt(content);
   },
 }; 

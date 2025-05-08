@@ -1,5 +1,5 @@
-import { useState, useCallback, useRef } from 'react';
-import { ChatMessage, EncryptedMessage } from '@/app/types/chat';
+import { useState, useCallback } from 'react';
+import { ChatMessage } from '@/app/types/chat';
 import { MultimodalContent } from '@/app/client/api';
 import { EncryptionService } from '@/app/services/EncryptionService';
 
@@ -30,7 +30,7 @@ interface DecryptionManager {
    */
   getDecryptedContent: (messageId: string) => string | MultimodalContent[] | null;
   /**
-   * Checks if a specific message is currently being decrypted.
+   * Checks if a specific message is currently being decrypted or pending.
    */
   isLoading: (messageId: string) => boolean;
   /**
@@ -45,73 +45,85 @@ interface DecryptionManager {
  */
 export function useDecryptionManager(): DecryptionManager {
   const [decryptionCache, setDecryptionCache] = useState<Record<string, DecryptionState>>({});
-  // Ref to track IDs currently being decrypted to prevent redundant async calls
-  const decryptingIdsRef = useRef<Set<string>>(new Set());
 
   const decryptSingleMessage = useCallback(async (message: ChatMessage) => {
     const id = message.id;
-    if (!id || decryptingIdsRef.current.has(id)) {
-      // Already decrypting or invalid ID
-      return;
-    }
+    if (!id) return;
 
-    // Mark as decrypting immediately
-    decryptingIdsRef.current.add(id);
-    setDecryptionCache(prev => ({
-      ...prev,
-      [id]: { status: DecryptionStatus.DECRYPTING, content: null },
-    }));
+    const currentCachedState = decryptionCache[id];
+    const contentToDecrypt = message.content ?? ""; // Ensure content is not null for processing
+
+    // Determine if we need to set to DECRYPTING
+    const shouldSetToDecrypting = !currentCachedState ||
+      currentCachedState.status === DecryptionStatus.ERROR ||
+      ((contentToDecrypt === "" || message.content === null) && // Check placeholder state
+      (!currentCachedState || currentCachedState.status !== DecryptionStatus.SUCCESS));
+
+    if (shouldSetToDecrypting) {
+      const newDecryptingState: DecryptionState = {
+        status: DecryptionStatus.DECRYPTING,
+        content: currentCachedState?.status === DecryptionStatus.ERROR ? currentCachedState.content : null,
+      };
+      // Only update if state is different
+      if (!currentCachedState || currentCachedState.status !== newDecryptingState.status || currentCachedState.content !== newDecryptingState.content) {
+        setDecryptionCache(prev => ({ ...prev, [id]: newDecryptingState }));
+      }
+    }
 
     try {
-      // Perform decryption
-      const decryptedContent = await EncryptionService.decryptChatMessageContent(message.content);
+      const decryptedStringContent = await EncryptionService.decryptChatMessageContent(contentToDecrypt);
+      let finalContent: string | MultimodalContent[];
+      try {
+        if (typeof decryptedStringContent === 'string' && (decryptedStringContent.startsWith('[') || decryptedStringContent.startsWith('{'))) {
+          finalContent = JSON.parse(decryptedStringContent);
+        } else {
+          finalContent = decryptedStringContent;
+        }
+      } catch (e) {
+        console.warn(`[useDecryptionManager] Content for message ${id} was not valid JSON, using as plain string.`, decryptedStringContent);
+        finalContent = decryptedStringContent;
+      }
 
-      // Update cache on success
-      setDecryptionCache(prev => ({
-        ...prev,
-        [id]: { status: DecryptionStatus.SUCCESS, content: decryptedContent },
-      }));
-
+      // Only update if status or content actually changed
+      if (!currentCachedState || currentCachedState.status !== DecryptionStatus.SUCCESS || currentCachedState.content !== finalContent) {
+        setDecryptionCache(prev => ({
+          ...prev,
+          [id]: { status: DecryptionStatus.SUCCESS, content: finalContent },
+        }));
+      }
     } catch (error) {
       console.error(`[useDecryptionManager] Failed to decrypt message ${id}:`, error);
-      // Update cache on error
-      setDecryptionCache(prev => ({
-        ...prev,
-        [id]: { status: DecryptionStatus.ERROR, content: null },
-      }));
-
-    } finally {
-      // Remove from tracking ref regardless of outcome
-      decryptingIdsRef.current.delete(id);
+      // Only update if status or content actually changed
+      if (!currentCachedState || currentCachedState.status !== DecryptionStatus.ERROR || currentCachedState.content !== null) {
+        setDecryptionCache(prev => ({
+          ...prev,
+          [id]: { status: DecryptionStatus.ERROR, content: null }, 
+        }));
+      }
     }
-  }, []); // No dependencies as it relies on message input and service
+  }, [decryptionCache]);
 
   const decryptMessages = useCallback((messages: ChatMessage[]) => {
     if (!messages || messages.length === 0) return;
-
     messages.forEach(message => {
-      if (message?.id && !decryptionCache[message.id] && !decryptingIdsRef.current.has(message.id)) {
-        // Decrypt only if ID exists, not in cache, and not already being decrypted
+      if (message?.id) {
         decryptSingleMessage(message);
       }
     });
-  }, [decryptionCache, decryptSingleMessage]);
+  }, [decryptSingleMessage]);
 
   const getDecryptedContent = useCallback((messageId: string): string | MultimodalContent[] | null => {
     const state = decryptionCache[messageId];
-    // Return content only if successfully decrypted
     return state?.status === DecryptionStatus.SUCCESS ? state.content : null;
   }, [decryptionCache]);
 
   const isLoading = useCallback((messageId: string): boolean => {
     const state = decryptionCache[messageId];
-    // Loading if explicitly 'decrypting' or if not yet in cache (implicitly pending)
     return state?.status === DecryptionStatus.DECRYPTING || !state;
   }, [decryptionCache]);
 
   const clearCache = useCallback(() => {
     setDecryptionCache({});
-    decryptingIdsRef.current.clear();
     console.log("[useDecryptionManager] Cache cleared.");
   }, []);
 

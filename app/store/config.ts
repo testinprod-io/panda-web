@@ -73,6 +73,7 @@ export const DEFAULT_CONFIG = {
     compressProviderName: "",
     enableInjectSystemPrompts: true,
     template: DEFAULT_INPUT_TEMPLATE,
+    stream: true,
   },
 };
 

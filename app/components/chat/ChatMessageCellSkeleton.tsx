@@ -12,7 +12,7 @@ interface ChatMessageCellSkeletonProps {
  * Mimics the basic layout and alignment based on the role.
  */
 export const ChatMessageCellSkeleton: React.FC<ChatMessageCellSkeletonProps> = ({ role }) => {
-  console.log('[ChatMessageCellSkeleton] Rendering skeleton for role:', role);
+  // console.log('[ChatMessageCellSkeleton] Rendering skeleton for role:', role);
   
   const isUser = role === 'user';
 
