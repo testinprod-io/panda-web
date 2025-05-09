@@ -14,6 +14,7 @@ import {
   PaginatedMessagesResponse,
   HTTPValidationError,
   SenderTypeEnum,
+  GetConversationsParams,
 } from "@/app/client/types";
 import { UUID } from "crypto";
 import { ChatMessage, createMessage, MessageRole } from "@/app/types/chat";
@@ -136,7 +137,7 @@ export function mapRoleToSenderType(role: MessageRole): SenderTypeEnum {
 export const ChatApiService = {
   async fetchConversations(
     api: ClientApi,
-    params: { limit: number }
+    params: GetConversationsParams
   ): Promise<PaginatedConversationsResponse> {
     console.log("[ChatApiService] Fetching conversations:", params);
     try {

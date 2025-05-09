@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 import { useChatStore } from "@/app/store/chat";
 import { useChatActions } from "@/app/hooks/useChatActions";
@@ -16,128 +16,173 @@ interface ChatListProps {
 }
 
 export function ChatList(props: ChatListProps) {
-  const {
-    sessions,
-    currentSessionIndex,
-  } = useChatStore();
+  // Local state for sessions and pagination
+  const [localSessions, setLocalSessions] = useState<ChatSession[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(false);
+  const [isPagingLoading, setIsPagingLoading] = useState<boolean>(false);
 
-  const { deleteSession, selectSession, updateConversation } = useChatActions();
+  // Get actions and store state needed for selection/deletion
+  const { deleteSession, selectSession, updateConversation, loadSessionsFromServer } = useChatActions();
+  const { currentSessionIndex } = useChatStore(); // For highlighting selected item
+  const store = useChatStore(); // For setCurrentSessionIndex
 
   const router = useRouter();
-  const store = useChatStore();
-  // const apiClient = useApiClient();
-  const [isLoading, setIsLoading] = useState(true); // Add loading state
+  
+  // Ref for the scrollable element (observer target)
+  const observerRef = useRef<HTMLDivElement | null>(null);
+  const listContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Effect to determine loading state based on sessions
-  useEffect(() => {
-    // Consider loaded if there's more than 1 session OR the only session is not empty (has messages)
-    // const isActuallyEmpty = sessions.length === 1 && sessions[0].messages.length === 0 && sessions[0].topic === Locale.Store.DefaultTopic;
-    if (sessions.length > 0) {
-      // } && !isActuallyEmpty) {
-      // Set a short delay to allow persistence hydration to potentially finish
-      const timer = setTimeout(() => {
-        setIsLoading(false);
-      }, 100); // Adjust timeout as needed
-      return () => clearTimeout(timer);
-    } else if (sessions.length === 0) {
-      // If somehow sessions array becomes totally empty, treat as loading? Or handle as error?
-      // For now, keep loading true if empty
-      setIsLoading(true);
-    } else {
-      // If it's just the default empty session, keep loading for a bit longer
-      // to see if persisted sessions load
-      const timer = setTimeout(() => {
-        // Re-check after timeout. If still the default empty session, assume loading finished (user has no sessions).
-        const stillDefaultEmpty =
-          sessions.length === 1 &&
-          sessions[0].messages.length === 0 &&
-          sessions[0].topic === Locale.Store.DefaultTopic;
-        if (stillDefaultEmpty) {
-          setIsLoading(false);
-        }
-      }, 500); // Longer timeout for initial load check
-      return () => clearTimeout(timer);
+  // Helper for random delay
+  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  // Function to load sessions (initial or next page)
+  const loadMoreSessions = useCallback(async (options?: { cursor?: string | null, limit?: number }) => {
+    const currentCursor = options?.cursor;
+    const currentLimit = options?.limit; 
+
+    if (isPagingLoading || (currentCursor !== undefined && !hasMore)) {
+        console.log("[ChatList] Skipping fetch: already loading or no more data to fetch with a cursor.");
+        return;
     }
-  }, [sessions]); // Re-run when sessions array reference changes
+    
+    console.log(`[ChatList] Loading sessions. Cursor: ${currentCursor}, Limit: ${currentLimit}`);
+    setIsPagingLoading(true);
+    if (currentCursor === undefined) { 
+      setIsInitialLoading(true); 
+    }
+
+    try {
+      // Add random backoff delay, but not for the very first initial load if desired (optional)
+      if (currentCursor !== undefined || localSessions.length > 0) { // Apply delay for pagination or subsequent loads
+        const randomDelay = Math.floor(Math.random() * (1500 - 1000 + 1)) + 1000; // Delay between 1000ms and 1500ms
+        console.log(`[ChatList] Adding random delay: ${randomDelay}ms`);
+        await sleep(randomDelay);
+      }
+
+      const result = await loadSessionsFromServer({ cursor: currentCursor, limit: currentLimit });
+      if (result) {
+        setLocalSessions(prevSessions => {
+          const newSessions = result.sessions;
+          if (currentCursor) { // Appending for pagination if cursor was provided
+            const existingIds = new Set(prevSessions.map(s => s.id));
+            const uniqueNewSessions = newSessions.filter(s => !existingIds.has(s.id));
+            if (uniqueNewSessions.length < newSessions.length) {
+                console.warn("[ChatList] Filtered out duplicate sessions received from server.");
+            }
+            return [...prevSessions, ...uniqueNewSessions];
+          } else { // Initial load or refresh, replace
+            return newSessions;
+          }
+        });
+        setNextCursor(result.nextCursor);
+        setHasMore(result.hasMore);
+      }
+    } catch (error) {
+      console.error("[ChatList] Failed to load sessions:", error);
+    } finally {
+      setIsPagingLoading(false);
+      // Only turn off initial loading if it was an initial load (no cursor)
+      if (currentCursor === undefined) { 
+        setIsInitialLoading(false);
+      }
+    }
+  }, [loadSessionsFromServer, hasMore, isPagingLoading, localSessions.length]); 
+
+  // Initial load
+  useEffect(() => {
+    if (localSessions.length === 0 && hasMore) { 
+      console.log("[ChatList] Triggering initial load (limit 20 by user change).");
+      loadMoreSessions({ limit: 20 });
+    }
+  }, [loadMoreSessions, localSessions.length, hasMore]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const currentObserverRef = observerRef.current; 
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isPagingLoading && !isInitialLoading) {
+          console.log("[ChatList] Observer triggered, loading next 20 sessions.");
+          loadMoreSessions({ cursor: nextCursor, limit: 20 }); 
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    if (currentObserverRef) {
+      observer.observe(currentObserverRef);
+    }
+
+    return () => {
+      if (currentObserverRef) {
+        observer.unobserve(currentObserverRef);
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMore, nextCursor, isPagingLoading, isInitialLoading, loadMoreSessions]); // Added loadMoreSessions to deps as it's used
 
   const handleSelectItem = (session: ChatSession) => {
-    // Navigation triggers useParams update, which triggers Effect 1 to update highlight
-    // const store = useChatStore();
-    const sessionIndexToSelect = sessions.findIndex((s) => s.id === session.id);
-    store.setCurrentSessionIndex(sessionIndexToSelect);
-
-    // t(() => {
-    //   const currentChatIdInStore = useChatStore.getState().currentSession()?.id;
-    //   console.log(`[ChatPage Effect 2] Running. isValidSession: ${isValidSession}, chatId: ${chatId}, currentChatIdInStore: ${currentChatIdInStore}`);
-
-    //   if (isValidSession && chatId && chatId !== currentChatIdInStore) {
-    //     const sessions = useChatStore.getState().sessions; // Get fresh sessions
-    //     const sessionIndexToSelect = sessions.findIndex(s => s.id === chatId);
-    //     if (sessionIndexToSelect !== -1) {
-    //       console.log(`[ChatPage Effect 2] Selecting session ${chatId} at index ${sessionIndexToSelect}`);
-    //       selectSession(sessionIndexToSelect);
-    //     } else {
-    //       // This case should ideally be caught by Effect 1 setting isValidSession to false
-    //       console.warn(`[ChatPage Effect 2] Valid session ${chatId} suddenly not found for selection. This might indicate a race condition or rapid store update.`);
-    //       setIsValidSession(false); // Corrective action: mark as invalid if not found during selection attempt
-    //     }
-    //   }
-    // }, [isValidSession, chatId, selectSession]); // Depends on validity, chatId, and the stable selectSession action
+    selectSession(session.id);
     router.replace(`/chat/${session.id}`);
   };
 
-  const handleDeleteItem = async (session: ChatSession, index: number) => {
-    // Replace showConfirm with window.confirm or a project-specific modal
+  const handleDeleteItem = async (session: ChatSession) => {
     if (window.confirm(Locale.Home.DeleteChat)) {
-      const isCurrentSession = index === currentSessionIndex;
-      deleteSession(index);
+      deleteSession(session.id);
 
-      // Navigate to /chat if the deleted session was the current one
-      // or if it was the last session available
-      if (isCurrentSession || sessions.length === 1) {
-        // sessions.length reflects state BEFORE deletion
+      setLocalSessions(prev => prev.filter(s => s.id !== session.id));
+
+      const globallyCurrentSession = store.currentSession();
+      const wasGloballyCurrent = globallyCurrentSession ? globallyCurrentSession.id === session.id : false;
+
+      if (wasGloballyCurrent || localSessions.length === 1) {
         router.push("/chat");
       }
-      // No else needed: if a different session was deleted, stay on the current chat page.
     }
   };
 
   const handleRenameItem = (session: ChatSession, newName: string) => {
     const trimmedName = newName.trim();
     if (trimmedName && session.id) {
-      // Ensure session.id exists
       updateConversation(session.id, { title: trimmedName });
-    } else if (trimmedName && session.id) {
-      // Fallback: If purely server-side session without local ID yet (less likely)
-      // console.warn("[ChatList] Renaming session using conversationId as fallback");
-      updateConversation(session.id, { title: trimmedName });
+      setLocalSessions(prevSessions => 
+        prevSessions.map(s => 
+          s.id === session.id ? { ...s, topic: trimmedName } : s
+        )
+      );
     } else {
-      console.error("[ChatList] Cannot rename session - missing identifier");
+      console.error("[ChatList] Cannot rename session - missing identifier or empty name");
     }
   };
 
-  if (isLoading) {
-    return <ChatListSkeleton />;
+  if (isInitialLoading && localSessions.length === 0) {
+    return <ChatListSkeleton count={5} />;
   }
 
   return (
-    // Removed DragDropContext and Droppable wrappers
-    <div className={styles["chat-list"]}>
-      {sessions.map((item, i) => (
+    <div className={styles["chat-list"]} ref={listContainerRef}>
+      {localSessions.map((item, i) => (
         <ChatItem
           session={item}
-          key={item.id} // Use local ID as key
-          index={i}
-          selected={i === currentSessionIndex} // Highlight directly based on URL chatId
+          key={item.id}
+          index={i} 
+          selected={item.id === store.currentSession()?.id} 
           onClick={() => {
-            selectSession(i);
             handleSelectItem(item);
           }}
-          onDelete={() => handleDeleteItem(item, i)}
+          onDelete={() => handleDeleteItem(item)}
           onRename={(newTitle) => handleRenameItem(item, newTitle)}
           narrow={props.narrow}
         />
       ))}
+      {hasMore && <div ref={observerRef} style={{ height: "0px" }} />} 
+      {isPagingLoading && <ChatListSkeleton count={5} />} 
+      {!hasMore && localSessions.length > 0 && <div className={styles["no-more-sessions"]}>{"No more sessions"}</div>} {/* Temp string */}
+      {!isInitialLoading && localSessions.length === 0 && !hasMore && (
+        <div className={styles["no-sessions-found"]}>{"No sessions found"}</div> /* Temp string */
+      )}
     </div>
   );
 }

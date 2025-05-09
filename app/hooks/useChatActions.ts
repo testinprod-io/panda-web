@@ -9,7 +9,8 @@ import {
     ConversationCreateRequest,
     MessageCreateRequest,
     GetConversationMessagesParams,
-    ConversationUpdateRequest
+    ConversationUpdateRequest,
+    GetConversationsParams
 } from '@/app/client/types';
 import { UUID } from "crypto";
 import { ClientApi, MultimodalContent, RequestMessage } from '@/app/client/api';
@@ -27,38 +28,47 @@ export function useChatActions() {
     const apiClient = useApiClient();
     const appConfig = useAppConfig();
 
-    const loadSessionsFromServer = useCallback(async () => {
+    const loadSessionsFromServer = useCallback(async (options?: { cursor?: string | null, limit?: number }) => {
         if (!apiClient) {
             console.warn("[ChatActions] API client not available, cannot load sessions.");
-            return;
+            return { sessions: [], nextCursor: null, hasMore: false };
         }
-        console.log("[ChatActions] Loading sessions from server...");
-        try {
-            const params = { limit: 20 }; // Load more sessions
-            const response = await ChatApiService.fetchConversations(apiClient, params);
-            const serverConvos = response.data;
-            console.log(`[ChatActions] Received ${serverConvos.length} sessions from server.`);
-            
-            // Call the store's internal method to merge and update state
-            store._onServerSessionsLoaded(serverConvos);
-            console.log("[ChatActions] Sessions merged and updated in store.");
+        
+        const effectiveCursor = options?.cursor;
+        const effectiveLimit = options?.limit ?? 20; // Default to 20 if not provided
 
-            // After loading sessions, trigger loading messages for the current session if needed
-            const currentSession = store.currentSession();
-            if (currentSession && currentSession.messagesLoadState === 'none') {
-                 console.log(`[ChatActions] Triggering message load for current session ${currentSession.id} after initial session load.`);
-                 loadMessagesForSession(currentSession.id); // Call the action
+        console.log(`[ChatActions] Loading sessions from server... Cursor: ${effectiveCursor}, Limit: ${effectiveLimit}`);
+        try {
+            const apiParams: GetConversationsParams = { limit: effectiveLimit };
+            if (effectiveCursor) {
+                apiParams.cursor = effectiveCursor;
             }
+            const response = await ChatApiService.fetchConversations(apiClient, apiParams);
+            
+            // Enhanced logging
+            console.log(`[ChatActions] Raw API response from fetchConversations: Received ${response.data.length} items. Pagination:`, response.pagination);
+
+            const serverConvos = response.data;
+            const pagination = response.pagination;
+            console.log(`[ChatActions] Received ${serverConvos.length} sessions from server. Has more: ${pagination.has_more}, Limit: ${effectiveLimit}`);
+            
+            const sessions = serverConvos.map(mapConversationToSession);
+            
+            return {
+                sessions,
+                nextCursor: pagination.next_cursor,
+                hasMore: pagination.has_more,
+            };
 
         } catch (error) {
             console.error("[ChatActions] Failed to load sessions from server:", error);
-            // Handle error state in UI? For now, just log.
-             // Ensure there's at least one session even on error
+            return { sessions: [], nextCursor: null, hasMore: false }; // Return empty on error
+            // Ensure there's at least one session even on error
             // if (store.sessions.length === 0) {
             //      store.addSession(createEmptySession());
             // }
         }
-    }, [apiClient, store]);
+    }, [apiClient]);
 
     const newSession = useCallback(async (modelConfig?: ModelConfig) => {
         if (!apiClient) {
@@ -132,55 +142,69 @@ export function useChatActions() {
         }
     }, [apiClient, store]);
 
-    // Select Session - combines store update with triggering message load
-    const selectSession = useCallback((index: number) => {
+    // Select Session - now by ID
+    const selectSession = useCallback((sessionId: UUID) => {
         const sessions = store.sessions;
-        if (index < 0 || index >= sessions.length) {
-            console.warn(`[ChatActions] Invalid session index selected: ${index}`);
+        const indexToSelect = sessions.findIndex(s => s.id === sessionId);
+
+        if (indexToSelect === -1) {
+            console.warn(`[ChatActions] Session with ID ${sessionId} not found in store. Cannot select.`);
+            // Attempt to see if it's in localSessions of ChatList if ChatList passes it?
+            // For now, if not in global store, we can't set global index correctly.
             return;
         }
-        const targetSession = sessions[index];
+
+        if (indexToSelect < 0 || indexToSelect >= sessions.length) {
+            console.warn(`[ChatActions] Invalid session index derived: ${indexToSelect} for ID ${sessionId}`);
+            return;
+        }
+        // const targetSession = sessions[indexToSelect]; // Not strictly needed anymore for this function
 
         // Update index in store
-        store.setCurrentSessionIndex(index);
+        store.setCurrentSessionIndex(indexToSelect);
 
-        // Trigger message loading if needed
-        // if (targetSession.id && targetSession.messagesLoadState === 'none') {
-        //     console.log(`[ChatActions] Session ${targetSession.id} selected, triggering message load.`);
-        //     loadMessagesForSession(targetSession.id);
+        // Trigger message loading if needed (logic can remain if currentSession is derived from index)
+        // const currentSession = store.currentSession(); // This will be the newly selected one
+        // if (currentSession && currentSession.messagesLoadState === 'none') {
+        //     console.log(`[ChatActions] Session ${currentSession.id} selected, triggering message load.`);
+        //     loadMessagesForSession(currentSession.id);
         // }
-    }, [store]);
+    }, [store]); // Removed loadMessagesForSession from deps for now, as it's commented out
 
-    const deleteSession = useCallback(async (index: number) => {
+    const deleteSession = useCallback(async (sessionId: UUID) => {
         if (!apiClient) {
              console.warn("[ChatActions] API client not available, cannot delete server session.");
+             // No server deletion possible, but we can still remove from local store
         }
 
-        const sessionToDelete = store.sessions.at(index);
-        if (!sessionToDelete) {
-            console.error(`[ChatActions] Attempted to delete non-existent session at index ${index}`);
+        const sessions = store.sessions;
+        const indexToDelete = sessions.findIndex(s => s.id === sessionId);
+
+        if (indexToDelete === -1) {
+            console.error(`[ChatActions] Attempted to delete non-existent session with ID ${sessionId}`);
             return;
         }
 
-        const id = sessionToDelete.id;
+        const sessionToDelete = sessions[indexToDelete];
+        // const id = sessionToDelete.id; // This is just sessionId
 
-        console.log(`[ChatActions] Deleting session ${index} (ID: ${id})`);
+        console.log(`[ChatActions] Deleting session ${indexToDelete} (ID: ${sessionId})`);
 
-        // Remove from store immediately
-        store.removeSession(index);
+        // Remove from store immediately using the found index
+        store.removeSession(indexToDelete);
 
         // Attempt server deletion if applicable
         if (apiClient && sessionToDelete.syncState !== 'pending_create' && sessionToDelete.syncState !== 'local') {
             try {
-                await ChatApiService.deleteConversation(apiClient, id);
-                console.log(`[ChatActions] Server session ${id} deleted.`);
+                await ChatApiService.deleteConversation(apiClient, sessionId); // Use sessionId directly
+                console.log(`[ChatActions] Server session ${sessionId} deleted.`);
             } catch (error) {
-                console.error(`[ChatActions] Failed to delete server session ${id}:`, error);
+                console.error(`[ChatActions] Failed to delete server session ${sessionId}:`, error);
                 // How to handle? Maybe notify user? Re-add local session?
                 // For now, just log error. The session is already removed locally.
             }
         } else {
-           console.log(`[ChatActions] Session ${id} was local-only or pending creation, no server deletion needed.`);
+           console.log(`[ChatActions] Session ${sessionId} was local-only or pending creation, no server deletion needed.`);
         }
     }, [apiClient, store]);
 

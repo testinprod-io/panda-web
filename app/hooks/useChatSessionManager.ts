@@ -184,7 +184,7 @@ export function useChatSessionManager(
       nonErrorMessages[1].role === "assistant"
     ) {
       const userMessage = nonErrorMessages[0].content.trim();
-      const assistantMessage = nonErrorMessages[1].content.trim;
+      const assistantMessage = nonErrorMessages[1].content.trim();
 
       if (
         userMessage.length > 0 &&
