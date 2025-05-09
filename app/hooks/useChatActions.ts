@@ -257,6 +257,11 @@ export function useChatActions() {
         }
 
         console.log(`[Title Generation Action] Starting for session: ${sessionId}`);
+        
+        if (session.topic !== DEFAULT_TOPIC) {
+            console.log(`[Title Generation Action] Session already has a title, skipping.`);
+            return;
+        }
 
         // Determine Model for Title Generation (using compressModel or summarize logic)
         // Adapt logic from original store's getSummarizeModelConfig

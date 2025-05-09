@@ -47,7 +47,11 @@ interface ChatSessionManagerResult {
     callbacks?: {
       onStart?: (messageId: UUID) => void;
       onStreaming?: (messageId: UUID, partialMessage: string) => void;
-      onSuccess?: (messageId: UUID, finalMessage: string, timestamp: Date) => void;
+      onSuccess?: (
+        messageId: UUID,
+        finalMessage: string,
+        timestamp: Date
+      ) => void;
       onFailure?: (error: Error) => void;
       onController?: (controller: AbortController) => void;
     }
@@ -69,7 +73,7 @@ export function useChatSessionManager(
   sessionId: UUID,
   modelConfig: ModelConfig
 ): ChatSessionManagerResult {
-  const { loadMessagesForSession: actionLoadMessages, saveMessageToServer } =
+  const { loadMessagesForSession: actionLoadMessages, saveMessageToServer, generateSessionTitle } =
     useChatActions();
   // const { showSnackbar } = useSnackbar(); // Uncomment if you want to use snackbar for errors here
 
@@ -163,6 +167,43 @@ export function useChatSessionManager(
       });
     // No cleanup function needed here unless actionLoadMessages supports AbortController
   }, [sessionId]); // actionLoadMessages should be stable
+
+  // Effect to generate session title after the first user message and bot response
+  useEffect(() => {
+    if (!sessionId || !generateSessionTitle) {
+      return;
+    }
+
+    const nonErrorMessages = displayedMessages.filter(
+      (m) => !m.isError && (m.role === "user" || m.role === "assistant") && !m.streaming
+    );
+
+    if (
+      nonErrorMessages.length === 2 &&
+      nonErrorMessages[0].role === "user" &&
+      nonErrorMessages[1].role === "assistant"
+    ) {
+      const userMessage = nonErrorMessages[0].content.trim();
+      const assistantMessage = nonErrorMessages[1].content.trim;
+
+      if (
+        userMessage.length > 0 &&
+        assistantMessage.length > 0
+      ) {
+        setTimeout(() => {
+          generateSessionTitle(
+            sessionId,
+            userMessage,
+            assistantMessage
+          );
+        }, 0);
+      }
+    }
+  }, [
+    displayedMessages,
+    sessionId,
+    generateSessionTitle
+  ]);
 
   const loadMoreMessages = useCallback(async () => {
     if (!sessionId) {
@@ -433,20 +474,6 @@ export function useChatSessionManager(
           //     store.updateStat(finalBotMsg);
           // }
 
-          // const updatedSessionState = useChatStore.getState().sessions.find(s => s.id === currentSession.id);
-          // if (
-          //     updatedSessionState &&
-          //     updatedSessionState.messages.filter(m => !m.isError).length === 2 &&
-          //     updatedSessionState.topic === DEFAULT_TOPIC
-          // ) {
-          //     const userMsgContent = getMessageTextContent(userMessage); // userMessage.content is string
-          //     const assistantMsgContent = finalMessage;
-          //     if (userMsgContent.trim().length > 0 && assistantMsgContent.trim().length > 0) {
-          //         console.log("[ChatActions] Triggering title generation.");
-          //         setTimeout(() => generateSessionTitle(currentSession.id, userMsgContent, assistantMsgContent), 0);
-          //     }
-          // }
-
           ChatControllerPool.remove(sessionId, localBotMessageId);
           callbacks?.onSuccess?.(botMessage.id, finalMessage, timestamp);
         },
@@ -520,8 +547,33 @@ export function useChatSessionManager(
             : msg
         )
       );
+
+      // console.log(
+      //   "[ChatComponent] onSuccess: displayedMessages:",
+      //   displayedMessages
+      // );
+      // if (displayedMessages.filter((m) => !m.isError).length === 2) {
+      //   const userMsgContent = displayedMessages[0].content;
+      //   const assistantMsgContent = displayedMessages[1].content;
+
+      //   if (
+      //     userMsgContent.trim().length > 0 &&
+      //     assistantMsgContent.trim().length > 0
+      //   ) {
+      //     console.log("[ChatActions] Triggering title generation.");
+      //     setTimeout(
+      //       () =>
+      //         generateSessionTitle(
+      //           sessionId,
+      //           userMsgContent,
+      //           assistantMsgContent
+      //         ),
+      //       0
+      //     );
+      //   }
+      // }
     },
-    []
+    [displayedMessages, sessionId, generateSessionTitle]
   );
 
   const markMessageAsError = useCallback(
@@ -549,25 +601,34 @@ export function useChatSessionManager(
     []
   );
 
-  const clearMessages = useCallback((fromMessageId: UUID) => {
-    console.log("[useChatSessionManager] Clearing messages from:", fromMessageId, "messages:", displayedMessages.map(m => m.id));
-    const clearIndex = displayedMessages.findIndex(
-      (msg) => msg.id === fromMessageId
-    );
-    if (clearIndex === -1) {
-      console.error(
-        "[useChatSessionManager] clearMessages: Could not find message to clear after:",
+  const clearMessages = useCallback(
+    (fromMessageId: UUID) => {
+      console.log(
+        "[useChatSessionManager] Clearing messages from:",
         fromMessageId,
-        "messages:", displayedMessages.map(m => m.id)
+        "messages:",
+        displayedMessages.map((m) => m.id)
       );
-      return;
-    }
-    if (clearIndex > 0) {
-      setDisplayedMessages((prev) => prev.slice(0, clearIndex));
-    } else {
-      setDisplayedMessages([]);
-    }
-  }, [displayedMessages]);
+      const clearIndex = displayedMessages.findIndex(
+        (msg) => msg.id === fromMessageId
+      );
+      if (clearIndex === -1) {
+        console.error(
+          "[useChatSessionManager] clearMessages: Could not find message to clear after:",
+          fromMessageId,
+          "messages:",
+          displayedMessages.map((m) => m.id)
+        );
+        return;
+      }
+      if (clearIndex > 0) {
+        setDisplayedMessages((prev) => prev.slice(0, clearIndex));
+      } else {
+        setDisplayedMessages([]);
+      }
+    },
+    [displayedMessages]
+  );
 
   return {
     displayedMessages,

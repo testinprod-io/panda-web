@@ -40,6 +40,7 @@ import { getAccessToken } from "@privy-io/react-auth";
 import { useDecryptionManager } from "@/app/hooks/useDecryptionManager"; // <-- Import the hook
 import { useChatSessionManager } from "@/app/hooks/useChatSessionManager";
 import { UUID } from "crypto";
+import { useChatActions } from "@/app/hooks/useChatActions";
 
 // Restore ChatComponentProps interface
 interface ChatComponentProps {
@@ -136,6 +137,8 @@ export function ChatComponent(props: ChatComponentProps) {
     markMessageAsError,
   } = useChatSessionManager(sessionId, config.modelConfig);
 
+  const { generateSessionTitle } = useChatActions();
+
   // Derive streaming state from last *encrypted* message
   const lastMessage = displayedMessages[displayedMessages.length - 1];
   const isBotStreaming = !!(
@@ -161,7 +164,9 @@ export function ChatComponent(props: ChatComponentProps) {
       sendNewUserMessage(input, images, {
         onStart: () => setIsSubmitting(true),
         onStreaming: (partialMessage: string) => {},
-        onSuccess: () => setIsSubmitting(false),
+        onSuccess: () => { 
+          setIsSubmitting(false)
+        },
         onFailure: (error: Error) => {
           console.error("[Chat] Failed user input", error);
           setIsSubmitting(false); // Set submitting false on error
@@ -173,6 +178,8 @@ export function ChatComponent(props: ChatComponentProps) {
     [
       sessionId,
       combinedIsLoading,
+      displayedMessages,
+      generateSessionTitle,
       sendNewUserMessage,
       setAutoScroll,
       showSnackbar,
