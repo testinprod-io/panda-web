@@ -32,6 +32,8 @@ import { useApiClient } from "@/app/context/ApiProviderContext";
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'; // Import Scroll Down Icon
 import { useChatActions } from "@/app/hooks/useChatActions";
 import styles from "@/app/components/chat/chat.module.scss";
+import { UUID } from "crypto";
+import { ModelConfig } from "@/app/store";
 
 const localStorage = safeLocalStorage();
 
@@ -49,7 +51,8 @@ const getInitialInput = (sessionId?: string): string => {
 };
 
 interface ChatInputPanelProps {
-  session?: ChatSession;
+  sessionId: UUID | undefined;
+  modelConfig: ModelConfig | undefined;
   isLoading: boolean;
   hitBottom: boolean;
   onSubmit: (input: string, images: string[]) => void;
@@ -64,7 +67,8 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   ref // The forwarded ref
 ) => {
   const {
-    session,
+    sessionId,
+    modelConfig,
     isLoading,
     hitBottom,
     onSubmit,
@@ -84,7 +88,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   const { newSession, deleteSession } = useChatActions();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   // Initialize userInput directly using the helper function
-  const initialUserInput = React.useMemo(() => getInitialInput(session?.id), [session?.id]);
+  const initialUserInput = React.useMemo(() => getInitialInput(sessionId), [sessionId]);
   const [userInput, setUserInput] = useState(initialUserInput);
   const [attachImages, setAttachImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -133,27 +137,6 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
     // Run only once on mount, potentially recalculate if mobile screen status changes
     // Though initialUserInput dependency ensures it runs if session changes causing input load
   }, [initialUserInput, isMobileScreen]);
-
-  // Chat commands specific to input handling
-  const chatCommands = useChatCommand({
-    new: () => newSession(),
-    newm: () => router.push("/new-chat"),
-    // prev: () => nextSession(-1),
-    // next: () => nextSession(1),
-    ...(session && {
-      clear: () =>
-        chatStore.updateTargetSession(session, (s) => {
-          if (s.clearContextIndex !== s.messages.length) {
-            s.clearContextIndex = s.messages.length;
-            s.memoryPrompt = "";
-          } else {
-            s.clearContextIndex = undefined;
-          }
-        }),
-      // fork: () => forkSession(),
-      del: () => deleteSession(chatStore.currentSessionIndex),
-    }),
-  });
   
   // Handle text input changes
   const SEARCH_TEXT_LIMIT = 30;
@@ -164,14 +147,6 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   // Prepare submission
   const doSubmit = () => {
     if (isLoading || (userInput.trim() === "" && isEmpty(attachImages))) return;
-
-    const matchCommand = chatCommands.match(userInput);
-    if (matchCommand.matched) {
-      setUserInput("");
-      setAttachImages([]); // Also clear images on command match
-      matchCommand.invoke();
-      return;
-    }
 
     onSubmit(userInput, attachImages);
     // Clear input state after passing to parent
@@ -200,7 +175,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   // Handle image pasting
   const handlePaste = useCallback(
     async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
-      if (!session || !isVisionModel(session.modelConfig.model)) return;
+      if (!modelConfig || !isVisionModel(modelConfig.model)) return;
       const items = event.clipboardData?.items;
       if (!items) return;
 
@@ -229,7 +204,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
         }
       }
     },
-    [session, attachImages.length, showSnackbar],
+    [modelConfig?.model, attachImages.length, showSnackbar],
   );
 
   // Handle image uploading via button click
@@ -269,7 +244,6 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
     // The primary purpose of this effect is now the cleanup function.
 
     const currentInputRef = inputRef.current; // Capture ref value
-    const sessionId = session?.id; // Capture session ID
 
     // Cleanup function: Save input on unmount or before the effect runs for a *new* session ID
     return () => {
@@ -285,7 +259,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.id]); // Rerun effect (and cleanup) only when session ID changes
+  }, [sessionId]); // Rerun effect (and cleanup) only when session ID changes
 
   // Effect to update input state if the external session.id changes *after* initial mount
   // This is slightly redundant with the cleanup/setup in the above effect, but ensures reactivity
@@ -298,7 +272,8 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   return (
     <div className={styles["chat-input-panel"]} ref={ref}> {/* Attach the ref here */}
       <ChatActions
-        session={session}
+        sessionId={sessionId}
+        modelConfig={modelConfig}
         uploadImage={uploadImage}
         setAttachImages={setAttachImages} // Pass state setter if needed by actions, though uploadImage handles it
         setUploading={setUploading} // Pass state setter if needed by actions

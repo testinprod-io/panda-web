@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useChatStore } from '@/app/store/chat';
-import { ChatApiService, mapConversationToSession, mapRoleToSenderType} from '@/app/services/ChatApiService';
+import { ChatApiService, mapApiMessagesToChatMessages, mapApiMessageToChatMessage, mapConversationToSession, mapRoleToSenderType} from '@/app/services/ChatApiService';
 import { useApiClient } from '@/app/context/ApiProviderContext';
 import { ChatMessage, MessageSyncState } from '@/app/types/chat';
 import { MessagesLoadState, SessionSyncState } from '@/app/types/session';
@@ -87,26 +87,26 @@ export function useChatActions() {
         }
     }, [apiClient, store, appConfig.modelConfig]);
 
-     const loadMessagesForSession = useCallback(async (id: UUID, params?: { cursor?: string, limit?: number }) => {
+     const loadMessagesForSession = useCallback(async (id: UUID, params?: { cursor?: string, limit?: number }): Promise<{ messages: ChatMessage[], pagination: { has_more: boolean, next_cursor: string | null } }> => {
         if (!apiClient) {
             console.warn("[ChatActions] API client not available, cannot load messages.");
-            return;
+            return Promise.reject(new Error("API client not available")); // Consistent promise rejection
         }
 
         const session = store.sessions.find(s => s.id === id);
-        if (!session || session.messagesLoadState === 'loading' || session.messagesLoadState === 'full') {
-            console.log(`[ChatActions] Skipping message load for ${id}. State: ${session?.messagesLoadState}`);
-            return; // Already loading, fully loaded, or session doesn't exist
+        if (!session){
+            console.warn(`[ChatActions] Session ${id} not found in store. Skipping message load.`);
+            return Promise.reject(new Error(`Session ${id} not found in store.`)); // Consistent promise rejection
         }
 
         console.log(`[ChatActions] Loading messages for conversation ${id}`);
         // Update store state to loading
-        store._setMessagesLoadState(id, MessagesLoadState.LOADING);
+        // store._setMessagesLoadState(id, MessagesLoadState.LOADING);
 
         // Revert to simpler params construction - service layer handles null cursor
         const loadParams: GetConversationMessagesParams = {
              limit: params?.limit ?? 20,
-             cursor: params?.cursor ?? session.serverMessagesCursor, // Pass null/undefined directly
+             cursor: params?.cursor, // Pass null/undefined directly
          };
 
         console.log(`[ChatActions] Effective load params:`, loadParams);
@@ -119,12 +119,15 @@ export function useChatActions() {
             console.log(`[ChatActions] Received ${serverApiMessages.length} messages for ${id}. Has more: ${pagination.has_more}`);
 
             // Call store's internal method to merge messages and update state
-            store._onServerMessagesLoaded(id, serverApiMessages, pagination.has_more, pagination.next_cursor);
+            // store._onServerMessagesLoaded(id, serverApiMessages, pagination.has_more, pagination.next_cursor);
+            const chatMessages = mapApiMessagesToChatMessages(serverApiMessages);
+            return Promise.resolve({ messages: chatMessages, pagination });
 
         } catch (error: any) {
             console.error(`[ChatActions] Failed loading messages for ${id}:`, error);
             // Update store state to error
-            store._setMessagesLoadState(id, MessagesLoadState.ERROR);
+            // store._setMessagesLoadState(id, MessagesLoadState.ERROR);
+            return Promise.reject(error);
             // Optionally show error to user
         }
     }, [apiClient, store]);
@@ -142,11 +145,11 @@ export function useChatActions() {
         store.setCurrentSessionIndex(index);
 
         // Trigger message loading if needed
-        if (targetSession.id && targetSession.messagesLoadState === 'none') {
-            console.log(`[ChatActions] Session ${targetSession.id} selected, triggering message load.`);
-            loadMessagesForSession(targetSession.id);
-        }
-    }, [store, loadMessagesForSession]);
+        // if (targetSession.id && targetSession.messagesLoadState === 'none') {
+        //     console.log(`[ChatActions] Session ${targetSession.id} selected, triggering message load.`);
+        //     loadMessagesForSession(targetSession.id);
+        // }
+    }, [store]);
 
     const deleteSession = useCallback(async (index: number) => {
         if (!apiClient) {
@@ -209,11 +212,11 @@ export function useChatActions() {
         // Use existing ID if available (for retries), otherwise generate new one for server?
         // The original store logic generated a new UUID here. Let's stick with that.
         // If retries need the same ID, that logic needs adjustment.
-        const messageIdForServer = crypto.randomUUID() as UUID;
+        // const messageIdForServer = crypto.randomUUID() as UUID;
 
-        console.log(`[ChatActions] Saving message ${localMessageId} (Client) / ${messageIdForServer} (Server) to conversation ${conversationId}`);
+        console.log(`[ChatActions] Saving message ${localMessageId} to conversation ${conversationId}`);
         const createRequest: MessageCreateRequest = {
-            message_id: messageIdForServer,
+            message_id: message.id,
             sender_type: mapRoleToSenderType(message.role),
             content: content
         };
@@ -230,6 +233,14 @@ export function useChatActions() {
             // Optionally show error to user
         }
     }, [apiClient, store]);
+
+    const removeMessages = useCallback(async (messageIds: string[]) => {
+        if (!apiClient) {
+            console.warn("[ChatActions] API client not available, cannot remove messages.");
+            return;
+        }
+        // TODO: Implement
+    }, [apiClient]);
 
     // --- Title Generation Action --- 
     const generateSessionTitle = useCallback(async (sessionId: UUID, userMessageContent: string, assistantMessageContent: string) => {
@@ -320,175 +331,159 @@ export function useChatActions() {
         }
     }, [apiClient, store]);
 
-    const onUserInput = useCallback(async (content: string, attachImages?: string[]) => {
-        const currentSession = store.currentSession();
-        if (!currentSession) {
-            console.error("[ChatActions] No current session found for user input.");
-            return;
-        }
-        if (!apiClient) {
-             console.error("[ChatActions] API Client not available.");
-             // TODO: Maybe show an error to the user?
-             return;
-        }
+    // const onUserInput = useCallback(async (
+    //     sessionId: UUID,
+    //     modelConfig: ModelConfig,
+    //     content: string,
+    //     attachImages?: string[],
+    //     callbacks?: {
+    //         onStart?: (messageId: UUID) => void;
+    //         onStreaming?: (messageId: UUID, partialMessage: string) => void;
+    //         onSuccess?: (messageId: UUID, finalMessage: string, timestamp: Date) => void;
+    //         onFailure?: (error: Error) => void;
+    //         onController?: (controller: AbortController) => void;
+    //     }
+    // ) => {
+    //     if (!apiClient) {
+    //         const error = new Error("[ChatActions] API Client not available.");
+    //         console.error(error.message);
+    //         callbacks?.onFailure?.(error);
+    //         // TODO: Maybe show an error to the user?
+    //         return;
+    //     }
 
-        // Ensure session is synced or ready to be created before sending messages
-        // This prevents sending messages to a session stuck in an error state after creation failed.
-        // if (!currentSession.conversationId && currentSession.syncState !== 'pending_create' && currentSession.syncState !== 'local') {
-        //      console.warn(`[ChatActions] Cannot send message: Session ${currentSession.id} has no conversationId and is in state: ${currentSession.syncState}. Message not sent.`);
-        //      // TODO: Notify user?
-        //      return;
-        // }
+    //     // Prepare message content (apply template, handle images)
+    //     // TODO: Proper multimodal content handling for userContent. For now, it's string.
+    //     let userContent: string = fillTemplateWith(content, modelConfig);
+    //     // if (attachImages && attachImages.length > 0) {
+    //     // This part needs to be adjusted if userContent is to become MultimodalContent[]
+    //     // For now, assuming userContent remains string as per original structure before this refactor.
+    //     // If attachImages is used, userContent definition and handling (incl. addUserMessage) must change.
+    //     // }
 
-        // If the session is local/pending_create, create it on the server first.
-        // This might introduce slight delay for the first message.
-        // let conversationId = currentSession.conversationId;
-        // if (!conversationId) {
-        //     console.log(`[ChatActions] Session ${currentSession.id} is local, creating on server before sending message...`);
-        //     try {
-        //         const createRequest: ConversationCreateRequest = { title: currentSession.topic };
-        //         const newConversation = await ChatApiService.createConversation(apiClient, createRequest);
-        //         conversationId = newConversation.conversation_id;
-        //         store.updateTargetSession({ id: currentSession.id }, (sess) => {
-        //             sess.conversationId = newConversation.conversation_id;
-        //             sess.topic = newConversation.title || sess.topic;
-        //             sess.lastUpdate = new Date(newConversation.updated_at).getTime();
-        //             sess.syncState = 'synced';
-        //         });
-        //         console.log(`[ChatActions] Server session ${conversationId} created for local session ${currentSession.id}.`);
-        //     } catch (error) {
-        //         console.error("[ChatActions] Failed to auto-create server session before sending message:", error);
-        //         store.updateTargetSession({ id: currentSession.id }, (sess) => { sess.syncState = 'error'; });
-        //         // TODO: Notify user of the failure
-        //         return; // Stop if session creation failed
-        //     }
-        // }
+    //     // Add user message to store
+    //     const userMessage = store.addUserMessage(userContent); // Assumes userContent is string
+    //     if (!userMessage) {
+    //         const error = new Error("[ChatActions] Failed to add user message to store.");
+    //         console.error(error.message);
+    //         callbacks?.onFailure?.(error);
+    //         return;
+    //     }
+    //     const localUserMessageId = userMessage.id;
 
-        // Proceed only if we have a valid conversationId now
-        // if (!conversationId) {
-        //      console.error("[ChatActions] Fatal: Could not obtain conversationId for message sending.");
-        //      return;
-        // }
+    //     // Add bot placeholder message to store
+    //     const botMessage = store.addBotMessagePlaceholder(modelConfig.model);
+    //     if (!botMessage) {
+    //         const error = new Error("[ChatActions] Failed to add bot placeholder message to store.");
+    //         console.error(error.message);
+    //         // Potentially rollback userMessage addition or mark it as error
+    //         callbacks?.onFailure?.(error);
+    //         return;
+    //     }
+    //     const localBotMessageId = botMessage.id;
 
-        const modelConfig = currentSession.modelConfig;
+    //     // --- Signal Start of Asynchronous Operations ---
+        
 
-        // Prepare message content (apply template, handle images)
-        let userContent: string = fillTemplateWith(content, modelConfig);
-        // if (attachImages && attachImages.length > 0) {
-        //     userContent = [
-        //         ...(content ? [{ type: "text" as const, text: userContent as string }] : []), // Use templated content if text exists
-        //         ...attachImages.map((url) => ({ type: "image_url" as const, image_url: { url }})),
-        //     ];
-        // }
+    //     // --- Prepare messages for API --- 
+    //     const { systemPrompts, memoryPrompt, contextPrompts } = store.getMemoryContextPrompts(modelConfig);
+    //     const historyMessageCount = modelConfig.historyMessageCount ?? 10;
+    //     const recentMessages = store.getRecentMessagesForApi(historyMessageCount - 1);
 
-        // Add user message to store
-        const userMessage = store.addUserMessage(userContent);
-        if (!userMessage) return; // Should not happen if session exists
-        const localUserMessageId = userMessage.id;
+    //     const messagesForApi: RequestMessage[] = [
+    //         ...systemPrompts,
+    //         ...(memoryPrompt ? [memoryPrompt] : []),
+    //         ...contextPrompts,
+    //         ...recentMessages,
+    //         userMessage // The new user message (content is string here)
+    //     ].map(m => ({
+    //         role: m.role,
+    //         // Ensure m.content is string as RequestMessage expects string | MultimodalContent[]
+    //         // and userMessage.content is string based on current addUserMessage.
+    //         content: m.content 
+    //     }));
 
-        // Add bot placeholder message to store
-        const botMessage = store.addBotMessagePlaceholder(modelConfig.model);
-        if (!botMessage) return; // Should not happen
-        const localBotMessageId = botMessage.id;
+    //     // Trigger saving user message (which was added earlier)
+    //     // This is fire-and-forget in the original structure.
+    //     // If its failure needs to be caught by lifecycleCallbacks.onFailure, it needs to be awaited.
+    //     saveMessageToServer(currentSession.id, userMessage);
 
-        // --- Prepare messages for API --- 
-        // 1. Get prompts (System, Memory, Context)
-        const { systemPrompts, memoryPrompt, contextPrompts } = store.getMemoryContextPrompts(modelConfig);
+    //     // --- Call LLM Service --- 
+    //     ChatApiService.callLlmChat(apiClient, {
+    //         messages: messagesForApi,
+    //         config: { ...modelConfig, stream: true },
+    //         onUpdate(partialMessage: string) {
+    //             store.updateMessage(currentSession.id, localBotMessageId, (msg) => {
+    //                 msg.content = partialMessage;
+    //                 msg.streaming = true;
+    //             });
+                
+    //             callbacks?.onStreaming?.(partialMessage);
+    //         },
+    //         onFinish(finalMessage: string, timestamp: Date, response: Response) {
+    //             console.log("[ChatActions] LLM stream finished.");
+    //             let finalBotMsg: ChatMessage | undefined;
+    //             store.updateMessage(currentSession.id, localBotMessageId, (msg) => {
+    //                 msg.content = finalMessage;
+    //                 msg.streaming = false;
+    //                 msg.syncState = MessageSyncState.PENDING_CREATE;
+    //                 msg.date = new Date(timestamp);
+    //                 msg.isError = false;
+    //                 finalBotMsg = { ...msg };
+    //             });
 
-        // 2. Get recent messages from store (excluding errors)
-        // Need to include the *new* user message we just added
-        const historyMessageCount = modelConfig.historyMessageCount ?? 10; // Default history count
-        const recentMessages = store.getRecentMessagesForApi(historyMessageCount -1); // Get N-1 messages
+    //             if (finalBotMsg) {
+    //                 saveMessageToServer(currentSession.id, finalBotMsg);
+    //                 store.updateStat(finalBotMsg);
+    //             }
 
-        // 3. Combine prompts and messages
-        const messagesForApi: RequestMessage[] = [
-            ...systemPrompts,
-            ...(memoryPrompt ? [memoryPrompt] : []),
-            ...contextPrompts,
-            ...recentMessages, // Recent N-1 messages
-            userMessage // The new user message
-        ].map(m => ({ role: m.role, content: m.content })); // Map to RequestMessage format
+    //             const updatedSessionState = useChatStore.getState().sessions.find(s => s.id === currentSession.id);
+    //             if (
+    //                 updatedSessionState &&
+    //                 updatedSessionState.messages.filter(m => !m.isError).length === 2 &&
+    //                 updatedSessionState.topic === DEFAULT_TOPIC
+    //             ) {
+    //                 const userMsgContent = getMessageTextContent(userMessage); // userMessage.content is string
+    //                 const assistantMsgContent = finalMessage;
+    //                 if (userMsgContent.trim().length > 0 && assistantMsgContent.trim().length > 0) {
+    //                     console.log("[ChatActions] Triggering title generation.");
+    //                     setTimeout(() => generateSessionTitle(currentSession.id, userMsgContent, assistantMsgContent), 0);
+    //                 }
+    //             }
 
-        // Trigger saving user message (which was added earlier)
-        saveMessageToServer(currentSession.id, userMessage);
+    //             ChatControllerPool.remove(currentSession.id, localBotMessageId);
+    //             callbacks?.onSuccess?.(finalMessage, timestamp);
+    //         },
+    //         onError(error: Error) {
+    //             console.error("[ChatActions] LLM call failed:", error);
+    //             const isAborted = error.message?.includes?.("aborted");
+    //             const errorContent = "\n\n" + prettyObject({ error: true, message: error.message });
 
-        // --- Call LLM Service --- 
-        ChatApiService.callLlmChat(apiClient, {
-            messages: messagesForApi,
-            config: { ...modelConfig, stream: true },
-            onUpdate(partialMessage: string) {
-                // Update the placeholder bot message with streaming content
-                store.updateMessage(currentSession.id, localBotMessageId, (msg) => {
-                    msg.content = partialMessage;
-                    msg.streaming = true;
-                });
-            },
-            onFinish(finalMessage: string, timestamp: Date, response: Response) {
-                console.log("[ChatActions] LLM stream finished.");
-                // Update final bot message state in store
-                let finalBotMsg: ChatMessage | undefined;
-                store.updateMessage(currentSession.id, localBotMessageId, async (msg) => {
-                    msg.content = finalMessage;
-                    msg.streaming = false;
-                    msg.syncState = MessageSyncState.PENDING_CREATE; // Mark for saving
-                    msg.date = new Date(timestamp);
-                    msg.isError = false;
-                    finalBotMsg = { ...msg }; // Capture the final state
-                });
+    //             // Update user message state to error
+    //             store.updateMessage(currentSession.id, localUserMessageId, (msg) => {
+    //                 msg.isError = !isAborted;
+    //                 msg.syncState = MessageSyncState.ERROR;
+    //             });
 
-                // Trigger saving final bot message
-                if (finalBotMsg) {
-                    saveMessageToServer(currentSession.id, finalBotMsg);
-                    // Update session stats with final bot message
-                    store.updateStat(finalBotMsg);
-                }
+    //             // Update bot message placeholder state to error
+    //             store.updateMessage(currentSession.id, localBotMessageId, (msg) => {
+    //                 msg.content = (msg.content || "") + errorContent;
+    //                 msg.streaming = false;
+    //                 msg.isError = !isAborted;
+    //                 msg.syncState = MessageSyncState.ERROR;
+    //                 msg.date = new Date();
+    //             });
 
-                // Trigger title generation if it's the first real exchange
-                const updatedSessionState = useChatStore.getState().sessions.find(s => s.id === currentSession.id);
-                if (
-                    updatedSessionState &&
-                    updatedSessionState.messages.filter(m => !m.isError).length === 2 &&
-                    updatedSessionState.topic === DEFAULT_TOPIC
-                ) {
-                    const userMsgContent = getMessageTextContent(userMessage);
-                    const assistantMsgContent = finalMessage;
-                    if (userMsgContent.trim().length > 0 && assistantMsgContent.trim().length > 0) {
-                        console.log("[ChatActions] Triggering title generation.");
-                        setTimeout(() => generateSessionTitle(currentSession.id, userMsgContent, assistantMsgContent), 0);
-                    }
-                }
+    //             ChatControllerPool.remove(currentSession.id, localBotMessageId);
+    //             callbacks?.onFailure?.(error);
+    //         },
+    //         onController(controller: AbortController) {
+    //             ChatControllerPool.addController(currentSession.id, localBotMessageId, controller);
+    //             callbacks?.onController?.(controller);
+    //         }
+    //     });
 
-                ChatControllerPool.remove(currentSession.id, localBotMessageId);
-            },
-            onError(error: Error) {
-                console.error("[ChatActions] LLM call failed:", error);
-                const isAborted = error.message?.includes?.("aborted");
-                const errorContent = "\n\n" + prettyObject({ error: true, message: error.message });
-
-                // Update user message state to error
-                store.updateMessage(currentSession.id, localUserMessageId, (msg) => {
-                    msg.isError = !isAborted;
-                    msg.syncState = MessageSyncState.ERROR;
-                });
-
-                // Update bot message placeholder state to error
-                store.updateMessage(currentSession.id, localBotMessageId, (msg) => {
-                    msg.content = (msg.content || "") + errorContent;
-                    msg.streaming = false;
-                    msg.isError = !isAborted;
-                    msg.syncState = MessageSyncState.ERROR;
-                    msg.date = new Date(); // Final timestamp for error message
-                });
-
-                ChatControllerPool.remove(currentSession.id, localBotMessageId);
-                // TODO: Notify user?
-            },
-            onController(controller: AbortController) {
-                ChatControllerPool.addController(currentSession.id, localBotMessageId, controller);
-            }
-        });
-
-    }, [apiClient, store, appConfig, saveMessageToServer]);
+    // }, [apiClient, store, appConfig, saveMessageToServer]);
 
     return {
         loadSessionsFromServer,
@@ -497,7 +492,7 @@ export function useChatActions() {
         loadMessagesForSession,
         deleteSession,
         saveMessageToServer,
-        onUserInput,
+        // onUserInput,
         generateSessionTitle,
         updateConversation,
         // ...export other actions

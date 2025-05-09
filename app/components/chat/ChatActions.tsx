@@ -16,22 +16,19 @@ import { useChatStore } from "@/app/store";
 import { ServiceProvider, Path } from "@/app/constant";
 import { isVisionModel, useMobileScreen } from "@/app/utils";
 import Locale from "@/app/locales";
-
+import { UUID } from "crypto";
+import { ModelConfig } from "@/app/store";
 import styles from "./chat.module.scss";
 
 export function ChatActions(props: {
-  session?: ChatSession;
+  sessionId: UUID | undefined;
+  modelConfig: ModelConfig | undefined;
   uploadImage: () => void;
   setAttachImages: (images: string[]) => void;
   setUploading: (uploading: boolean) => void;
   uploading: boolean;
   // setShowShortcutKeyModal: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
-  const config = useAppConfig();
-  const chatStore = useChatStore();
-  const router = useRouter();
-  const isMobileScreen = useMobileScreen();
-
   // const [showUploadImage, setShowUploadImage] = useState(false);
 
   const prevPropsAndStateRef = useRef<any>(null);
@@ -40,8 +37,8 @@ export function ChatActions(props: {
     const currentPropsAndState = {
       uploading: props.uploading,
       // showUploadImage,
-      sessionId: props.session?.id,
-      model: props.session?.modelConfig.model,
+      sessionId: props.sessionId,
+      model: props.modelConfig?.model,
       // Add other props/state if needed
     };
 
@@ -83,19 +80,19 @@ export function ChatActions(props: {
     prevPropsAndStateRef.current = currentPropsAndState;
   });
 
-  const currentModel = props.session?.modelConfig.model;
+  const currentModel = props.modelConfig?.model;
 
   useEffect(() => {
     // Show upload image only if session exists and model is vision capable
     // Check props.session exists before accessing its properties
-    const show = !!props.session && isVisionModel(props.session.modelConfig.model);
+    const show = !!currentModel && isVisionModel(currentModel);
     // setShowUploadImage(show);
     if (!show) {
       props.setAttachImages([]);
       props.setUploading(false);
     }
     // Depend only on session existence and setters (model is derived from session)
-  }, [props.session, props.setAttachImages, props.setUploading]);
+  }, [currentModel, props.setAttachImages, props.setUploading]);
 
   return (
     <div className={styles["chat-input-actions"]}>

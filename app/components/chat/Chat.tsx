@@ -119,7 +119,7 @@ export function Chat() {
         {/* Main Chat Area */} 
         <ChatComponent
           key={session.id} 
-          session={session}
+          sessionId={session.id}
           onUpdateSession={handleUpdateSession}
           onShowConfirmDialog={showConfirmationDialog}
           onShowEditMessageModal={handleShowEditMessageModal}

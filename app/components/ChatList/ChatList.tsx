@@ -16,6 +16,7 @@ import Locale from "@/app/locales"; // Adjusted path
 import { ChatItem } from "./ChatItem"; // Import from the same directory
 import { ChatListSkeleton } from "./ChatListSkeleton"; // Import the skeleton component
 import styles from "./chat-list.module.scss";
+import { useStore } from "zustand";
 
 // Assuming showConfirm is replaced by window.confirm or similar
 // import { showConfirm } from "../components/ui-lib"; // Adjusted/removed path
@@ -38,6 +39,7 @@ export function ChatList(props: ChatListProps) {
   } = useChatActions();
 
   const router = useRouter();
+  const store = useChatStore();
   // const apiClient = useApiClient();
   const [isLoading, setIsLoading] = useState(true); // Add loading state
 
@@ -71,7 +73,28 @@ export function ChatList(props: ChatListProps) {
 
   const handleSelectItem = (session: ChatSession) => {
     // Navigation triggers useParams update, which triggers Effect 1 to update highlight
-    router.push(`/chat/${session.id}`);
+    // const store = useChatStore();
+    const sessionIndexToSelect = sessions.findIndex(s => s.id === session.id);
+    store.setCurrentSessionIndex(sessionIndexToSelect);
+
+    // t(() => {
+    //   const currentChatIdInStore = useChatStore.getState().currentSession()?.id;
+    //   console.log(`[ChatPage Effect 2] Running. isValidSession: ${isValidSession}, chatId: ${chatId}, currentChatIdInStore: ${currentChatIdInStore}`);
+  
+    //   if (isValidSession && chatId && chatId !== currentChatIdInStore) {
+    //     const sessions = useChatStore.getState().sessions; // Get fresh sessions
+    //     const sessionIndexToSelect = sessions.findIndex(s => s.id === chatId);
+    //     if (sessionIndexToSelect !== -1) {
+    //       console.log(`[ChatPage Effect 2] Selecting session ${chatId} at index ${sessionIndexToSelect}`);
+    //       selectSession(sessionIndexToSelect);
+    //     } else {
+    //       // This case should ideally be caught by Effect 1 setting isValidSession to false
+    //       console.warn(`[ChatPage Effect 2] Valid session ${chatId} suddenly not found for selection. This might indicate a race condition or rapid store update.`);
+    //       setIsValidSession(false); // Corrective action: mark as invalid if not found during selection attempt
+    //     }
+    //   }
+    // }, [isValidSession, chatId, selectSession]); // Depends on validity, chatId, and the stable selectSession action
+    router.replace(`/chat/${session.id}`);
   };
 
   const handleDeleteItem = async (session: ChatSession, index: number) => {

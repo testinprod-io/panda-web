@@ -111,6 +111,10 @@ export function mapConversationToSession(conversation: Conversation): ChatSessio
   return session;
 }
 
+export function mapApiMessagesToChatMessages(messages: ApiMessage[]): ChatMessage[] {
+  return messages.map(msg => mapApiMessageToChatMessage(msg));
+}
+
 export function mapApiMessageToChatMessage(message: ApiMessage): ChatMessage {
   // Decrypt the message first
   const decryptedMsg = decryptMessageData(message);

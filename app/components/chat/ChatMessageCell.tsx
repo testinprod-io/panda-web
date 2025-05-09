@@ -26,13 +26,14 @@ import SendIcon from '@mui/icons-material/Send';
 import CancelIcon from '@mui/icons-material/Cancel';
 
 import styles from "./chat.module.scss";
+import { UUID } from "crypto";
 
 const Markdown = dynamic(async () => (await import("../markdown")).Markdown, {
   loading: () => <LoadingAnimation />, 
 });
 
 interface ChatMessageCellProps {
-  messageId: string;
+  messageId: UUID;
   role: MessageRole;
   decryptedContent: string | MultimodalContent[] | null;
   encryptedMessage: EncryptedMessage;
@@ -45,10 +46,9 @@ interface ChatMessageCellProps {
   fontFamily: string;
   scrollRef: React.RefObject<HTMLDivElement | null>;
   renderMessagesLength: number; 
-  onResend: (message: EncryptedMessage) => void;
-  onDelete: (messageId: string) => void;
-  onUserStop: (messageId: string) => void;
-  onEditSubmit: (originalMessage: EncryptedMessage, newText: string) => void;
+  onResend: (messageId: UUID) => void;
+  onUserStop: (messageId: UUID) => void;
+  onEditSubmit: (messageId: UUID, newText: string) => void;
 }
 
 function getDecryptedText(content: string | MultimodalContent[] | null): string {
@@ -83,18 +83,12 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(props: ChatMe
     scrollRef,
     renderMessagesLength,
     onResend,
-    onDelete,
     onUserStop,
     onEditSubmit,
   } = props;
   
   // Actions specific to ChatMessageCell, using props for callbacks
-  const handleResend = useCallback(() => onResend(encryptedMessage), [onResend, encryptedMessage]);
-  const handleDelete = useCallback(() => {
-    // Potentially add a confirmation here using showSnackbar or a modal if desired
-    // For now, directly calls onDelete
-    onDelete(messageId);
-  }, [onDelete, messageId]);
+  const handleResend = useCallback(() => onResend(messageId), [onResend, messageId]);
   const handleUserStop = useCallback(() => onUserStop(messageId), [onUserStop, messageId]);
 
   const [isEditing, setIsEditing] = useState(false);
@@ -118,9 +112,9 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(props: ChatMe
         setIsEditing(false);
         return;
     }
-    onEditSubmit(encryptedMessage, editedText);
+    onEditSubmit(messageId, editedText);
     setIsEditing(false);
-  }, [editedText, textContent, onEditSubmit, encryptedMessage]);
+  }, [editedText, textContent, onEditSubmit]);
 
   if (isError) {
     return (
@@ -237,7 +231,6 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(props: ChatMe
                     <>
                       <ChatAction text={null} icon={<ModeEditRoundedIcon/>} onClick={handleEditClick} disabled={isLoading}/>
                       <ChatAction text={null} icon={<ContentCopyRoundedIcon/>} onClick={() => copyToClipboard(textContent)}/>
-                      <ChatAction text={null} icon={<DeleteOutlineRoundedIcon />} onClick={handleDelete} disabled={isLoading} />
                     </>
                   )}
                 </>

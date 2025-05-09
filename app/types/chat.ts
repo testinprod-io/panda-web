@@ -2,6 +2,7 @@ import { ServiceProvider } from '../constant';
 import { ModelType } from '../store/config';
 import { nanoid } from 'nanoid';
 import { MultimodalContent } from "@/app/client/api";
+import { UUID } from "crypto";
 
 export interface Message {
   role: 'user' | 'assistant';
@@ -64,7 +65,7 @@ export type ChatMessage = Omit<RequestMessage, 'content'> & { // Omit original c
   date: Date;
   streaming: boolean;
   isError: boolean;
-  id: string;
+  id: UUID;
   model?: ModelType;
   syncState: MessageSyncState;
 };
@@ -118,7 +119,7 @@ export function createEncryptedMessage(override: Partial<EncryptedMessage> & { c
 */
 export function createMessage(override: Partial<ChatMessage>): ChatMessage {
  return {
-   id: nanoid(),
+   id: crypto.randomUUID() as UUID,
    date: new Date(),
    role: "user",
    content: "",
