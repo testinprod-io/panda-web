@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter, usePathname, useParams } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth"; // Assuming Privy is used here
 
@@ -10,9 +10,11 @@ import { safeLocalStorage, useMobileScreen } from "@/app/utils"; // Adjust path
 import { useCommand } from "@/app/command"; // Adjust path
 import Locale from "@/app/locales"; // Adjust path
 
-import { ChatComponent } from "@/app/components/chat/ChatComponent"; // Import the internal component
+import { MemoizedChatComponent } from "@/app/components/chat/ChatComponent";
+import type { ChatComponentProps } from "@/app/components/chat/ChatComponent"; // Import the props type
 import { EditMessageModal } from "@/app/components/chat/EditMessageModal";
 import { SessionConfigModel } from "@/app/components/chat/SessionConfigModel"; // Import session config modal
+import { ChatLayout } from "./ChatLayout"; // Import ChatLayout
 
 // MUI Imports for Confirmation Dialog
 import Dialog from '@mui/material/Dialog';
@@ -21,6 +23,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
+import { UUID } from "crypto";
 
 import styles from "./chat.module.scss";
 
@@ -34,7 +37,34 @@ interface ConfirmDialogState {
 
 let renderCount = 0; // Module-level counter for renders
 
-export function Chat() {
+interface ChatContainerProps { // Renamed from ChatProps to avoid conflict if Chat is a common name
+  _sessionId: UUID;
+  _setIsLoadingLayout: (isLoading: boolean) => void;
+  _exportSubmitHandler: (handler: (input: string, images: string[]) => Promise<void>) => void;
+  _onHitBottomChange: (isAtBottom: boolean) => void;
+  _exportScrollToBottomFunc: (func: () => void) => void;
+  
+  _handleShowEditMessageModal: (message: EncryptedMessage) => void; // Changed from _showEditMessageModalFunctionCall
+  _editingMessage?: EncryptedMessage;
+  _setShowEditMessageModalState: React.Dispatch<React.SetStateAction<boolean>>;
+  _showPromptModalState: boolean;
+  _setShowPromptModalState: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+export function Chat(props: ChatContainerProps) { // Renamed component, ensure export name is updated if needed elsewhere
+  const {
+    _sessionId,
+    _setIsLoadingLayout,
+    _exportSubmitHandler,
+    _onHitBottomChange,
+    _exportScrollToBottomFunc,
+    _handleShowEditMessageModal, // Changed from _showEditMessageModalFunctionCall
+    _editingMessage,
+    _setShowEditMessageModalState,
+    _showPromptModalState,
+    _setShowPromptModalState,
+  } = props;
+
   renderCount++;
   const chatStore = useChatStore();
   const accessStore = useAccessStore();
@@ -43,23 +73,44 @@ export function Chat() {
   // Get the specific update action from the store
   const updateTargetSessionAction = useChatStore((state) => state.updateTargetSession);
 
-  // Define the callback function for updating the session
-  const handleUpdateSession = useCallback((updatedSession: ChatSession) => {
-    // Use the selected action to update the store
-    // The updater function receives the session and modifies it
-    updateTargetSessionAction(updatedSession, (sess) => {
-        // Since the entire updatedSession is passed, just assign its properties
-        // This assumes debouncedUpdateSession passes the full session object
-        // If it only passes partial updates, this logic needs adjustment.
-        Object.assign(sess, updatedSession);
-    });
-  }, [updateTargetSessionAction]);
-
-  // State for modals, managed by the parent component
-  const [editingMessage, setEditingMessage] = useState<EncryptedMessage | undefined>(); // Store the message being edited - Type changed
+  // State managed by Chat.tsx to be provided to ChatLayout
+  const [isLayoutLoading, setIsLayoutLoading] = useState(false);
+  const [hitBottom, setHitBottom] = useState(true);
   const [showEditMessageModal, setShowEditMessageModal] = useState(false);
-  // const [showShortcutKeyModal, setShowShortcutKeyModal] = useState(false);
-  const [showPromptModal, setShowPromptModal] = useState(false); // For SessionConfigModel
+  const [editingMessage, setEditingMessage] = useState<EncryptedMessage | undefined>();
+  const [showPromptModal, setShowPromptModal] = useState(false);
+  const [showShortcutKeyModal, setShowShortcutKeyModal] = useState(false); // Assuming this is still a feature
+
+  const submitHandlerRef = useRef<((input: string, images: string[]) => Promise<void>) | null>(null);
+  const scrollToBottomFuncRef = useRef<(() => void) | null>(null);
+
+  // Callbacks for ChatComponent to register its functions
+  const exportSubmitHandler = useCallback((handler: (input: string, images: string[]) => Promise<void>) => {
+    submitHandlerRef.current = handler;
+  }, []);
+
+  const handleHitBottomChange = useCallback((isAtBottom: boolean) => {
+    setHitBottom(isAtBottom);
+  }, []);
+
+  const exportScrollToBottomFunc = useCallback((func: () => void) => {
+    scrollToBottomFuncRef.current = func;
+  }, []);
+
+  // Callbacks for ChatLayout
+  const onSendMessageToLayout = useCallback(async (input: string, images: string[]) => {
+    if (submitHandlerRef.current) {
+      await submitHandlerRef.current(input, images);
+    } else {
+      console.warn("[Chat.tsx] Submit handler not registered by ChatComponent.");
+    }
+  }, []);
+
+  const scrollToBottomForLayout = useCallback(() => {
+    if (scrollToBottomFuncRef.current) {
+      scrollToBottomFuncRef.current();
+    }
+  }, []);
 
   // State for Confirmation Dialog
   const [confirmDialogState, setConfirmDialogState] = useState<ConfirmDialogState>({
@@ -86,9 +137,9 @@ export function Chat() {
   }, [confirmDialogState, closeConfirmationDialog]);
 
   // Handler to open the edit message modal
-  const handleShowEditMessageModal = useCallback((message: EncryptedMessage) => { // Type changed
-      setEditingMessage(message);
-      setShowEditMessageModal(true);
+  const handleShowEditMessageModal = useCallback((message: EncryptedMessage) => {
+    setEditingMessage(message);
+    setShowEditMessageModal(true);
   }, []);
 
   // Callback for showing prompt modal, memoized
@@ -102,40 +153,41 @@ export function Chat() {
   }, []);
 
   // If no session is found (page.tsx should handle redirecting before this renders)
-  if (!session) {
+  if (!_sessionId) {
     // This should ideally not be reached if page.tsx redirects correctly
     // but keep a fallback loading state just in case.
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-         <p>Loading session...</p> {/* Or a spinner */}
-       </div>
-    );
+    console.warn("[Chat.tsx] Rendered without _sessionId.");
+    return null; // Or some fallback UI
   }
 
-  console.log(`[Chat] Render #${renderCount}: Rendering <ChatComponent /> with key=${session.id}`);
+  console.log(`[Chat] Render #${renderCount}: Rendering <ChatComponent /> with key=${_sessionId}`);
+
+  // Prepare props for MemoizedChatComponent, ensuring types match ChatComponentProps
+  const chatComponentProps: ChatComponentProps = {
+      sessionId: _sessionId,
+      setIsLoadingLayout: _setIsLoadingLayout,
+      exportSubmitHandler: _exportSubmitHandler,
+      onHitBottomChange: _onHitBottomChange,
+      exportScrollToBottomFunc: _exportScrollToBottomFunc,
+      // These are not part of ChatComponentProps anymore as ChatComponent doesn't directly manage these modals' visibility
+      // onShowConfirmDialog: showConfirmationDialog, 
+      // onShowEditMessageModal: _showEditMessageModalFunctionCall, 
+  };
+
   return (
     <div className={styles.chat}>
       <div className={styles["window-content"]} id="chat-container">
         {/* Main Chat Area */} 
-        <ChatComponent
-          key={session.id} 
-          sessionId={session.id}
-          onUpdateSession={handleUpdateSession}
-          onShowConfirmDialog={showConfirmationDialog}
-          onShowEditMessageModal={handleShowEditMessageModal}
-          onShowPromptModal={handleShowPromptModal} 
-          setShowPromptModal={setShowPromptModal}
-          setShowShortcutKeyModal={handleShowShortcutKeyModal}
-        />
+        <MemoizedChatComponent {...chatComponentProps} />
 
-        {showPromptModal && (
-          <SessionConfigModel onClose={() => setShowPromptModal(false)} />
+        {_showPromptModalState && _sessionId && (
+          <SessionConfigModel onClose={() => _setShowPromptModalState(false)} />
         )}
 
-        {showEditMessageModal && editingMessage && ( 
+        {_setShowEditMessageModalState && _editingMessage && ( 
           <EditMessageModal 
             onClose={() => {
-              setShowEditMessageModal(false);
+              _setShowEditMessageModalState(false);
               setEditingMessage(undefined);
             }}
           />

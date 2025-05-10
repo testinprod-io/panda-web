@@ -144,15 +144,23 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
     setUserInput(text);
   };
 
-  // Prepare submission
+  // doSubmit in ChatInputPanel is NOT async. It triggers the async onSubmit prop.
   const doSubmit = () => {
+    // Button is disabled if isLoading, so this check is an additional safeguard
     if (isLoading || (userInput.trim() === "" && isEmpty(attachImages))) return;
 
-    onSubmit(userInput, attachImages);
-    // Clear input state after passing to parent
+    onSubmit(userInput, attachImages); // Trigger the async submission process in ChatLayout
+    
     setUserInput("");
     setAttachImages([]);
-    if (!isMobileScreen) inputRef.current?.focus();
+        
+    // Attempt to re-focus the input field immediately after clearing.
+    // setTimeout helps queue this after any immediate synchronous state updates.
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, 0);
   };
 
   // Handle keydown for submission or history
@@ -167,7 +175,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
       return;
     }
     if (shouldSubmit(e)) {
-      doSubmit();
+      doSubmit(); 
       e.preventDefault();
     }
   };
@@ -300,7 +308,6 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
             rows={inputRows}
             autoFocus={autoFocus}
             aria-label={Locale.Chat.Input(submitKey)}
-            disabled={isLoading} // Disable textarea when loading
           />
           {attachImages.length > 0 && (
             <div className={styles["attach-images"]}>
@@ -326,7 +333,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
       <Button
           className={styles["chat-input-send"]}
           variant="contained"
-          onClick={isLoading ? stopGeneration : doSubmit}
+          onClick={isLoading ? () => ChatControllerPool.stopAll() : doSubmit}
           disabled={uploading || (!isLoading && (userInput ?? "").trim() === "" && attachImages.length === 0)}
           aria-label={isLoading ? Locale.Chat.InputActions.Stop : Locale.Chat.Send}
           sx={{ ml: 1 }}

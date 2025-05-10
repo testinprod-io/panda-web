@@ -836,3 +836,37 @@
   z-index: 10; /* Ensure it's above messages */
   /* bottom property is set dynamically via inline style */
 }
+
+/* Add some basic styling for the layout if not reusing chat.module.scss directly for layout structure */
+/* For example, in your scss file: */
+/* .chat-layout-container { */
+/*   display: flex; */
+/*   flex-direction: column; */
+/*   height: 100vh; // Or 100% if parent has height */
+/* } */
+/* .chat-layout-main-content { */
+/*   flex-grow: 1; */
+/*   overflow-y: auto; // If content scrolls independently */
+/* } */
+/* .chat-layout-input-panel-wrapper { */
+/*   flex-shrink: 0; // Prevent input panel from shrinking */
+/* } */
+
+.chat-layout-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%; // Assuming parent like <main> or <body> provides height context
+  // or use 100vh if it's meant to be full viewport height always
+}
+
+.chat-layout-main-content {
+  flex-grow: 1;
+  overflow-y: auto; // Important for scrollable chat messages
+  position: relative; // For potential absolute positioned elements within
+}
+
+.chat-layout-input-panel-wrapper {
+  flex-shrink: 0; // Prevent input panel from shrinking when content grows
+  // Add any specific styling for the wrapper if needed, e.g., padding, border-top
+  // border-top: 1px solid var(--border-color); // Example
+}

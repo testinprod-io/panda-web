@@ -1,95 +1,65 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useChatStore } from "@/app/store/chat"; // Assuming store path
-import { ChatInputPanel } from "@/app/components/chat/ChatInputPanel"; // Import the panel
+// Removed useRouter from here as it's handled by ChatLayout for new chat submission
+// import { useRouter } from "next/navigation";
+// import { useChatStore } from "@/app/store/chat"; // Not directly needed here anymore
+// import { ChatInputPanel } from "@/app/components/chat/ChatInputPanel"; // Moved to ChatLayout
 import { Box, Typography } from "@mui/material";
-import { useChatActions } from "@/app/hooks/useChatActions";
+// import { useChatActions } from "@/app/hooks/useChatActions"; // Handled by ChatLayout
+import { ChatLayout } from "@/app/components/chat/ChatLayout"; // Import the new layout
+import { useAppConfig } from "@/app/store"; // To get default model config
+import { useState } from "react"; // Import useState for isBusyUpstream if dynamic changes are ever needed
 
 export default function NewChatPage() {
-  const { newSession } = useChatActions();
-  const router = useRouter();
+  // const { newSession } = useChatActions(); // Now handled by ChatLayout
+  // const router = useRouter(); // Now handled by ChatLayout
+  const appConfig = useAppConfig();
+  // For NewChatPage, isBusyUpstream is likely always false as there's no complex child component processing
+  // However, including it for consistency and if future needs arise.
+  const [isBusy, setIsBusy] = useState(false); 
 
-  const startChat = async (input: string, images: string[]) => {
-    if (!input || input.trim() === "") return;
-
-    await newSession();
-
-    const currentSession = useChatStore.getState().currentSession();
-
-    if (!currentSession) {
-      console.error(
-        "[NewChatPage] Failed to retrieve current session after creation."
-      );
-      return;
-    }
-
-    // Store the initial message details in sessionStorage for the next page to pick up
-    const newUserMessage = {
-      input: input.trim(),
-      images: images,
-    };
-    sessionStorage.setItem(currentSession.id, JSON.stringify(newUserMessage));
-
-    router.replace(`/chat/${currentSession.id}`);
-  };
-
+  // Dummy handlers for ChatLayout when no active ChatComponent is present
   const dummyScrollToBottom = () => {};
   const dummySetShowPromptModal = () => {};
   const dummySetShowShortcutKeyModal = () => {};
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        // Adjusted layout: Center content, push input to bottom
-        justifyContent: "space-between", // Push title up, input down
-        alignItems: "center",
-      }}
+    // For the new chat page, onSendMessage is omitted (or undefined) 
+    // so ChatLayout uses its own new session creation logic.
+    // hitBottom is true by default, scrollToBottom and modal setters are dummies.
+    <ChatLayout 
+      sessionId={undefined} 
+      modelConfig={appConfig.modelConfig}
+      hitBottom={true} // Default to true, no scrollable content yet
+      scrollToBottom={dummyScrollToBottom}
+      setShowPromptModal={dummySetShowPromptModal}
+      setShowShortcutKeyModal={dummySetShowShortcutKeyModal}
+      isBusyUpstream={isBusy} // Pass the state here
+      // onSendMessage is not provided, ChatLayout handles new chat creation
     >
-      {/* Optional Title - Ensure it doesn't overlap with input */}
       <Box
         sx={{
-          flexGrow: 1,
           display: "flex",
-          alignItems: "center",
+          flexDirection: "column",
+          height: "100%",
           justifyContent: "center",
-          width: "100%",
+          alignItems: "center",
+          textAlign: "center",
+          p: 3,
         }}
       >
         <Typography
           variant="h2"
           gutterBottom
           sx={{
-            textAlign: "center",
-            mt: 4,
-            mb: "1.5rem", // Applied margin-bottom
-            fontSize: "1.75rem", // Applied font-size
-            fontWeight: "bold", // Applied font-weight
-            color: "#333", // Applied color
+            fontSize: "1.75rem",
+            fontWeight: "bold",
+            color: "#333",
           }}
         >
-          {/* {Locale.NewChat.Title} */}
           How can I help you today?
         </Typography>
       </Box>
-
-      {/* Input panel at the bottom */}
-      {/* Ensure it takes full width within the main Box layout */}
-      <Box sx={{ width: "100%", flexShrink: 0 }}>
-        <ChatInputPanel
-          sessionId={undefined} // Pass undefined for session
-          modelConfig={undefined} // Pass undefined for modelConfig
-          isLoading={false} // Not loading on this page
-          hitBottom={true} // Assume we are at the bottom
-          onSubmit={startChat} // Use the updated startChat
-          scrollToBottom={dummyScrollToBottom} // Pass dummy function
-          setShowPromptModal={dummySetShowPromptModal} // Pass dummy function
-          setShowShortcutKeyModal={dummySetShowShortcutKeyModal} // Pass dummy function
-        />
-      </Box>
-    </Box>
+    </ChatLayout>
   );
 }
