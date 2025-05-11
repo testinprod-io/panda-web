@@ -27,6 +27,7 @@ export function ChatList(props: ChatListProps) {
   const { deleteSession, selectSession, updateConversation, loadSessionsFromServer } = useChatActions();
   const { currentSessionIndex } = useChatStore(); // For highlighting selected item
   const store = useChatStore(); // For setCurrentSessionIndex
+  const currentSessionFromStore = store.currentSession(); // Get the full current session object
 
   const router = useRouter();
   
@@ -122,6 +123,40 @@ export function ChatList(props: ChatListProps) {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMore, nextCursor, isPagingLoading, isInitialLoading, loadMoreSessions]); // Added loadMoreSessions to deps as it's used
+
+  // Optimistically add/update current session in the list
+  useEffect(() => {
+    if (currentSessionFromStore) {
+      const sessionInLocalList = localSessions.find(s => s.id === currentSessionFromStore.id);
+
+      if (!sessionInLocalList) {
+        // Optimistically add if it's a new session to the list (e.g. after creation)
+        setLocalSessions(prevSessions => {
+          // Defensive check to prevent duplicates if it was somehow added concurrently
+          if (prevSessions.some(s => s.id === currentSessionFromStore.id)) {
+            return prevSessions;
+          }
+          // Prepend the new session, removing any potential (older) duplicates of it further down.
+          const filteredPrevSessions = prevSessions.filter(s => s.id !== currentSessionFromStore.id);
+          return [currentSessionFromStore, ...filteredPrevSessions];
+        });
+      } else {
+        // If the session is already in localSessions, ensure we have the latest version from the store.
+        // This handles updates to the session (e.g., topic change by generateSessionTitle).
+        // We update if the object reference itself has changed, implying an update in the store.
+        if (sessionInLocalList !== currentSessionFromStore) {
+          setLocalSessions(prevSessions =>
+            prevSessions.map(s =>
+              s.id === currentSessionFromStore.id ? currentSessionFromStore : s
+            )
+          );
+        }
+      }
+    }
+    // localSessions is a dependency because we read from it (find) and map over it.
+    // currentSessionFromStore is the primary trigger for this effect.
+    // setLocalSessions is stable and provided by useState.
+  }, [currentSessionFromStore, localSessions, setLocalSessions]);
 
   const handleSelectItem = (session: ChatSession) => {
     selectSession(session.id);
