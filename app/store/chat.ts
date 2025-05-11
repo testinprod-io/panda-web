@@ -32,10 +32,21 @@ export const BOT_HELLO: ChatMessage = createMessage({
   syncState: MessageSyncState.SYNCED, // Bot hello is always synced
 });
 
+// Initial state for the new interaction slice
+const DEFAULT_CHAT_INTERACTION_STATE = {
+  onSendMessageHandler: null as (((input: string, images: string[]) => Promise<void>) | null),
+  hitBottom: true,
+  scrollToBottomHandler: null as ((() => void) | null),
+  showPromptModalHandler: null as ((() => void) | null),
+  showShortcutKeyModalHandler: null as ((() => void) | null),
+  isChatComponentBusy: false,
+};
+
 const DEFAULT_CHAT_STATE = {
   sessions: [] as ChatSession[], // Initialize as empty, will be loaded/merged
   currentSessionIndex: -1, // Start with no session selected
   lastInput: "",
+  ...DEFAULT_CHAT_INTERACTION_STATE, // Merge interaction state here
 };
 
 // Define the core chat state type
@@ -637,74 +648,70 @@ export const useChatStore = createPersistStore(
           }
           return recentMessages.reverse(); // Return in chronological order (decrypted)
       },
+
+      // --- New methods for chat interaction state ---
+      setOnSendMessageHandler: (handler: ((input: string, images: string[]) => Promise<void>) | null) => {
+        set({ onSendMessageHandler: handler });
+      },
+      setHitBottom: (isAtBottom: boolean) => {
+        set({ hitBottom: isAtBottom });
+      },
+      setScrollToBottomHandler: (handler: (() => void) | null) => {
+        set({ scrollToBottomHandler: handler });
+      },
+      setShowPromptModalHandler: (handler: (() => void) | null) => {
+        set({ showPromptModalHandler: handler });
+      },
+      setShowShortcutKeyModalHandler: (handler: (() => void) | null) => {
+        set({ showShortcutKeyModalHandler: handler });
+      },
+      setIsChatComponentBusy: (isBusy: boolean) => {
+        set({ isChatComponentBusy: isBusy });
+      },
+      // Method to clear handlers, e.g., when ChatComponent unmounts or session changes
+      clearChatInteractionHandlers: () => {
+        set({
+          onSendMessageHandler: null,
+          // hitBottom: true, // Don't reset hitBottom, it reflects current scroll state
+          scrollToBottomHandler: null,
+          showPromptModalHandler: null,
+          showShortcutKeyModalHandler: null,
+          isChatComponentBusy: false, // Reset busy state
+        });
+      },
     };
 
     return { ...methods };
   },
   {
     name: StoreKey.Chat,
-    version: 1.0, // Reset version due to structural change (encryption removal)
+    version: 1.1, // Incremented version due to new state fields
 
     storage: createJSONStorage(() => indexedDBStorage), // Use indexedDBStorage directly
 
-    // migrate(persistedState: unknown, version: number): HydratedChatState | Promise<HydratedChatState> {
-    //     let state = persistedState as Partial<ChatState>; // State read from storage
-
-    //     // Apply migration from v1.0 to v1.1 if necessary
-    //     if (version < 1.1 && state) {
-    //          console.log("[ChatStore Migration] Migrating state from version < 1.1");
-    //          if (!Array.isArray(state.sessions)) {
-    //              state.sessions = [createEmptySession()];
-    //              state.currentSessionIndex = 0;
-    //          }
-    //          state.sessions?.forEach(s => {
-    //              if (s) {
-    //                 if (!s.syncState) s.syncState = s.conversationId ? 'synced' : 'local';
-    //                 if (!s.messagesLoadState) s.messagesLoadState = 'none';
-    //                 s.messages?.forEach(m => {
-    //                     if (m && !m.syncState) m.syncState = 'synced';
-    //                 });
-    //              }
-    //          });
-    //     }
-
-    //     // Handle migration from pre-encryption (v1.x) to encryption (v2.0)
-    //     // if (version < 2.0 && state) {
-    //     //     console.log("[ChatStore Migration] Migrating state from version < 2.0 (Pre-Encryption)");
-    //     //     // No transformation needed here - decryption handled by storage.getItem
-    //     // }
-    //     // Since we are removing encryption, this specific migration step (v<2.0) is no longer relevant in its old form.
-    //     // Any necessary transformations for a non-encrypted state would go here if needed.
-
-    //     // Ensure the migrated state conforms to the full default structure
-    //     // and add placeholder MakeUpdater fields required by the return type
-    //     const migratedState: HydratedChatState = {
-    //         ...DEFAULT_CHAT_STATE, // Start with defaults
-    //         ...(state ?? {}), // Apply migrated fields
-    //         // Add required MakeUpdater fields (these will be properly set by persist later)
-    //         lastUpdateTime: 0,
-    //         _hasHydrated: false,
-    //         markUpdate: () => {},
-    //         update: () => {},
-    //         setHasHydrated: () => {},
-    //     };
-
-    //     return migratedState;
-    // },
-
     onRehydrateStorage: (state) => {
-      console.log("[ChatStore] Hydration finished."); // Updated message
-      // State here is the fully hydrated state, including MakeUpdater methods
+      console.log("[ChatStore] Hydration finished.");
       return (hydratedState, error) => {
           if (error) {
               console.error("[ChatStore] Error during rehydration:", error);
-              // Removed direct call to state.clearCurrentStateToDefault() as it's problematic here.
-              // Consider alternative error handling if needed.
           } else {
                console.log("[ChatStore] Rehydration successful.");
-               // hydratedState contains the fully initialized store state if needed
           }
       }
+    },
+    migrate(persistedState: any, version: number) {
+      const state = persistedState as Partial<ChatState>;
+      if (version < 1.1 && state) {
+        console.log("[ChatStore Migration] Migrating state from version < 1.1 to add chat interaction state.");
+        state.onSendMessageHandler = null;
+        state.hitBottom = true; // Default for existing users
+        state.scrollToBottomHandler = null;
+        state.showPromptModalHandler = null;
+        state.showShortcutKeyModalHandler = null;
+        state.isChatComponentBusy = false;
+      }
+      // Add any other migrations from previous versions here
+      return state as HydratedChatState;
     },
   },
 );

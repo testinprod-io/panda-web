@@ -193,6 +193,10 @@ export function useChatActions() {
         // Remove from store immediately using the found index
         store.removeSession(indexToDelete);
 
+        if (store.currentSessionIndex === indexToDelete) {
+            store.setCurrentSessionIndex(-1);
+        }
+
         // Attempt server deletion if applicable
         if (apiClient && sessionToDelete.syncState !== 'pending_create' && sessionToDelete.syncState !== 'local') {
             try {
