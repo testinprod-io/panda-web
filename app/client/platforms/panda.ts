@@ -60,8 +60,12 @@ export class PandaApi implements LLMApi {
     const controller = new AbortController();
     options.onController?.(controller);
 
+    let inReasoningPhase = false;
+    let reasoningStartedForThisMessage = false;
+    let mainContentText = "";
+    let timestamp = new Date();
+
     try {
-      // Get the access token
       const accessToken = await this.getAccessToken();
       if (!accessToken) {
         throw new Error("Panda API requires authentication. Access token not available.");
@@ -69,32 +73,23 @@ export class PandaApi implements LLMApi {
       const bearerToken = `Bearer ${accessToken}`;
 
       const requestUrl = this.path(PandaPath.ChatPath);
-      console.log("[Panda Request] Sending request to:", requestUrl);
-      console.log("[Panda Request] Headers:", {
-        "Content-Type": "application/json",
-        "Authorization": bearerToken,
-        "Accept": "text/event-stream",
-      });
-      console.log("[Panda Request] Body:", {
+      
+      const requestBody = {
         model: options.config.model,
         messages,
         temperature: options.config.temperature ?? 0.7,
         stream: options.config.stream ?? true,
-      });
+        reasoning: options.config.reasoning ?? false,
+      };
 
       const response = await fetch(requestUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": bearerToken,
-          "Accept": "text/event-stream",
+          "Accept": requestBody.stream ? "text/event-stream" : "application/json",
         },
-        body: JSON.stringify({
-          model: options.config.model,
-          messages,
-          temperature: options.config.temperature ?? 0.7,
-          stream: options.config.stream ?? true,
-        }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal,
       });
 
@@ -105,49 +100,90 @@ export class PandaApi implements LLMApi {
         throw new Error(`Panda API error: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
+      if (requestBody.stream) {
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
 
-      if (!reader) {
-        throw new Error("No response body");
-      }
-
-      let responseText = "";
-      let timestamp = new Date();
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value);
-        console.log("[Panda Response] Chunk:", text);
-        
-        // Split by newlines and filter out empty lines
-        const lines = text.split("\n").filter((line) => line.trim());
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          
-          const data = line.slice(6);
-          if (data === "[DONE]") break;
-
-          try {
-            const json = JSON.parse(data);
-            const content = json.choices[0]?.delta?.content;
-            timestamp = new Date(json.timestamp);
-            if (!content) continue;
-
-            responseText += content;
-            options.onUpdate?.(responseText, content);
-          } catch (e) {
-            console.error("[Request] parse error", line);
-          }
+        if (!reader) {
+          throw new Error("No response body for streaming");
         }
-      }
 
-      options.onFinish(responseText, timestamp, response);
+        mainContentText = ""; 
+        timestamp = new Date();
+        inReasoningPhase = false;
+        reasoningStartedForThisMessage = false;
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          const text = decoder.decode(value);
+          const lines = text.split("\n").filter((line) => line.trim().startsWith("data: "));
+
+          for (const line of lines) {
+            const data = line.slice(6);
+            if (data === "[DONE]") {
+              if (inReasoningPhase) {
+                options.onReasoningEnd?.(undefined);
+                inReasoningPhase = false;
+              }
+              break;
+            }
+            try {
+              const json = JSON.parse(data);
+              const delta = json.choices[0]?.delta;
+              timestamp = json.created ? new Date(json.created * 1000) : (json.timestamp ? new Date(json.timestamp) : new Date());
+              if (!delta) continue;
+              const reasoningContent = delta.reasoning_content;
+              const mainResponseContent = delta.content;
+              if (reasoningContent) {
+                if (!reasoningStartedForThisMessage) {
+                  options.onReasoningStart?.(undefined);
+                  reasoningStartedForThisMessage = true;
+                  inReasoningPhase = true;
+                }
+                options.onReasoningChunk?.(undefined, reasoningContent);
+              } else if (mainResponseContent) {
+                if (inReasoningPhase) {
+                  options.onReasoningEnd?.(undefined);
+                  inReasoningPhase = false;
+                }
+                mainContentText += mainResponseContent;
+                options.onContentChunk?.(undefined, mainResponseContent);
+              }
+            } catch (e) {
+              console.error("[Panda Request] stream parse error", line, e);
+            }
+          }
+          if (text.includes("[DONE]")) break; 
+        }
+        if (inReasoningPhase) {
+          options.onReasoningEnd?.(undefined);
+        }
+        options.onFinish(mainContentText, timestamp, response);
+      } else {
+        const jsonResponse = await response.json();
+        timestamp = jsonResponse.created ? new Date(jsonResponse.created * 1000) : (jsonResponse.timestamp ? new Date(jsonResponse.timestamp) : new Date());
+
+        const message = jsonResponse.choices?.[0]?.message;
+        const finalReasoning = message.reasoning_content as string | undefined;
+        const finalContent = message.content as string | undefined;
+
+        if (finalReasoning) {
+          options.onReasoningStart?.(undefined);
+          options.onReasoningChunk?.(undefined, finalReasoning);
+          options.onReasoningEnd?.(undefined);
+        }
+        
+        const mainMessageToFinish = finalContent || "";
+        options.onContentChunk?.(undefined, mainMessageToFinish);
+        options.onFinish(mainMessageToFinish, timestamp, response);
+      }
     } catch (error: any) {
-      console.error("[Request] failed", error);
+      console.error("[Panda Request] failed", error);
+      if (inReasoningPhase) {
+        options.onReasoningEnd?.(undefined);
+      }
       options.onError?.(error);
     }
   }
@@ -163,7 +199,7 @@ export class PandaApi implements LLMApi {
     if (this.disableListModels) {
       return [
         {
-          name: "deepseek-ai/deepseek-coder-1.3b-instruct",
+          name: "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
           available: true,
           sorted: 1000,
           provider: {
@@ -199,11 +235,9 @@ export class PandaApi implements LLMApi {
     }
 
     try {
-      // Get the access token
       const accessToken = await this.getAccessToken();
       if (!accessToken) {
         console.error("[Models] Panda API requires authentication. Access token not available.");
-        // Return empty or default models if token is not available
         return [];
       }
       const bearerToken = `Bearer ${accessToken}`;
@@ -223,9 +257,9 @@ export class PandaApi implements LLMApi {
 
       const resJson = (await response.json()) as PandaListModelResponse;
       const chatModels = resJson.data?.filter(
-        (m) => m.id.startsWith("deepseek-ai/"),
+        (m) => m.id.startsWith("deepseek-ai/"), // Example filter, adjust if Panda uses different model naming
       );
-      console.log("[Models]", chatModels);
+      console.log("[Models] Panda models found:", chatModels);
 
       if (!chatModels) {
         return [];
@@ -244,8 +278,8 @@ export class PandaApi implements LLMApi {
         },
       }));
     } catch (error) {
-      console.error("[Models] failed to fetch models", error);
-      return [];
+      console.error("[Models] Panda: failed to fetch models", error);
+      return []; // Return empty or default models on error
     }
   }
 } 

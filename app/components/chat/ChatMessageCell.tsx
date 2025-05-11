@@ -1,9 +1,9 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
 import { useAppConfig } from "@/app/store"; 
-import { EncryptedMessage, MessageRole } from "@/app/types"; 
+import { EncryptedMessage, MessageRole, ChatMessage } from "@/app/types"; 
 import {
   copyToClipboard,
 } from "@/app/utils"; // Adjust path
@@ -15,7 +15,7 @@ import { ChatAction } from "@/app/components/chat/ChatAction";
 import { LoadingAnimation } from "@/app/components/common/LoadingAnimation"; 
 
 // MUI Imports
-import { TextField, Button, Box } from "@mui/material"; // IconButton not used
+import { TextField, Button, Box, IconButton, Typography } from "@mui/material"; // IconButton not used
 import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded';
 import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 import ModeEditRoundedIcon from '@mui/icons-material/ModeEditRounded';
@@ -24,6 +24,9 @@ import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import StopCircleIcon from '@mui/icons-material/StopCircle';
 import SendIcon from '@mui/icons-material/Send';
 import CancelIcon from '@mui/icons-material/Cancel';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'; // For expand/collapse
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'; // For expand/collapse
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'; // Reasoning icon
 
 import styles from "./chat.module.scss";
 import { UUID } from "crypto";
@@ -34,13 +37,9 @@ const Markdown = dynamic(async () => (await import("../markdown")).Markdown, {
 
 interface ChatMessageCellProps {
   messageId: UUID;
-  role: MessageRole;
-  decryptedContent: string | MultimodalContent[] | null;
-  encryptedMessage: EncryptedMessage;
-  isStreaming?: boolean;
-  isError?: boolean;
+  message: ChatMessage;
   index: number; 
-  isLoading: boolean; 
+  isLoading: boolean;
   showActions: boolean;
   fontSize: number;
   fontFamily: string;
@@ -51,32 +50,32 @@ interface ChatMessageCellProps {
   onEditSubmit: (messageId: UUID, newText: string) => void;
 }
 
-function getDecryptedText(content: string | MultimodalContent[] | null): string {
-    if (content === null) return Locale.Store.Error; // Use a valid Locale key for error
+function getTextContent(content: string | MultimodalContent[] | null | undefined): string {
+    if (content === null || content === undefined) return ""; 
     if (typeof content === 'string') return content;
-    if (Array.isArray(content)) {
+    if (Array.isArray(content)) { 
         return content.find(item => item.type === 'text')?.text || "[Non-text content]";
     }
     return "";
 }
 
-function getDecryptedImages(content: string | MultimodalContent[] | null): string[] {
-    if (content === null || typeof content === 'string' || !Array.isArray(content)) {
+function getImageUrls(content: string | MultimodalContent[] | null | undefined): string[] {
+    if (content === null || content === undefined || typeof content === 'string' || !Array.isArray(content)) {
         return [];
     }
     return content.filter(item => item.type === 'image_url' && item.image_url?.url).map(item => item.image_url!.url);
 }
 
+function getReasoningText(reasoning: string | undefined | null): string {
+    return reasoning || "";
+}
+
 export const ChatMessageCell = React.memo(function ChatMessageCell(props: ChatMessageCellProps) {
   const {
     messageId,
-    role,
-    decryptedContent,
-    encryptedMessage,
-    isStreaming,
-    isError,
+    message,
     index,
-    isLoading, 
+    isLoading: isChatLoading,
     showActions,
     fontSize,
     fontFamily,
@@ -87,42 +86,79 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(props: ChatMe
     onEditSubmit,
   } = props;
   
-  // Actions specific to ChatMessageCell, using props for callbacks
+  const {
+    role,
+    content,
+    reasoning,
+    streaming,
+    isError,
+    isReasoning,
+  } = message;
+  
   const handleResend = useCallback(() => onResend(messageId), [onResend, messageId]);
   const handleUserStop = useCallback(() => onUserStop(messageId), [onUserStop, messageId]);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState("");
+  const [isReasoningCollapsed, setIsReasoningCollapsed] = useState(true);
+
   const isUser = role === "user";
 
-  const textContent = getDecryptedText(decryptedContent);
-  const images = getDecryptedImages(decryptedContent);
+  const currentTextContent = getTextContent(content);
+  const currentImageUrls = getImageUrls(content);
+  const currentReasoningText = getReasoningText(reasoning);
+
+  // Ref to store the previous value of message.isReasoning
+  const prevIsReasoningRef = React.useRef(message.isReasoning);
+
+  useEffect(() => {
+    if (isEditing) {
+      setEditedText(currentTextContent);
+    }
+  }, [currentTextContent, isEditing]);
+
+  useEffect(() => {
+    // On initial mount or if reasoning starts
+    if (message.isReasoning && !prevIsReasoningRef.current) {
+      setIsReasoningCollapsed(false);
+    } 
+    // If reasoning finishes
+    else if (!message.isReasoning && prevIsReasoningRef.current) {
+      setIsReasoningCollapsed(true);
+    }
+
+    // Update the ref with the current value for the next render
+    prevIsReasoningRef.current = message.isReasoning;
+  }, [message.isReasoning]); // Only re-run when message.isReasoning changes
 
   const handleEditClick = useCallback(() => {
-    setEditedText(textContent);
+    setEditedText(currentTextContent);
     setIsEditing(true);
-  }, [textContent]);
+  }, [currentTextContent]);
 
   const handleCancelClick = useCallback(() => {
     setIsEditing(false);
   }, []);
 
   const handleSendClick = useCallback(() => {
-    if (editedText.trim() === textContent.trim()) {
+    if (editedText.trim() === currentTextContent.trim()) {
         setIsEditing(false);
         return;
     }
     onEditSubmit(messageId, editedText);
     setIsEditing(false);
-  }, [editedText, textContent, onEditSubmit]);
+  }, [messageId, editedText, currentTextContent, onEditSubmit]);
+
+  const toggleReasoningCollapse = useCallback(() => {
+    setIsReasoningCollapsed(prev => !prev);
+  }, []);
 
   if (isError) {
     return (
       <div className={clsx(styles["chat-message"], styles["chat-message-error"]) }>
         <div className={styles["chat-message-container"]}>
           <div className={styles["chat-message-item"]}>
-            {/* Use textContent which already defaults to an error string from getDecryptedText if needed */}
-            <Markdown content={textContent} /> 
+            <Markdown content={currentTextContent || Locale.Store.Error} /> 
           </div>
           <div className={styles["chat-message-actions"]}>
              {!isUser && (
@@ -130,6 +166,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(props: ChatMe
                     text={null}
                     icon={<ReplayRoundedIcon/>}
                     onClick={handleResend}
+                    disabled={isChatLoading}
                 />
             )}
           </div>
@@ -138,12 +175,14 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(props: ChatMe
     );
   }
 
+  const showReasoning = !isUser && (currentReasoningText || isReasoning);
+
   return (
     <div
       className={clsx(
         styles["chat-message"],
         isUser && styles["chat-message-user"],
-        isStreaming && styles["chat-message-streaming"],
+        (streaming || isReasoning) && styles["chat-message-streaming"],
       )}
     >
       <div className={styles["chat-message-container"]}>
@@ -151,6 +190,31 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(props: ChatMe
           <div className={styles["chat-message-avatar"]}></div>
         </div>
         <div className={styles["chat-message-item"]}>
+          {showReasoning && (
+            <Box className={styles["chat-message-reasoning-container"]} sx={{ mb: 1, p: 1, backgroundColor: 'grey.100', borderRadius: 1 }}>
+              <Box display="flex" alignItems="center" onClick={toggleReasoningCollapse} sx={{ cursor: 'pointer' }}>
+                <IconButton size="small" sx={{ mr: 0.5 }}>
+                  {isReasoningCollapsed ? <ChevronRightIcon fontSize="inherit" /> : <ExpandMoreIcon fontSize="inherit" />}
+                </IconButton>
+                <AutoFixHighIcon fontSize="small" sx={{ color: 'primary.main', mr: 1 }} />
+                <Typography variant="caption" sx={{ fontWeight: 'medium', color: 'text.secondary' }}>
+                  {/* TODO: Add Locale.Chat.Thinking to locale file */ "Thinking..."}
+                </Typography>
+                {isReasoning && !currentReasoningText && <Box sx={{ml: 1}}><LoadingAnimation /></Box>}{/* Removed size and sx from LoadingAnimation directly */}
+              </Box>
+              {!isReasoningCollapsed && currentReasoningText && (
+                <Box sx={{ mt: 1, pl: 2.5, borderLeft: `2px solid grey.300`, ml: 1.2, }}>
+                    <Markdown 
+                        content={currentReasoningText} 
+                        fontSize={fontSize * 0.9}
+                        fontFamily={fontFamily}
+                        parentRef={scrollRef as React.RefObject<HTMLDivElement>}
+                    />
+                </Box>
+              )}
+            </Box>
+          )}
+
           {isEditing ? (
             <Box sx={{ width: '100%' }}>
               <TextField
@@ -174,27 +238,25 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(props: ChatMe
                 <Button variant="outlined" size="small" onClick={handleCancelClick} startIcon={<CancelIcon />}>
                   {Locale.UI.Cancel}
                 </Button>
-                <Button variant="contained" size="small" onClick={handleSendClick} disabled={editedText.trim() === ""} startIcon={<SendIcon />}>
+                <Button variant="contained" size="small" onClick={handleSendClick} disabled={editedText.trim() === "" || isChatLoading} startIcon={<SendIcon />}>
                   {Locale.UI.Confirm}
                 </Button>
               </Box>
             </Box>
           ) : (
             <>
-              <Markdown
-                key={`${messageId}-${isStreaming ? "streaming" : "done"}`}
-                content={textContent}
-                loading={
-                  (isStreaming) &&
-                  !isUser &&
-                  textContent.length === 0
-                }
-                fontSize={fontSize}
-                fontFamily={fontFamily}
-                parentRef={scrollRef as React.RefObject<HTMLDivElement>}
-                defaultShow={index >= renderMessagesLength - 6}
-              />
-              {images.map((image, imgIndex) => (
+              {(currentTextContent || currentImageUrls.length > 0 || (streaming && !isReasoning && !showReasoning)) && (
+                <Markdown
+                  key={`${messageId}-${streaming ? "streaming" : "done"}-${isReasoning ? "reasoning" : "content"}`}
+                  content={currentTextContent}
+                  loading={streaming && !isUser && currentTextContent.length === 0 && !isReasoning}
+                  fontSize={fontSize}
+                  fontFamily={fontFamily}
+                  parentRef={scrollRef as React.RefObject<HTMLDivElement>}
+                  defaultShow={index >= renderMessagesLength - 6}
+                />
+              )}
+              {currentImageUrls.map((image, imgIndex) => (
                  <Image
                    key={imgIndex}
                    className={styles["chat-message-item-image"]}
@@ -211,26 +273,18 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(props: ChatMe
         {showActions && !isEditing && (
           <div className={styles["chat-message-actions"]}>
             <div className={styles["chat-input-actions"]}>
-              {isStreaming && !isUser ? (
-                <ChatAction
-                  text={null}
-                  icon={<StopCircleIcon />}
-                  onClick={handleUserStop} 
-                />
-              ) : (
+              {!(streaming || isReasoning) && (
                 <>
-                  {!isUser && (
+                  {!isUser && ( 
                     <>
-                      <ChatAction text={null} icon={<ReplayRoundedIcon/>} onClick={handleResend} disabled={isLoading}/>
-                      <ChatAction text={null} icon={<ContentCopyRoundedIcon/>} onClick={() => copyToClipboard(textContent)}/>
-                      {/* Add Delete button for bot messages if needed */}
-                      {/* <ChatAction text={null} icon={<DeleteOutlineRoundedIcon />} onClick={handleDelete} disabled={isLoading} /> */}
+                      <ChatAction text={null} icon={<ReplayRoundedIcon/>} onClick={handleResend} disabled={isChatLoading}/>
+                      <ChatAction text={null} icon={<ContentCopyRoundedIcon/>} onClick={() => copyToClipboard(currentTextContent + (currentReasoningText ? `\n\n[Reasoning]:\n${currentReasoningText}`: ""))} disabled={isChatLoading}/>
                     </>
                   )}
                   {isUser && (
                     <>
-                      <ChatAction text={null} icon={<ModeEditRoundedIcon/>} onClick={handleEditClick} disabled={isLoading}/>
-                      <ChatAction text={null} icon={<ContentCopyRoundedIcon/>} onClick={() => copyToClipboard(textContent)}/>
+                      <ChatAction text={null} icon={<ModeEditRoundedIcon/>} onClick={handleEditClick} disabled={isChatLoading}/>
+                      <ChatAction text={null} icon={<ContentCopyRoundedIcon/>} onClick={() => copyToClipboard(currentTextContent)} disabled={isChatLoading}/>
                     </>
                   )}
                 </>

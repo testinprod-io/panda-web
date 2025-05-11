@@ -11,11 +11,12 @@ import { useApiClient } from "../context/ApiProviderContext";
 import { ChatApiService } from "../services/ChatApiService";
 import { useSnackbar } from "@/app/components/SnackbarProvider"; // Optional, for error notifications
 import Locale from "@/app/locales"; // Optional
-import { ModelConfig, ModelType } from "../store/config";
+import { ModelConfig } from "../store/config";
 import { mode } from "crypto-js";
 import { getMessageTextContent } from "../utils";
 import { ChatControllerPool } from "../client/controller";
 import { prettyObject } from "../utils/format";
+
 interface ChatSessionManagerResult {
   displayedMessages: ChatMessage[];
   isLoading: boolean; // Unified loading state (initial OR more)
@@ -31,8 +32,10 @@ interface ChatSessionManagerResult {
     content: string,
     attachImages?: string[],
     callbacks?: {
-      onStart?: (messageId: UUID) => void;
-      onStreaming?: (messageId: UUID, partialMessage: string) => void;
+      onReasoningStart?: (messageId: UUID) => void;
+      onReasoningChunk?: (messageId: UUID, reasoningChunk: string) => void;
+      onReasoningEnd?: (messageId: UUID) => void;
+      onContentChunk?: (messageId: UUID, contentChunk: string) => void;
       onSuccess?: (
         messageId: UUID,
         finalMessage: string,
@@ -45,8 +48,10 @@ interface ChatSessionManagerResult {
   sendNewQuery: (
     messages: ChatMessage[],
     callbacks?: {
-      onStart?: (messageId: UUID) => void;
-      onStreaming?: (messageId: UUID, partialMessage: string) => void;
+      onReasoningStart?: (messageId: UUID) => void;
+      onReasoningChunk?: (messageId: UUID, reasoningChunk: string) => void;
+      onReasoningEnd?: (messageId: UUID) => void;
+      onContentChunk?: (messageId: UUID, contentChunk: string) => void;
       onSuccess?: (
         messageId: UUID,
         finalMessage: string,
@@ -57,13 +62,9 @@ interface ChatSessionManagerResult {
     }
   ) => Promise<void>;
 
-  clearMessages: (afterMessageId: UUID) => void;
-  finalizeStreamedBotMessage: (
-    botMessageId: UUID,
-    finalContent: string,
-    date: Date
-  ) => void;
-  markMessageAsError: (messageId: UUID, errorInfo?: any) => void;
+  clearMessages: (fromMessageId: UUID) => void;
+  markMessageAsError: (messageId: string, errorInfo?: any) => void;
+  finalizeStreamedBotMessage: (botMessageId: UUID, finalContent: string, date: Date) => void;
 }
 
 const INITIAL_LOAD_LIMIT = 20;
@@ -300,57 +301,15 @@ export function useChatSessionManager(
     []
   );
 
-  const addStreamedBotMessageChunk = useCallback(
-    (
-      botMessageId: UUID,
-      chunk: string,
-      isInitialChunk: boolean,
-      modelUsed?: string
-    ) => {
-      setDisplayedMessages((prev) => {
-        const existingMsgIndex = prev.findIndex((m) => m.id === botMessageId);
-        if (isInitialChunk && existingMsgIndex === -1) {
-          // Create new placeholder for the bot message
-          const placeholder: ChatMessage = {
-            id: botMessageId,
-            role: "assistant",
-            content: chunk,
-            date: new Date(),
-            streaming: true,
-            syncState: MessageSyncState.PENDING_CREATE, // Use PENDING_CREATE while streaming
-            model: modelUsed as any, // Cast if model type mismatch
-            isError: false,
-          };
-          console.log(
-            "[useChatSessionManager] Creating new streaming bot message placeholder:",
-            placeholder
-          );
-          return [...prev, placeholder];
-        }
-        // Append to existing streaming message
-        return prev.map((msg) =>
-          msg.id === botMessageId
-            ? {
-                ...msg,
-                content: chunk,
-                streaming: true,
-                isError: false,
-                syncState: MessageSyncState.PENDING_CREATE,
-              }
-            : msg
-        );
-      });
-    },
-    []
-  );
-
   const sendNewUserMessage = useCallback(
     async (
       content: string,
       attachImages?: string[],
       callbacks?: {
-        onStart?: (messageId: UUID) => void;
-        onStreaming?: (messageId: UUID, partialMessage: string) => void;
+        onReasoningStart?: (messageId: UUID) => void;
+        onReasoningChunk?: (messageId: UUID, reasoningChunk: string) => void;
+        onReasoningEnd?: (messageId: UUID) => void;
+        onContentChunk?: (messageId: UUID, contentChunk: string) => void;
         onSuccess?: (
           messageId: UUID,
           finalMessage: string,
@@ -405,12 +364,93 @@ export function useChatSessionManager(
     [apiClient, sessionId, modelConfig, displayedMessages]
   );
 
+  const finalizeStreamedBotMessage = useCallback(
+    (botMessageId: UUID, finalContent: string, date: Date) => {
+
+     const finalBotMessage =
+        displayedMessages.find((m) => m.id === botMessageId) ??
+        createMessage({
+          id: botMessageId,
+          role: "assistant",
+          content: finalContent,
+          date: date,
+          streaming: false,
+          syncState: MessageSyncState.PENDING_CREATE,
+        });
+      let contentForSaving = finalContent;
+      console.log("[ChatSessionManager] Finalizing bot message ID:", botMessageId, "Final main content length:", finalBotMessage.reasoning);
+      if (finalBotMessage.reasoning) {
+        contentForSaving = `[Reasoning]:\n${finalBotMessage.reasoning}\n\n[Answer]:\n${finalContent}`;
+      }
+      finalBotMessage.content = contentForSaving;
+
+      saveMessageToServer(sessionId, finalBotMessage);
+      // setDisplayedMessages((prev) =>
+      //   prev.map((msg) =>
+      //     msg.id === botMessageId
+      //       ? {
+      //           ...msg,
+      //           content: finalContent,
+      //           streaming: false,
+      //           date: date,
+      //           syncState: MessageSyncState.PENDING_CREATE,
+      //         } // Ready to be saved by actions
+      //       : msg
+      //   )
+      // );
+
+      // console.log("[ChatSessionManager] Finalizing bot message ID:", botMessageId, "Final main content length:", finalContent.length);
+      // let messageToPersist: ChatMessage | undefined;
+
+      // setDisplayedMessages((prevMessages) => {
+      //   return prevMessages.map((msg) => {
+      //     if (msg.id === botMessageId) {
+      //       const completeReasoning = msg.reasoning || "";
+      //       let contentForSaving = finalContent;
+      //       if (completeReasoning) {
+      //         contentForSaving = `[Reasoning]:\n${completeReasoning}\n\n[Answer]:\n${finalContent}`;
+      //       }
+
+      //       // This is the object that will be saved to the server
+      //       messageToPersist = {
+      //         ...msg,
+      //         content: contentForSaving, // Combined content for saving
+      //         reasoning: completeReasoning, // Keep separate reasoning for potential future use (though UI uses `messageForUI.reasoning`)
+      //         streaming: false,
+      //         isReasoning: false,
+      //         date: date,
+      //         syncState: MessageSyncState.PENDING_CREATE,
+      //       };
+
+      //       // Save to server
+      //       // Need to ensure messageToPersist is captured correctly due to closure, 
+      //       // or pass its constructed parts to saveMessageToServer if that's cleaner.
+      //       // For simplicity here, we assume saveMessageToServer can take the full ChatMessage with combined content.
+      //       console.log("[ChatSessionManager] Saving finalized bot message to server. ID:", messageToPersist.id, "Content for DB:", messageToPersist.content);
+      //       saveMessageToServer(sessionId, messageToPersist);
+
+      //       // Return the version for UI state (separate content and reasoning)
+      //       return {
+      //         ...messageToPersist, // Spread to get most fields
+      //         content: finalContent,    // Override with main content for UI
+      //         reasoning: completeReasoning, // Ensure reasoning is separate for UI
+      //       };
+      //     }
+      //     return msg;
+      //   });
+      // });
+    },
+    [sessionId, displayedMessages, saveMessageToServer] // Removed displayedMessages from deps to avoid potential stale closure issues inside setter, rely on prevMessages
+  );
+
   const sendNewQuery = useCallback(
     async (
       messages: ChatMessage[],
       callbacks?: {
-        onStart?: (messageId: UUID) => void;
-        onStreaming?: (messageId: UUID, partialMessage: string) => void;
+        onReasoningStart?: (messageId: UUID) => void;
+        onReasoningChunk?: (messageId: UUID, reasoningChunk: string) => void;
+        onReasoningEnd?: (messageId: UUID) => void;
+        onContentChunk?: (messageId: UUID, contentChunk: string) => void;
         onSuccess?: (
           messageId: UUID,
           finalMessage: string,
@@ -420,88 +460,84 @@ export function useChatSessionManager(
         onController?: (controller: AbortController) => void;
       }
     ) => {
-      // Add bot placeholder message to store
       const botMessage = createMessage({
         role: "assistant",
-        content: "", // Start empty (decrypted)
+        content: "", 
+        reasoning: "",
+        isReasoning: false, 
         streaming: true,
-        model: modelConfig.model, // Store the model used
-        syncState: MessageSyncState.PENDING_CREATE, // Also needs saving eventually
+        model: modelConfig.model,
+        syncState: MessageSyncState.PENDING_CREATE,
       });
-      if (!botMessage) {
-        const error = new Error(
-          "[ChatActions] Failed to add bot placeholder message to store."
-        );
-        console.error(error.message);
-        // Potentially rollback userMessage addition or mark it as error
-        callbacks?.onFailure?.(error);
-        return;
-      }
       const localBotMessageId = botMessage.id;
 
-      addStreamedBotMessageChunk(botMessage.id, "", true, modelConfig.model);
-      // --- Call LLM Service ---
+      setDisplayedMessages((prev) => [...prev, botMessage]);
+
       ChatApiService.callLlmChat(apiClient, {
         messages: messages,
-        config: { ...modelConfig, stream: true },
-        onUpdate(partialMessage: string) {
-          addStreamedBotMessageChunk(
-            botMessage.id,
-            partialMessage,
-            false,
-            modelConfig.model
+        config: { ...modelConfig, stream: true, reasoning: modelConfig.reasoning },
+        
+        onReasoningStart: () => {
+          setDisplayedMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === localBotMessageId
+                ? { ...msg, isReasoning: true, reasoning: msg.reasoning || "" } 
+                : msg
+            )
           );
-          callbacks?.onStreaming?.(botMessage.id, partialMessage);
+          callbacks?.onReasoningStart?.(localBotMessageId);
         },
-        onFinish(finalMessage: string, timestamp: Date, response: Response) {
-          console.log("[ChatActions] LLM stream finished.");
-          botMessage.content = finalMessage;
-          botMessage.syncState = MessageSyncState.PENDING_CREATE;
-          botMessage.date = new Date(timestamp);
-          botMessage.isError = false;
-          // let finalBotMsg: ChatMessage | undefined;
-          // store.updateMessage(botmcurrentSession.id, localBotMessageId, (msg) => {
-          //     msg.content = finalMessage;
-          //     msg.streaming = false;
-          //     msg.syncState = MessageSyncState.PENDING_CREATE;
-          //     msg.date = new Date(timestamp);
-          //     msg.isError = false;
-          //     finalBotMsg = { ...msg };
-          // });
-          finalizeStreamedBotMessage(botMessage.id, finalMessage, timestamp);
-          // if (finalBotMsg) {
-          //     saveMessageToServer(currentSession.id, finalBotMsg);
-          //     store.updateStat(finalBotMsg);
-          // }
+        onReasoningChunk: (_messageId: string | undefined, chunk: string) => {
+          setDisplayedMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === localBotMessageId
+                ? { ...msg, reasoning: (msg.reasoning || "") + chunk, streaming: true, isReasoning: true }
+                : msg
+            )
+          );
+          callbacks?.onReasoningChunk?.(localBotMessageId, chunk);
+        },
+        onReasoningEnd: () => { 
+          setDisplayedMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === localBotMessageId ? { ...msg, isReasoning: false } : msg
+            )
+          );
+          callbacks?.onReasoningEnd?.(localBotMessageId);
+        },
+        onContentChunk: (_messageId: string | undefined, chunk: string) => {
+          setDisplayedMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === localBotMessageId
+                ? { ...msg, content: (msg.content || "") + chunk, streaming: true, isReasoning: false } 
+                : msg
+            )
+          );
+          callbacks?.onContentChunk?.(localBotMessageId, chunk);
+        },
 
+        onFinish(finalMainContent: string, timestamp: Date, response: Response) {
+          console.log("[ChatSessionManager] LLM stream onFinish. localBotMessageId:", localBotMessageId, "finalMainContent length:", finalMainContent.length);
+          finalizeStreamedBotMessage(localBotMessageId, finalMainContent, new Date(timestamp));
+          callbacks?.onSuccess?.(localBotMessageId, finalMainContent, new Date(timestamp));
           ChatControllerPool.remove(sessionId, localBotMessageId);
-          callbacks?.onSuccess?.(botMessage.id, finalMessage, timestamp);
         },
         onError(error: Error) {
           console.error("[ChatActions] LLM call failed:", error);
-          const isAborted = error.message?.includes?.("aborted");
-          const errorContent =
-            "\n\n" + prettyObject({ error: true, message: error.message });
-
-          // Update user message state to error
-          botMessage.isError = true;
-          botMessage.syncState = MessageSyncState.ERROR;
-          botMessage.date = new Date();
-
-          // store.updateMessage(currentSession.id, localUserMessageId, (msg) => {
-          //     msg.isError = !isAborted;
-          //     msg.syncState = MessageSyncState.ERROR;
-          // });
-
-          // Update bot message placeholder state to error
-          // store.updateMessage(currentSession.id, localBotMessageId, (msg) => {
-          //     msg.content = (msg.content || "") + errorContent;
-          //     msg.streaming = false;
-          //     msg.isError = !isAborted;
-          //     msg.syncState = MessageSyncState.ERROR;
-          //     msg.date = new Date();
-          // });
-
+          setDisplayedMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === localBotMessageId
+                ? { 
+                    ...msg, 
+                    isError: true, 
+                    streaming: false, 
+                    isReasoning: false,
+                    content: (msg.content || "") + "\n\n--- ERROR ---\n" + error.message,
+                    syncState: MessageSyncState.ERROR 
+                  }
+                : msg
+            )
+          );
           ChatControllerPool.remove(sessionId, localBotMessageId);
           callbacks?.onFailure?.(error);
         },
@@ -512,68 +548,10 @@ export function useChatSessionManager(
             controller
           );
           callbacks?.onController?.(controller);
-        },
+        }
       });
     },
-    [apiClient, sessionId, modelConfig, displayedMessages]
-  );
-
-  const finalizeStreamedBotMessage = useCallback(
-    (botMessageId: UUID, finalContent: string, date: Date) => {
-      console.log(
-        `[useChatSessionManager] Finalizing streamed bot message ID ${botMessageId}. Final content length: ${finalContent.length}`
-      );
-      const finalBotMessage =
-        displayedMessages.find((m) => m.id === botMessageId) ??
-        createMessage({
-          id: botMessageId,
-          role: "assistant",
-          content: finalContent,
-          date: date,
-          streaming: false,
-          syncState: MessageSyncState.PENDING_CREATE,
-        });
-      saveMessageToServer(sessionId, finalBotMessage);
-      setDisplayedMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === botMessageId
-            ? {
-                ...msg,
-                content: finalContent,
-                streaming: false,
-                date: date,
-                syncState: MessageSyncState.PENDING_CREATE,
-              } // Ready to be saved by actions
-            : msg
-        )
-      );
-
-      // console.log(
-      //   "[ChatComponent] onSuccess: displayedMessages:",
-      //   displayedMessages
-      // );
-      // if (displayedMessages.filter((m) => !m.isError).length === 2) {
-      //   const userMsgContent = displayedMessages[0].content;
-      //   const assistantMsgContent = displayedMessages[1].content;
-
-      //   if (
-      //     userMsgContent.trim().length > 0 &&
-      //     assistantMsgContent.trim().length > 0
-      //   ) {
-      //     console.log("[ChatActions] Triggering title generation.");
-      //     setTimeout(
-      //       () =>
-      //         generateSessionTitle(
-      //           sessionId,
-      //           userMsgContent,
-      //           assistantMsgContent
-      //         ),
-      //       0
-      //     );
-      //   }
-      // }
-    },
-    [displayedMessages, sessionId, generateSessionTitle]
+    [apiClient, sessionId, modelConfig, finalizeStreamedBotMessage]
   );
 
   const markMessageAsError = useCallback(
@@ -641,8 +619,7 @@ export function useChatSessionManager(
     sendNewUserMessage,
     sendNewQuery,
     clearMessages,
-    // addStreamedBotMessageChunk,
-    finalizeStreamedBotMessage,
     markMessageAsError,
+    finalizeStreamedBotMessage,
   };
 }

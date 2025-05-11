@@ -95,81 +95,113 @@ export class ChatGPTApi implements LLMApi {
     const controller = new AbortController();
     options.onController?.(controller);
 
+    let inReasoningPhase = false;
+    let reasoningStartedForThisMessage = false;
+    let mainContentText = "";
+    let timestamp = new Date();
+
     try {
-    // Use our API route instead of direct OpenAI API call
+    const requestBody = {
+      model: options.config.model,
+      messages,
+      temperature: options.config.temperature ?? 0.7,
+      stream: options.config.stream ?? true,
+      reasoning: options.config.reasoning ?? false,
+    };
+
     const response = await fetch('/api/openai', {
       method: "POST",
         headers: {
           ...getHeaders(),
-          "Authorization": getBearerToken(process.env.NEXT_PUBLIC_OPENAI_API_KEY || ""),
         },
-        body: JSON.stringify({
-          model: options.config.model,
-          messages,
-          temperature: options.config.temperature ?? 0.7,
-          stream: options.config.stream ?? true,
-        }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal,
       });
 
       const decoder = new TextDecoder();
-      if (options.config.stream) {
+      if (requestBody.stream) {
         const reader = response.body?.getReader();
         if (!reader) {
           throw new Error("No response body available for streaming");
         }
-
-        let responseText = "";
-        let timestamp = new Date();
+        
+        mainContentText = ""; 
+        timestamp = new Date();
+        inReasoningPhase = false;
+        reasoningStartedForThisMessage = false;
 
         while (true) {
           const { value, done } = await reader.read();
           if (done) break;
 
           const text = decoder.decode(value);
-          // Split by newlines and filter out empty lines
-          const lines = text.split("\n").filter((line) => line.trim());
+          const lines = text.split("\n").filter((line) => line.trim().startsWith("data: "));
           for (const line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            
             const data = line.slice(6);
-            if (data === "[DONE]") break;
+            if (data === "[DONE]") {
+              if (inReasoningPhase) {
+                options.onReasoningEnd?.(undefined);
+                inReasoningPhase = false;
+              }
+              break;
+            }
 
             try {
               const json = JSON.parse(data);
-              const content = json.choices[0]?.delta?.content;
-              timestamp = new Date(json.timestamp);
-              if (!content) continue;
+              const delta = json.choices[0]?.delta;
+              timestamp = json.created ? new Date(json.created * 1000) : new Date();
 
-              responseText += content;
-              options.onUpdate?.(responseText, content);
+              if (!delta) continue;
+
+              const reasoningContent = delta.reasoning_content;
+              const mainResponseContent = delta.content;
+
+              if (reasoningContent) {
+                if (!reasoningStartedForThisMessage) {
+                  options.onReasoningStart?.(undefined);
+                  reasoningStartedForThisMessage = true;
+                  inReasoningPhase = true;
+                }
+                options.onReasoningChunk?.(undefined, reasoningContent);
+              } else if (mainResponseContent) {
+                if (inReasoningPhase) {
+                  options.onReasoningEnd?.(undefined);
+                  inReasoningPhase = false;
+                }
+                mainContentText += mainResponseContent;
+                options.onContentChunk?.(undefined, mainResponseContent);
+              }
             } catch (e) {
-              console.log("[Request] parse error", line);
+              console.error("[Request] parse error in OpenAI stream", line, e);
             }
           }
+          if (text.includes("[DONE]")) break; 
         }
     
-        options.onFinish(responseText, timestamp, response);
-      } else {
-        // Handle non-streaming response
+        if (inReasoningPhase) {
+            options.onReasoningEnd?.(undefined);
+        }
+        options.onFinish(mainContentText, timestamp, response);
+      } else { 
         if (!response.ok) {
             const errorBody = await response.text();
             throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
         }
         const jsonResponse = await response.json();
-        console.log("[Request] Non-streaming JSON response:", jsonResponse);
         const messageContent = jsonResponse.choices?.[0]?.message?.content;
+        const responseTimestamp = jsonResponse.created ? new Date(jsonResponse.created * 1000) : new Date();
 
         if (typeof messageContent === 'string') {
-            console.log("[Request] Extracted non-streaming message:", messageContent);
-            options.onFinish(messageContent, new Date(jsonResponse.timestamp), response);
+            options.onFinish(messageContent, responseTimestamp, response);
         } else {
-            console.error("[Request] Could not extract message content from non-streaming response:", jsonResponse);
             throw new Error("Could not extract message content from non-streaming response.");
         }
       } 
     } catch (error: any) {
-      console.error("[Request] failed", error);
+      console.error("[Request] failed in ChatGPTApi", error);
+      if (inReasoningPhase) {
+        options.onReasoningEnd?.(undefined);
+      }
       options.onError?.(error);
     }
   }

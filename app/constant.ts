@@ -146,7 +146,7 @@ Latex block: $$e=mc^2$$
 
 // Default model names for switching providers
 export const DEFAULT_OPENAI_MODEL_NAME = "gpt-4o-mini";
-export const DEFAULT_PANDA_MODEL_NAME = "deepseek-ai/deepseek-coder-1.3b-instruct";
+export const DEFAULT_PANDA_MODEL_NAME = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B";
 
 export const SUMMARIZE_MODEL = "gpt-4o-mini";
 export const GEMINI_SUMMARIZE_MODEL = "gemini-pro";
@@ -233,14 +233,14 @@ const xAIModes = [
 ];
 
 const PandaModels = [
-  "deepseek-ai/deepseek-coder-1.3b-instruct",
+  "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
   "deepseek-ai/deepseek-coder-6.7b-instruct",
   "deepseek-ai/deepseek-coder-33b-instruct",
 ];
 
 let seq = 1000;
 
-export type ModelType = 'gpt-3.5-turbo' | 'gpt-4' | 'deepseek-chat' | 'deepseek-ai/deepseek-coder-1.3b-instruct' | 'deepseek-ai/deepseek-coder-6.7b-instruct' | 'deepseek-ai/deepseek-coder-33b-instruct';
+export type ModelType = 'gpt-3.5-turbo' | 'gpt-4' | 'deepseek-chat' | 'deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B' | 'deepseek-ai/deepseek-coder-6.7b-instruct' | 'deepseek-ai/deepseek-coder-33b-instruct';
 
 export const DEFAULT_MODELS = [
   ...PandaModels.map((name) => ({

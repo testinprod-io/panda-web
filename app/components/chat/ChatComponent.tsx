@@ -119,8 +119,10 @@ export function ChatComponent(props: ChatComponentProps) {
       try {
         await new Promise<void>((resolve, reject) => {
           sendNewUserMessage(input, images, {
-            onStart: () => {},
-            onStreaming: (partialMessage: string) => {},
+            onReasoningStart: () => {},
+            onReasoningChunk: (chunk: string) => {},
+            onReasoningEnd: () => {},
+            onContentChunk: (chunk: string) => {},
             onSuccess: () => {
               setIsChatComponentBusy(false);
               resolve();
@@ -200,8 +202,10 @@ export function ChatComponent(props: ChatComponentProps) {
       try {
         await new Promise<void>((resolve, reject) => {
           sendNewQuery(messages, {
-            onStart: () => {},
-            onStreaming: (partialMessage: string) => {},
+            onReasoningStart: () => {},
+            onReasoningChunk: (chunk: string) => {},
+            onReasoningEnd: () => {},
+            onContentChunk: (chunk: string) => {},
             onSuccess: () => { setIsChatComponentBusy(false); resolve(); },
             onFailure: (error: Error) => {
               console.error("[ChatComponent] Failed resend query", error);
@@ -227,8 +231,10 @@ export function ChatComponent(props: ChatComponentProps) {
       try {
         await new Promise<void>((resolve, reject) => {
           sendNewUserMessage(newText, [], {
-            onStart: () => {},
-            onStreaming: (partialMessage: string) => {},
+            onReasoningStart: () => {},
+            onReasoningChunk: (chunk: string) => {},
+            onReasoningEnd: () => {},
+            onContentChunk: (chunk: string) => {},
             onSuccess: () => { setIsChatComponentBusy(false); resolve(); },
             onFailure: (error: Error) => {
               console.error("[ChatComponent] Failed edit submission", error);
@@ -286,15 +292,11 @@ export function ChatComponent(props: ChatComponentProps) {
         onScroll={onChatBodyScroll}
         onTouchStart={() => setAutoScroll(false)}
       >
-        {messagesToRender.map((encryptedMsg, i) => (
-          <Fragment key={encryptedMsg.id}>
+        {messagesToRender.map((msgObject, i) => (
+          <Fragment key={msgObject.id}>
             <ChatMessageCell
-              messageId={encryptedMsg.id}
-              role={encryptedMsg.role}
-              decryptedContent={encryptedMsg.content}
-              encryptedMessage={encryptedMsg}
-              isStreaming={encryptedMsg.streaming}
-              isError={encryptedMsg.isError}
+              messageId={msgObject.id}
+              message={msgObject}
               index={i}
               isLoading={isMessageAreaLoading}
               showActions={true} 
@@ -305,9 +307,6 @@ export function ChatComponent(props: ChatComponentProps) {
               onResend={onResend}
               onUserStop={onUserStop}
               onEditSubmit={onEditSubmit}
-              // Pass modal triggers if ChatMessageCell needs them
-              // onShowEditMessageModal={onShowEditMessageModal}
-              // onShowConfirmDialog={onShowConfirmDialog}
             />
           </Fragment>
         ))}

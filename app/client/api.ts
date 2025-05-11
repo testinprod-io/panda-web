@@ -32,12 +32,16 @@ export interface LLMConfig {
   stream?: boolean;
   presence_penalty?: number;
   frequency_penalty?: number;
+  reasoning?: boolean;
 }
 
 export interface ChatOptions {
   messages: RequestMessage[];
   config: LLMConfig;
-  onUpdate?: (message: string, chunk: string) => void;
+  onReasoningStart?: (messageId?: string) => void;
+  onReasoningChunk?: (messageId: string | undefined, chunk: string) => void;
+  onReasoningEnd?: (messageId?: string) => void;
+  onContentChunk?: (messageId: string | undefined, chunk: string) => void;
   onFinish: (message: string, date: Date, responseRes: Response) => void;
   onError?: (err: Error) => void;
   onController?: (controller: AbortController) => void;

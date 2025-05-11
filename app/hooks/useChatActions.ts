@@ -227,7 +227,7 @@ export function useChatActions() {
         }
 
         // Don't re-save synced messages
-        if (message.syncState === 'synced') return;
+        if (message.syncState === MessageSyncState.SYNCED) return;
 
         const content = getMessageTextContent(message); // Use util to get text
         if (!content) {

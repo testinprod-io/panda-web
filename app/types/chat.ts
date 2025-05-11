@@ -68,6 +68,8 @@ export type ChatMessage = Omit<RequestMessage, 'content'> & { // Omit original c
   id: UUID;
   model?: ModelType;
   syncState: MessageSyncState;
+  reasoning?: string; // Add reasoning field
+  isReasoning?: boolean; // To track if the message is currently in reasoning phase
 };
 
 /**
@@ -126,6 +128,8 @@ export function createMessage(override: Partial<ChatMessage>): ChatMessage {
    streaming: false,
    isError: false,
    syncState: MessageSyncState.PENDING_CREATE,
+   reasoning: "", // Initialize reasoning
+   isReasoning: false, // Initialize isReasoning
    ...override,
  };
 }

@@ -289,7 +289,10 @@ export const ChatApiService = {
     args: {
       messages: RequestMessage[];
       config: ModelConfig & { stream?: boolean };
-      onUpdate: (message: string) => void;
+      onReasoningStart?: (messageId?: string) => void;
+      onReasoningChunk?: (messageId: string | undefined, chunk: string) => void;
+      onReasoningEnd?: (messageId?: string) => void;
+      onContentChunk?: (messageId: string | undefined, chunk: string) => void;
       onFinish: (message: string, date: Date, responseRes?: any) => void;
       onError: (error: Error) => void;
       onController?: (controller: AbortController) => void;
@@ -297,9 +300,8 @@ export const ChatApiService = {
   ): Promise<void> {
     console.log("[ChatApiService] Calling LLM chat:", { messagesCount: args.messages.length, config: args.config });
     try {
-      // Note: LLM messages should NOT be encrypted as they need to be processed by the LLM
-      // They're only used for model inference, not stored in the database
-      await api.llm.chat(args);
+      // Pass all new args to api.llm.chat
+      await api.llm.chat(args); 
       console.log("[ChatApiService] LLM chat call initiated.");
     } catch (error) {
       console.error("[ChatApiService] Failed to initiate LLM chat call:", error);
@@ -321,7 +323,6 @@ export const ChatApiService = {
       api.llm.chat({
         messages: messages.concat(createMessage({ role: "system", content: prompt, date: new Date() })),
         config: { ...config, stream: false }, // Ensure stream is false
-        onUpdate: (msg) => { /* Summarize shouldn't stream */ },
         onFinish: (message, date, responseRes) => {
           if (responseRes?.status === 200) {
             console.log("[ChatApiService] LLM summarize finished successfully.");
@@ -350,7 +351,6 @@ export const ChatApiService = {
       api.llm.chat({
         messages: [createMessage({ role: "user", content: prompt })],
         config: { ...config, stream: false }, // Ensure stream is false
-        onUpdate: (msg) => { /* Title generation shouldn't stream */ },
         onFinish: (title, date, responseRes) => {
           if (responseRes?.status === 200) {
             const cleanedTitle = title && title.length > 0 ? trimTopic(title) : DEFAULT_TOPIC;

@@ -74,6 +74,7 @@ export const DEFAULT_CONFIG = {
     enableInjectSystemPrompts: true,
     template: DEFAULT_INPUT_TEMPLATE,
     stream: true,
+    reasoning: true,
   },
 };
 
