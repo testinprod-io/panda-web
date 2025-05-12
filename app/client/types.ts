@@ -4,7 +4,7 @@ import { UUID } from 'crypto';
 
 export enum SenderTypeEnum {
   USER = 'user',
-  SYSTEM = 'system',
+  ASSISTANT = 'assistant',
 }
 
 export interface Conversation {

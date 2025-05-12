@@ -189,24 +189,45 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(props: ChatMe
         <div className={styles["chat-message-header"]}>
           <div className={styles["chat-message-avatar"]}></div>
         </div>
+        {showActions && !isEditing && (
+          <div className={styles["chat-message-actions"]}>
+            <div className={styles["chat-input-actions"]}>
+              {!(streaming || isReasoning) && (
+                <>
+                  {!isUser && ( 
+                    <>
+                      <ChatAction text={null} icon={<ReplayRoundedIcon sx={{ fontSize: '20px' }}/>} onClick={handleResend} disabled={isChatLoading}/>
+                      <ChatAction text={null} icon={<ContentCopyRoundedIcon sx={{ fontSize: '20px' }}/>} onClick={() => copyToClipboard(currentTextContent + (currentReasoningText ? `\n\n[Reasoning]:\n${currentReasoningText}`: ""))} disabled={isChatLoading}/>
+                    </>
+                  )}
+                  {isUser && (
+                    <>
+                      <ChatAction text={null} icon={<ModeEditRoundedIcon sx={{ fontSize: '20px' }}/>} onClick={handleEditClick} disabled={isChatLoading}/>
+                      <ChatAction text={null} icon={<ContentCopyRoundedIcon sx={{ fontSize: '20px' }}/>} onClick={() => copyToClipboard(currentTextContent)} disabled={isChatLoading}/>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
         <div className={styles["chat-message-item"]}>
           {showReasoning && (
-            <Box className={styles["chat-message-reasoning-container"]} sx={{ mb: 1, p: 1, backgroundColor: 'grey.100', borderRadius: 1 }}>
+            <Box className={styles["chat-message-reasoning-container"]} sx={{ mb: 1, p: 1, borderRadius: 1 }}>
               <Box display="flex" alignItems="center" onClick={toggleReasoningCollapse} sx={{ cursor: 'pointer' }}>
                 <IconButton size="small" sx={{ mr: 0.5 }}>
                   {isReasoningCollapsed ? <ChevronRightIcon fontSize="inherit" /> : <ExpandMoreIcon fontSize="inherit" />}
                 </IconButton>
-                <AutoFixHighIcon fontSize="small" sx={{ color: 'primary.main', mr: 1 }} />
                 <Typography variant="caption" sx={{ fontWeight: 'medium', color: 'text.secondary' }}>
                   {/* TODO: Add Locale.Chat.Thinking to locale file */ "Thinking..."}
                 </Typography>
-                {isReasoning && !currentReasoningText && <Box sx={{ml: 1}}><LoadingAnimation /></Box>}{/* Removed size and sx from LoadingAnimation directly */}
+                {isReasoning && !currentReasoningText && <Box sx={{ml: 1}}><LoadingAnimation /></Box>}
               </Box>
               {!isReasoningCollapsed && currentReasoningText && (
-                <Box sx={{ mt: 1, pl: 2.5, borderLeft: `2px solid grey.300`, ml: 1.2, }}>
+                <Box sx={{ mt: 1, pl: 2.5, borderLeft: `2px solid rgba(0,0,0,0.1)`, ml: 1.2, color: 'text.disabled' }}>
                     <Markdown 
                         content={currentReasoningText} 
-                        fontSize={fontSize * 0.9}
+                        fontSize={fontSize * 0.85}
                         fontFamily={fontFamily}
                         parentRef={scrollRef as React.RefObject<HTMLDivElement>}
                     />
@@ -270,28 +291,6 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(props: ChatMe
             </>
           )}
         </div>
-        {showActions && !isEditing && (
-          <div className={styles["chat-message-actions"]}>
-            <div className={styles["chat-input-actions"]}>
-              {!(streaming || isReasoning) && (
-                <>
-                  {!isUser && ( 
-                    <>
-                      <ChatAction text={null} icon={<ReplayRoundedIcon/>} onClick={handleResend} disabled={isChatLoading}/>
-                      <ChatAction text={null} icon={<ContentCopyRoundedIcon/>} onClick={() => copyToClipboard(currentTextContent + (currentReasoningText ? `\n\n[Reasoning]:\n${currentReasoningText}`: ""))} disabled={isChatLoading}/>
-                    </>
-                  )}
-                  {isUser && (
-                    <>
-                      <ChatAction text={null} icon={<ModeEditRoundedIcon/>} onClick={handleEditClick} disabled={isChatLoading}/>
-                      <ChatAction text={null} icon={<ContentCopyRoundedIcon/>} onClick={() => copyToClipboard(currentTextContent)} disabled={isChatLoading}/>
-                    </>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

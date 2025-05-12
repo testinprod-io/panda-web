@@ -9,6 +9,9 @@ let inMemoryIv: CryptoJS.lib.WordArray | null = null;
 const VERIFICATION_TOKEN = "PandaAI-VerificationData-2023";
 let encryptedVerificationToken: string | null = null;
 
+// localStorage key
+const STORAGE_VERIFICATION_KEY = 'pandaai_encryption_verification';
+
 // Basic check for potential base64 encoding (simple heuristic)
 function isLikelyBase64(str: string): boolean {
   // Allow empty strings, don't try to decrypt them
@@ -47,8 +50,43 @@ export function testEncryption() {
 
 export const EncryptionService = {
   /**
+   * Generates a key and IV from a password
+   * Returns the key and IV
+   */
+  generateKeyFromPassword(password: string): { 
+    key: CryptoJS.lib.WordArray; 
+    iv: CryptoJS.lib.WordArray;
+  } {
+    if (!password) {
+      throw new Error("Cannot generate key from empty password");
+    }
+    
+    // Use a known string as a constant "pepper" instead of a random salt
+    // Note: this is less secure than using a random salt
+    const pepper = "PandaAI-Static-Pepper-2023";
+    
+    // Use PBKDF2 to derive a key
+    const derivedKey = CryptoJS.PBKDF2(password, pepper, {
+      keySize: 256/32, // 256 bits
+      iterations: 1000
+    });
+    
+    // Use first half for key, second half for IV
+    const keyWords = derivedKey.words;
+    const keyHalfLength = keyWords.length / 2;
+    
+    const keyBytes = keyWords.slice(0, keyHalfLength);
+    const ivBytes = keyWords.slice(keyHalfLength);
+
+    const key = CryptoJS.lib.WordArray.create(keyBytes);
+    const iv = CryptoJS.lib.WordArray.create(ivBytes);
+    
+    return { key, iv };
+  },
+
+  /**
    * Derives and sets the encryption key and IV from a user password.
-   * Stores them in memory.
+   * Stores them in memory and saves verification data to localStorage.
    */
   setKeyFromPassword(password: string): void {
     if (!password) {
@@ -57,26 +95,20 @@ export const EncryptionService = {
       return;
     }
     try {
-      // Use PBKDF2 to derive a more secure key
-      // const salt = CryptoJS.lib.WordArray.random(128/8); // 128 bits
-      // const key = CryptoJS.PBKDF2(password, salt, {
-      //   keySize: 256/32, // 256 bits
-      //   iterations: 1000
-      // });
-      const key = CryptoJS.enc.Hex.parse(password);
+      // Generate key and IV from password
+      const { key, iv } = this.generateKeyFromPassword(password);
       
-      // Use first half for key, second half for IV
-      const keyWords = key.words;
-      const keyHalfLength = keyWords.length / 2;
-      
-      const keyBytes = keyWords.slice(0, keyHalfLength);
-      const ivBytes = keyWords.slice(keyHalfLength);
-
-      inMemoryKey = CryptoJS.lib.WordArray.create(keyBytes);
-      inMemoryIv = CryptoJS.lib.WordArray.create(ivBytes);
+      // Store in memory
+      inMemoryKey = key;
+      inMemoryIv = iv;
 
       // Create verification token with this key
       encryptedVerificationToken = this.encryptVerificationToken();
+      
+      // Save to localStorage for later verification
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_VERIFICATION_KEY, encryptedVerificationToken);
+      }
       
       console.log("[EncryptionService] Key and IV derived and set in memory.");
     } catch (error) {
@@ -123,20 +155,32 @@ export const EncryptionService = {
   },
 
   /**
-   * Verify that the current key can correctly decrypt data
+   * Verify that the provided password can correctly decrypt the verification token
    * This confirms the password is correct
    */
-  verifyKey(): boolean {
-    if (!this.isKeySet() || !encryptedVerificationToken) {
-      return false;
+  verifyKey(password: string): boolean {
+    if (typeof window === 'undefined') {
+      return false; // Cannot verify outside of browser
     }
     
+    // Get verification token from localStorage
+    const verificationToken = localStorage.getItem(STORAGE_VERIFICATION_KEY);
+    
+    if (!verificationToken) {
+      return false; // Missing required data
+    }
+
     try {
-      const decrypted = CryptoJS.AES.decrypt(encryptedVerificationToken, inMemoryKey!, {
-        iv: inMemoryIv!,
+      // Generate key and IV from password
+      const { key, iv } = this.generateKeyFromPassword(password);
+      
+      // Try to decrypt the verification token
+      const decrypted = CryptoJS.AES.decrypt(verificationToken, key, {
+        iv: iv,
         mode: CryptoJS.mode.CBC,
         padding: CryptoJS.pad.Pkcs7
       });
+      
       const decryptedText = decrypted.toString(CryptoJS.enc.Utf8);
       return decryptedText === VERIFICATION_TOKEN;
     } catch (error) {

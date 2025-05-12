@@ -10,7 +10,7 @@ import React, {
   ReactNode
 } from 'react';
 import { EncryptionService } from '@/app/services/EncryptionService';
-import { PasswordPromptModal } from '@/app/components/modal/PasswordPromptModal'; // Adjust path if needed
+import { PasswordPromptModal } from '@/app/components/modal/PasswordPromptModal';
 import { useChatStore } from '@/app/store/chat';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -19,12 +19,9 @@ import Button from '@mui/material/Button';
 // Define the inactivity timeout (e.g., 15 minutes) in milliseconds
 const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
 
-// Legacy key data for potential migration from hardcoded values
-const LEGACY_KEY = '1234567890123456'; // Only used for legacy data migration
-
 interface EncryptionContextType {
   isLocked: boolean;
-  unlockApp: (password: string) => boolean; // Now takes password, returns success
+  unlockApp: (password: string) => boolean;
   lockApp: () => void;
 }
 
@@ -43,35 +40,11 @@ interface EncryptionProviderProps {
 }
 
 export function EncryptionProvider({ children }: EncryptionProviderProps) {
-  // Initialize lock state based on whether the key is already set (e.g., from previous session)
-  const [isLocked, setIsLocked] = useState<boolean>(true); // Always start locked
+  // Always start locked
+  const [isLocked, setIsLocked] = useState<boolean>(true);
   const [hasError, setHasError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const chatStore = useChatStore();
-
-  // Try auto-migration for existing users who had hardcoded keys
-  useEffect(() => {
-    const hasInitialized = localStorage.getItem('pandaai-encryption-initialized');
-    // If no initialization flag but we have sessions, might need migration
-    if (!hasInitialized && chatStore.sessions.length > 0) {
-      console.log('[EncryptionProvider] Found existing sessions but no encryption setup. Checking for migration needs...');
-      // This is where we'd check if old data exists and needs migration
-      setIsLocked(true);
-    }
-  }, [chatStore.sessions]);
-
-  const migrateData = useCallback((newPassword: string) => {
-    // This is a simplified migration concept - a real implementation would:
-    // 1. Use the legacy key to decrypt existing data
-    // 2. Re-encrypt with the new user-provided key
-    // 3. Save the re-encrypted data
-    console.log('[EncryptionProvider] Migration would happen here...');
-    
-    // For this example, we'll just mark the migration as complete
-    localStorage.setItem('pandaai-encryption-initialized', 'true');
-    setIsLocked(false);
-  }, []);
 
   // Set up error handling for encryption-related operations
   useEffect(() => {
@@ -85,7 +58,6 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         console.error('[EncryptionProvider] Caught encryption error:', error);
         
         // Lock the app and show error
-        EncryptionService.clearKey();
         setIsLocked(true);
         setHasError(true);
         setErrorMessage(error.message);
@@ -113,7 +85,8 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   }, [isLocked]); // Rerun when lock state changes
 
   const lockApp = useCallback(() => {
-    EncryptionService.clearKey();
+    // We're not clearing the key for now as requested
+    // EncryptionService.clearKey();
     setIsLocked(true);
     setHasError(false); // Clear any errors when manually locking
     if (inactivityTimerRef.current) {
@@ -123,8 +96,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     console.log('[EncryptionProvider] App locked.');
   }, []);
 
-  // Note: The modal now handles calling EncryptionService.setKeyFromPassword
-  // This function just updates the provider's state
+  // Handle successful unlock
   const handleUnlockSuccess = useCallback(() => {
     setIsLocked(false);
     setHasError(false); // Clear errors on successful unlock
@@ -132,28 +104,34 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     console.log('[EncryptionProvider] App unlocked.');
   }, [resetInactivityTimer]);
 
-  // Handle encryption errors by requesting password again
+  // Handle encryption errors by showing error
   const handleEncryptionError = useCallback((error: Error) => {
     setErrorMessage(error.message);
     setHasError(true);
-    lockApp();
-  }, [lockApp]);
+    setIsLocked(true);
+  }, []);
 
-  // Function exposed via context - kept for potential manual locking triggers
-  const contextLockApp = useCallback(() => {
-    lockApp();
-  }, [lockApp]);
-
-  // Simplified unlock function for context - modal handles the actual key setting
+  // Simplified unlock function - directly calls setKeyFromPassword and uses verifyKey
   const contextUnlockApp = useCallback((password: string): boolean => {
     try {
-      EncryptionService.setKeyFromPassword(password);
+      const verificationToken = localStorage.getItem('pandaai_encryption_verification');
       
-      if (EncryptionService.isKeySet()) {
+      // First-time setup - always accept the password
+      if (!verificationToken) {
+        EncryptionService.setKeyFromPassword(password);
         handleUnlockSuccess();
         return true;
       }
-      return false;
+      
+      // Existing user - verify password first
+      if (EncryptionService.verifyKey(password)) {
+        EncryptionService.setKeyFromPassword(password);
+        handleUnlockSuccess();
+        return true;
+      } else {
+        handleEncryptionError(new Error("Invalid password"));
+        return false;
+      }
     } catch (error) {
       console.error("[EncryptionProvider] Error during unlock:", error);
       if (error instanceof Error) {
@@ -163,11 +141,10 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     }
   }, [handleUnlockSuccess, handleEncryptionError]);
 
-
   // Set up global event listeners to reset the timer on user activity
   useEffect(() => {
     const handleActivity = () => {
-       // Only reset timer if the app isn't locked
+      // Only reset timer if the app isn't locked
       if (!isLocked) {
         resetInactivityTimer();
       }
@@ -196,8 +173,8 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
 
   const contextValue: EncryptionContextType = {
     isLocked,
-    unlockApp: contextUnlockApp, // Provide the simplified unlock
-    lockApp: contextLockApp,    // Provide the lock function
+    unlockApp: contextUnlockApp,
+    lockApp,
   };
 
   return (
@@ -232,12 +209,21 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
           )}
           <PasswordPromptModal
              open={isLocked}
-             onUnlock={handleUnlockSuccess} // Pass the callback
+             onUnlock={handleUnlockSuccess}
           />
         </>
       )}
-      {/* Render children only when unlocked */}
-      {!isLocked ? children : null}
+      {/* Always render children with a key that changes when unlocked, forcing re-render */}
+      <div 
+        key={isLocked ? 'locked' : 'unlocked'} 
+        style={{
+          filter: isLocked ? 'blur(3px) brightness(0.8)' : 'none',
+          transition: 'filter 0.5s ease-in-out',
+          pointerEvents: isLocked ? 'none' : 'auto' // Prevent interaction with content when locked
+        }}
+      >
+        {children}
+      </div>
     </EncryptionContext.Provider>
   );
 } 

@@ -7,6 +7,8 @@ import { useChatStore } from '@/app/store/chat'; // Import chat store
 import { ChatList } from './ChatList/ChatList'; // Import ChatList
 import SidebarHeader from './SidebarHeader'; // Import the new header
 import { useAuthStatus } from '@/app/hooks/useAuthStatus'; // Import the auth hook
+import styles from './sidebar.module.scss'; // Import the SCSS module
+import clsx from 'clsx'; // For conditional class names
 
 interface SidebarProps {
   isSidebarCollapsed: boolean;
@@ -24,19 +26,13 @@ export default function Sidebar({ isSidebarCollapsed, onCollapseSidebar }: Sideb
   // When authenticated, render the sidebar
   return (
     <Box
-      sx={{
-        width: isSidebarCollapsed ? 0 : 260,
-        visibility: isSidebarCollapsed ? 'hidden' : 'visible',
-        opacity: isSidebarCollapsed ? 0 : 1,
-        transition: 'width 0.3s, opacity 0.3s, visibility 0.3s',
-        flexShrink: 0,
-        // borderRight: '1px solid',
-        borderColor: 'divider',
-        backgroundColor: 'var(--bg-primary)',
-        height: '100%',
-        display: 'flex', // Use flexbox for vertical layout
-        flexDirection: 'column', // Stack items vertically
-        overflow: 'hidden', // Hide content when collapsed
+      className={clsx(styles.sidebar, isSidebarCollapsed && styles.sidebarCollapsed)}
+      style={{
+        width: isSidebarCollapsed ? 0 : '286px', // Control width for collapse animation
+        // visibility: isSidebarCollapsed ? 'hidden' : 'visible',
+        // opacity: isSidebarCollapsed ? 0 : 1,
+        // transition: 'width 0.3s, opacity 0.3s, visibility 0.3s',
+        // padding: isSidebarCollapsed ? 0 : undefined, // Remove padding when collapsed
       }}
     >
       {/* Sidebar Header */}
@@ -53,10 +49,14 @@ export default function Sidebar({ isSidebarCollapsed, onCollapseSidebar }: Sideb
       {/* </List> */}
       
       {/* Chat History List */}
-      <Box sx={{ flexGrow: 1, overflowY: 'auto', minHeight: 0 }}> {/* Make list scrollable */}
-        {/* Wrap ChatList to allow it to grow and scroll */} 
-        <ChatList /> 
-      </Box>
+      {/* {!isSidebarCollapsed && ( */}
+        <Box className={styles.sidebarContent} sx={{ flexGrow: 1, overflowY: 'auto', minHeight: 0 }}> 
+          <ChatList /> 
+        </Box>
+      {/* )} */}
+
+      {/* Potentially a SidebarFooter component here, using styles.sidebarFooter */} 
+      {/* {!isSidebarCollapsed && <Box className={styles.sidebarFooter}>Footer Content</Box>} */}
 
     </Box>
   );

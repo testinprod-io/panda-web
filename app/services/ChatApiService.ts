@@ -131,7 +131,7 @@ export function mapApiMessageToChatMessage(message: ApiMessage): ChatMessage {
 }
 
 export function mapRoleToSenderType(role: MessageRole): SenderTypeEnum {
-    return role === "user" ? SenderTypeEnum.USER : SenderTypeEnum.SYSTEM;
+    return role === "user" ? SenderTypeEnum.USER : SenderTypeEnum.ASSISTANT;
 }
 
 export const ChatApiService = {

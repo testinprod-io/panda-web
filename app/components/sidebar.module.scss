@@ -1,0 +1,43 @@
+.sidebar {
+  background-color: #131A28;
+  width: 286px;
+  height: 100%; // Assuming full height
+  display: flex;
+  flex-direction: column;
+  // padding: 16px 0; // Add some vertical padding, horizontal padding will make items 224px wide if items are 100% of this minus padding
+  box-sizing: border-box;
+  transition: width 0.3s; // Added padding to transition
+}
+
+.sidebarCollapsed {
+  padding: 0 !important; // Ensure no padding when collapsed
+  overflow: hidden !important; // Hide content when collapsed
+}
+
+.sidebarHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px; // Keep some padding for header items, distinct from chat list padding
+  // borderBottom: '1px solid', // User had this commented out
+  // borderColor: 'divider', // This would need a CSS variable or direct color
+  height: 112px; // Match chat header height + border
+  flex-shrink: 0;
+  color: white; // Ensure icons/text in header are white
+
+  // Style for IconButtons within the header if needed
+  :global(.MuiIconButton-root) {
+    color: white; // Make all IconButton icons white
+  }
+}
+
+.sidebarContent {
+  // Styles for the main content area of the sidebar (e.g., the chat list container)
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 0 31px; // (286px sidebar - 224px item width) / 2 = 31px padding each side for chat list
+}
+
+.sidebarFooter {
+  // Styles for the footer will be added here by refactoring sx props
+} 

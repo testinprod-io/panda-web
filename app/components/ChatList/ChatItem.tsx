@@ -294,7 +294,7 @@ export function ChatItem({
                 {!isEditing && (
                   <>
                     <IconButton edge="end" aria-label="actions" onClick={handleMenuClick} size="small">
-                      <MoreVertIcon fontSize="small" />
+                      <MoreVertIcon fontSize="small" sx={{ color: 'white' }} />
                     </IconButton>
                     <Menu
                       anchorEl={anchorEl}

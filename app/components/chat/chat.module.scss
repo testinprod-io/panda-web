@@ -90,9 +90,17 @@
   display: flex;
   flex-direction: row;
   margin-bottom: 10px; /* Add some space between messages */
-  width: 60%; /* Limit message row width */
+  width: 60%; /* Default width for larger screens */
   margin-left: auto; /* Center the message row */
   margin-right: auto; /* Center the message row */
+
+  @media (max-width: 1024px) {
+    width: 80%; /* Increase width for medium screens */
+  }
+
+  @media (max-width: 768px) {
+    width: 95%; /* Further increase width for small screens */
+  }
 }
 
 .chat-message-user {
@@ -153,10 +161,10 @@
   box-sizing: border-box;
   max-width: 100%;
   margin-top: 10px;
-  border-radius: 24px;
+  border-radius: 24px; // Default for bot
   // background-color: rgba(0, 0, 0, 0.05); /* REMOVED Default bubble color for bot */
   padding: 0px 16px; /* Adjusted padding */
-  font-size: 1rem; // Use rem for better accessibility
+  font-size: 1rem; // Default font size, will be overridden by prop for content
   user-select: text;
   word-break: break-word;
   border: none; // Ensure no border for bot message
@@ -166,9 +174,10 @@
 
 /* User message bubble color and styling */
 .chat-message-user > .chat-message-container > .chat-message-item {
-  background-color: var(--second) !important; /* User bubble color - added !important */
-  border: var(--border-in-light) !important; // Add border only to user bubble - added !important
-  border-radius: 16px !important; // Slightly larger radius - added !important
+  background-color: #F3F3F3 !important; /* User bubble color */
+  border: none !important; // No border for user bubble
+  box-shadow: none !important; // No shadow for user bubble
+  border-radius: 48px !important; // User message corner radius
   /* &:hover { min-width: 0; } */ /* Seems unnecessary */
 }
 
@@ -180,17 +189,17 @@
   align-items: center; // Vertically center buttons
   justify-content: flex-start; // Align buttons to the start (left for bot, right for user due to row-reverse)
   transition: all ease 0.3s;
-  margin: 8px 0 0 0; // Add margin top, remove horizontal margin
+  margin: 0; // Add margin top, remove horizontal margin
   opacity: 0; // Make initially invisible
   pointer-events: none; // Make initially non-interactive
   width: 100%; // Take full width
-  padding: 0 5px; // Add slight padding
+  padding: 0; // Add slight padding
 
   /* Uses the same action styles as input panel, but nowrap */
   .chat-input-actions { 
     display: flex;
     flex-wrap: nowrap; 
-    gap: 8px; // Add gap between action buttons
+    // gap: 8px; // Add gap between action buttons
   }
 }
 
@@ -328,20 +337,24 @@
 /* Container pushed to bottom by .chat-body's flex-grow - NOW STYLED */
 .chat-input-panel {
   padding: 16px 16px; // Vertical/Horizontal padding
-  background-color: var(--white); // Use theme white
-  border: 1.5px solid var(--border-primary); // Use theme border
-  border-radius: 24px; // Rounded corners
-  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.05); // Slight shadow
+  background-color: #ffffff; // White background
+  border: 1px solid #CACACA; // 1px border with #CACACA color
+  border-radius: 24px; // Keep existing border-radius or adjust if needed
+  box-shadow: 0 2px 7px 0 rgba(0, 0, 0, 0.1); // x: 0, y: 2, blur: 7, spread: 0, color: #00000033 (20% black)
   margin: 32px auto; // Center horizontally, keep vertical margin
-  width: calc(60%); // Adjust width for margin
+  width: 60%; // Default width, same as chat content
   box-sizing: border-box;
-  position: relative; // Add relative positioning context
-  // position: sticky; // Keep sticky behavior if needed - User commented out
+  position: relative; 
   bottom: 0;
   z-index: 1;
-  // &:focus-within {
-  //   border-color: var(--black);
-  // }
+
+  @media (max-width: 1024px) {
+    width: 80%; /* Increase width for medium screens */
+  }
+
+  @media (max-width: 768px) {
+    width: 95%; /* Further increase width for small screens */
+  }
 }
 
 /* Inner container holding textarea, actions, etc. */
@@ -445,22 +458,22 @@
   display: flex;
   flex-wrap: wrap; /* Allow wrapping */
   /* justify-content: space-between; */ /* Removed for consistent spacing with gap */
-  gap: 10px;
+  // gap: 10px;
   align-items: center;
-  padding-bottom: 8px; /* Space below actions, shown above input */
+  // padding-bottom: 8px; /* Space below actions, shown above input */
   padding-left: 10px; /* Align with input padding */
 
   &-end { /* Group pushed to the right */
     display: flex;
     margin-left: auto;
-    gap: 5px;
+    // gap: 5px;
   }
 
   /* Individual action button */
   .chat-input-action {
     display: inline-flex;
     border-radius: 50%; // Make circular by default
-    font-size: 12px;
+    font-size: 8px;
     // background-color: var(--white);
     color: var(--black);
     // border: var(--border-in-light);
@@ -470,8 +483,8 @@
     // transition: width ease 0.3s, background-color ease 0.2s; /* Added background transition */
     align-items: center;
     justify-content: center; // Center icon horizontally
-    height: 36px; /* Default height */
-    width: 36px; // Default width
+    height: 32px; /* Default height */
+    width: 32px; // Default width
     overflow: hidden;
     cursor: pointer;
 
@@ -484,9 +497,9 @@
       pointer-events: none;
     }
 
-    &:hover {
-      background-color: var(--bg-primary); /* Add hover effect */
-      border-radius: 8px; // Make square on hover
+    // &:hover {
+      // background-color: var(--bg-primary); /* Add hover effect */
+      // border-radius: 8px; // Make square on hover
       /* Hover text reveal might be better handled differently if needed */
       /* width: var(--full-width); */
       /* transition-delay: var(--delay); */
@@ -495,7 +508,7 @@
         /* opacity: 1; */
         /* transform: translate(0); */
       /* } */
-    }
+    // }
 
     .text,
     .icon {

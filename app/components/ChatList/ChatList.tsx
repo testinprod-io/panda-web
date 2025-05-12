@@ -213,10 +213,9 @@ export function ChatList(props: ChatListProps) {
         />
       ))}
       {hasMore && <div ref={observerRef} style={{ height: "0px" }} />} 
-      {isPagingLoading && <ChatListSkeleton count={5} />} 
-      {!hasMore && localSessions.length > 0 && <div className={styles["no-more-sessions"]}>{"No more sessions"}</div>} {/* Temp string */}
+      {isPagingLoading && <ChatListSkeleton count={5} />}
       {!isInitialLoading && localSessions.length === 0 && !hasMore && (
-        <div className={styles["no-sessions-found"]}>{"No sessions found"}</div> /* Temp string */
+        <div className={styles["chat-item-title-text"]} >{"No sessions found"}</div> /* Temp string */
       )}
     </div>
   );

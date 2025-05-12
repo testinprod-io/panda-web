@@ -12,37 +12,35 @@
 .chat-item {
   display: flex;
   align-items: center;
-  padding: 5px; /* Add outer padding */
-  margin: 5px 10px;
-  border-radius: 8px; /* Keep outer radius if desired, or remove if highlight provides shape */
+  margin: 0 auto;
+  width: 224px;
+  height: 48px;
+  border-radius: 8px;
   cursor: pointer;
   position: relative; /* Needed for absolute positioning of menu */
   user-select: none; /* Prevent text selection during drag */
-  /* Remove hover effect if selection provides enough feedback */
-  /* &:hover {
-    background-color: rgba(0, 0, 0, 0.05); 
-  } */
+  margin-bottom: 4px;
 }
 
 /* New style for the highlighted background container */
 .chat-item-highlight {
-  /* background-color: rgba(0, 0, 0, 0.08); */ /* REMOVE default background */
   border-radius: 6px; /* Rounded corners for the highlight area */
-  padding: 10px 15px; /* Inner padding - defines the size of the highlight area */
-  width: 100%; /* Ensure it fills the padded chat-item */
-  height: 100%; /* Ensure it fills the padded chat-item */
+  padding: 0 15px; /* Inner horizontal padding within the 224px item */
+  width: 100%; /* Ensure it fills the chat-item */
+  height: 100%; /* Ensure it fills the chat-item */
   display: flex; /* Use flex to align content within highlight */
   align-items: center;
+  // color: white;
 }
 
 /* Style for the highlighted background ONLY when selected */
 .chat-item-selected-highlight {
-  background-color: rgba(0, 0, 0, 0.08); /* Use the lighter shade for selected */
+  background-color: #1E2941; /* Highlighted/selected cell color */
 }
 
 /* Hover effect ONLY for non-selected items */
 .chat-item:hover .chat-item-highlight:not(.chat-item-selected-highlight) {
-   background-color: rgba(0, 0, 0, 0.05); /* Lighter hover background */
+   background-color: rgba(255, 255, 255, 0.05);
 }
 
 /* Remove the old selected style */
@@ -52,16 +50,17 @@
 
 .chat-item-title {
   flex-grow: 1;
-  width: 100%;
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: white;
 }
 
 .chat-item-title-text {
   display: block; /* Ensure it takes full width for ellipsis */
   font-size: 0.9rem;
+  color: white;
 }
 
 .chat-item-title-input {
@@ -78,7 +77,7 @@
   font-family: inherit; /* Inherit from parent */
   font-weight: inherit; /* Inherit from parent */
   line-height: inherit; /* Inherit from parent */
-  color: inherit; /* Inherit from parent */
+  color: white;
   background-color: transparent;
   outline: none;
   border: none; /* Explicitly remove border */

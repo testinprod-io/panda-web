@@ -12,6 +12,8 @@ import { useAuthStatus } from '@/app/hooks/useAuthStatus';
 import { useAppConfig, useChatStore } from '@/app/store';
 import { ServiceProvider } from '@/app/constant';
 import { ModelType } from '@/app/store/config';
+import styles from './chat-header.module.scss';
+import clsx from 'clsx';
 
 interface ChatHeaderProps {
   isSidebarCollapsed: boolean;
@@ -67,27 +69,19 @@ export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar }: Chat
 
   return (
     <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '8px 16px',
-        borderColor: 'divider',
-        height: '49px',
-        flexShrink: 0,
-      }}
+      className={styles.chatHeader}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Box className={styles.headerLeft}>
         {isReady && isAuthenticated && isSidebarCollapsed && (
           <Tooltip title="Reveal Sidebar">
-            <IconButton onClick={onRevealSidebar} sx={{ mr: 1 }}>
+            <IconButton onClick={onRevealSidebar} className={styles.revealSidebarButton}>
               <MenuIcon />
             </IconButton>
           </Tooltip>
         )}
 
         {isReady && isAuthenticated && currentSession() && currentModelConfig && (
-          <Box sx={{ mr: 1 }}>
+          <Box className={styles.modelSelectorContainer}>
             <Button
               id="model-selector-button"
               aria-controls={modelMenuOpen ? 'model-selector-menu' : undefined}
@@ -97,12 +91,7 @@ export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar }: Chat
               size="small"
               variant="text"
               endIcon={<ExpandMoreIcon />}
-              sx={{ 
-                textTransform: 'none', 
-                color: 'var(--text-primary)',
-                fontSize: '0.9rem',
-                fontWeight: 500,
-              }}
+              className={styles.modelSelectorButton}
             >
               {currentModelConfig.model}
             </Button>
@@ -122,35 +111,19 @@ export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar }: Chat
                 vertical: 'top',
                 horizontal: 'left',
               }}
-              sx={{
-                 '& .MuiPaper-root': {
-                   borderRadius: '8px',
-                   marginTop: '8px',
-                   minWidth: 220,
-                   boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
-                   backgroundColor: 'var(--bg-secondary)',
-                   color: 'var(--text-primary)',
-                 },
-              }}
+              className={styles.modelSelectorMenu}
             >
               {filteredModels.map((model) => (
                 <MenuItem 
                   key={`${model.provider.id}-${model.name}`}
                   selected={model.name === currentModelConfig.model}
                   onClick={() => handleModelSelect(model.name as ModelType, model.provider.providerName as ServiceProvider)}
-                  sx={{ 
-                    fontSize: '0.9rem', 
-                    padding: '6px 16px',
-                    backgroundColor: model.name === currentModelConfig.model ? 'var(--bg-selected)' : 'transparent',
-                    '&:hover': {
-                      backgroundColor: 'var(--bg-hover)',
-                    },
-                   }}
+                  className={clsx(styles.modelMenuItem, model.name === currentModelConfig.model && styles.selected)}
                 >
-                  <ListItemText primary={model.displayName || model.name} />
+                  <ListItemText className={styles.modelMenuItemText} primary={model.displayName || model.name} />
                   {model.name === currentModelConfig.model && (
-                    <ListItemIcon sx={{ minWidth: 'auto', marginLeft: 'auto', paddingLeft: '16px' }}>
-                      <CheckIcon fontSize="small" sx={{ color: 'var(--accent-color)' }} />
+                    <ListItemIcon className={styles.checkIcon}>
+                      <CheckIcon fontSize="small" />
                     </ListItemIcon>
                   )}
                 </MenuItem>
@@ -160,14 +133,14 @@ export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar }: Chat
         )}
       </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Box className={styles.headerRight}>
         {!isReady ? (
-          <Box sx={{ width: 80, height: 36 }} />
+          <Box className={styles.loadingPlaceholder} />
         ) : isAuthenticated ? (
           <>
             <Tooltip title={user?.email?.address || 'Profile'}>
                <Avatar 
-                  sx={{ width: 40, height: 40, cursor: 'pointer', backgroundColor: 'var(--bg-tertiary)' }} 
+                  className={styles.profileAvatar}
                   onClick={handleProfileClick}
                   aria-controls={profileMenuOpen ? 'profile-menu' : undefined}
                   aria-haspopup="true"
@@ -192,28 +165,13 @@ export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar }: Chat
                 vertical: 'top',
                 horizontal: 'right',
               }}
-              sx={{
-                '& .MuiPaper-root': {
-                  borderRadius: '8px',
-                  marginTop: '8px',
-                  minWidth: 180,
-                  boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
-                  backgroundColor: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                },
-              }}
+              className={styles.profileMenu}
             >
               <MenuItem
                 onClick={handleLogout}
-                sx={{
-                  '&:hover': {
-                    backgroundColor: 'var(--bg-hover)',
-                  },
-                  padding: '8px 16px',
-                  fontSize: '0.9rem',
-                }}
+                className={styles.profileMenuItem}
               >
-                <LogoutIcon sx={{ mr: 1.5, fontSize: '1.1rem', color: 'var(--text-secondary)' }} />
+                <LogoutIcon className={styles.logoutIcon} />
                 Logout
               </MenuItem>
             </Menu>
@@ -223,17 +181,7 @@ export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar }: Chat
             variant="outlined"
             onClick={login} 
             size="small"
-            sx={{
-              borderColor: 'var(--border-primary)',
-              color: 'var(--text-primary)',
-              textTransform: 'none',
-              borderRadius: '8px',
-              padding: '4px 12px',
-              '&:hover': {
-                backgroundColor: 'var(--bg-hover)',
-                borderColor: 'var(--border-secondary)',
-              },
-            }}
+            className={styles.loginButton}
           >
             Login / Sign Up
           </Button>

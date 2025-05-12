@@ -5,6 +5,7 @@ import AddIcon from '@mui/icons-material/Add';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import { useRouter } from 'next/navigation';
 import { useChatStore } from '../store/chat';
+import styles from './sidebar.module.scss';
 
 interface SidebarHeaderProps {
   onCollapseSidebar: () => void;
@@ -21,24 +22,15 @@ export default function SidebarHeader({ onCollapseSidebar }: SidebarHeaderProps)
 
   return (
     <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '8px',
-        // borderBottom: '1px solid',
-        borderColor: 'divider',
-        height: '49px', // Match chat header height + border
-        flexShrink: 0,
-      }}
+      className={styles.sidebarHeader}
     >
       <Tooltip title="Collapse Sidebar">
-        <IconButton onClick={onCollapseSidebar}>
+        <IconButton onClick={onCollapseSidebar} sx={{ color: 'white' }}>
           <ChevronLeftIcon />
         </IconButton>
       </Tooltip>
       <Tooltip title="New Chat">
-        <IconButton onClick={handleNewChat}>
+        <IconButton onClick={handleNewChat} sx={{ color: 'white' }}>
           <AddIcon />
         </IconButton>
       </Tooltip>
