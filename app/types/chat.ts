@@ -61,7 +61,7 @@ export enum MessageSyncState {
  * but is NOT stored this way.
  */
 export type ChatMessage = Omit<RequestMessage, 'content'> & { // Omit original content
-  content: string; // | MultimodalContent[]; // Keep for temporary use signature if needed, but don't persist
+  content: string | MultimodalContent[]; // Allow MultimodalContent[]
   date: Date;
   streaming: boolean;
   isError: boolean;
@@ -119,18 +119,18 @@ export function createEncryptedMessage(override: Partial<EncryptedMessage> & { c
 * @param override - Partial message properties to override defaults
 * @returns A new chat message
 */
-export function createMessage(override: Partial<ChatMessage>): ChatMessage {
+export function createMessage(override: Partial<ChatMessage>): ChatMessage { // Reverted signature to accept Partial<ChatMessage>
  return {
    id: crypto.randomUUID() as UUID,
    date: new Date(),
    role: "user",
-   content: "",
+   content: "", // Default to empty string, will be overridden
    streaming: false,
    isError: false,
    syncState: MessageSyncState.PENDING_CREATE,
    reasoning: "", // Initialize reasoning
    isReasoning: false, // Initialize isReasoning
-   ...override,
+   ...override, // Use override directly
  };
 }
 

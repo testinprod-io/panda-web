@@ -114,11 +114,11 @@ export function ChatComponent(props: ChatComponentProps) {
   }, [internalHitBottom, setHitBottom]);
 
   const doSubmit = useCallback(
-    async (input: string, images: string[]) => {
+    async (input: string, files: {url: string, type: string, name: string}[]) => {
       setIsChatComponentBusy(true);
       try {
         await new Promise<void>((resolve, reject) => {
-          sendNewUserMessage(input, images, {
+          sendNewUserMessage(input, files, {
             onReasoningStart: () => {},
             onReasoningChunk: (chunk: string) => {},
             onReasoningEnd: () => {},
@@ -172,7 +172,7 @@ export function ChatComponent(props: ChatComponentProps) {
           const parsedData = JSON.parse(storedDataString);
           if (parsedData) {
             // doSubmit will set isChatComponentBusy
-            doSubmit(parsedData.input, parsedData.images);
+            doSubmit(parsedData.input, parsedData.files);
             localStorage.removeItem(sessionId);
             initialMessageProcessedRef.current = sessionId;
           }

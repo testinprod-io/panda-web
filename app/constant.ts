@@ -1,6 +1,7 @@
 export const OPENAI_BASE_URL = "https://api.openai.com";
 export const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
-export const PANDA_BASE_URL = "http://4.246.68.189:8000/";
+// export const PANDA_BASE_URL = "http://52.225.128.77:8000/"; // "http://4.246.68.189:8000/";
+export const PANDA_BASE_URL = "http://4.246.68.189:8000/"; // "http://4.246.68.189:8000/";
 export const XAI_BASE_URL = "https://api.x.ai";
 
 export const OWNER = "ChatGPTNextWeb";
@@ -234,13 +235,14 @@ const xAIModes = [
 
 const PandaModels = [
   "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+  "Qwen/Qwen2.5-Omni-7B",
   "deepseek-ai/deepseek-coder-6.7b-instruct",
   "deepseek-ai/deepseek-coder-33b-instruct",
 ];
 
 let seq = 1000;
 
-export type ModelType = 'gpt-3.5-turbo' | 'gpt-4' | 'deepseek-chat' | 'deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B' | 'deepseek-ai/deepseek-coder-6.7b-instruct' | 'deepseek-ai/deepseek-coder-33b-instruct';
+export type ModelType = 'gpt-3.5-turbo' | 'gpt-4' | 'deepseek-chat' | 'deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B' | "Qwen/Qwen2.5-Omni-7B" | 'deepseek-ai/deepseek-coder-6.7b-instruct' | 'deepseek-ai/deepseek-coder-33b-instruct';
 
 export const DEFAULT_MODELS = [
   ...PandaModels.map((name) => ({

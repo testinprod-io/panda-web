@@ -16,16 +16,17 @@ import { ChatSession, ChatMessage } from "@/app/types";
 import { ChatCommandPrefix, useChatCommand } from "@/app/command";
 import { UNFINISHED_INPUT } from "@/app/constant";
 import { autoGrowTextArea, isVisionModel, safeLocalStorage, useMobileScreen } from "@/app/utils";
-import { uploadImage as uploadImageRemote } from "@/app/utils/chat";
+import { uploadFile as uploadFileRemote } from "@/app/utils/chat"; // Corrected import
 import Locale from "@/app/locales";
 import { useSubmitHandler } from "@/app/hooks/useSubmitHandler";
 import { useSnackbar } from "@/app/components/SnackbarProvider"; // Added Snackbar hook
 import { ChatControllerPool } from "@/app/client/controller"; // Import ChatControllerPool
 
-import { ChatActions } from "@/app/components/chat/ChatActions";
 import { DeleteImageButton } from "@/app/components/chat/DeleteImageButton";
 import { ChatAction } from "@/app/components/chat/ChatAction"; // Import ChatAction for ScrollToBottom
 
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'; // For the new '+' button
+import { CircularProgress } from '@mui/material'; // For uploading indicator
 import ArrowUpwardRoundedIcon from '@mui/icons-material/ArrowUpwardRounded';
 import StopRoundedIcon from '@mui/icons-material/StopRounded';
 import Button from '@mui/material/Button'; // Added MUI Button
@@ -50,7 +51,7 @@ interface ChatInputPanelProps {
   modelConfig?: ModelConfig;
   isLoading: boolean;
   hitBottom: boolean;
-  onSubmit: (input: string, images: string[]) => Promise<void>;
+  onSubmit: (input: string, files: {url: string, type: string, name: string}[]) => Promise<void>;
   scrollToBottom: () => void;
   setShowPromptModal: () => void;
   setShowShortcutKeyModal: () => void;
@@ -85,7 +86,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   // Initialize userInput directly using the helper function
   const initialUserInput = React.useMemo(() => getInitialInput(sessionId), [sessionId]);
   const [userInput, setUserInput] = useState<string>("");
-  const [attachImages, setAttachImages] = useState<string[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<{url: string, type: string, name: string}[]>([]);
   const [uploading, setUploading] = useState(false);
   // Initialize with default rows
   const [inputRows, setInputRows] = useState(2);
@@ -174,14 +175,14 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   // doSubmit in ChatInputPanel is NOT async. It triggers the async onSubmit prop.
   const doSubmit = () => {
     // Button is disabled if isLoading, so this check is an additional safeguard
-    if (isLoading || (userInput.trim() === "" && isEmpty(attachImages))) return;
+    if (isLoading || (userInput.trim() === "" && isEmpty(attachedFiles))) return;
 
-    onSubmit(userInput, attachImages); // Trigger the async submission process in ChatLayout
+    onSubmit(userInput, attachedFiles); // Trigger the async submission process in ChatLayout
     
     // Clear UI immediately
     const currentSessionIdForClear = sessionId; // Capture current sessionId before clearing
     setUserInput("");
-    setAttachImages([]);
+    setAttachedFiles([]);
     // Explicitly clear storage for the submitted session ID if input becomes empty
     if (currentSessionIdForClear) {
         debouncedSaveInput.cancel(); // Cancel any pending save for old input
@@ -214,46 +215,49 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
     }
   };
 
-  // Handle image pasting
+  // Handle file pasting
   const handlePaste = useCallback(
     async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
       if (!modelConfig || !isVisionModel(modelConfig.model)) return;
       const items = event.clipboardData?.items;
       if (!items) return;
 
-      const imageFiles: File[] = [];
+      const filesToProcess: File[] = [];
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        if (item.kind === "file" && item.type.startsWith("image/")) {
+        // For now, only allow pasting images, can be expanded later
+        if (item.kind === "file" && item.type.startsWith("image/")) { 
           const file = item.getAsFile();
-          if (file) imageFiles.push(file);
+          if (file) filesToProcess.push(file);
         }
       }
 
-      if (imageFiles.length > 0) {
+      if (filesToProcess.length > 0) {
         event.preventDefault();
         setUploading(true);
         try {
-          const filesToUpload = imageFiles.slice(0, 3 - attachImages.length);
-          const uploadPromises = filesToUpload.map(file => uploadImageRemote(file));
-          const dataUrls = await Promise.all(uploadPromises);
-          setAttachImages(prev => [...prev, ...dataUrls].slice(0, 3));
+          // Allow up to 3 files total for now
+          const filesToUpload = filesToProcess.slice(0, 3 - attachedFiles.length);
+          const uploadPromises = filesToUpload.map(file => 
+            uploadFileRemote(file).then((url: string) => ({ url, type: file.type, name: file.name }))
+          );
+          const newFiles = await Promise.all(uploadPromises);
+          setAttachedFiles(prev => [...prev, ...newFiles].slice(0, 3));
         } catch (e) {
-          console.error("[Chat] Image paste upload failed:", e);
-          showSnackbar("Locale.Chat.ImageUploadFailed", 'error'); // Use Snackbar hook
+          console.error("[Chat] File paste upload failed:", e);
+          showSnackbar("File upload failed", 'error');
         } finally {
           setUploading(false);
         }
       }
     },
-    [modelConfig?.model, attachImages.length, showSnackbar],
+    [modelConfig?.model, attachedFiles.length, showSnackbar],
   );
 
-  // Handle image uploading via button click
-  const uploadImage = useCallback(async () => {
+  // Handle file uploading via button click
+  const uploadFile = useCallback(async () => {
     const fileInput = document.createElement("input");
     fileInput.type = "file";
-    fileInput.accept = "image/png, image/jpeg, image/webp, image/heic, image/heif";
     fileInput.multiple = true;
     fileInput.onchange = async (event: any) => {
       const files = event.target.files as FileList | null;
@@ -261,40 +265,73 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
 
       setUploading(true);
       try {
-        const filesToUpload = Array.from(files).slice(0, 3 - attachImages.length);
-        if (filesToUpload.length === 0) {
-          showSnackbar("Locale.Chat.ImageUploadLimit", 'warning'); // Use Snackbar hook
+        const filesToUploadArray = Array.from(files).slice(0, 3 - attachedFiles.length);
+        if (filesToUploadArray.length === 0) {
+          showSnackbar("File upload limit reached", 'warning');
           setUploading(false);
           return;
         }
-        const uploadPromises = filesToUpload.map(file => uploadImageRemote(file));
-        const dataUrls = await Promise.all(uploadPromises);
-        setAttachImages(prev => [...prev, ...dataUrls].slice(0, 3));
+        const uploadPromises = filesToUploadArray.map(file => 
+          uploadFileRemote(file).then((url: string) => ({ url, type: file.type, name: file.name }))
+        );
+        const newFiles = await Promise.all(uploadPromises);
+        setAttachedFiles(prev => [...prev, ...newFiles].slice(0, 3));
       } catch (e) {
-        console.error("[Chat] Image upload failed:", e);
-        showSnackbar("Locale.Chat.ImageUploadFailed", 'error'); // Use Snackbar hook
+        console.error("[Chat] File upload failed:", e);
+        showSnackbar("File upload failed", 'error');
       } finally {
         setUploading(false);
       }
     };
     fileInput.click();
-  }, [attachImages.length, showSnackbar]); // Added showSnackbar dependency
+  }, [attachedFiles.length, showSnackbar]);
 
   return (
     <div className={styles["chat-input-panel"]} ref={ref}> {/* Attach the ref here */}
-      <ChatActions
-        sessionId={sessionId}
-        modelConfig={modelConfig}
-        uploadImage={uploadImage}
-        setAttachImages={setAttachImages} // Pass state setter if needed by actions, though uploadImage handles it
-        setUploading={setUploading} // Pass state setter if needed by actions
-        uploading={uploading}
-      />
+      {/* Conditional rendering for the new actions row */}
+      {isVisionModel(modelConfig?.model ?? "") && (
+        <div className={styles["chat-input-actions-row"]}>
+          <ChatAction
+            onClick={uploadFile}
+            icon={uploading ? <CircularProgress size={24} /> : <AddCircleOutlineIcon sx={{ fontSize: 28 }} />}
+            text={null}
+            className={styles["chat-input-action-plus"]} // New class for specific styling
+          />
+          {/* Placeholder for other buttons like Search, Fork, Dashboard if they were to be added here */}
+        </div>
+      )}
+
+      {/* Attached files preview - moved here, above the textarea */}
+      {attachedFiles.length > 0 && (
+            <div className={styles["attach-files-preview"]}> {/* Renamed class for clarity */}
+              {attachedFiles.map((file, index) => (
+                <div
+                  key={index}
+                  className={styles["attach-file-item"]} /* Renamed class for clarity */
+                  style={file.type.startsWith("image/") ? { backgroundImage: `url(${file.url})` } : {}}
+                >
+                  {!file.type.startsWith("image/") && (
+                    <div className={styles["file-icon-placeholder"]}> 
+                      <span>{file.name}</span> 
+                    </div>
+                  )}
+                  <div className={styles["attach-file-mask"]}> {/* Renamed class for clarity */}
+                    <DeleteImageButton
+                      deleteImage={() => {
+                        setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
       <div className={styles["chat-input-panel-inner-container"]}> {/* Wrapper for textarea and buttons */}
         <label
           htmlFor="chat-input"
           className={clsx(styles["chat-input-panel-inner"], {
-            [styles["chat-input-panel-inner-attach"]]: attachImages.length > 0,
+            // [styles["chat-input-panel-inner-attach"]]: attachedFiles.length > 0, // This class might not be needed here anymore or needs rework
           })}
         >
           <textarea
@@ -305,39 +342,21 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
             onInput={(e) => setUserInput(e.currentTarget.value)}
             value={userInput}
             onKeyDown={onInputKeyDown}
-            onFocus={scrollToBottom} // Scroll to bottom on focus might be handled by parent now
-            onClick={scrollToBottom} // Scroll to bottom on click might be handled by parent now
+            onFocus={scrollToBottom}
+            onClick={scrollToBottom}
             onPaste={handlePaste}
             rows={inputRows}
             autoFocus={autoFocus}
             aria-label={Locale.Chat.Input(submitKey)}
           />
-          {attachImages.length > 0 && (
-            <div className={styles["attach-images"]}>
-              {attachImages.map((image, index) => (
-                <div
-                  key={index}
-                  className={styles["attach-image"]}
-                  style={{ backgroundImage: `url(\"${image}\")` }}
-                >
-                  <div className={styles["attach-image-mask"]}>
-                    <DeleteImageButton
-                      deleteImage={() => {
-                        setAttachImages((prev) => prev.filter((_, i) => i !== index));
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Attached files preview was here, moved above the inner-container */}
         </label>
       </div>
       <Button
           className={styles["chat-input-send"]}
           variant="contained"
           onClick={isLoading ? () => ChatControllerPool.stopAll() : doSubmit}
-          disabled={uploading || (!isLoading && (userInput ?? "").trim() === "" && attachImages.length === 0)}
+          disabled={uploading || (!isLoading && (userInput ?? "").trim() === "" && attachedFiles.length === 0)}
           aria-label={isLoading ? Locale.Chat.InputActions.Stop : Locale.Chat.Send}
           sx={{ ml: 1 }}
         >

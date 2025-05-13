@@ -9,6 +9,7 @@ import {
 import { useChatActions } from "./useChatActions";
 import { useApiClient } from "../context/ApiProviderContext";
 import { ChatApiService } from "../services/ChatApiService";
+import { MultimodalContent } from "@/app/client/api"; // Import MultimodalContent
 import { useSnackbar } from "@/app/components/SnackbarProvider"; // Optional, for error notifications
 import Locale from "@/app/locales"; // Optional
 import { ModelConfig } from "../store/config";
@@ -29,8 +30,8 @@ interface ChatSessionManagerResult {
     updates: Partial<ChatMessage>
   ) => void;
   sendNewUserMessage: (
-    content: string,
-    attachImages?: string[],
+    input: string,
+    files?: {url: string, type: string, name: string}[],
     callbacks?: {
       onReasoningStart?: (messageId: UUID) => void;
       onReasoningChunk?: (messageId: UUID, reasoningChunk: string) => void;
@@ -175,6 +176,18 @@ export function useChatSessionManager(
       return;
     }
 
+    // Helper to get text content from a message
+    const getTextFromMessage = (messageContent: string | MultimodalContent[]): string => {
+      if (typeof messageContent === 'string') {
+        return messageContent;
+      }
+      if (Array.isArray(messageContent)) {
+        const textPart = messageContent.find(part => part.type === 'text');
+        return textPart?.text || "";
+      }
+      return "";
+    };
+
     const nonErrorMessages = displayedMessages.filter(
       (m) => !m.isError && (m.role === "user" || m.role === "system") && !m.streaming
     );
@@ -184,18 +197,18 @@ export function useChatSessionManager(
       nonErrorMessages[0].role === "user" &&
       nonErrorMessages[1].role === "system"
     ) {
-      const userMessage = nonErrorMessages[0].content.trim();
-      const assistantMessage = nonErrorMessages[1].content.trim();
+      const userMessageText = getTextFromMessage(nonErrorMessages[0].content).trim();
+      const assistantMessageText = getTextFromMessage(nonErrorMessages[1].content).trim();
 
       if (
-        userMessage.length > 0 &&
-        assistantMessage.length > 0
+        userMessageText.length > 0 &&
+        assistantMessageText.length > 0
       ) {
         setTimeout(() => {
           generateSessionTitle(
             sessionId,
-            userMessage,
-            assistantMessage
+            userMessageText,
+            assistantMessageText
           );
         }, 0);
       }
@@ -303,8 +316,8 @@ export function useChatSessionManager(
 
   const sendNewUserMessage = useCallback(
     async (
-      content: string,
-      attachImages?: string[],
+      input: string,
+      files?: {url: string, type: string, name: string}[],
       callbacks?: {
         onReasoningStart?: (messageId: UUID) => void;
         onReasoningChunk?: (messageId: UUID, reasoningChunk: string) => void;
@@ -327,16 +340,40 @@ export function useChatSessionManager(
         return;
       }
 
-      // if (attachImages && attachImages.length > 0) {
-      // This part needs to be adjusted if userContent is to become MultimodalContent[]
-      // For now, assuming userContent remains string as per original structure before this refactor.
-      // If attachImages is used, userContent definition and handling (incl. addUserMessage) must change.
-      // }
+      let messageContent: string | MultimodalContent[];
+      if (files && files.length > 0) {
+        const contentParts: MultimodalContent[] = [{ type: "text", text: input }];
+        for (const file of files) {
+          if (file.type.startsWith("image/")) {
+            // Assuming Panda API format based on user request
+            contentParts.push({ 
+              type: "image_url", 
+              image_url: { url: file.url } // file.url is already the base64 data URI
+            });
+          } else {
+            // For other file types, we might send a link or just text representation
+            // For now, let's add a text representation as requested for the payload structure
+            // This part might need further clarification on how non-image files are handled by Panda API
+            // The user payload showed image_url, not a generic file_url. 
+            // For now, we will only include image files in the structured content for Panda.
+            // Non-image files will be ignored for the multimodal content part.
+            console.warn(`File ${file.name} is not an image and will be ignored for Panda API multimodal content.`);
+          }
+        }
+        // If only text was provided, or no images were processed, keep it as string
+        if (contentParts.length > 1) { // More than just the initial text part
+          messageContent = contentParts;
+        } else {
+          messageContent = input; 
+        }
+      } else {
+        messageContent = input;
+      }
 
       // Add user message to store
       const userMessage = createMessage({
         role: "user",
-        content: content,
+        content: messageContent, // Use the potentially multimodal content
         syncState: MessageSyncState.PENDING_CREATE,
       });
       if (!userMessage) {

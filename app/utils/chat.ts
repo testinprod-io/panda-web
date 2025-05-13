@@ -141,27 +141,34 @@ export function base64Image2Blob(base64Data: string, contentType: string) {
   return new Blob([byteArray], { type: contentType });
 }
 
-export function uploadImage(file: Blob): Promise<string> {
-  // if (!window._SW_ENABLED) {
-  //   // if serviceWorker register error, using compressImage
-  //   return compressImage(file, 256 * 1024);
-  // }
-  const body = new FormData();
-  body.append("file", file);
-  return fetch(UPLOAD_URL, {
-    method: "post",
-    body,
-    mode: "cors",
-    credentials: "include",
-  })
-    .then((res) => res.json())
-    .then((res) => {
-      // console.log("res", res);
-      if (res?.code == 0 && res?.data) {
-        return res?.data;
+/**
+ * Reads a File object and converts it to a base64 data URL.
+ * Only processes files that are images.
+ * @param file The File object to convert.
+ * @returns A Promise that resolves with the data URL (string) if successful and file is an image,
+ * or rejects with an error if the file is not an image or an error occurs during reading.
+ */
+export function uploadFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    // Check if the file is an image based on its MIME type
+    if (!file.type.startsWith("image/")) {
+      reject(new Error("File is not an image. Only images can be processed for image_url payload."));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target && typeof event.target.result === 'string') {
+        resolve(event.target.result);
+      } else {
+        reject(new Error("Failed to read file as data URL."));
       }
-      throw Error(`upload Error: ${res?.msg}`);
-    });
+    };
+    reader.onerror = (error) => {
+      reject(error);
+    };
+    reader.readAsDataURL(file); // Read the file as a data URL
+  });
 }
 
 export function removeImage(imageUrl: string) {

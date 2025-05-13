@@ -1,5 +1,5 @@
 import { OPENAI_BASE_URL, OpenaiPath } from "@/app/constant";
-import { uploadImage, base64Image2Blob } from "@/app/utils/chat";
+import { uploadFile, base64Image2Blob } from "@/app/utils/chat";
 import {
   ChatOptions,
   getHeaders,
@@ -72,7 +72,7 @@ export class ChatGPTApi implements LLMApi {
       let url = res.data?.at(0)?.url ?? "";
       const b64_json = res.data?.at(0)?.b64_json ?? "";
       if (!url && b64_json) {
-        url = await uploadImage(base64Image2Blob(b64_json, "image/png"));
+        // url = await uploadImage(base64Image2Blob(b64_json, "image/png"));
       }
       return [
         {

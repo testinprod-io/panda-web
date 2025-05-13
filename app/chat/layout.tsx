@@ -60,21 +60,21 @@ export default function RootChatGroupLayout({ // Renamed for clarity
   }, [currentChatId, appConfig.modelConfig]);
 
   const handleLayoutSubmit = useCallback(
-    async (input: string, images: string[]) => {
-      if ((!input || !input.trim()) && images.length === 0) return;
+    async (input: string, files: {url: string, type: string, name: string}[]) => {
+      if ((!input || !input.trim()) && files.length === 0) return;
       
       setInternalIsSubmitting(true);
       try {
         if (currentChatId && onSendMessageHandlerFromStore) { // Existing chat
-          await onSendMessageHandlerFromStore(input, images);
+          await onSendMessageHandlerFromStore(input, files);
           // Clearing unfinished input for existing chat is handled by ChatLayout.tsx's handleChatSubmit using this handler
           // No, it should be here after successful send via store handler
           localStorage.removeItem(UNFINISHED_INPUT(currentChatId));
         } else { // New chat (currentChatId is undefined)
-          console.log("[RootChatGroupLayout] Starting new chat with:", input, images);
+          console.log("[RootChatGroupLayout] Starting new chat with:", input, files);
           const createdSession = await newSession(); 
           if (createdSession) {
-            const newUserMessage = { input: input.trim(), images };
+            const newUserMessage = { input: input.trim(), files };
             localStorage.setItem(createdSession.id, JSON.stringify(newUserMessage)); // For ChatComponent to pick up
             localStorage.removeItem(UNFINISHED_INPUT(createdSession.id)); 
             router.replace(`/chat/${createdSession.id}`);

@@ -210,7 +210,7 @@ export class PandaApi implements LLMApi {
           },
         },
         {
-          name: "deepseek-ai/deepseek-coder-6.7b-instruct",
+          name: "Qwen/Qwen2.5-Omni-7B",
           available: true,
           sorted: 1001,
           provider: {
@@ -221,9 +221,20 @@ export class PandaApi implements LLMApi {
           },
         },
         {
-          name: "deepseek-ai/deepseek-coder-33b-instruct",
+          name: "deepseek-ai/deepseek-coder-6.7b-instruct",
           available: true,
           sorted: 1002,
+          provider: {
+            id: "panda",
+            providerName: "Panda",
+            providerType: "panda",
+            sorted: 1,
+          },
+        },
+        {
+          name: "deepseek-ai/deepseek-coder-33b-instruct",
+          available: true,
+          sorted: 1003,
           provider: {
             id: "panda",
             providerName: "Panda",

@@ -34,7 +34,7 @@ export const BOT_HELLO: ChatMessage = createMessage({
 
 // Initial state for the new interaction slice
 const DEFAULT_CHAT_INTERACTION_STATE = {
-  onSendMessageHandler: null as (((input: string, images: string[]) => Promise<void>) | null),
+  onSendMessageHandler: null as (((input: string, files: {url: string, type: string, name: string}[]) => Promise<void>) | null),
   hitBottom: true,
   scrollToBottomHandler: null as ((() => void) | null),
   showPromptModalHandler: null as ((() => void) | null),
@@ -650,7 +650,7 @@ export const useChatStore = createPersistStore(
       },
 
       // --- New methods for chat interaction state ---
-      setOnSendMessageHandler: (handler: ((input: string, images: string[]) => Promise<void>) | null) => {
+      setOnSendMessageHandler: (handler: ((input: string, files: {url: string, type: string, name: string}[]) => Promise<void>) | null) => {
         set({ onSendMessageHandler: handler });
       },
       setHitBottom: (isAtBottom: boolean) => {

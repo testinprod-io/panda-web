@@ -292,7 +292,7 @@ export function getMessageImages(message: RequestMessage): string[] {
 }
 
 export function isVisionModel(model: string) {
-  return false;
+  return true;
 //   const visionModels = useAccessStore.getState().visionModels;
 //   const envVisionModels = visionModels?.split(",").map((m) => m.trim());
 //   if (envVisionModels?.includes(model)) {

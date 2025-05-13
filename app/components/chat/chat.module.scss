@@ -519,7 +519,7 @@
   }
 }
 
-/* Attached images preview */
+/* Attached images preview - Old styles, will be replaced/updated by attach-files-preview */
 .attach-images {
   /* position: absolute; */ /* Positioning handled by flex layout now */
   /* left: 30px; */
@@ -574,16 +574,85 @@
   }
 }
 
-/* Old fixed position input container - Commented out as likely unused */
-/*
-.chat-input-container {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  padding: 20px;
+/* New styles for file attachment UI */
+.chat-input-actions-row {
+  display: flex;
+  align-items: center;
+  padding: 0px 12px 8px 12px; // Padding around the actions row
+  gap: 8px; // Space between action buttons
 }
-*/
+
+.chat-input-action-plus {
+  // For the circular '+' button - ChatAction already has some circular styling by default
+  // We might need to ensure its padding/size is correct if ChatAction defaults are not enough
+  // For example, if ChatAction default is not perfectly circular or too small/large:
+  // width: 36px !important; 
+  // height: 36px !important;
+  // padding: 0 !important; // Reset padding if ChatAction adds its own
+  // border-radius: 50% !important; // Ensure it's circular
+  // display: flex !important;
+  // align-items: center !important;
+  // justify-content: center !important;
+  // svg {
+  //   font-size: 24px !important; // Adjust icon size if needed
+  // }
+}
+
+.attach-files-preview {
+  display: flex;
+  gap: 10px;
+  padding: 0px 12px 8px 12px; // Match padding of actions row if desired
+  flex-wrap: wrap; // Allow previews to wrap
+}
+
+.attach-file-item {
+  cursor: default;
+  width: 64px; // Standard size for previews
+  height: 64px;
+  border: 1px solid var(--border-color, #e0e0e0); // Use a variable or default
+  border-radius: 8px;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--bg-subtle, #f0f0f0); // Use a variable or default
+  position: relative;
+  display: flex; // For placeholder content centering
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.file-icon-placeholder {
+  padding: 4px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-secondary, #555);
+  word-break: break-all; // Prevent long names from breaking layout
+  span {
+    display: -webkit-box;
+    -webkit-line-clamp: 3; // Show max 3 lines of text
+    -webkit-box-orient: vertical;  
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.attach-file-mask {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); // Slightly darker mask
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit; // Inherit border-radius from parent (.attach-file-item)
+  &:hover {
+    opacity: 1;
+  }
+  // DeleteImageButton styling is likely within its own component or covered by .delete-image if that class is reused
+}
 
 
 /* ============================== */
