@@ -100,7 +100,7 @@ export function ChatComponent(props: ChatComponentProps) {
 
   const { generateSessionTitle } = useChatActions();
   const lastMessage = displayedMessages[displayedMessages.length - 1];
-  const isBotStreaming = !!(lastMessage?.role === "assistant" && lastMessage.streaming);
+  const isBotStreaming = !!(lastMessage?.role === "system" && lastMessage.streaming);
 
   const { scrollDomToBottom, setAutoScroll } = useScrollToBottom(
     scrollRef,

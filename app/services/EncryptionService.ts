@@ -108,6 +108,7 @@ export const EncryptionService = {
       // Save to localStorage for later verification
       if (typeof window !== 'undefined') {
         localStorage.setItem(STORAGE_VERIFICATION_KEY, encryptedVerificationToken);
+        console.log("[EncryptionService] Verification token saved to localStorage.");
       }
       
       console.log("[EncryptionService] Key and IV derived and set in memory.");
@@ -139,6 +140,7 @@ export const EncryptionService = {
    */
   encryptVerificationToken(): string {
     if (!this.isKeySet()) {
+      console.error("[EncryptionService] encryptVerificationToken called without key set.");
       return ""; // Cannot encrypt without key
     }
     try {
@@ -160,6 +162,7 @@ export const EncryptionService = {
    */
   verifyKey(password: string): boolean {
     if (typeof window === 'undefined') {
+      console.error("[EncryptionService] verifyKey called outside of browser.");
       return false; // Cannot verify outside of browser
     }
     
@@ -167,6 +170,7 @@ export const EncryptionService = {
     const verificationToken = localStorage.getItem(STORAGE_VERIFICATION_KEY);
     
     if (!verificationToken) {
+      console.error("[EncryptionService] No verification token found in localStorage.");
       return false; // Missing required data
     }
 
@@ -182,6 +186,7 @@ export const EncryptionService = {
       });
       
       const decryptedText = decrypted.toString(CryptoJS.enc.Utf8);
+      console.log("[EncryptionService] decryptedText:", decryptedText);
       return decryptedText === VERIFICATION_TOKEN;
     } catch (error) {
       console.error("[EncryptionService] Verification failed:", error);

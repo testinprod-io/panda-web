@@ -223,7 +223,7 @@ export function stream(
     if (!finished) {
       if (!running && runTools.length > 0) {
         const toolCallMessage = {
-          role: "assistant",
+          role: "system",
           tool_calls: [...runTools],
         };
         running = true;
@@ -449,7 +449,7 @@ export function streamWithThink(
     if (!finished) {
       if (!running && runTools.length > 0) {
         const toolCallMessage = {
-          role: "assistant",
+          role: "system",
           tool_calls: [...runTools],
         };
         running = true;

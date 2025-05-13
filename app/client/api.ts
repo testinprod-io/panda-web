@@ -6,7 +6,7 @@ import { DeepSeekApi } from "@/app/client/platforms/deepseek";
 import { PandaApi, GetAccessTokenFn } from "@/app/client/platforms/panda";
 import { ApiClient } from "@/app/client/client";
 
-export const ROLES = ["system", "user", "assistant"] as const;
+export const ROLES = ["system", "user"] as const;
 export type MessageRole = (typeof ROLES)[number];
 
 export type ChatModel = ModelType;

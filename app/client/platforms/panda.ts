@@ -18,7 +18,7 @@ export interface PandaListModelResponse {
 
 export interface RequestPayload {
   messages: {
-    role: "system" | "user" | "assistant";
+    role: "system" | "user";
     content: string | MultimodalContent[];
   }[];
   stream?: boolean;

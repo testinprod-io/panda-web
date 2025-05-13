@@ -120,7 +120,7 @@ export function mapApiMessageToChatMessage(message: ApiMessage): ChatMessage {
   // Decrypt the message first
   const decryptedMsg = decryptMessageData(message);
   
-  const role: MessageRole = decryptedMsg.sender_type === SenderTypeEnum.USER ? "user" : "assistant";
+  const role: MessageRole = decryptedMsg.sender_type === SenderTypeEnum.USER ? "user" : "system";
 
   return createMessage({
     id: decryptedMsg.message_id,
@@ -131,7 +131,7 @@ export function mapApiMessageToChatMessage(message: ApiMessage): ChatMessage {
 }
 
 export function mapRoleToSenderType(role: MessageRole): SenderTypeEnum {
-    return role === "user" ? SenderTypeEnum.USER : SenderTypeEnum.ASSISTANT;
+    return role === "user" ? SenderTypeEnum.USER : SenderTypeEnum.SYSTEM;
 }
 
 export const ChatApiService = {

@@ -5,11 +5,11 @@ import { MultimodalContent } from "@/app/client/api";
 import { UUID } from "crypto";
 
 export interface Message {
-  role: 'user' | 'assistant';
+  role: 'user' | 'system';
   text: string;
 }
 
-export const ROLES = ["system", "user", "assistant"] as const;
+export const ROLES = ["system", "user"] as const;
 export type MessageRole = (typeof ROLES)[number];
 
 export interface RequestMessage {

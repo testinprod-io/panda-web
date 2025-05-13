@@ -14,7 +14,7 @@ export function ChatComponentSkeleton() {
       {Array.from({ length: skeletonMessageCount }).map((_, index) => {
         const isUser = index % 2 !== 0; // Alternate roles for visual variety
         // Use string literals for roles in class names
-        const roleString = isUser ? 'user' : 'assistant';
+        const roleString = isUser ? 'user' : 'system';
 
         return (
           <div

@@ -176,13 +176,13 @@ export function useChatSessionManager(
     }
 
     const nonErrorMessages = displayedMessages.filter(
-      (m) => !m.isError && (m.role === "user" || m.role === "assistant") && !m.streaming
+      (m) => !m.isError && (m.role === "user" || m.role === "system") && !m.streaming
     );
 
     if (
       nonErrorMessages.length === 2 &&
       nonErrorMessages[0].role === "user" &&
-      nonErrorMessages[1].role === "assistant"
+      nonErrorMessages[1].role === "system"
     ) {
       const userMessage = nonErrorMessages[0].content.trim();
       const assistantMessage = nonErrorMessages[1].content.trim();
@@ -371,7 +371,7 @@ export function useChatSessionManager(
         displayedMessages.find((m) => m.id === botMessageId) ??
         createMessage({
           id: botMessageId,
-          role: "assistant",
+          role: "system",
           content: finalContent,
           date: date,
           streaming: false,
@@ -461,7 +461,7 @@ export function useChatSessionManager(
       }
     ) => {
       const botMessage = createMessage({
-        role: "assistant",
+        role: "system",
         content: "", 
         reasoning: "",
         isReasoning: false, 

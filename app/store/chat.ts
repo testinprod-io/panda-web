@@ -27,7 +27,7 @@ import { mapConversationToSession } from "../services/ChatApiService";
 
 export const DEFAULT_TOPIC = Locale.Store.DefaultTopic; // Use locale
 export const BOT_HELLO: ChatMessage = createMessage({
-  role: "assistant",
+  role: "system",
   content: Locale.Store.BotHello,
   syncState: MessageSyncState.SYNCED, // Bot hello is always synced
 });
@@ -306,7 +306,7 @@ export const useChatStore = createPersistStore(
           if (!currentSession) return null;
 
           const botMessage = createMessage({
-              role: "assistant",
+              role: "system",
               content: "", // Start empty (decrypted)
               streaming: true,
               model: model as ModelType, // Store the model used
@@ -537,7 +537,7 @@ export const useChatStore = createPersistStore(
           // Map API messages (decrypted by ApiService) to ChatMessage format
           const serverMessages = serverApiMessages.map(m => ({
               id: m.message_id,
-              role: m.sender_type === SenderTypeEnum.USER ? 'user' : 'assistant',
+              role: m.sender_type === SenderTypeEnum.USER ? 'user' : 'system',
               content: m.content, // Content is now directly used (assumed string | MultimodalContent[])
               date: new Date(m.timestamp),
               syncState: 'synced'

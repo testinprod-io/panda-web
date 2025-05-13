@@ -3,7 +3,7 @@ import { useChatStore } from '@/app/store/chat';
 import { ChatApiService, mapApiMessagesToChatMessages, mapApiMessageToChatMessage, mapConversationToSession, mapRoleToSenderType} from '@/app/services/ChatApiService';
 import { useApiClient } from '@/app/context/ApiProviderContext';
 import { ChatMessage, MessageSyncState } from '@/app/types/chat';
-import { MessagesLoadState, SessionSyncState } from '@/app/types/session';
+import { MessagesLoadState, SessionSyncState, ChatSession } from '@/app/types/session';
 import { ModelConfig, useAppConfig } from '@/app/store/config';
 import {
     ConversationCreateRequest,
@@ -35,7 +35,7 @@ export function useChatActions() {
         }
         
         const effectiveCursor = options?.cursor;
-        const effectiveLimit = options?.limit ?? 20; // Default to 20 if not provided
+        const effectiveLimit = options?.limit ?? 20;
 
         console.log(`[ChatActions] Loading sessions from server... Cursor: ${effectiveCursor}, Limit: ${effectiveLimit}`);
         try {
@@ -45,30 +45,59 @@ export function useChatActions() {
             }
             const response = await ChatApiService.fetchConversations(apiClient, apiParams);
             
-            // Enhanced logging
             console.log(`[ChatActions] Raw API response from fetchConversations: Received ${response.data.length} items. Pagination:`, response.pagination);
 
             const serverConvos = response.data;
             const pagination = response.pagination;
-            console.log(`[ChatActions] Received ${serverConvos.length} sessions from server. Has more: ${pagination.has_more}, Limit: ${effectiveLimit}`);
+
+            const fetchedAppSessions: ChatSession[] = serverConvos.map(serverConv => {
+                const session = mapConversationToSession(serverConv);
+                session.syncState = SessionSyncState.SYNCED;
+                // mapConversationToSession calls createNewSession which sets messagesLoadState to FULL.
+                // For a session just loaded from server list, messages are not yet loaded.
+                session.messagesLoadState = MessagesLoadState.NONE; 
+                return session;
+            });
+            console.log(`[ChatActions] Mapped ${fetchedAppSessions.length} sessions from server. Has more: ${pagination.has_more}, Limit: ${effectiveLimit}`);
             
-            const sessions = serverConvos.map(mapConversationToSession);
+            if (fetchedAppSessions.length > 0 || !options?.cursor) { // Also run if initial load and fetched zero to potentially clear/reorder
+                const sessionMap = new Map<UUID, ChatSession>();
+
+                // Add current sessions from store to map
+                store.sessions.forEach(s => sessionMap.set(s.id, s));
+
+                // Add/update with fetched sessions (fetched take precedence)
+                fetchedAppSessions.forEach(s => sessionMap.set(s.id, s));
+
+                const finalSessionsArray = Array.from(sessionMap.values());
+
+                // Sort by lastUpdate descending to keep newest first
+                finalSessionsArray.sort((a, b) => b.lastUpdate - a.lastUpdate);
+                
+                // Preserve current session index if possible
+                const currentSession = store.currentSession();
+                let newCurrentIndex = -1;
+                if (currentSession) {
+                    newCurrentIndex = finalSessionsArray.findIndex(s => s.id === currentSession.id);
+                }
+                if (newCurrentIndex === -1 && finalSessionsArray.length > 0) {
+                    newCurrentIndex = 0; // Default to first if current was removed or no current
+                }
+
+                store.setSessions(finalSessionsArray, newCurrentIndex);
+            }
             
             return {
-                sessions,
+                sessions: fetchedAppSessions, // Still return the page of sessions just fetched
                 nextCursor: pagination.next_cursor,
                 hasMore: pagination.has_more,
             };
 
         } catch (error) {
             console.error("[ChatActions] Failed to load sessions from server:", error);
-            return { sessions: [], nextCursor: null, hasMore: false }; // Return empty on error
-            // Ensure there's at least one session even on error
-            // if (store.sessions.length === 0) {
-            //      store.addSession(createEmptySession());
-            // }
+            return { sessions: [], nextCursor: null, hasMore: false };
         }
-    }, [apiClient]);
+    }, [apiClient, store]);
 
     const newSession = useCallback(async (modelConfig?: ModelConfig) => {
         if (!apiClient) {
