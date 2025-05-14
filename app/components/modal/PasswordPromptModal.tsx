@@ -11,30 +11,24 @@ import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
+import { useEncryption } from '@/app/context/EncryptionProvider';
 
 interface PasswordPromptModalProps {
   open: boolean;
-  onUnlock: () => void; // Callback when successfully unlocked
 }
 
-export function PasswordPromptModal({ open, onUnlock }: PasswordPromptModalProps) {
+export function PasswordPromptModal({ open }: PasswordPromptModalProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [isFirstTimeSetup, setIsFirstTimeSetup] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
+  const { unlockApp } = useEncryption();
 
   const handlePasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setPassword(event.target.value);
     setError(''); // Clear error when typing
   };
 
-  // Check if this is first-time setup (no verification token in localStorage)
-  useEffect(() => {
-    const verificationToken = localStorage.getItem('pandaai_encryption_verification');
-    setIsFirstTimeSetup(!verificationToken);
-  }, []);
-
-  const handleSubmit = useCallback((event: React.FormEvent) => {
+  const handleSubmit = useCallback(async (event: React.FormEvent) => {
     event.preventDefault();
     if (!password) {
       setError('Password cannot be empty.');
@@ -42,30 +36,20 @@ export function PasswordPromptModal({ open, onUnlock }: PasswordPromptModalProps
     }
 
     try {
-      // First-time setup - accept any password
-      if (isFirstTimeSetup) {
-        console.log('[PasswordPromptModal] First-time setup, setting new password');
-        EncryptionService.setKeyFromPassword(password);
-        setPassword('');
-        onUnlock();
-        return;
-      }
+      // Existing users - verify password via context
+      console.log('[PasswordPromptModal] Verifying existing password via context unlockApp');
+      const success = unlockApp(password);
 
-      // Existing users - verify password
-      console.log('[PasswordPromptModal] Verifying existing password');
-      if (EncryptionService.verifyKey(password)) {
-        // If verification succeeds, set the key for active use
-        EncryptionService.setKeyFromPassword(password);
+      if (success) {
         setPassword('');
-        onUnlock();
       } else {
         setError('Incorrect password. Please try again.');
       }
-    } catch (error: any) {
-      console.error('[PasswordPromptModal] Password error:', error);
-      setError(`Error: ${error.message || 'Failed to process password'}`);
+    } catch (err: any) {
+      console.error('[PasswordPromptModal] Password error:', err);
+      setError(`Error: ${err.message || 'Failed to process password'}`);
     }
-  }, [password, onUnlock, isFirstTimeSetup]);
+  }, [password, unlockApp]);
 
   // Debug function - only for development
   const runEncryptionTest = useCallback(() => {
@@ -99,56 +83,142 @@ export function PasswordPromptModal({ open, onUnlock }: PasswordPromptModalProps
       maxWidth="xs"
       BackdropProps={{
         style: {
-          backgroundColor: 'rgba(0, 0, 0, 0.15)',
-          backdropFilter: 'blur(3px)',
-          WebkitBackdropFilter: 'blur(3px)',
+          backgroundColor: 'rgba(0, 0, 0, 0.1)', 
+          backdropFilter: 'blur(5px)', 
+          WebkitBackdropFilter: 'blur(5px)', 
         }
       }}
       PaperProps={{ 
         style: {
-          backgroundColor: 'rgba(255, 255, 255, 0.75)',
+          backgroundColor: '#FFFFFF', 
+          borderRadius: '8px', // Figma: borderRadius: 8
+          boxShadow: '0px 10px 25px rgba(0, 0, 0, 0.1)', 
+          padding: '24px', // General padding, specific gaps handled below
         }
       }}
     >
-      <DialogTitle>
-        <Box display="flex" alignItems="center" gap={1}>
-          <LockOpenIcon />
-          {isFirstTimeSetup ? 'Create Encryption Password' : 'Unlock Data Encryption'}
-        </Box>
-      </DialogTitle>
-      <form onSubmit={handleSubmit}>
-        <DialogContent>
-          <Typography variant="body2" gutterBottom>
-            {isFirstTimeSetup 
-              ? 'Please create a password to encrypt your chat data. Remember this password as it cannot be recovered!'
-              : 'Please enter your password to decrypt your chat data. This password is only stored temporarily in your browser\'s memory.'}
+      {/* Combined Title and Paragraph Block with Gap */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', marginBottom: '24px' }}>
+        <DialogTitle sx={{ textAlign: 'center', padding: 0 }}>
+          <Typography variant="h5" component="div" sx={{ 
+            color: '#131A28', // Figma: color: '#131A28'
+            fontSize: '24px', // Figma: fontSize: 24
+            fontFamily: 'Inter, sans-serif', // Figma: fontFamily: 'Inter'
+            fontWeight: '600', // Figma: fontWeight: '600'
+            wordWrap: 'break-word'
+          }}>
+            Unlock Data Encryption
           </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: 'center', padding: 0 }}>
+          <Typography variant="body1" sx={{ // body1 is 16px by default, adjust if needed
+            color: '#131A28', // Figma: color: '#131A28'
+            fontSize: '16px', // Figma: fontSize: 16
+            fontFamily: 'Inter, sans-serif', // Figma: fontFamily: 'Inter'
+            fontWeight: '400', // Figma: fontWeight: '400'
+            wordWrap: 'break-word'
+          }}>
+            Please enter your password to decrypt your chat data. This password is only stored temporarily in your browser\'s memory.
+          </Typography>
+        </DialogContent>
+      </Box>
+      
+      <form onSubmit={handleSubmit}>
+        {/* Input and Button Block with Gap */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
           <TextField
             autoFocus
             required
-            margin="dense"
+            margin="none" // Remove default margin, using gap from parent Box
             id="password"
-            label="Password"
+            placeholder="Password" 
             type="password"
             fullWidth
-            variant="outlined"
+            variant="outlined" 
             value={password}
             onChange={handlePasswordChange}
             error={!!error}
             helperText={error}
-            sx={{ mt: 2 }}
+            InputLabelProps={{ style: { fontFamily: 'Inter, sans-serif' } }} // For consistency if label were used
+            FormHelperTextProps={{
+              style: {
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '14px', // Figma shows 16px for error, but typically helper is smaller. Let's use 14px for now.
+                // color: '#D32F2F' // MUI default error color
+                marginLeft: 0, // Align with input
+                textAlign: 'left', // Align error text to the left as is common
+              }
+            }}
+            sx={{ 
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '8px', // Figma: borderRadius: 8
+                backgroundColor: 'white', // Figma: background: 'white'
+                height: '56px', // Figma: height: 56
+                fontFamily: 'Inter, sans-serif',
+                '& fieldset': {
+                  borderColor: '#CACACA', // Figma: outline: '1px #CACACA solid'
+                },
+                '&:hover fieldset': {
+                  borderColor: '#A0A0A0', // Darker shade for hover
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#007AFF', 
+                },
+                '&.Mui-error fieldset': {
+                  borderColor: '#D32F2F', // Default MUI error color for border
+                }
+              },
+              '& .MuiInputBase-input': {
+                padding: '0 14px', // Adjusted padding to vertically center text in 56px height
+                height: '100%', // Ensure input takes full height of MuiOutlinedInput-root
+                color: '#131A28', // Figma: color: '#131A28' (for text inside input)
+                fontSize: '16px', // Figma: fontSize: 16
+                fontFamily: 'Inter, sans-serif', // Figma: fontFamily: 'Inter'
+                fontWeight: '400', // Figma: fontWeight: '400'
+                '&::placeholder': {
+                  // color: '#757575', // A typical placeholder color
+                  opacity: 1, // Ensure placeholder is visible
+                }
+              }
+            }}
           />
-        </DialogContent>
-        <DialogActions>
-          {debugMode && (
-            <Button onClick={runEncryptionTest} variant="outlined" color="secondary">
-              Test Encryption
+          <DialogActions sx={{ padding: 0, width: '100%' }}>
+            {/* Debug button hidden for this styling pass, can be re-added if needed */}
+            {/* {debugMode && (
+              <Button onClick={runEncryptionTest} variant="outlined" color="secondary" sx={{ marginRight: '8px', borderRadius: '12px' }}>
+                Test Encryption
+              </Button>
+            )} */}
+            <Button 
+              type="submit" 
+              variant="contained" 
+              disabled={!password}
+              fullWidth 
+              sx={{
+                height: '48px', // Figma: height: 48
+                background: '#F3F3F3', // Figma: background: '#F3F3F3'
+                color: password ? '#131A28' : '#CACACA', // Figma: color: '#CACACA' (use for disabled), use darker for enabled
+                borderRadius: '24px', // Figma: borderRadius: 24
+                padding: '0 10px', // Figma: padding: 10 (adjust for vertical centering)
+                textTransform: 'none', 
+                fontSize: '16px', // Figma: fontSize: 16
+                fontFamily: 'Inter, sans-serif', // Figma: fontFamily: 'Inter'
+                fontWeight: '600', // Figma: fontWeight: '600'
+                boxShadow: 'none',
+                '&:hover': {
+                  background: password ? '#E5E5E5' : '#F3F3F3', // Darker on hover for enabled
+                  boxShadow: 'none',
+                },
+                '&.Mui-disabled': { // Explicit styling for disabled state
+                  background: '#F3F3F3',
+                  color: '#CACACA',
+                }
+              }}
+            >
+              Unlock
             </Button>
-          )}
-          <Button type="submit" variant="contained" disabled={!password}>
-            {isFirstTimeSetup ? 'Create & Unlock' : 'Unlock'}
-          </Button>
-        </DialogActions>
+          </DialogActions>
+        </Box>
       </form>
     </Dialog>
   );

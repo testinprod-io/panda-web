@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react'
-import { PrivyProvider } from '@privy-io/react-auth'
+import { PrivyProvider, usePrivy } from '@privy-io/react-auth'
 import { Toaster } from 'react-hot-toast'
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 import { ThemeProvider } from '@mui/material/styles';
@@ -11,6 +11,29 @@ import { SnackbarProvider } from '@/app/components/SnackbarProvider';
 import { AuthChatListener } from '@/app/store/chat';
 import { ApiClientProvider } from '@/app/context/ApiProviderContext';
 import { EncryptionProvider } from '@/app/context/EncryptionProvider';
+
+// NEW COMPONENT: Wraps content that depends on Privy authentication state
+function AuthenticatedContentWrapper({ children }: { children: React.ReactNode }) {
+  const { authenticated } = usePrivy();
+
+  return (
+    <ApiClientProvider>
+      {authenticated ? (
+        <EncryptionProvider>
+          <AuthChatListener />
+          <SnackbarProvider>
+            {children}
+          </SnackbarProvider>
+        </EncryptionProvider>
+      ) : (
+        // Not authenticated with Privy, so EncryptionProvider and AuthChatListener are skipped
+        <SnackbarProvider>
+          {children}
+        </SnackbarProvider>
+      )}
+    </ApiClientProvider>
+  );
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   // TODO: Replace with your actual Privy App ID from environment variables
@@ -43,24 +66,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
               embeddedWallets: { createOnLogin: 'users-without-wallets' }, // Optional
             }}
           >
-            {/* Wrap with ApiClientProvider inside PrivyProvider */}
-            <ApiClientProvider>
-              {/* Add EncryptionProvider to wrap the content that needs encryption */}
-              <EncryptionProvider>
-                <AuthChatListener />
-                <SnackbarProvider>
-                  {children}
-                </SnackbarProvider>
-              </EncryptionProvider>
-            </ApiClientProvider>
+            {/* Use the new wrapper component here */}
+            <AuthenticatedContentWrapper>
+              {children}
+            </AuthenticatedContentWrapper>
           </PrivyProvider>
         ) : (
-          // Render children without Privy/Api context if ID is missing
-          <EncryptionProvider>
-            <SnackbarProvider>
-              {children}
-            </SnackbarProvider>
-          </EncryptionProvider>
+          // Render children without Privy/Api/Encryption context if ID is missing,
+          // as user cannot be authenticated via Privy.
+          <SnackbarProvider>
+            {children}
+          </SnackbarProvider>
         )}
         <Toaster position="top-right" />
       </ThemeProvider>

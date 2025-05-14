@@ -11,6 +11,7 @@ import React, {
 } from 'react';
 import { EncryptionService } from '@/app/services/EncryptionService';
 import { PasswordPromptModal } from '@/app/components/modal/PasswordPromptModal';
+import { CreatePasswordModal } from '@/app/components/modal/CreatePasswordModal';
 import { useChatStore } from '@/app/store/chat';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -42,6 +43,7 @@ interface EncryptionProviderProps {
 export function EncryptionProvider({ children }: EncryptionProviderProps) {
   // Always start locked
   const [isLocked, setIsLocked] = useState<boolean>(true);
+  const [isFirstTimeUser, setIsFirstTimeUser] = useState<boolean>(false);
   const [hasError, setHasError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -69,6 +71,18 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
     return () => window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+  }, []);
+
+  // Check for first-time user on mount
+  useEffect(() => {
+    const verificationToken = localStorage.getItem('pandaai_encryption_verification');
+    if (!verificationToken) {
+      setIsFirstTimeUser(true);
+      console.log('[EncryptionProvider] No verification token found. First time user.');
+    } else {
+      setIsFirstTimeUser(false);
+      console.log('[EncryptionProvider] Verification token found. Existing user.');
+    }
   }, []);
 
   const resetInactivityTimer = useCallback(() => {
@@ -111,21 +125,14 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     setIsLocked(true);
   }, []);
 
-  // Simplified unlock function - directly calls setKeyFromPassword and uses verifyKey
+  // Simplified unlock function - only for existing users now
   const contextUnlockApp = useCallback((password: string): boolean => {
     try {
-      const verificationToken = localStorage.getItem('pandaai_encryption_verification');
-      
-      // First-time setup - always accept the password
-      if (!verificationToken) {
-        EncryptionService.setKeyFromPassword(password);
-        handleUnlockSuccess();
-        return true;
-      }
+      // First-time setup logic removed from here
       
       // Existing user - verify password first
       if (EncryptionService.verifyKey(password)) {
-        EncryptionService.setKeyFromPassword(password);
+        EncryptionService.setKeyFromPassword(password); // Sets the key for active use
         handleUnlockSuccess();
         return true;
       } else {
@@ -138,6 +145,24 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         handleEncryptionError(error);
       }
       return false;
+    }
+  }, [handleUnlockSuccess, handleEncryptionError]); // Removed isFirstTimeUser from deps if it was there implicitly
+
+  // Handler for password creation
+  const handleCreatePassword = useCallback((newPassword: string) => {
+    try {
+      console.log('[EncryptionProvider] Creating new password.');
+      EncryptionService.setKeyFromPassword(newPassword); // This also creates and stores the verification token
+      setIsFirstTimeUser(false); // No longer a first-time user
+      handleUnlockSuccess(); // Unlock the app
+      console.log('[EncryptionProvider] New password created and app unlocked.');
+    } catch (error) {
+      console.error("[EncryptionProvider] Error during password creation:", error);
+      if (error instanceof Error) {
+        handleEncryptionError(error);
+      }
+      // Ensure app remains locked or in a clear error state
+      setIsLocked(true);
     }
   }, [handleUnlockSuccess, handleEncryptionError]);
 
@@ -207,10 +232,22 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
               </Alert>
             </Box>
           )}
-          <PasswordPromptModal
-             open={isLocked}
-             onUnlock={handleUnlockSuccess}
-          />
+          {isFirstTimeUser ? (
+            <CreatePasswordModal 
+              open={true} 
+              onCreate={handleCreatePassword} 
+              onClose={() => {
+                // If CreatePasswordModal had a cancel button or explicit close,
+                // we might want to ensure the app remains locked or re-evaluate isFirstTimeUser.
+                // For now, it only closes on successful creation or if open prop changes.
+                console.log('[EncryptionProvider] CreatePasswordModal onClose called - app should remain locked if password not set.');
+              }} 
+            />
+          ) : (
+            <PasswordPromptModal
+               open={isLocked} // Pass open prop directly
+            />
+          )}
         </>
       )}
       {/* Always render children with a key that changes when unlocked, forcing re-render */}
