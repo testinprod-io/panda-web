@@ -1,8 +1,8 @@
 import { ModelProvider, ServiceProvider } from "@/app/constant";
 import { ModelType } from "@/app/store";
 import { ChatMessage } from "@/app/types";
-import { ChatGPTApi } from "@/app/client/platforms/openai";
-import { DeepSeekApi } from "@/app/client/platforms/deepseek";
+// import { ChatGPTApi } from "@/app/client/platforms/openai";
+// import { DeepSeekApi } from "@/app/client/platforms/deepseek";
 import { PandaApi, GetAccessTokenFn } from "@/app/client/platforms/panda";
 import { ApiClient } from "@/app/client/client";
 
@@ -77,23 +77,23 @@ export class ClientApi {
   public llm: LLMApi;
   public app: ApiClient;
 
-  constructor(provider: ModelProvider = ModelProvider.GPT, getAccessToken?: GetAccessTokenFn) {
-    switch (provider) {
-      case ModelProvider.DeepSeek:
-        this.llm = new DeepSeekApi();
-        break;
-      case ModelProvider.Panda:
+  constructor(provider: ModelProvider = ModelProvider.Panda, getAccessToken?: GetAccessTokenFn) {
+    // switch (provider) {
+      // case ModelProvider.DeepSeek:
+      //   this.llm = new DeepSeekApi();
+      //   break;
+      // case ModelProvider.Panda:
         if (!getAccessToken) {
           throw new Error("getAccessToken function is required for Panda provider");
         }
         this.llm = new PandaApi(getAccessToken);
-        break;
-      default:
-        this.llm = new ChatGPTApi();
-    }
-    if (!getAccessToken) {
-      throw new Error("getAccessToken function is required for App backend client");
-    }
+        // break;
+      // default:
+      //   this.llm = new ChatGPTApi();
+    // }
+    // if (!getAccessToken) {
+    //   throw new Error("getAccessToken function is required for App backend client");
+    // }
     this.app = new ApiClient("http://3.15.240.252:8000", getAccessToken);
   }
 
@@ -118,12 +118,12 @@ export function getHeaders() {
 }
 
 export function getClientApi(provider: ServiceProvider, getAccessToken: GetAccessTokenFn): ClientApi {
-  switch (provider) {
-    case ServiceProvider.DeepSeek:
-      return new ClientApi(ModelProvider.DeepSeek);
-    case ServiceProvider.Panda:
+  // switch (provider) {
+  //   case ServiceProvider.DeepSeek:
+  //     return new ClientApi(ModelProvider.DeepSeek);
+    // case ServiceProvider.Panda:
       return new ClientApi(ModelProvider.Panda, getAccessToken);
-    default:
-      return new ClientApi(ModelProvider.GPT, getAccessToken);
-  }
+    // default:
+    //   return new ClientApi(ModelProvider.GPT, getAccessToken);
+  // }
 }

@@ -49,6 +49,8 @@ export function ChatItem({
   const [editValue, setEditValue] = useState(session.topic);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
+  const [isHovered, setIsHovered] = useState(false);
+  const listItemRef = useRef<HTMLDivElement | null>(null); // Corrected Ref type for ListItemButton (defaults to div)
 
   // Update edit value if the session topic changes externally
   useEffect(() => {
@@ -155,6 +157,7 @@ export function ChatItem({
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation(); // Prevent click from selecting the item
     setAnchorEl(event.currentTarget);
+    setIsHovered(false); // Explicitly set hover to false, menu 'open' state will manage visibility
   };
 
   const handleMenuClose = (event?: React.MouseEvent<HTMLElement> | {}, reason?: "backdropClick" | "escapeKeyDown") => {
@@ -162,7 +165,18 @@ export function ChatItem({
     if (event && typeof event === 'object' && 'stopPropagation' in event && typeof event.stopPropagation === 'function') {
         (event as React.MouseEvent<HTMLElement>).stopPropagation();
     }
-    setAnchorEl(null);
+    const menuWasPreviouslyOpen = Boolean(anchorEl);
+    setAnchorEl(null); // This will make 'open' false
+
+    if (menuWasPreviouslyOpen) {
+        // After menu is marked to close, check actual hover state of the item using a zero-delay setTimeout.
+        setTimeout(() => {
+          if (listItemRef.current) {
+            const isCurrentlyHoveredOverItem = listItemRef.current.matches(':hover');
+            setIsHovered(isCurrentlyHoveredOverItem);
+          }
+        }, 0); // Use setTimeout with 0 delay
+    }
   };
 
   const handleEdit = (event: React.MouseEvent<HTMLElement>) => {
@@ -263,9 +277,12 @@ export function ChatItem({
 
   return (
     <ListItemButton
+      ref={listItemRef} // Add ref here
       onClick={handleItemClick} // Use the wrapper click handler
       className={styles['chat-item']} // Use the base class
       disableTouchRipple={true} // Disable the MUI ripple effect
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       sx={{ 
           padding: 0, 
           minHeight: '50px', 
@@ -281,7 +298,7 @@ export function ChatItem({
                  display: 'flex', 
                  alignItems: 'center', 
                  width: '100%', 
-                 paddingRight: '50px', // Re-add padding for icons
+                 paddingRight: ((isHovered || open) && !isEditing) ? '50px' : '12px',
              }}>
             {/* Secondary action container needs to be inside highlight or positioned absolutely relative to chat-item */}
             <Box sx={{ 
@@ -289,7 +306,9 @@ export function ChatItem({
                 right: 12, // Adjust position based on new padding
                 top: '50%', 
                 transform: 'translateY(-50%)', 
-                zIndex: 1 // Ensure it's above the text
+                zIndex: 1, // Ensure it's above the text
+                display: ((isHovered || open) && !isEditing) ? 'flex' : 'none',
+                alignItems: 'center',
             }}>
                 {!isEditing && (
                   <>

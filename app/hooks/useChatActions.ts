@@ -275,7 +275,9 @@ export function useChatActions() {
         const createRequest: MessageCreateRequest = {
             message_id: message.id,
             sender_type: mapRoleToSenderType(message.role),
-            content: content
+            content: content,
+            reasoning_content: message.reasoning,
+            reasoning_time: message.reasoningTime ? message.reasoningTime.toString() : undefined,
         };
 
         try {
@@ -323,13 +325,8 @@ export function useChatActions() {
         // Determine Model for Title Generation (using compressModel or summarize logic)
         // Adapt logic from original store's getSummarizeModelConfig
         const modelConfig = session.modelConfig;
-        let titleModel: string;
-        let titleProvider: string;
-        if (modelConfig.compressModel) {
-             [titleModel, titleProvider] = [modelConfig.compressModel, modelConfig.compressProviderName];
-        } else {
-             [titleModel, titleProvider] = getSummarizeModel(modelConfig.model, modelConfig.providerName); // Use util
-        }
+        let titleModel = modelConfig.model;
+        let titleProvider = modelConfig.providerName;
 
         const titleGenConfig: ModelConfig = {
             ...modelConfig,

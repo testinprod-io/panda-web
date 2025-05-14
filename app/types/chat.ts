@@ -69,6 +69,7 @@ export type ChatMessage = Omit<RequestMessage, 'content'> & { // Omit original c
   model?: ModelType;
   syncState: MessageSyncState;
   reasoning?: string; // Add reasoning field
+  reasoningTime?: number; // Add reasoning duration field
   isReasoning?: boolean; // To track if the message is currently in reasoning phase
 };
 

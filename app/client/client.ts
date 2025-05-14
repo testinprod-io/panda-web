@@ -9,7 +9,8 @@ import {
   MessageCreateRequest,
   PaginatedConversationsResponse,
   PaginatedMessagesResponse,
-  HTTPValidationError
+  HTTPValidationError,
+  EncryptedIdResponse
 } from './types';
 import { UUID } from 'crypto';
 
@@ -145,4 +146,21 @@ export class ApiClient {
   async createMessage(conversationId: UUID, data: MessageCreateRequest): Promise<Message> {
     return this.request<Message>('POST', `/conversations/${conversationId}/messages`, undefined, data);
   }
+
+  // --- Models ---
+  // async getModels(): Promise<Model[]> {
+  //   return this.request<Model[]>('GET', '/models');
+  // }
+
+
+// ---Encrypted ID---
+  async getEncryptedId(): Promise<EncryptedIdResponse> {
+    return this.request<EncryptedIdResponse>('GET', '/me/encrypted-id');
+  }
+
+  async createEncryptedId(encryptedId: string): Promise<EncryptedIdResponse> {
+    return this.request<EncryptedIdResponse>('POST', '/me/encrypted-id', undefined, { encrypted_id: encryptedId });
+  }
+
+
 } 

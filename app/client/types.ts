@@ -20,6 +20,8 @@ export interface Message {
   message_id: UUID;
   conversation_id: UUID;
   timestamp: string; // ISO Date string
+  reasoning_content?: string;
+  reasoning_time?: string;
 }
 
 export interface InitialMessageContent {
@@ -58,6 +60,8 @@ export interface MessageCreateRequest {
   sender_type: SenderTypeEnum;
   message_id: UUID;
   content: string;
+  reasoning_content?: string;
+  reasoning_time?: string;
 }
 
 // Response Schemas
@@ -90,3 +94,10 @@ export interface GetConversationMessagesParams {
     cursor?: string | null;
     limit?: number; // Default: 20, Max: 30
 } 
+
+export interface EncryptedIdResponse { 
+  user_id: string;
+  encrypted_id: string;
+  created_at: string;
+  updated_at: string;
+}

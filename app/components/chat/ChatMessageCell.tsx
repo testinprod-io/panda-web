@@ -219,7 +219,11 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(props: ChatMe
                   {isReasoningCollapsed ? <ChevronRightIcon fontSize="inherit" /> : <ExpandMoreIcon fontSize="inherit" />}
                 </IconButton>
                 <Typography variant="caption" sx={{ fontWeight: 'medium', color: 'text.secondary' }}>
-                  {/* TODO: Add Locale.Chat.Thinking to locale file */ "Thinking..."}
+                  {isReasoning
+                    ? "Thinking..."
+                    : message.reasoningTime && message.reasoningTime > 0
+                    ? `Thought for ${(message.reasoningTime / 1000).toFixed(1)} seconds`
+                    : "Processing complete"} 
                 </Typography>
                 {isReasoning && !currentReasoningText && <Box sx={{ml: 1}}><LoadingAnimation /></Box>}
               </Box>

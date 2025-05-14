@@ -8,7 +8,6 @@ import { UUID } from "crypto";
 import {
   ServiceProvider,
   StoreKey,
-  DEFAULT_OPENAI_MODEL_NAME,
   DEFAULT_PANDA_MODEL_NAME,
 } from "../constant";
 import Locale from "../locales";
@@ -484,13 +483,8 @@ export const useChatStore = createPersistStore(
           const session = get().currentSession();
           if (!session) return;
 
-          let defaultModelName = DEFAULT_OPENAI_MODEL_NAME;
-          let defaultProviderName = ServiceProvider.OpenAI;
-
-          if (provider === ServiceProvider.Panda) {
-            defaultModelName = DEFAULT_PANDA_MODEL_NAME;
-            defaultProviderName = ServiceProvider.Panda;
-          }
+          const defaultModelName = DEFAULT_PANDA_MODEL_NAME;
+          const defaultProviderName = ServiceProvider.Panda;
 
           get().updateTargetSession(session, (sess) => {
             sess.modelConfig = {

@@ -345,9 +345,9 @@ export function supportsCustomSize(model: string): boolean {
 }
 
 export function showPlugins(provider: ServiceProvider, model: string) {
-  if (provider == ServiceProvider.OpenAI ) {
-    return true;
-  }
+  // if (provider == ServiceProvider.OpenAI ) {
+  //   return true;
+  // }
   
   return false;
 }

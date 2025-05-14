@@ -63,6 +63,8 @@ function decryptConversationData(conversation: Conversation): Conversation {
 // Type that can handle both ApiMessage and MessageCreateRequest
 type MessageWithContent = {
   content: string
+  reasoning_content?: string;
+  reasoning_time?: number;
   [key: string]: any;
 };
 
@@ -80,7 +82,16 @@ function encryptMessageData<T extends MessageWithContent>(message: T): T {
       // Fall back to unencrypted but log the error
     }
   }
-  
+
+  if (encryptedMsg.reasoning_content) {
+    try {
+      encryptedMsg.reasoning_content = EncryptionService.encryptChatMessageContent(encryptedMsg.reasoning_content);
+    } catch (err) {
+      console.error("[ChatApiService] Error encrypting message content:", err);
+      // Fall back to unencrypted but log the error
+    }
+  }
+
   return encryptedMsg;
 }
 
@@ -95,6 +106,14 @@ function decryptMessageData<T extends MessageWithContent>(message: T): T {
     } catch (err) {
       console.error("[ChatApiService] Error decrypting message content:", err);
       // Keep the encrypted content if decryption fails
+    }
+  }
+
+  if (decryptedMsg.reasoning_content) {
+    try {
+      decryptedMsg.reasoning_content = EncryptionService.decryptChatMessageContent(decryptedMsg.reasoning_content);
+    } catch (err) {
+      console.error("[ChatApiService] Error decrypting message reasoning content:", err);
     }
   }
   
@@ -127,6 +146,8 @@ export function mapApiMessageToChatMessage(message: ApiMessage): ChatMessage {
     role: role,
     content: decryptedMsg.content,
     date: new Date(decryptedMsg.timestamp),
+    reasoning: decryptedMsg.reasoning_content,
+    reasoningTime: decryptedMsg.reasoning_time,
   });
 }
 
