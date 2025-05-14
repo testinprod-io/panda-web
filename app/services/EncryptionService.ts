@@ -1,16 +1,9 @@
 import CryptoJS from 'crypto-js';
 import { MultimodalContent } from "@/app/client/api";
-
+import { ClientApi } from "@/app/client/api";
 // Key and IV will be stored in memory only
 let inMemoryKey: CryptoJS.lib.WordArray | null = null;
 let inMemoryIv: CryptoJS.lib.WordArray | null = null;
-
-// Verification token to check if decryption works correctly
-const VERIFICATION_TOKEN = "PandaAI-VerificationData-2023";
-let encryptedVerificationToken: string | null = null;
-
-// localStorage key
-const STORAGE_VERIFICATION_KEY = 'pandaai_encryption_verification';
 
 // Basic check for potential base64 encoding (simple heuristic)
 function isLikelyBase64(str: string): boolean {
@@ -19,33 +12,6 @@ function isLikelyBase64(str: string): boolean {
   // Very basic regex: checks for Base64 characters and potential padding
   const base64Regex = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
   return base64Regex.test(str);
-}
-
-// Test function for debugging
-export function testEncryption() {
-  const originalText = "Test secret message";
-  
-  // Set a key
-  EncryptionService.setKeyFromPassword("password1");
-  console.log("Key set from password1");
-  
-  const encrypted = EncryptionService.encrypt(originalText);
-  console.log("Encrypted:", encrypted);
-  
-  // Try with correct key
-  const decrypted1 = EncryptionService.decrypt(encrypted);
-  console.log("Decrypted with correct key:", decrypted1);
-  
-  // Try with wrong key
-  EncryptionService.setKeyFromPassword("password2");
-  console.log("Key set from password2");
-  
-  try {
-    const decrypted2 = EncryptionService.decrypt(encrypted);
-    console.log("Decrypted with wrong key:", decrypted2);
-  } catch (error) {
-    console.error("Decryption with wrong key failed (expected):", error);
-  }
 }
 
 export const EncryptionService = {
@@ -88,7 +54,7 @@ export const EncryptionService = {
    * Derives and sets the encryption key and IV from a user password.
    * Stores them in memory and saves verification data to localStorage.
    */
-  setKeyFromPassword(password: string): void {
+  async setKeyFromPassword(clientApi: ClientApi, userId: string, password: string): Promise<void> {
     if (!password) {
       console.error("[EncryptionService] Cannot set key from empty password.");
       this.clearKey(); // Ensure key is cleared if password is empty
@@ -103,13 +69,13 @@ export const EncryptionService = {
       inMemoryIv = iv;
 
       // Create verification token with this key
-      encryptedVerificationToken = this.encryptVerificationToken();
+      // const encryptedVerificationToken = this.encryptVerificationToken(userId);
       
       // Save to localStorage for later verification
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(STORAGE_VERIFICATION_KEY, encryptedVerificationToken);
-        console.log("[EncryptionService] Verification token saved to localStorage.");
-      }
+      // if (typeof window !== 'undefined') {
+      //   await clientApi.app.createEncryptedId(encryptedVerificationToken);
+      //   console.log("[EncryptionService] Verification token saved to localStorage.");
+      // }
       
       console.log("[EncryptionService] Key and IV derived and set in memory.");
     } catch (error) {
@@ -124,7 +90,7 @@ export const EncryptionService = {
   clearKey(): void {
     inMemoryKey = null;
     inMemoryIv = null;
-    encryptedVerificationToken = null;
+    // encryptedVerificationToken = null;
     console.log("[EncryptionService] Key and IV cleared from memory.");
   },
 
@@ -138,13 +104,13 @@ export const EncryptionService = {
   /**
    * Encrypt the verification token to test decryption later
    */
-  encryptVerificationToken(): string {
+  encryptVerificationToken(userId: string): string {
     if (!this.isKeySet()) {
       console.error("[EncryptionService] encryptVerificationToken called without key set.");
       return ""; // Cannot encrypt without key
     }
     try {
-      const encrypted = CryptoJS.AES.encrypt(VERIFICATION_TOKEN, inMemoryKey!, {
+      const encrypted = CryptoJS.AES.encrypt(userId, inMemoryKey!, {
         iv: inMemoryIv!,
         mode: CryptoJS.mode.CBC,
         padding: CryptoJS.pad.Pkcs7
@@ -160,14 +126,14 @@ export const EncryptionService = {
    * Verify that the provided password can correctly decrypt the verification token
    * This confirms the password is correct
    */
-  verifyKey(password: string): boolean {
+  async verifyKey(apiClient: ClientApi, userId: string, password: string): Promise<boolean> {
     if (typeof window === 'undefined') {
       console.error("[EncryptionService] verifyKey called outside of browser.");
       return false; // Cannot verify outside of browser
     }
     
     // Get verification token from localStorage
-    const verificationToken = localStorage.getItem(STORAGE_VERIFICATION_KEY);
+    const verificationToken = (await apiClient.app.getEncryptedId()).encrypted_id;
     
     if (!verificationToken) {
       console.error("[EncryptionService] No verification token found in localStorage.");
@@ -187,7 +153,7 @@ export const EncryptionService = {
       
       const decryptedText = decrypted.toString(CryptoJS.enc.Utf8);
       console.log("[EncryptionService] decryptedText:", decryptedText);
-      return decryptedText === VERIFICATION_TOKEN;
+      return decryptedText === userId;
     } catch (error) {
       console.error("[EncryptionService] Verification failed:", error);
       return false;

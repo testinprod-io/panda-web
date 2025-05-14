@@ -38,7 +38,7 @@ export const ApiClientProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         // Return a temporary client or null, depending on how consumers handle it.
         // Using OpenAI as a safe default if Privy isn't ready.
         console.warn('[ApiClientProvider] Privy not ready, using default OpenAI client temporarily.');
-        return getClientApi(ServiceProvider.OpenAI, defaultGetAccessToken); // Provide default token getter
+        return getClientApi(ServiceProvider.Panda, defaultGetAccessToken); // Provide default token getter
     }
 
     try {
@@ -49,7 +49,7 @@ export const ApiClientProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         // Fallback to a default client in case of errors during instantiation
         // (e.g., missing getAccessToken for Panda)
          console.warn('[ApiClientProvider] Falling back to default OpenAI client due to error.');
-        return getClientApi(ServiceProvider.OpenAI, defaultGetAccessToken); // Provide default token getter
+        return getClientApi(ServiceProvider.Panda, defaultGetAccessToken); // Provide default token getter
     }
 
   // Depend on apiProvider, privyReady, and the effectiveGetAccessToken function itself

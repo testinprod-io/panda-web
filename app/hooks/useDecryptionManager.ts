@@ -71,7 +71,7 @@ export function useDecryptionManager(): DecryptionManager {
     }
 
     try {
-      const decryptedStringContent = await EncryptionService.decryptChatMessageContent(contentToDecrypt);
+      const decryptedStringContent = await EncryptionService.decryptChatMessageContent(contentToDecrypt as string);
       let finalContent: string | MultimodalContent[];
       try {
         if (typeof decryptedStringContent === 'string' && (decryptedStringContent.startsWith('[') || decryptedStringContent.startsWith('{'))) {

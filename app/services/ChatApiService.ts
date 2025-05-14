@@ -64,7 +64,7 @@ function decryptConversationData(conversation: Conversation): Conversation {
 type MessageWithContent = {
   content: string
   reasoning_content?: string;
-  reasoning_time?: number;
+  reasoning_time?: string;
   [key: string]: any;
 };
 
@@ -147,7 +147,7 @@ export function mapApiMessageToChatMessage(message: ApiMessage): ChatMessage {
     content: decryptedMsg.content,
     date: new Date(decryptedMsg.timestamp),
     reasoning: decryptedMsg.reasoning_content,
-    reasoningTime: decryptedMsg.reasoning_time,
+    reasoningTime: decryptedMsg.reasoning_time ? parseInt(decryptedMsg.reasoning_time) : undefined,
   });
 }
 

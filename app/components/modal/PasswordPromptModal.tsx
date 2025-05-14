@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { EncryptionService, testEncryption } from '@/app/services/EncryptionService';
+import { EncryptionService } from '@/app/services/EncryptionService';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -38,7 +38,7 @@ export function PasswordPromptModal({ open }: PasswordPromptModalProps) {
     try {
       // Existing users - verify password via context
       console.log('[PasswordPromptModal] Verifying existing password via context unlockApp');
-      const success = unlockApp(password);
+      const success = await unlockApp(password);
 
       if (success) {
         setPassword('');
@@ -50,17 +50,6 @@ export function PasswordPromptModal({ open }: PasswordPromptModalProps) {
       setError(`Error: ${err.message || 'Failed to process password'}`);
     }
   }, [password, unlockApp]);
-
-  // Debug function - only for development
-  const runEncryptionTest = useCallback(() => {
-    try {
-      testEncryption();
-      setError('Test complete - check console for results');
-    } catch (e) {
-      console.error("Encryption test error:", e);
-      setError(`Test failed: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  }, []);
 
   // Enable debug mode with shift+alt+d keypress
   useEffect(() => {

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, {
   createContext,
@@ -7,31 +7,35 @@ import React, {
   useEffect,
   useCallback,
   useRef,
-  ReactNode
-} from 'react';
-import { EncryptionService } from '@/app/services/EncryptionService';
-import { PasswordPromptModal } from '@/app/components/modal/PasswordPromptModal';
-import { CreatePasswordModal } from '@/app/components/modal/CreatePasswordModal';
-import { useChatStore } from '@/app/store/chat';
-import Alert from '@mui/material/Alert';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
+  ReactNode,
+} from "react";
+import { EncryptionService } from "@/app/services/EncryptionService";
+import { PasswordPromptModal } from "@/app/components/modal/PasswordPromptModal";
+import { CreatePasswordModal } from "@/app/components/modal/CreatePasswordModal";
+import { useChatStore } from "@/app/store/chat";
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import { useApiClient } from "@/app/context/ApiProviderContext";
+import { usePrivy } from "@privy-io/react-auth";
 
 // Define the inactivity timeout (e.g., 15 minutes) in milliseconds
 const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
 
 interface EncryptionContextType {
   isLocked: boolean;
-  unlockApp: (password: string) => boolean;
+  unlockApp: (password: string) => Promise<boolean>;
   lockApp: () => void;
 }
 
-const EncryptionContext = createContext<EncryptionContextType | undefined>(undefined);
+const EncryptionContext = createContext<EncryptionContextType | undefined>(
+  undefined
+);
 
 export function useEncryption(): EncryptionContextType {
   const context = useContext(EncryptionContext);
   if (!context) {
-    throw new Error('useEncryption must be used within an EncryptionProvider');
+    throw new Error("useEncryption must be used within an EncryptionProvider");
   }
   return context;
 }
@@ -47,43 +51,62 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   const [hasError, setHasError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const apiClient = useApiClient();
+  const { user } = usePrivy();
 
   // Set up error handling for encryption-related operations
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       const error = event.reason;
-      
+
       // Check if it's an encryption-related error
-      if (error && error.message && typeof error.message === 'string' && 
-          (error.message.includes('decrypt') || error.message.includes('encrypt') || 
-           error.message.includes('key'))) {
-        console.error('[EncryptionProvider] Caught encryption error:', error);
-        
+      if (
+        error &&
+        error.message &&
+        typeof error.message === "string" &&
+        (error.message.includes("decrypt") ||
+          error.message.includes("encrypt") ||
+          error.message.includes("key"))
+      ) {
+        console.error("[EncryptionProvider] Caught encryption error:", error);
+
         // Lock the app and show error
         setIsLocked(true);
         setHasError(true);
         setErrorMessage(error.message);
-        
+
         // Prevent default error handling
         event.preventDefault();
       }
     };
-    
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-    return () => window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
+    return () =>
+      window.removeEventListener(
+        "unhandledrejection",
+        handleUnhandledRejection
+      );
   }, []);
 
   // Check for first-time user on mount
   useEffect(() => {
-    const verificationToken = localStorage.getItem('pandaai_encryption_verification');
-    if (!verificationToken) {
+    const verifyFirstTimeUser = async () => {
+      try {
+        const verificationToken = await apiClient.app.getEncryptedId();
+        if (verificationToken.encrypted_id) {
+          setIsFirstTimeUser(false);
+          console.log(
+            "[EncryptionProvider] Verification token found. Existing user."
+          );
+          return;
+        }
+      } catch (error) {
+        console.error("[EncryptionProvider] Error verifying first time user:", error);
+      }
       setIsFirstTimeUser(true);
-      console.log('[EncryptionProvider] No verification token found. First time user.');
-    } else {
-      setIsFirstTimeUser(false);
-      console.log('[EncryptionProvider] Verification token found. Existing user.');
-    }
-  }, []);
+    };
+    verifyFirstTimeUser();
+  }, [apiClient]);
 
   const resetInactivityTimer = useCallback(() => {
     if (inactivityTimerRef.current) {
@@ -91,10 +114,12 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     }
     // Only set a new timer if the app is *not* locked
     if (!isLocked) {
-        inactivityTimerRef.current = setTimeout(() => {
-          console.log('[EncryptionProvider] Inactivity timeout reached. Locking app.');
-          lockApp();
-        }, INACTIVITY_TIMEOUT_MS);
+      inactivityTimerRef.current = setTimeout(() => {
+        console.log(
+          "[EncryptionProvider] Inactivity timeout reached. Locking app."
+        );
+        lockApp();
+      }, INACTIVITY_TIMEOUT_MS);
     }
   }, [isLocked]); // Rerun when lock state changes
 
@@ -107,7 +132,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
       clearTimeout(inactivityTimerRef.current);
       inactivityTimerRef.current = null;
     }
-    console.log('[EncryptionProvider] App locked.');
+    console.log("[EncryptionProvider] App locked.");
   }, []);
 
   // Handle successful unlock
@@ -115,7 +140,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     setIsLocked(false);
     setHasError(false); // Clear errors on successful unlock
     resetInactivityTimer(); // Start timer on successful unlock
-    console.log('[EncryptionProvider] App unlocked.');
+    console.log("[EncryptionProvider] App unlocked.");
   }, [resetInactivityTimer]);
 
   // Handle encryption errors by showing error
@@ -126,45 +151,65 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   }, []);
 
   // Simplified unlock function - only for existing users now
-  const contextUnlockApp = useCallback((password: string): boolean => {
-    try {
-      // First-time setup logic removed from here
-      
-      // Existing user - verify password first
-      if (EncryptionService.verifyKey(password)) {
-        EncryptionService.setKeyFromPassword(password); // Sets the key for active use
-        handleUnlockSuccess();
-        return true;
-      } else {
-        handleEncryptionError(new Error("Invalid password"));
+  const contextUnlockApp = useCallback(
+    async (password: string): Promise<boolean> => {
+      try {
+        // First-time setup logic removed from here
+        if (!user?.id) {
+          throw new Error("User ID not found");
+        }
+        // Existing user - verify password first
+        if (await EncryptionService.verifyKey(apiClient, user?.id, password)) {
+          EncryptionService.setKeyFromPassword(apiClient, user?.id, password); // Sets the key for active use
+          handleUnlockSuccess();
+          return true;
+        } else {
+          handleEncryptionError(new Error("Invalid password"));
+          return false;
+        }
+      } catch (error) {
+        console.error("[EncryptionProvider] Error during unlock:", error);
+        if (error instanceof Error) {
+          handleEncryptionError(error);
+        }
         return false;
       }
-    } catch (error) {
-      console.error("[EncryptionProvider] Error during unlock:", error);
-      if (error instanceof Error) {
-        handleEncryptionError(error);
-      }
-      return false;
-    }
-  }, [handleUnlockSuccess, handleEncryptionError]); // Removed isFirstTimeUser from deps if it was there implicitly
+    },
+    [apiClient, user?.id, handleUnlockSuccess, handleEncryptionError]
+  ); // Removed isFirstTimeUser from deps if it was there implicitly
 
   // Handler for password creation
-  const handleCreatePassword = useCallback((newPassword: string) => {
-    try {
-      console.log('[EncryptionProvider] Creating new password.');
-      EncryptionService.setKeyFromPassword(newPassword); // This also creates and stores the verification token
-      setIsFirstTimeUser(false); // No longer a first-time user
-      handleUnlockSuccess(); // Unlock the app
-      console.log('[EncryptionProvider] New password created and app unlocked.');
-    } catch (error) {
-      console.error("[EncryptionProvider] Error during password creation:", error);
-      if (error instanceof Error) {
-        handleEncryptionError(error);
+  const handleCreatePassword = useCallback(
+    async (newPassword: string) => {
+      try {
+        console.log("[EncryptionProvider] Creating new password.");
+        if (!user?.id) {
+          throw new Error("User ID not found");
+        }
+        await EncryptionService.setKeyFromPassword(
+          apiClient,
+          user?.id,
+          newPassword
+        ); // This also creates and stores the verification token
+        setIsFirstTimeUser(false); // No longer a first-time user
+        handleUnlockSuccess(); // Unlock the app
+        console.log(
+          "[EncryptionProvider] New password created and app unlocked."
+        );
+      } catch (error) {
+        console.error(
+          "[EncryptionProvider] Error during password creation:",
+          error
+        );
+        if (error instanceof Error) {
+          handleEncryptionError(error);
+        }
+        // Ensure app remains locked or in a clear error state
+        setIsLocked(true);
       }
-      // Ensure app remains locked or in a clear error state
-      setIsLocked(true);
-    }
-  }, [handleUnlockSuccess, handleEncryptionError]);
+    },
+    [apiClient, user?.id, handleUnlockSuccess, handleEncryptionError]
+  );
 
   // Set up global event listeners to reset the timer on user activity
   useEffect(() => {
@@ -176,20 +221,20 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     };
 
     // Listen for common user interaction events
-    window.addEventListener('mousemove', handleActivity);
-    window.addEventListener('keydown', handleActivity);
-    window.addEventListener('click', handleActivity);
-    window.addEventListener('scroll', handleActivity);
+    window.addEventListener("mousemove", handleActivity);
+    window.addEventListener("keydown", handleActivity);
+    window.addEventListener("click", handleActivity);
+    window.addEventListener("scroll", handleActivity);
 
     // Start the initial timer
     resetInactivityTimer();
 
     // Cleanup listeners and timer on component unmount
     return () => {
-      window.removeEventListener('mousemove', handleActivity);
-      window.removeEventListener('keydown', handleActivity);
-      window.removeEventListener('click', handleActivity);
-      window.removeEventListener('scroll', handleActivity);
+      window.removeEventListener("mousemove", handleActivity);
+      window.removeEventListener("keydown", handleActivity);
+      window.removeEventListener("click", handleActivity);
+      window.removeEventListener("scroll", handleActivity);
       if (inactivityTimerRef.current) {
         clearTimeout(inactivityTimerRef.current);
       }
@@ -210,57 +255,64 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
           {hasError && (
             <Box
               sx={{
-                position: 'fixed',
-                top: '20px',
+                position: "fixed",
+                top: "20px",
                 left: 0,
                 right: 0,
-                display: 'flex',
-                justifyContent: 'center',
+                display: "flex",
+                justifyContent: "center",
                 zIndex: 9999,
               }}
             >
-              <Alert 
-                severity="error" 
-                sx={{ maxWidth: '80%' }}
+              <Alert
+                severity="error"
+                sx={{ maxWidth: "80%" }}
                 action={
-                  <Button color="inherit" size="small" onClick={() => setHasError(false)}>
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() => setHasError(false)}
+                  >
                     Dismiss
                   </Button>
                 }
               >
-                Encryption error: {errorMessage || "Please unlock with the correct password."}
+                Encryption error:{" "}
+                {errorMessage || "Please unlock with the correct password."}
               </Alert>
             </Box>
           )}
           {isFirstTimeUser ? (
-            <CreatePasswordModal 
-              open={true} 
-              onCreate={handleCreatePassword} 
+            <CreatePasswordModal
+              open={true}
+              onCreate={handleCreatePassword}
               onClose={() => {
                 // If CreatePasswordModal had a cancel button or explicit close,
                 // we might want to ensure the app remains locked or re-evaluate isFirstTimeUser.
                 // For now, it only closes on successful creation or if open prop changes.
-                console.log('[EncryptionProvider] CreatePasswordModal onClose called - app should remain locked if password not set.');
-              }} 
+                console.log(
+                  "[EncryptionProvider] CreatePasswordModal onClose called - app should remain locked if password not set."
+                );
+              }}
             />
           ) : (
             <PasswordPromptModal
-               open={isLocked} // Pass open prop directly
+              open={isLocked} // Pass open prop directly
             />
           )}
         </>
       )}
       {/* Always render children with a key that changes when unlocked, forcing re-render */}
-      <div 
-        key={isLocked ? 'locked' : 'unlocked'} 
+      <div
+        key={isLocked ? "locked" : "unlocked"}
         style={{
-          filter: isLocked ? 'blur(3px) brightness(0.8)' : 'none',
-          transition: 'filter 0.5s ease-in-out',
-          pointerEvents: isLocked ? 'none' : 'auto' // Prevent interaction with content when locked
+          filter: isLocked ? "blur(3px) brightness(0.8)" : "none",
+          transition: "filter 0.5s ease-in-out",
+          pointerEvents: isLocked ? "none" : "auto", // Prevent interaction with content when locked
         }}
       >
         {children}
       </div>
     </EncryptionContext.Provider>
   );
-} 
+}
