@@ -1,0 +1,89 @@
+.modalBackdrop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popupContainer {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #CACACA; // Figma: outline: '1px #CACACA solid', outlineOffset: '-1px' -> border is simpler
+  padding: 32px; // A general padding, can be adjusted. Figma implies gap: 24, and internal elements have widths.
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 24px; // Figma: gap: 24
+  width: 376px; // (312px button width + 32px padding * 2) approx
+  max-width: 90vw;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+  outline: none; // Remove focus outline from Modal content
+}
+
+.contentWrapper {
+  width: 202px; // Figma: width: 202
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px; // Adjusted from Figma's 24px for a tighter look, original was between title and description block
+}
+
+.title {
+  align-self: stretch;
+  text-align: center;
+  color: #131A28 !important; // Figma: color: '#131A28'
+  font-size: 24px !important; // Figma: fontSize: 24
+  font-family: 'Inter', sans-serif !important; // Figma: fontFamily: 'Inter'
+  font-weight: 600 !important; // Figma: fontWeight: '600'
+  line-height: normal !important;
+}
+
+.description {
+  align-self: stretch;
+  text-align: center;
+  color: #131A28 !important; // Figma: color: '#131A28'
+  font-size: 16px !important; // Figma: fontSize: 16
+  font-family: 'Inter', sans-serif !important; // Figma: fontFamily: 'Inter'
+  font-weight: 400 !important; // Figma: fontWeight: '400'
+  line-height: 1.5 !important; // For better readability
+}
+
+.buttonContainer {
+  width: 312px; // Figma: width: 312
+  display: flex;
+  flex-direction: column;
+  gap: 8px; // Figma: gap: 8
+}
+
+.loginButton {
+  height: 48px !important; // Figma: height: 48
+  background: #131A28 !important; // Figma: background: '#131A28'
+  border-radius: 24px !important; // Figma: borderRadius: 24
+  color: white !important; // Figma: color: 'white'
+  font-size: 16px !important; // Figma: fontSize: 16
+  font-family: 'Inter', sans-serif !important; // Figma: fontFamily: 'Inter'
+  font-weight: 400 !important; // Figma: fontWeight: '400'
+  text-transform: none !important;
+
+  &:hover {
+    background: #323F52 !important; // Darker shade for hover
+  }
+}
+
+.signupButton {
+  height: 48px !important; // Figma: height: 48
+  background: white !important; // Figma: background: 'white'
+  border-radius: 24px !important; // Figma: borderRadius: 24
+  border: 1px solid #B3B3B3 !important; // Figma: outline: '1px #B3B3B3 solid'
+  color: #131A28 !important; // Figma: color: '#131A28'
+  font-size: 16px !important; // Figma: fontSize: 16
+  font-family: 'Inter', sans-serif !important; // Figma: fontFamily: 'Inter'
+  font-weight: 400 !important; // Figma: fontWeight: '400'
+  text-transform: none !important;
+
+  &:hover {
+    background: #f5f5f5 !important; // Light grey for hover
+    border-color: #9d9d9d !important;
+  }
+} 

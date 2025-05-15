@@ -191,8 +191,10 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
           user?.id,
           newPassword
         ); // This also creates and stores the verification token
+        
         const encryptedVerificationToken = EncryptionService.encryptVerificationToken(user?.id);
         await apiClient.app.createEncryptedId(encryptedVerificationToken);
+
         setIsFirstTimeUser(false); // No longer a first-time user
         handleUnlockSuccess(); // Unlock the app
         console.log(

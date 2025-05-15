@@ -1,17 +1,21 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { Box, IconButton, Tooltip, Button, Avatar, Menu, MenuItem, ListItemIcon, ListItemText, Typography } from '@mui/material';
+import { Box, IconButton, Tooltip, Button, Avatar, Menu, MenuItem, ListItemIcon, ListItemText, Typography, Divider } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import Person2RoundedIcon from '@mui/icons-material/Person2Rounded';
 import LogoutIcon from '@mui/icons-material/Logout';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckIcon from '@mui/icons-material/Check';
+import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { usePrivy } from '@privy-io/react-auth';
 import { useAuthStatus } from '@/app/hooks/useAuthStatus';
 import { useAppConfig, useChatStore } from '@/app/store';
 import { ServiceProvider } from '@/app/constant';
 import { ModelType } from '@/app/store/config';
+import LoginSignupPopup from './LoginSignupPopup';
 import styles from './chat-header.module.scss';
 import clsx from 'clsx';
 
@@ -31,6 +35,8 @@ export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar }: Chat
 
   const [modelAnchorEl, setModelAnchorEl] = useState<null | HTMLElement>(null);
   const modelMenuOpen = Boolean(modelAnchorEl);
+
+  const [isLoginPopupOpen, setIsLoginPopupOpen] = useState(false);
 
   const handleProfileClick = (event: React.MouseEvent<HTMLElement>) => {
     setProfileAnchorEl(event.currentTarget);
@@ -52,20 +58,35 @@ export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar }: Chat
     logout();
   };
 
-  const handleModelSelect = (model: ModelType, provider: ServiceProvider) => {
-    setApiProvider(model, provider);
+  const handleModelSelect = (modelName: ModelType, providerName: ServiceProvider) => {
+    const selectedModelDetails = availableModels.find(m => m.name === modelName && m.provider.providerName === providerName);
+    if (selectedModelDetails && selectedModelDetails.available) {
+      setApiProvider(modelName, providerName);
+    }
     handleModelClose();
+  };
+
+  const handleOpenLoginPopup = () => {
+    setIsLoginPopupOpen(true);
+  };
+
+  const handleCloseLoginPopup = () => {
+    setIsLoginPopupOpen(false);
+  };
+
+  const handlePopupLogin = () => {
+    login();
+  };
+
+  const handlePopupSignup = () => {
+    login();
   };
 
   const currentModelConfig = currentSession()?.modelConfig;
 
-  const filteredModels = useMemo(() => {
-    if (!currentModelConfig) return [];
-    const currentProviderName = currentModelConfig.providerName;
-    return availableModels.filter(
-      (m) => m.available,
-    );
-  }, [availableModels, currentModelConfig]);
+  const modelsToDisplay = useMemo(() => {
+    return availableModels;
+  }, [availableModels]);
 
   return (
     <Box
@@ -113,21 +134,40 @@ export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar }: Chat
               }}
               className={styles.modelSelectorMenu}
             >
-              {filteredModels.map((model) => (
-                <MenuItem 
-                  key={`${model.provider.id}-${model.name}`}
-                  selected={model.name === currentModelConfig.model}
-                  onClick={() => handleModelSelect(model.name as ModelType, model.provider.providerName as ServiceProvider)}
-                  className={clsx(styles.modelMenuItem, model.name === currentModelConfig.model && styles.selected)}
-                >
-                  <ListItemText className={styles.modelMenuItemText} primary={model.displayName || model.name} />
-                  {model.name === currentModelConfig.model && (
-                    <ListItemIcon className={styles.checkIcon}>
-                      <CheckIcon fontSize="small" />
-                    </ListItemIcon>
-                  )}
-                </MenuItem>
-              ))}
+              {modelsToDisplay.map((model) => {
+                const isSelected = model.name === currentModelConfig.model && model.provider.providerName === currentModelConfig.providerName;
+                const isActuallyAvailable = model.available;
+
+                return (
+                  <MenuItem 
+                    key={`${model.provider.id}-${model.name}`}
+                    onClick={() => {
+                      if (isActuallyAvailable) {
+                        handleModelSelect(model.name as ModelType, model.provider.providerName as ServiceProvider)
+                      }
+                    }}
+                    className={clsx(
+                      styles.modelMenuItem, 
+                      isSelected && isActuallyAvailable && styles.selected,
+                      !isActuallyAvailable && styles.unavailable
+                    )}
+                    disabled={!isActuallyAvailable}
+                  >
+                    <ListItemText 
+                      primary={model.displayName || model.name} 
+                      className={styles.modelMenuItemText}
+                    />
+                    <Box className={styles.iconContainer}>
+                      {isSelected && isActuallyAvailable && (
+                        <img src="/icons/check.svg" alt="Selected" style={{ width: '24px', height: '24px' }} />
+                      )}
+                      {!isActuallyAvailable && (
+                        <WarningAmberOutlinedIcon className={styles.warningIcon} />
+                      )}
+                    </Box>
+                  </MenuItem>
+                );
+              })}
             </Menu>
           </Box>
         )}
@@ -167,26 +207,83 @@ export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar }: Chat
               }}
               className={styles.profileMenu}
             >
+              <Box className={styles.profileMenuUserSection}>
+                <Avatar 
+                  className={styles.profileMenuAvatar}
+                >
+                  {user?.email?.address ? user.email.address.charAt(0).toUpperCase() : <Person2RoundedIcon />}
+                </Avatar>
+                <ListItemText 
+                  primary={user?.wallet?.address || user?.email?.address || "test@example.com"} 
+                  className={styles.profileMenuText} 
+                  primaryTypographyProps={{ style: { /* overflow: 'hidden', textOverflow: 'ellipsis' */ } }}
+                />
+              </Box>
+              <Box className={styles.profileMenuCompanySection}>
+                <ListItemText 
+                  primary="Company name is very lonoooooooooooooooooooooooooooog case" 
+                  className={styles.profileMenuText}
+                  primaryTypographyProps={{ style: { /* overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' */ } }}
+                />
+              </Box>
+              <Divider className={styles.profileMenuDivider} />
+              <MenuItem
+                onClick={() => { /* Placeholder for Help & FAQ */ handleProfileClose(); }}
+                className={styles.profileMenuItem}
+              >
+                <ListItemIcon className={styles.profileMenuItemIconWrapper}>
+                  <img src="/icons/help.svg" alt="Help & FAQ" className={styles.profileMenuIcon} />
+                </ListItemIcon>
+                <ListItemText primary="Help & FAQ" className={styles.profileMenuTextItem} />
+              </MenuItem>
+              <MenuItem
+                onClick={() => { /* Placeholder for Settings */ handleProfileClose(); }}
+                className={styles.profileMenuItem}
+              >
+                <ListItemIcon className={styles.profileMenuItemIconWrapper}>
+                  <img src="/icons/settings.svg" alt="Settings" className={styles.profileMenuIcon} />
+                </ListItemIcon>
+                <ListItemText primary="Settings" className={styles.profileMenuTextItem} />
+              </MenuItem>
               <MenuItem
                 onClick={handleLogout}
                 className={styles.profileMenuItem}
               >
-                <LogoutIcon className={styles.logoutIcon} />
-                Logout
+                <ListItemIcon className={styles.profileMenuItemIconWrapper}>
+                  <img src="/icons/logout.svg" alt="Logout" className={styles.profileMenuIcon} />
+                </ListItemIcon>
+                <ListItemText primary="Log out" className={styles.profileMenuTextItem} />
               </MenuItem>
             </Menu>
           </>
         ) : (
-          <Button 
-            variant="outlined"
-            onClick={login} 
-            size="small"
-            className={styles.loginButton}
-          >
-            Login / Sign Up
-          </Button>
+          <>
+            <Button 
+              variant="contained"
+              onClick={handleOpenLoginPopup}
+              size="small"
+              className={styles.loginButtonNew}
+            >
+              Log in
+            </Button>
+            <Button 
+              variant="outlined" 
+              onClick={handleOpenLoginPopup}
+              size="small"
+              className={styles.signUpButtonNew}
+              style={{ marginLeft: '8px' }}
+            >
+              Sign up
+            </Button>
+          </>
         )}
       </Box>
+      <LoginSignupPopup
+        open={isLoginPopupOpen}
+        onClose={handleCloseLoginPopup}
+        onLogin={handlePopupLogin} 
+        onSignup={handlePopupSignup}
+      />
     </Box>
   );
 } 

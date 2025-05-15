@@ -45,43 +45,97 @@
 }
 
 .modelSelectorMenu {
-  // Styles for the Menu Paper element itself
   :global(.MuiPaper-root) {
-    border-radius: 8px;
+    background-color: white;
+    border-radius: 16px;
     margin-top: 8px;
-    min-width: 220px;
-    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
+    min-width: 250px; // Adjusted from figma's 120min/400max
+    // max-width: 400px;
+    box-shadow: 0px 2px 20px rgba(0, 0, 0, 0.10);
+    border: 1px solid #CACACA;
+    padding: 16px; // Overall padding for the menu
+    // color: var(--text-primary); // Default text color for menu, items override
   }
 }
 
 .modelMenuItem {
-  font-size: 24px !important;
-  font-weight: 700;
-  padding: 6px 16px;
-  // background-color will be conditional, handled by selected state or :hover
+  font-family: 'Inter', sans-serif;
+  font-size: 16px !important;
+  font-weight: 400;
+  line-height: 32px; // Figma spec
+  padding: 6px 16px !important; // Figma spec
+  border-radius: 8px;
+  color: #131A28; // Default text color from Figma
+  margin-bottom: 4px; // Small gap between items
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 
   &:hover {
-    background-color: var(--bg-hover);
+    background-color: #f0f0f0; // A light hover state
+    border-radius: 8px;
   }
 
   &.selected {
-    background-color: var(--bg-selected);
+    // The icon itself indicates selection
   }
 
-  .checkIcon {
-    min-width: auto;
-    margin-left: auto;
-    padding-left: 16px;
-    color: var(--accent-color);
+  &.unavailable {
+    color: #B3B3B3; // Greyed out text for unavailable items
+  }
+
+  // Container for the icon, to ensure proper alignment and spacing
+  // .iconContainer styles will be defined below as a direct child class of .modelMenuItem for clarity,
+  // even though it's applied via className={styles.iconContainer}
+}
+
+// modelMenuItemText is applied to the ListItemText component
+.modelMenuItemText {
+  flex-grow: 1; // Allow this to take available space
+  min-width: 0;   // Essential for text wrapping in flex containers
+  margin-right: 16px; // Create a gap before the icon container
+  overflow: hidden; // Prevent content from visually overflowing its calculated space
+
+  :global(span) { // Target the span elements rendered by ListItemText
+    font-size: 16px !important; 
+    font-weight: 400 !important;
+    font-family: 'Inter', sans-serif !important;
+    line-height: 32px !important;
+    display: block; // Helps with layout and wrapping consistency
+    overflow-wrap: break-word; // Prefer this for word wrapping
+    word-break: break-all; // More aggressive wrapping for long unbreakable strings
+    white-space: normal; // Ensure text can wrap to new lines
   }
 }
 
-.modelMenuItemText {
-  :global(span) { // Target the span elements rendered by ListItemText
-    font-size: 16px !important; // Use !important if necessary to override MUI defaults
-    // You can also set font-family, font-weight, etc. here
+.iconContainer {
+  min-width: 24px; // Width of the icon area from Figma
+  height: 24px;    // Height of the icon area from Figma
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto; // Pushes icon to the right, works with justify-content: space-between
+  // padding-left: 16px; // Removed - spacing now handled by margin-right on modelMenuItemText
+  flex-shrink: 0; // Prevent icon container from shrinking
+  
+  img { // For the user's check.svg
+    display: block; // remove extra space under img if any
+    // width and height are set inline in the component (24px)
+  }
+
+  .selectedIcon { // This class might still be used elsewhere or for a different visual
+    width: 18px;
+    height: 18px;
+    background-color: black;
+  }
+
+  .warningIcon {
+    color: #B3B3B3; // Color for the warning icon
+    font-size: 20px; // Adjust size as needed, or use a 24px icon
   }
 }
 
@@ -89,36 +143,111 @@
   width: 32px !important;
   height: 32px !important;
   cursor: pointer;
-  background-color: var(--bg-tertiary);
+  background-color: var(--bg-tertiary); // Keep or adjust based on new design if needed
 }
 
 .profileMenu {
-  // Similar to modelSelectorMenu
   :global(.MuiPaper-root) {
-    border-radius: 8px;
-    margin-top: 8px;
-    min-width: 180px;
-    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
+    padding: 16px !important; // Figma: padding: 16
+    background: white !important; // Figma: background: white
+    box-shadow: 0px 2px 20px rgba(0, 0, 0, 0.10) !important; // Figma: boxShadow
+    border-radius: 16px !important; // Figma: borderRadius: 16
+    border: 1px solid #CACACA !important; // Figma: outline: '1px #CACACA solid'
+    margin-top: 8px; // Keep a small gap from the avatar
+    min-width: 280px; // Adjusted for content, Figma had 120min/400max
+    max-width: 400px;
+    // gap: 10px; // This will be handled by margins on child elements or flex gap on inner containers
+  }
+
+  // Container for user avatar and email
+  .profileMenuUserSection {
+    display: flex;
+    align-items: center;
+    gap: 12px; // Figma gap: 8, increased slightly for better spacing
+    padding: 6px 16px; // Figma: paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16
+    // No border-radius here, hover can be on the parent or not at all for this section
+  }
+
+  .profileMenuAvatar {
+    width: 32px !important; // Figma: width: 32
+    height: 32px !important; // Figma: height: 32
+    // background: #D9D9D9; // Figma placeholder color - MUI Avatar handles this
+    border-radius: 9999px !important; // Figma: borderRadius: 9999
+    font-size: 16px !important; // Ensure fallback initial is well-sized
+  }
+
+  // For company name section
+  .profileMenuCompanySection {
+    padding: 6px 16px; // Figma: paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16
+    margin-top: 4px; // Small gap from user section
+    margin-bottom: 8px; // Gap before divider
+    overflow-wrap: break-word;
+  }
+
+  .profileMenuText {
+    :global(.MuiListItemText-primary) {
+      color: #131A28; // Figma: color: '#131A28'
+      font-size: 16px !important; // Figma: fontSize: 16
+      font-family: 'Inter', sans-serif !important; // Figma: fontFamily: 'Inter'
+      font-weight: 400 !important; // Figma: fontWeight: '400'
+      line-height: 24px !important; // Figma: lineHeight: 32 (adjusted for better fit)
+      white-space: normal; // Changed from nowrap to allow wrapping
+      overflow-wrap: break-word; // Allow long words to break and wrap
+      // overflow: hidden; // Removed for wrapping
+      // text-overflow: ellipsis; // Removed for wrapping
+    }
+    &.profileMenuTextItem {
+       :global(.MuiListItemText-primary) {
+        white-space: normal; // Allow wrapping for menu item text if needed
+      }
+    }
+  }
+
+  .profileMenuDivider {
+    margin-top: 8px !important; // Figma: paddingTop: 8 (spacing for divider container)
+    margin-bottom: 8px !important; // Figma: paddingBottom: 8
+    border-color: #B3B3B3 !important; // Figma: outline: '0.50px #B3B3B3 solid'
+    border-width: 0.5px !important;
+    // Mui Divider uses border-bottom by default, which is fine
   }
 }
 
 .profileMenuItem {
-  padding: 8px 16px;
-  font-size: 0.9rem;
+  padding: 8px 16px !important; // Figma: paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16. Adjusted slightly for Mui MenuItem default padding.
+  border-radius: 8px !important; // Figma: borderRadius: 8
+  margin: 4px 0 !important; // Simulates gap: 10px in parent, more controlled per item
+  gap: 12px !important; // Figma: gap: 8, increased slightly
+  min-height: auto !important; // Override Mui default min-height
 
   &:hover {
-    background-color: var(--bg-hover);
+    background-color: #f0f0f0 !important; // Standard light hover color
   }
 
-  .logoutIcon {
-    margin-right: 12px; // sx={{ mr: 1.5 }}
-    font-size: 1.1rem;
-    color: var(--text-secondary);
+  // Wrapper for the icon to control its size and centering if needed
+  .profileMenuItemIconWrapper {
+    min-width: auto !important; // Override Mui default
+    display: flex;
+    align-items: center;
+    margin-right: 0; // gap on parent handles spacing
   }
+  
+  .profileMenuIcon {
+    color: #1E1E1E !important; // Figma: var(--Icon-Default-Default, #1E1E1E)
+    font-size: 22px !important; // Figma: width/height 24, icon itself slightly smaller
+  }
+
+  // Text within the menu item, already covered by .profileMenuText generally
+  // but can be more specific if needed here or use .profileMenuTextItem
 }
 
+/* Old .logoutIcon can be removed or kept if used elsewhere */
+// .logoutIcon {
+//   margin-right: 12px; // sx={{ mr: 1.5 }}
+//   font-size: 1.1rem;
+//   color: var(--text-secondary);
+// }
+
+/* Commenting out the old .loginButton style
 .loginButton {
   border-color: var(--border-primary);
   color: var(--text-primary);
@@ -130,5 +259,45 @@
   &:hover {
     background-color: var(--bg-hover);
     border-color: var(--border-secondary);
+  }
+} 
+*/
+
+.loginButtonNew {
+  background-color: #131A28 !important; // Figma: background: '#131A28'
+  color: white !important; // Figma: color: 'white'
+  font-family: 'Inter', sans-serif !important;
+  font-size: 16px !important; // Figma: fontSize: 16
+  font-weight: 400 !important; // Figma: fontWeight: '400'
+  line-height: normal !important; // Adjusted from 32px to fit button height
+  padding: 6px 16px !important; // Figma: paddingLeft: 16, paddingRight: 16. Adjusted vertical padding for height: 32px
+  border-radius: 48px !important; // Figma: borderRadius: 48
+  text-transform: none !important;
+  min-width: auto !important; // Override Mui default min-width
+  height: 32px !important; // Figma: height: 32
+  box-shadow: none !important;
+
+  &:hover {
+    background-color: #323F52 !important; // A slightly lighter shade for hover
+  }
+}
+
+.signUpButtonNew {
+  border: 1px solid #CACACA !important; // Figma: outline: '1px #CACACA solid'
+  color: #646464 !important; // Figma: color: '#646464'
+  background-color: white !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 16px !important; // Figma: fontSize: 16
+  font-weight: 400 !important; // Figma: fontWeight: '400'
+  line-height: normal !important; // Adjusted from 32px to fit button height
+  padding: 5px 15px !important; // Adjusted for border, Figma: paddingLeft: 16, paddingRight: 16
+  border-radius: 48px !important; // Figma: borderRadius: 48
+  text-transform: none !important;
+  min-width: auto !important; // Override Mui default min-width
+  height: 32px !important; // Figma: height: 32
+  box-shadow: none !important;
+  &:hover {
+    background-color: #f5f5f5 !important; // A light grey for hover
+    border-color: #B0B0B0 !important;
   }
 } 
