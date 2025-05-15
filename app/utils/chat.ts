@@ -151,7 +151,7 @@ export function base64Image2Blob(base64Data: string, contentType: string) {
 export function uploadFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     // Check if the file is an image based on its MIME type
-    if (!file.type.startsWith("image/")) {
+    if (!file.type.startsWith("image/") && !file.type.startsWith("application/pdf") && !file.type.startsWith("application/msword") && !file.type.startsWith("application/vnd.openxmlformats-officedocument.wordprocessingml.document")) {
       reject(new Error("File is not an image. Only images can be processed for image_url payload."));
       return;
     }

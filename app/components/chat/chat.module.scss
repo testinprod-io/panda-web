@@ -336,17 +336,21 @@
 
 /* Container pushed to bottom by .chat-body's flex-grow - NOW STYLED */
 .chat-input-panel {
-  padding: 16px 16px; // Vertical/Horizontal padding
-  background-color: #ffffff; // White background
-  border: 1px solid #CACACA; // 1px border with #CACACA color
-  border-radius: 24px; // Keep existing border-radius or adjust if needed
-  box-shadow: 0 2px 7px 0 rgba(0, 0, 0, 0.1); // x: 0, y: 2, blur: 7, spread: 0, color: #00000033 (20% black)
+  padding: 16px; // Figma: padding 16
+  background-color: #ffffff; // Figma: background white
+  border: 1px solid #CACACA; // Figma: outline: 1px #CACACA solid
+  outline-offset: -1px; // Figma
+  border-radius: 24px; // Figma
+  box-shadow: 0px 2px 7px rgba(0, 0, 0, 0.20); // Figma
   margin: 32px auto; // Center horizontally, keep vertical margin
   width: 60%; // Default width, same as chat content
   box-sizing: border-box;
-  position: relative; 
+  position: relative;
   bottom: 0;
   z-index: 1;
+  display: flex; // New
+  flex-direction: column; // New
+  gap: 10px; // Figma: parent gap 10
 
   @media (max-width: 1024px) {
     width: 80%; /* Increase width for medium screens */
@@ -357,271 +361,430 @@
   }
 }
 
-/* Inner container holding textarea, actions, etc. */
-.chat-input-panel-inner-container {
-  position: relative; /* For positioning buttons like scroll-to-bottom */
-}
-
-/* The actual input bar with text area and button */
-.chat-input-panel-inner {
-  position: relative;
+/* Attached files preview styles - adjust if needed */
+.attach-files-preview {
   display: flex;
-  /* max-width: 800px; */ /* Limit width - Removed, controlled by outer panel margin */
-  /* margin: 0 auto; */ /* Removed */
-  background-color: transparent; // Inherit from panel
-  border: none;
-  padding: 8px 12px; // Adjusted padding
-  padding-right: 48px; /* Space for send button - Adjusted below */
-  align-items: flex-end; /* Align items (textarea, button) to bottom */
-  gap: 0.75rem;
+  gap: 10px;
+  // padding: 0px 0px 8px 0px; // Adjusted to have no horizontal padding directly, panel has it.
+  flex-wrap: wrap;
+  // No specific height mentioned, let it be determined by content
 }
 
-.chat-input-panel-inner-attach { // Style when images are attached
-  /* Add specific styles if needed when images are present */
+/* Main area for the text input */
+.chat-input-main-area {
+  align-self: stretch; // Figma
+  display: flex; // To potentially add the vertical bar later if desired
+  align-items: center; // To align bar and textarea
+  gap: 8px; // Space for the bar if it was added
+  min-height: 32px; // Default height for the area
+  margin-bottom: 16px; // Space to the controls-row below
+}
+
+.chat-input-label { // New class to wrap textarea, if needed for styling like the vertical bar
+  display: flex;
+  flex-grow: 1;
+  align-items: center; // Align items to bottom if textarea grows
 }
 
 /* Textarea */
 .chat-input {
   flex: 1; /* Takes available horizontal space */
   width: 100%; /* Takes full width */
-  /* height: 100%; */ /* Height is controlled by rows/content */
   border: none;
   background: transparent;
   outline: none;
-  font-size: 1rem; // Use rem
-  color: var(--black);
+  font-size: 16px; // Figma
+  font-family: 'Inter', sans-serif; // Figma, with fallback
+  font-weight: 400; // Figma
+  color: var(--black); // Input text color
   resize: none;
-  padding: 0;
-  min-height: 24px; /* Minimum height for one line */
+  padding: 0; // Remove default padding
+  min-height: 32px; /* Minimum height for one line based on Figma line-height */
   max-height: 200px; /* Limit auto-grow height */
-  line-height: 1.5;
-  
+  line-height: 32px; // Figma
+
   &::placeholder {
-    color: #999; // Slightly lighter placeholder
+    color: #CACACA; // Figma placeholder color
+    font-family: 'Inter', sans-serif; // Ensure placeholder also uses Inter
+    font-weight: 400; // Figma
+    font-size: 16px; // Figma
+    line-height: 32px; // Figma
   }
 }
 
-/* Send button / Stop button */
-.chat-input-send {
-  position: absolute !important; // Force absolute positioning
-  right: 16px; // Position 16px from right border (matching panel padding)
-  bottom: 16px; // Position 16px from bottom border (matching panel padding)
-  /* display: flex; */ // Already handled by MUI Button
-  /* align-items: center; */
-  /* justify-content: center; */
-  /* padding: 8px; */ // Padding handled by MUI Button sizing
-  border-radius: 50% !important; // Make circular (override MUI default)
-  min-width: 40px !important; // Ensure size
-  width: 40px !important; // Fixed size
-  height: 40px !important; // Fixed size
-  background-color: var(--black) !important; // Force background color
-  color: var(--white) !important; // Force icon/text color to white
-  /* color: var(--white); */ // Handled by MUI
-  /* border: none; */ // Handled by MUI
-  transition: all 0.3s ease;
-  cursor: pointer;
-  z-index: 2; // Ensure button is above other content within the panel
+/* Controls row for buttons */
+.chat-input-controls-row {
+  align-self: stretch; // Figma
+  display: flex;
+  justify-content: space-between; // Figma
+  align-items: center; // Figma
+  // gap: 6px; // Figma gap within button groups, not between left/right
+  // height: 40px; // Max height of the send button
+}
 
-  /* Override MUI icon margin if needed */
-  // .MuiButton-endIcon { // User commented out
-  //    margin-left: 0 !important;
-  //    margin-right: 0 !important;
-  // }
-  /* Hide text label within the button */
-  .MuiButton-label, span:not([class*="MuiSvgIcon"]) { // More robust selector
-    display: none;
+.chat-input-controls-left {
+  display: flex;
+  align-items: center;
+  // gap: 6px; // Figma
+}
+
+.chat-input-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 6px; // Figma
+}
+
+/* New Plus Button Style - using ChatAction */
+.chat-input-action-plus-new {
+  // This targets the ChatAction component wrapper.
+  // ChatAction default styles might apply, we override as needed.
+  // The Figma plus button: 32x32, padding 8, round, 1px #CACACA border
+  width: 32px !important; // Figma
+  height: 32px !important; // Figma
+  padding: 0 !important; // Reset padding, icon size and its sx prop will handle inner spacing
+  border-radius: 48px !important; // Figma (effectively circular)
+  border: 1px solid #CACACA !important; // Figma (outline is border here)
+  // outline-offset: -1px; // Handled by border directly
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: transparent !important; // Ensure no bg from ChatAction default
+
+  svg { // Target icon within
+    font-size: 16px !important; // Figma data-size="16" for icon container
+    color: #757575 !important; // Figma icon color (var(--Icon-Default-Secondary, #757575))
+    // The Figma shows a square outline for the plus, AddCircleOutlineIcon is circular.
+    // To get a square plus, we'd need a different icon or custom SVG.
+    // For now, using AddCircleOutlineIcon and styling its size/color.
+  }
+
+  img { // Target the custom SVG image
+    display: block; // Helps with precise centering by removing inline characteristics
+    // Width and height are set via inline styles in the TSX (16px)
+  }
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.05) !important; // Subtle hover
+    border-color: #A0A0A0 !important;
+  }
+}
+
+
+/* New Send button / Stop button Style */
+.chat-input-send-new {
+  // MUI Button overrides
+  min-width: 40px !important; // Figma
+  width: 40px !important; // Figma
+  height: 40px !important; // Figma
+  padding: 8px !important; // Figma
+  background: #1E1E1E !important; // Figma
+  border-radius: 48px !important; // Figma (circular)
+  box-shadow: none !important; // No shadow from MUI default
+
+  svg { // Target the SVG icon inside the button
+    // Figma: icon container data-size="32", icon itself looks like 18.67x18.67
+    // ArrowUpwardRoundedIcon and StopRoundedIcon should scale appropriately.
+    // We need to ensure their color is #CACACA as per Figma's "outline" for the arrow.
+    color: #F3F3F3 !important; // Figma send arrow "outline" color
+    fill: #F3F3F3 !important; // Ensure fill for some icons
+    stroke: #F3F3F3 !important; // Ensure stroke for outline icons like ArrowUpward
+    stroke-width: 1.5; // Make icon a bit bolder if needed
+  }
+
+  &:hover:not(:disabled) {
+    background: #E0E0E0 !important; // Slightly darker shade for hover
+    box-shadow: none !important;
   }
 
   &:disabled {
-    /* opacity: 0.5; */ // Handled by MUI
-    cursor: not-allowed;
-  }
-
-  &:not(:disabled):hover {
-    background-color: var(--black) !important; // Keep background black on hover
-    box-shadow: none !important; // Remove any hover shadow
+    background: #F0F0F0 !important; // Lighter for disabled
     svg {
-      opacity: 0.8; // Reduce icon opacity on hover
+      color: #BDBDBD !important;
+      fill: #BDBDBD !important;
+      stroke: #BDBDBD !important;
     }
   }
 
-  svg { // Target the SVG icon inside the button
-    stroke-width: 1.5; // Increase stroke width for a bolder look
-    stroke: var(--white); // Ensure stroke is white
-    fill: var(--white); // Ensure fill is white
-    transition: opacity 0.3s ease; // Add transition for opacity change
+  /* Hide text label within the button if any MUI default adds it */
+  .MuiButton-label, span:not([class*="MuiSvgIcon"]) {
+    display: none !important;
   }
 }
 
-/* Action buttons container (e.g., settings, prompts) */
-.chat-input-actions {
-  display: flex;
-  flex-wrap: wrap; /* Allow wrapping */
-  /* justify-content: space-between; */ /* Removed for consistent spacing with gap */
-  // gap: 10px;
-  align-items: center;
-  // padding-bottom: 8px; /* Space below actions, shown above input */
-  padding-left: 10px; /* Align with input padding */
 
-  &-end { /* Group pushed to the right */
-    display: flex;
-    margin-left: auto;
-    // gap: 5px;
-  }
+/* Remove or comment out old/conflicting styles */
 
-  /* Individual action button */
-  .chat-input-action {
-    display: inline-flex;
-    border-radius: 50%; // Make circular by default
-    font-size: 8px;
-    // background-color: var(--white);
-    color: var(--black);
-    // border: var(--border-in-light);
-    padding: 0; // Remove padding to respect width/height
-    // animation: slide-in ease 0.3s;
-    // box-shadow: var(--card-shadow);
-    // transition: width ease 0.3s, background-color ease 0.2s; /* Added background transition */
-    align-items: center;
-    justify-content: center; // Center icon horizontally
-    height: 32px; /* Default height */
-    width: 32px; // Default width
-    overflow: hidden;
-    cursor: pointer;
-
-    .text {
-      white-space: nowrap;
-      padding-left: 5px;
-      opacity: 0;
-      transform: translateX(-5px);
-      transition: all ease 0.3s;
-      pointer-events: none;
-    }
-
-    // &:hover {
-      // background-color: var(--bg-primary); /* Add hover effect */
-      // border-radius: 8px; // Make square on hover
-      /* Hover text reveal might be better handled differently if needed */
-      /* width: var(--full-width); */
-      /* transition-delay: var(--delay); */
-      /* .text { */
-        /* transition-delay: var(--delay); */
-        /* opacity: 1; */
-        /* transform: translate(0); */
-      /* } */
-    // }
-
-    .text,
-    .icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-  }
+/* Inner container holding textarea, actions, etc. */
+.chat-input-panel-inner-container {
+  /* This class was wrapping the textarea and send button before. */
+  /* Now textarea is in chat-input-main-area and buttons in chat-input-controls-row */
+  /* Keep if still used for other purposes, or remove if redundant */
+  position: relative; /* For positioning buttons like scroll-to-bottom if they are still inside */
+  // display: flex; // Removed, new structure handles flex
+  // align-items: flex-end; // Removed
+  // gap: 0.75rem; // Removed
 }
 
-/* Attached images preview - Old styles, will be replaced/updated by attach-files-preview */
-.attach-images {
-  /* position: absolute; */ /* Positioning handled by flex layout now */
-  /* left: 30px; */
-  /* bottom: 32px; */
-  display: flex;
-  gap: 10px; /* Add gap between images */
-  padding-bottom: 8px; /* Space below images, shown above input */
-  padding-left: 10px; /* Align with input padding */
+/* The actual input bar with text area and button - LARGELY REPLACED */
+.chat-input-panel-inner {
+  /* This class was on the <label> wrapping the textarea. Replaced by chat-input-label or similar */
+  /* display: flex; */
+  /* background-color: transparent; */
+  /* border: none; */
+  /* padding: 8px 12px; */
+  /* padding-right: 48px; */ /* Space for send button - Handled by new layout */
+  /* align-items: flex-end; */
+  /* gap: 0.75rem; */
 }
 
-.attach-image {
-  cursor: default;
-  width: 64px;
-  height: 64px;
-  border: rgba($color: #888, $alpha: 0.2) 1px solid;
-  border-radius: 5px;
-  /* margin-right: 10px; */ /* Replaced by gap */
-  background-size: cover;
-  background-position: center;
-  background-color: var(--white);
-  position: relative; /* For mask/delete button */
-
-  .attach-image-mask {
-    position: absolute; /* Position mask over image */
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.4); /* Darken mask */
-    opacity: 0;
-    transition: all ease 0.2s;
-    display: flex; /* Center delete button */
-    align-items: center;
-    justify-content: center;
-    border-radius: 5px; /* Match parent */
-  }
-
-  &:hover .attach-image-mask {
-    opacity: 1;
-  }
-
-  .delete-image {
-    width: 24px;
-    height: 24px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 5px;
-    /* float: right; */ /* Replaced by flex centering in mask */
-    background-color: var(--white);
-    color: var(--black); /* Ensure icon color is visible */
-  }
+.chat-input-panel-inner-attach { // Style when images are attached
+  /* Add specific styles if needed when images are present */
+  /* This might not be needed if panel structure handles spacing correctly */
 }
 
-/* New styles for file attachment UI */
-.chat-input-actions-row {
-  display: flex;
-  align-items: center;
-  padding: 0px 12px 8px 12px; // Padding around the actions row
-  gap: 8px; // Space between action buttons
-}
 
-.chat-input-action-plus {
-  // For the circular '+' button - ChatAction already has some circular styling by default
-  // We might need to ensure its padding/size is correct if ChatAction defaults are not enough
-  // For example, if ChatAction default is not perfectly circular or too small/large:
-  // width: 36px !important; 
-  // height: 36px !important;
-  // padding: 0 !important; // Reset padding if ChatAction adds its own
-  // border-radius: 50% !important; // Ensure it's circular
-  // display: flex !important;
-  // align-items: center !important;
-  // justify-content: center !important;
-  // svg {
-  //   font-size: 24px !important; // Adjust icon size if needed
-  // }
-}
+/* Old Send button / Stop button - COMMENT OUT or REMOVE*/
+// .chat-input-send {
+//   position: absolute !important;
+//   right: 16px;
+//   bottom: 16px;
+//   border-radius: 50% !important;
+//   min-width: 40px !important;
+//   width: 40px !important;
+//   height: 40px !important;
+//   background-color: var(--black) !important;
+//   color: var(--white) !important;
+//   transition: all 0.3s ease;
+//   cursor: pointer;
+//   z-index: 2;
 
-.attach-files-preview {
-  display: flex;
-  gap: 10px;
-  padding: 0px 12px 8px 12px; // Match padding of actions row if desired
-  flex-wrap: wrap; // Allow previews to wrap
-}
+//   .MuiButton-label, span:not([class*="MuiSvgIcon"]) {
+//     display: none;
+//   }
 
+//   &:disabled {
+//     cursor: not-allowed;
+//   }
+
+//   &:not(:disabled):hover {
+//     background-color: var(--black) !important;
+//     box-shadow: none !important;
+//     svg {
+//       opacity: 0.8;
+//     }
+//   }
+
+//   svg {
+//     stroke-width: 1.5;
+//     stroke: var(--white);
+//     fill: var(--white);
+//     transition: opacity 0.3s ease;
+//   }
+// }
+
+/* Old Action buttons container - COMMENT OUT or REMOVE */
+// .chat-input-actions {
+//   display: flex;
+//   flex-wrap: wrap;
+//   align-items: center;
+//   padding-left: 10px;
+
+//   &-end {
+//     display: flex;
+//     margin-left: auto;
+//   }
+
+//   .chat-input-action {
+//     display: inline-flex;
+//     border-radius: 50%;
+//     font-size: 8px;
+//     color: var(--black);
+//     padding: 0;
+//     align-items: center;
+//     justify-content: center;
+//     height: 32px;
+//     width: 32px;
+//     overflow: hidden;
+//     cursor: pointer;
+
+//     .text {
+//       white-space: nowrap;
+//       padding-left: 5px;
+//       opacity: 0;
+//       transform: translateX(-5px);
+//       transition: all ease 0.3s;
+//       pointer-events: none;
+//     }
+
+//     .text,
+//     .icon {
+//       display: flex;
+//       align-items: center;
+//       justify-content: center;
+//     }
+//   }
+// }
+
+/* Old styles for file attachment UI - RETAIN and ensure compatibility */
+/* .chat-input-actions-row was for the old plus button - COMMENT OUT or REMOVE */
+// .chat-input-actions-row {
+//   display: flex;
+//   align-items: center;
+//   padding: 0px 12px 8px 12px;
+//   gap: 8px;
+// }
+
+/* .chat-input-action-plus was the old plus button style - COMMENT OUT or REMOVE */
+// .chat-input-action-plus {
+// }
+
+
+// .attach-image, .attach-file-item styles should be reviewed to ensure they fit the new panel padding
 .attach-file-item {
   cursor: default;
-  width: 64px; // Standard size for previews
-  height: 64px;
-  border: 1px solid var(--border-color, #e0e0e0); // Use a variable or default
-  border-radius: 8px;
-  background-size: cover;
-  background-position: center;
-  background-color: var(--bg-subtle, #f0f0f0); // Use a variable or default
   position: relative;
-  display: flex; // For placeholder content centering
+  display: flex; // Changed from inline-flex to flex for consistency
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  // Common styling ends, specific styling below:
 }
 
-.file-icon-placeholder {
+/* Styles for Document File Previews */
+.attach-file-item-doc {
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #CACACA; // Figma uses outline, border is more common for this
+  // outline-offset: -1px; // Usually paired with outline
+  gap: 8px; // Gap between icon area, info, and delete button
+  align-items: flex-start; // Align items to the top
+  width: auto; // Let width be determined by content up to a max
+  min-width: 200px; // Ensure it's not too small
+  max-width: 300px; // Prevent it from becoming too wide
+  height: 80px; // Height based on content (icon is 48px + padding)
+  justify-content: flex-start; // Align content to the start
+
+  .doc-file-icon-bg {
+    width: 48px;
+    height: 48px;
+    background: #F33D4F;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0; // Prevent shrinking
+    // SVG icon inside is styled via its own attributes or can be targeted if needed
+  }
+
+  .doc-file-info {
+    flex: 1 1 0; // Allow shrinking and growing
+    display: flex;
+    flex-direction: column;
+    justify-content: center; // Vertically center text within the 48px effective height
+    gap: 4px;
+    min-width: 0; // Important for text truncation in flex children
+    // height: 48px; // To match icon height, or let it be natural
+  }
+
+  .doc-file-name {
+    color: black;
+    font-size: 16px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    word-wrap: break-word; // Should be default for divs, but explicit
+    white-space: nowrap; // Prevent wrapping
+    overflow: hidden; // Hide overflow
+    text-overflow: ellipsis; // Add ...
+    // max-width: 220px; // Figma specific, but flex should handle it with min-width on parent
+  }
+
+  .doc-file-type {
+    color: #757575;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    word-wrap: break-word;
+  }
+
+  .doc-file-delete-button {
+    width: 16px;
+    height: 16px;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #757575; // Icon color from Figma for the 'x'
+    flex-shrink: 0;
+
+    &:hover {
+      color: #333;
+    }
+
+    svg { // Targeting MUI CloseIcon
+      font-size: 16px !important; // Ensure icon size matches button
+    }
+  }
+}
+
+/* Styles for Image File Previews */
+.attach-file-item-image {
+  width: 80px; // Keeping the old fixed size for images for now
+  height: 80px;
+  border-radius: 8px;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--bg-subtle, #f0f0f0); // Fallback if image is transparent/broken
+  border: 1px solid var(--border-color, #e0e0e0);
+
+  .attach-file-mask-image {
+    width: 100%;
+    height: 100%;
+    padding: 8px; // Figma
+    background: rgba(0, 0, 0, 0.20); // Figma
+    border-radius: इन्हेरिट; // Inherit from parent
+    display: flex;
+    justify-content: flex-end; // Align delete button to top-right
+    align-items: flex-start;
+    opacity: 0; // Hidden by default, show on hover of .attach-file-item-image
+    transition: opacity 0.2s ease-in-out;
+
+    // Styling for the DeleteImageButton (assuming it's a button with an icon)
+    // The DeleteImageButton component might have its own classes for the icon, adjust as needed.
+    // This targets the button element directly if it's the child.
+    .delete-image-button-wrapper { // Assuming DeleteImageButton creates a wrapper or style the button directly
+      width: 28px; // Figma container for delete icon
+      height: 28px;
+      padding: 6px; // Figma
+      // background: #757575; // Figma - this is for the icon's direct circular background
+      // box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25); // Figma
+      // border-radius: 24px; // Figma - for the icon's circular background
+      // outline: 1px #D9D9D9 solid; // Figma - for the icon's circular background
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      // The actual icon (e.g. <CloseIcon /> from MUI) inside DeleteImageButton needs styling
+      // If DeleteImageButton uses an SVG or specific element, target that.
+      // For now, let's assume DeleteImageButton's default style is acceptable or will be made to fit.
+      // The Figma design for this delete button is very specific and might require changes to DeleteImageButton itself.
+      // For simplicity here, we're styling the mask. The actual button inside will use its default.
+      // To achieve the Figma look for the delete button itself (circular, dark bg, white X):
+      // 1. Modify DeleteImageButton component OR
+      // 2. Use a completely different button here and style it.
+      // Let's assume current DeleteImageButton is fine for now, and only mask is styled.
+    }
+  }
+
+  &:hover .attach-file-mask-image {
+    opacity: 1;
+  }
+}
+
+
+.file-icon-placeholder { // Old style, potentially still used or can be removed if GenericFileIcon covers all non-image cases
   padding: 4px;
   text-align: center;
   font-size: 12px;
@@ -636,6 +799,8 @@
   }
 }
 
+// The old .attach-file-mask is now fully commented out to avoid conflicts and syntax errors.
+/*
 .attach-file-mask {
   position: absolute;
   inset: 0;
@@ -653,7 +818,7 @@
   }
   // DeleteImageButton styling is likely within its own component or covered by .delete-image if that class is reused
 }
-
+*/
 
 /* ============================== */
 /* ===== Other UI Components ===== */

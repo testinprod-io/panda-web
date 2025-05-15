@@ -35,6 +35,16 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'; // Import Scr
 import { useChatActions } from "@/app/hooks/useChatActions";
 import styles from "@/app/components/chat/chat.module.scss";
 import { UUID } from "crypto";
+import CloseIcon from '@mui/icons-material/Close'; // For the new 'x' delete button
+
+// Helper component for the generic file icon
+const GenericFileIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="32" height="32" rx="5.33333" fill="none"/> {/* Adjusted to rx for rounded corners based on parent */}
+    <path d="M21.3333 24H10.6666C9.92778 24 9.33325 23.4055 9.33325 22.6667V9.33333C9.33325 8.5945 9.92778 8 10.6666 8H16L22.6666 12.6667V22.6667C22.6666 23.4055 22.0721 24 21.3333 24Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M22.6666 12.6667H17.3333C16.5944 12.6667 16 12.0722 16 11.3333V8" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
 
 const localStorage = safeLocalStorage();
 
@@ -89,7 +99,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   const [attachedFiles, setAttachedFiles] = useState<{url: string, type: string, name: string}[]>([]);
   const [uploading, setUploading] = useState(false);
   // Initialize with default rows
-  const [inputRows, setInputRows] = useState(2);
+  const [inputRows, setInputRows] = useState(1);
 
   const autoFocus = !isMobileScreen;
 
@@ -136,7 +146,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
       const rows = inputRef.current ? autoGrowTextArea(inputRef.current) : 1;
       const currentInputRows = Math.min(
         20,
-        Math.max(2, rows),
+        Math.max(1, rows),
       );
       setInputRows(currentInputRows);
     },
@@ -155,7 +165,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
       const rows = autoGrowTextArea(inputRef.current);
       const initialCalculatedRows = Math.min(
         20,
-        Math.max(2, rows)
+        Math.max(1, rows)
       );
       // Set the state only if it differs from the default initial state
       if (initialCalculatedRows !== inputRows) {
@@ -218,7 +228,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   // Handle file pasting
   const handlePaste = useCallback(
     async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
-      if (!modelConfig || !isVisionModel(modelConfig.model)) return;
+      if (!modelConfig || !isVisionModel(modelConfig)) return;
       const items = event.clipboardData?.items;
       if (!items) return;
 
@@ -288,57 +298,69 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
 
   return (
     <div className={styles["chat-input-panel"]} ref={ref}> {/* Attach the ref here */}
-      {/* Conditional rendering for the new actions row */}
-      {isVisionModel(modelConfig?.model ?? "") && (
-        <div className={styles["chat-input-actions-row"]}>
-          <ChatAction
-            onClick={uploadFile}
-            icon={uploading ? <CircularProgress size={24} /> : <AddCircleOutlineIcon sx={{ fontSize: 28 }} />}
-            text={null}
-            className={styles["chat-input-action-plus"]} // New class for specific styling
-          />
-          {/* Placeholder for other buttons like Search, Fork, Dashboard if they were to be added here */}
-        </div>
-      )}
-
-      {/* Attached files preview - moved here, above the textarea */}
+      {/* Attached files preview - remains at the top */}
       {attachedFiles.length > 0 && (
-            <div className={styles["attach-files-preview"]}> {/* Renamed class for clarity */}
-              {attachedFiles.map((file, index) => (
-                <div
-                  key={index}
-                  className={styles["attach-file-item"]} /* Renamed class for clarity */
-                  style={file.type.startsWith("image/") ? { backgroundImage: `url(${file.url})` } : {}}
-                >
-                  {!file.type.startsWith("image/") && (
-                    <div className={styles["file-icon-placeholder"]}> 
-                      <span>{file.name}</span> 
-                    </div>
-                  )}
-                  <div className={styles["attach-file-mask"]}> {/* Renamed class for clarity */}
+        <div className={styles["attach-files-preview"]}>
+          {attachedFiles.map((file, index) => {
+            const isImage = file.type.startsWith("image/");
+            const fileTypeDisplay = file.type.split('/')[1]?.toUpperCase() || 'File';
+
+            return (
+              <div
+                key={index}
+                className={clsx(
+                  styles["attach-file-item"],
+                  isImage ? styles["attach-file-item-image"] : styles["attach-file-item-doc"]
+                )}
+                style={isImage ? { backgroundImage: `url(${file.url})` } : {}}
+              >
+                {isImage ? (
+                  // Mask and delete button for images (as per Figma photo design)
+                  <div className={styles["attach-file-mask-image"]}>
                     <DeleteImageButton
                       deleteImage={() => {
                         setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
                       }}
                     />
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ) : (
+                  // Structure for non-image files (documents, PDFs, etc.)
+                  <>
+                    <div className={styles["doc-file-icon-bg"]}>
+                      <GenericFileIcon />
+                    </div>
+                    <div className={styles["doc-file-info"]}>
+                      <div className={styles["doc-file-name"]}>{file.name}</div>
+                      <div className={styles["doc-file-type"]}>{fileTypeDisplay}</div>
+                    </div>
+                    <button
+                      className={styles["doc-file-delete-button"]}
+                      onClick={() => {
+                        setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
+                      }}
+                      aria-label="Remove file"
+                    >
+                      <CloseIcon sx={{ fontSize: 14 }} />
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
-      <div className={styles["chat-input-panel-inner-container"]}> {/* Wrapper for textarea and buttons */}
+      {/* Main area for the text input */}
+      <div className={styles["chat-input-main-area"]}>
         <label
           htmlFor="chat-input"
-          className={clsx(styles["chat-input-panel-inner"], {
-            // [styles["chat-input-panel-inner-attach"]]: attachedFiles.length > 0, // This class might not be needed here anymore or needs rework
-          })}
+          className={styles["chat-input-label"]} // New or adjusted class if needed
         >
           <textarea
             id="chat-input"
             ref={inputRef}
             className={styles["chat-input"]}
-            placeholder={Locale.Chat.Input(submitKey)}
+            placeholder={Locale.Chat.Input(submitKey)} // Reverted to existing Locale string
             onInput={(e) => setUserInput(e.currentTarget.value)}
             value={userInput}
             onKeyDown={onInputKeyDown}
@@ -347,21 +369,35 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
             onPaste={handlePaste}
             rows={inputRows}
             autoFocus={autoFocus}
-            aria-label={Locale.Chat.Input(submitKey)}
+            aria-label={Locale.Chat.Input(submitKey)} // Reverted to existing Locale string
           />
-          {/* Attached files preview was here, moved above the inner-container */}
         </label>
       </div>
-      <Button
-          className={styles["chat-input-send"]}
-          variant="contained"
-          onClick={isLoading ? () => ChatControllerPool.stopAll() : doSubmit}
-          disabled={uploading || (!isLoading && (userInput ?? "").trim() === "" && attachedFiles.length === 0)}
-          aria-label={isLoading ? Locale.Chat.InputActions.Stop : Locale.Chat.Send}
-          sx={{ ml: 1 }}
-        >
-          {isLoading ? <StopRoundedIcon /> : <ArrowUpwardRoundedIcon />}
-        </Button>
+
+      {/* Controls row for buttons */}
+      <div className={styles["chat-input-controls-row"]}>
+        <div className={styles["chat-input-controls-left"]}>
+          {isVisionModel(modelConfig) && (
+            <ChatAction
+              onClick={uploadFile}
+              icon={<img src="/icons/plus.svg" alt={Locale.Chat.InputActions.UploadImage} style={{ width: '16px', height: '16px' }} />} //{uploading ? <CircularProgress size={16} /> :} // Use custom SVG icon
+              text={null}
+              className={styles["chat-input-action-plus-new"]} // New class for specific styling
+            />
+          )}
+        </div>
+        <div className={styles["chat-input-controls-right"]}>
+          <Button
+            className={styles["chat-input-send-new"]} // New class for specific styling
+            variant="contained" // Keep variant, but styles will override
+            onClick={isLoading ? () => ChatControllerPool.stopAll() : doSubmit}
+            disabled={uploading || (!isLoading && (userInput ?? "").trim() === "" && attachedFiles.length === 0)}
+            aria-label={isLoading ? Locale.Chat.InputActions.Stop : Locale.Chat.Send}
+          >
+            {isLoading ? <StopRoundedIcon /> : <ArrowUpwardRoundedIcon />}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 });

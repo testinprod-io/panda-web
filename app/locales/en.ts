@@ -88,7 +88,7 @@ const en = {
       // if (submitKey === String(SubmitKey.Enter)) {
       //   inputHints += ", Shift + Enter to wrap";
       // }
-      return "Ask anything";
+      return "Ask me anything";
     },
     Send: "Send",
     StartSpeak: "Start Speak",

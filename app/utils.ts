@@ -8,6 +8,7 @@ import {
 } from "./constant";
 import { fetch as tauriStreamFetch } from "./utils/stream";
 import { ModelSize } from "@/app/types";
+import { ModelConfig } from "./store";
 
 export function trimTopic(topic: string) {
   // Fix an issue where double quotes still show in the Indonesian language
@@ -291,8 +292,8 @@ export function getMessageImages(message: RequestMessage): string[] {
   return urls;
 }
 
-export function isVisionModel(model: string) {
-  return true;
+export function isVisionModel(modelConfig: ModelConfig | undefined) {
+  return modelConfig?.model === "Qwen/Qwen2.5-Omni-7B";
 //   const visionModels = useAccessStore.getState().visionModels;
 //   const envVisionModels = visionModels?.split(",").map((m) => m.trim());
 //   if (envVisionModels?.includes(model)) {

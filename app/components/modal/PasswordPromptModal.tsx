@@ -68,11 +68,9 @@ export function PasswordPromptModal({ open }: PasswordPromptModalProps) {
     <Dialog 
       open={open} 
       disableEscapeKeyDown 
-      fullWidth 
-      maxWidth="xs"
       BackdropProps={{
         style: {
-          backgroundColor: 'rgba(0, 0, 0, 0.1)', 
+          backgroundColor: 'rgba(0, 0, 0, 0.6)', 
           backdropFilter: 'blur(5px)', 
           WebkitBackdropFilter: 'blur(5px)', 
         }
@@ -81,46 +79,48 @@ export function PasswordPromptModal({ open }: PasswordPromptModalProps) {
         style: {
           backgroundColor: '#FFFFFF', 
           borderRadius: '8px', // Figma: borderRadius: 8
-          boxShadow: '0px 10px 25px rgba(0, 0, 0, 0.1)', 
-          padding: '24px', // General padding, specific gaps handled below
+          paddingTop: '40px', // New top padding
+          paddingBottom: '40px', // New bottom padding
+          paddingLeft: '86px', // New left padding
+          paddingRight: '86px', // New right padding
         }
       }}
     >
-      {/* Combined Title and Paragraph Block with Gap */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', marginBottom: '24px' }}>
-        <DialogTitle sx={{ textAlign: 'center', padding: 0 }}>
-          <Typography variant="h5" component="div" sx={{ 
-            color: '#131A28', // Figma: color: '#131A28'
-            fontSize: '24px', // Figma: fontSize: 24
-            fontFamily: 'Inter, sans-serif', // Figma: fontFamily: 'Inter'
-            fontWeight: '600', // Figma: fontWeight: '600'
-            wordWrap: 'break-word'
-          }}>
-            Unlock Data Encryption
-          </Typography>
-        </DialogTitle>
-        <DialogContent sx={{ textAlign: 'center', padding: 0 }}>
-          <Typography variant="body1" sx={{ // body1 is 16px by default, adjust if needed
-            color: '#131A28', // Figma: color: '#131A28'
-            fontSize: '16px', // Figma: fontSize: 16
-            fontFamily: 'Inter, sans-serif', // Figma: fontFamily: 'Inter'
-            fontWeight: '400', // Figma: fontWeight: '400'
-            wordWrap: 'break-word'
-          }}>
-            Please enter your password to decrypt your chat data. This password is only stored temporarily in your browser\'s memory.
-          </Typography>
-        </DialogContent>
-      </Box>
-      
-      <form onSubmit={handleSubmit}>
-        {/* Input and Button Block with Gap */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+      {/* New Fixed-width Centered Inner Container */}
+      <Box sx={{ width: '372px', margin: '0 auto', flexDirection: 'column', alignItems: 'center' }}>
+        {/* Combined Title and Paragraph Block with Gap */}
+        <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '40px', marginBottom: '24px' }}>
+          <DialogTitle sx={{ textAlign: 'center', padding: 0 }}>
+            <Typography variant="h5" component="div" sx={{ 
+              color: '#131A28', // Figma: color: '#131A28'
+              fontSize: '24px', // Figma: fontSize: 24
+              fontFamily: 'Inter, sans-serif', // Figma: fontFamily: 'Inter'
+              fontWeight: '600', // Figma: fontWeight: '600'
+              wordWrap: 'break-word'
+            }}>
+              Unlock Data Encryption
+            </Typography>
+          </DialogTitle>
+          <DialogContent sx={{ textAlign: 'center', padding: 0 }}>
+            <Typography variant="body1" sx={{ // body1 is 16px by default, adjust if needed
+              color: '#131A28', // Figma: color: '#131A28'
+              fontSize: '16px', // Figma: fontSize: 16
+              fontFamily: 'Inter, sans-serif', // Figma: fontFamily: 'Inter'
+              fontWeight: '400', // Figma: fontWeight: '400'
+              wordWrap: 'break-word'
+            }}>
+              Please enter your password to decrypt your chat data. This password is only stored temporarily in your browser's memory.
+            </Typography>
+          </DialogContent>
+        </Box>
+        
+        {/* Form Block (Input and Button) */}
+        <Box component="form" onSubmit={handleSubmit} sx={{ width: '372px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <TextField
             autoFocus
             required
             margin="none" // Remove default margin, using gap from parent Box
             id="password"
-            placeholder="Password" 
             type="password"
             fullWidth
             variant="outlined" 
@@ -128,7 +128,7 @@ export function PasswordPromptModal({ open }: PasswordPromptModalProps) {
             onChange={handlePasswordChange}
             error={!!error}
             helperText={error}
-            InputLabelProps={{ style: { fontFamily: 'Inter, sans-serif' } }} // For consistency if label were used
+            InputLabelProps={{ style: { width: '100% !important', fontFamily: 'Inter, sans-serif' } }} // For consistency if label were used
             FormHelperTextProps={{
               style: {
                 fontFamily: 'Inter, sans-serif',
@@ -158,6 +158,7 @@ export function PasswordPromptModal({ open }: PasswordPromptModalProps) {
                 }
               },
               '& .MuiInputBase-input': {
+                width: '100% !important',
                 padding: '0 14px', // Adjusted padding to vertically center text in 56px height
                 height: '100%', // Ensure input takes full height of MuiOutlinedInput-root
                 color: '#131A28', // Figma: color: '#131A28' (for text inside input)
@@ -185,8 +186,8 @@ export function PasswordPromptModal({ open }: PasswordPromptModalProps) {
               fullWidth 
               sx={{
                 height: '48px', // Figma: height: 48
-                background: '#F3F3F3', // Figma: background: '#F3F3F3'
-                color: password ? '#131A28' : '#CACACA', // Figma: color: '#CACACA' (use for disabled), use darker for enabled
+                background: password ? '#131A28' : '#F3F3F3', // Figma: background: '#F3F3F3'
+                color: password ? '#C1FF83' : '#CACACA', // Figma: color: '#CACACA' (use for disabled), use darker for enabled
                 borderRadius: '24px', // Figma: borderRadius: 24
                 padding: '0 10px', // Figma: padding: 10 (adjust for vertical centering)
                 textTransform: 'none', 
@@ -208,7 +209,7 @@ export function PasswordPromptModal({ open }: PasswordPromptModalProps) {
             </Button>
           </DialogActions>
         </Box>
-      </form>
+      </Box> {/* End of New Fixed-width Centered Inner Container */}
     </Dialog>
   );
 } 

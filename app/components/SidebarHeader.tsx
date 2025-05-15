@@ -26,7 +26,7 @@ export default function SidebarHeader({ onCollapseSidebar }: SidebarHeaderProps)
     >
       <Tooltip title="Collapse Sidebar">
         <IconButton onClick={onCollapseSidebar} sx={{ color: 'white' }}>
-          <ChevronLeftIcon />
+        <img src="/icons/sidebar.svg" alt="Collapse Sidebar" style={{ width: '24px', height: '24px' }} />
         </IconButton>
       </Tooltip>
       <Tooltip title="New Chat">
