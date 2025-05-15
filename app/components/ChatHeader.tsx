@@ -75,7 +75,7 @@ export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar }: Chat
         {isReady && isAuthenticated && isSidebarCollapsed && (
           <Tooltip title="Reveal Sidebar">
             <IconButton onClick={onRevealSidebar} className={styles.revealSidebarButton}>
-              <MenuIcon />
+              <img src="/icons/sidebar.svg" alt="Reveal Sidebar" style={{ width: '24px', height: '24px', color: '#1E1E1E' }} />
             </IconButton>
           </Tooltip>
         )}

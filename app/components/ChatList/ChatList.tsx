@@ -11,6 +11,56 @@ import { ChatItem } from "./ChatItem";
 import { ChatListSkeleton } from "./ChatListSkeleton";
 import styles from "./chat-list.module.scss";
 
+// Helper to determine date group
+const getRelativeDateGroup = (dateInput: number): string => { // Changed to number for lastUpdate
+  const now = new Date();
+  const then = new Date(dateInput);
+
+  const diffTime = now.getTime() - then.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  if (now.toDateString() === then.toDateString()) return "Today";
+  // Ensure it was actually yesterday by comparing date part, not just diffDays === 1
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (yesterday.toDateString() === then.toDateString()) return "Yesterday";
+
+  if (diffDays < 7) return "Previous 7 Days";
+  if (diffDays < 30) return "Previous 30 Days";
+  
+  if (now.getFullYear() === then.getFullYear()) {
+    return then.toLocaleString('default', { month: 'long' });
+  }
+  return then.getFullYear().toString();
+};
+
+interface GroupedSessions {
+  [groupName: string]: ChatSession[];
+}
+
+// Order of date groups for display
+const groupOrder = [
+  "Today",
+  "Yesterday",
+  "Previous 7 Days",
+  "Previous 30 Days",
+  // Months and years will be added dynamically and sorted if necessary
+];
+
+// Function to get a sortable key for month/year groups
+const getMonthYearSortKey = (groupName: string, currentYear: number): string => {
+  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  if (months.includes(groupName)) {
+    // Format as YYYY-MM for sorting (e.g., 2024-03 for March 2024)
+    return `${currentYear}-${(months.indexOf(groupName) + 1).toString().padStart(2, '0')}`;
+  }
+  // For year groups (e.g., "2023"), use the year itself, ensure it sorts after months of current year
+  if (/^\d{4}$/.test(groupName)) {
+    return groupName;
+  }
+  return groupName; // Fallback for predefined groups
+};
+
 interface ChatListProps {
   narrow?: boolean;
 }
@@ -93,11 +143,11 @@ export function ChatList(props: ChatListProps) {
 
   // Initial load
   useEffect(() => {
-    if (localSessions.length === 0 && hasMore) { 
+    if (localSessions.length === 0 && hasMore && !isInitialLoading) { 
       console.log("[ChatList] Triggering initial load (limit 20 by user change).");
       loadMoreSessions({ limit: 20 });
     }
-  }, [loadMoreSessions, localSessions.length, hasMore]);
+  }, [loadMoreSessions, localSessions.length, hasMore, isInitialLoading]);
 
   // Infinite scroll observer
   useEffect(() => {
@@ -192,30 +242,69 @@ export function ChatList(props: ChatListProps) {
     }
   };
 
+  const groupedSessions = localSessions.reduce<GroupedSessions>((acc, session) => {
+    // Use `lastUpdate` which is a number (timestamp)
+    const dateToGroup = session.lastUpdate; // Default to now if undefined for safety, though lastUpdate should exist
+    const groupName = getRelativeDateGroup(dateToGroup);
+    if (!acc[groupName]) {
+      acc[groupName] = [];
+    }
+    acc[groupName].push(session);
+    return acc;
+  }, {});
+
+  // Sort group names: predefined first, then by month/year (recent first)
+  const currentYear = new Date().getFullYear();
+  const sortedGroupNames = Object.keys(groupedSessions).sort((a, b) => {
+    const aIsPredefined = groupOrder.includes(a);
+    const bIsPredefined = groupOrder.includes(b);
+
+    if (aIsPredefined && bIsPredefined) {
+      return groupOrder.indexOf(a) - groupOrder.indexOf(b);
+    }
+    if (aIsPredefined) return -1;
+    if (bIsPredefined) return 1;
+
+    // For dynamic groups (months/years), sort them reverse chronologically
+    const sortKeyA = getMonthYearSortKey(a, currentYear);
+    const sortKeyB = getMonthYearSortKey(b, currentYear);
+
+    // Assuming keys like YYYY-MM or YYYY for sorting
+    if (sortKeyA > sortKeyB) return -1; // Newer dates first
+    if (sortKeyA < sortKeyB) return 1;
+    return 0;
+  });
+
   if (isInitialLoading && localSessions.length === 0) {
-    return <ChatListSkeleton count={5} />;
+    return <ChatListSkeleton count={10} />; // Show more skeletons for initial group loading
   }
 
   return (
     <div className={styles["chat-list"]} ref={listContainerRef}>
-      {localSessions.map((item, i) => (
-        <ChatItem
-          session={item}
-          key={item.id}
-          index={i} 
-          selected={item.id === store.currentSession()?.id} 
-          onClick={() => {
-            handleSelectItem(item);
-          }}
-          onDelete={() => handleDeleteItem(item)}
-          onRename={(newTitle) => handleRenameItem(item, newTitle)}
-          narrow={props.narrow}
-        />
+      {sortedGroupNames.map(groupName => (
+        <div key={groupName} className={styles["chat-date-group"]}>
+          <div className={styles["chat-date-header"]}>{groupName}</div>
+          {groupedSessions[groupName]
+            // Sort sessions within each group by lastActivity date, most recent first
+            .sort((a, b) => b.lastUpdate - a.lastUpdate)
+            .map((item, i) => (
+              <ChatItem
+                session={item}
+                key={item.id}
+                index={i} // Index within its own group, might not be globally unique for selection logic if needed
+                selected={item.id === store.currentSession()?.id}
+                onClick={() => handleSelectItem(item)}
+                onDelete={() => handleDeleteItem(item)}
+                onRename={(newTitle) => handleRenameItem(item, newTitle)}
+                narrow={props.narrow}
+              />
+            ))}
+        </div>
       ))}
-      {hasMore && <div ref={observerRef} style={{ height: "0px" }} />} 
+      {hasMore && <div ref={observerRef} style={{ height: "1px", marginTop: "-1px" }} />} {/* Make observer target very small and unobtrusive */}
       {isPagingLoading && <ChatListSkeleton count={5} />}
       {!isInitialLoading && localSessions.length === 0 && !hasMore && (
-        <div className={styles["chat-list-item-title"]} >{"No sessions found"}</div> /* Temp string */
+        <div className={styles["chat-list-item-title"]} >{"No conversations found"}</div>
       )}
     </div>
   );

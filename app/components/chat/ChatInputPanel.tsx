@@ -7,7 +7,6 @@ import { useDebouncedCallback } from "use-debounce";
 import {
   useAppConfig,
   useChatStore,
-  useAccessStore,
   SubmitKey,
   ModelConfig,
 } from "@/app/store"; // Adjust paths

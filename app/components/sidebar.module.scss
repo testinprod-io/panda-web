@@ -4,38 +4,114 @@
   height: 100%; // Assuming full height
   display: flex;
   flex-direction: column;
-  // padding: 16px 0; // Add some vertical padding, horizontal padding will make items 224px wide if items are 100% of this minus padding
+  padding: 17px 31px; // Figma: paddingTop: 17, paddingBottom: 17, paddingLeft: 31, paddingRight: 31
   box-sizing: border-box;
-  transition: width 0.3s; // Added padding to transition
+  transition: width 0.3s ease, padding 0.3s ease; // Ensure padding is part of the transition
+  gap: 30px; // Adjusted gap between header container and content, Figma's 72px might be too large or include other elements. Can be fine-tuned.
+  overflow-x: hidden; // Prevent horizontal scrollbar for the entire sidebar
 }
 
 .sidebarCollapsed {
-  padding: 0 !important; // Ensure no padding when collapsed
-  overflow: hidden !important; // Hide content when collapsed
+  width: 0px !important;   // Target width for collapse animation
+  padding: 0 !important;    // Animate padding to 0
+  overflow: hidden !important;
+
+  // When sidebar is collapsed, its direct children (header & content area) fade out
+  > .sidebarHeaderContainer,
+  > .sidebarContent {
+    opacity: 0;
+    pointer-events: none; // Disable interaction when invisible
+  }
 }
 
-.sidebarHeader {
+.sidebarHeaderContainer { // New wrapper for the header content (icon row + logo row)
+  display: flex;
+  flex-direction: column;
+  gap: 20px; // Figma: Gap between icon row and logo row
+  align-self: stretch;
+  flex-shrink: 0; // Prevent header from shrinking
+  min-width: 224px; // Prevents content from shrinking: 286px (total) - 2 * 31px (padding)
+  opacity: 1;       // Default visible state
+}
+
+.sidebarHeaderIconRow { // Was .sidebarHeader
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 16px; // Keep some padding for header items, distinct from chat list padding
-  // borderBottom: '1px solid', // User had this commented out
-  // borderColor: 'divider', // This would need a CSS variable or direct color
-  height: 112px; // Match chat header height + border
-  flex-shrink: 0;
+  width: 100%; // Take full width
   color: white; // Ensure icons/text in header are white
-
+  box-sizing: border-box; // Ensure padding/border don't add to width
+  svg {
+    color: #B3B3B3;
+  }
   // Style for IconButtons within the header if needed
   :global(.MuiIconButton-root) {
     color: white; // Make all IconButton icons white
+    // Figma implies 48x48 clickable area for icons, MUI IconButton usually handles this.
+    // If specific sizing is needed:
+    // width: 48px;
+    // height: 48px;
+    // padding: 12px; /* (48-24)/2 */
   }
+}
+
+.sidebarHeaderLogoRow {
+  display: flex;
+  align-items: center;
+  padding: 12px; // Figma style
+  border-radius: 8px; // Figma style
+  gap: 8px; // Figma style
+  width: 100%; // Ensure it takes the available width within the header container
+  box-sizing: border-box; // Crucial: padding will be inside this width
+  // No background specified in Figma snippet for the row itself, assume transparent or inherited
+}
+
+.sidebarHeaderLogoImage {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px; // Figma style
+  // Ensure your image path is correct and accessible
+}
+
+.sidebarHeaderLogoTextContainer { // Container for "Panda" and "AI" text
+  display: flex; // Allows Panda and AI to be side-by-side if desired, or use column for stacking like title/subtitle
+  // For the image provided, they appear as one line with different weights
+  // If they should be stacked, add flex-direction: column;
+  // justifyContent: 'center'; // from Figma, might not be needed depending on flex setup
+  color: white;
+  font-family: 'Montserrat', sans-serif; // Specify fallback
+  font-size: 20px; // Figma style
+  letter-spacing: 0.80px; // Figma style
+  font-weight: 600;
+  line-height: 1.2; // Adjust for better visual appearance if needed
+}
+
+.logoTextBold {
+  font-weight: 600; // Figma: Panda
+}
+
+.logoTextNormal {
+  font-weight: 500; // Figma: AI
 }
 
 .sidebarContent {
   // Styles for the main content area of the sidebar (e.g., the chat list container)
   flex-grow: 1;
   overflow-y: auto;
-  padding: 0 31px; // (286px sidebar - 224px item width) / 2 = 31px padding each side for chat list
+  padding: 0; // Relies on parent .sidebar padding now
+  // The gap between date groups (e.g., "Today", "Yesterday") from Figma is 23px.
+  // This should be handled by the ChatList component or by styling child elements of sidebarContent.
+  // For example, if ChatList renders sections:
+  // > :global(.chat-date-group) + :global(.chat-date-group) {
+  // margin-top: 23px;
+  // }
+  // Or if .sidebarContent is a flex container for these groups:
+  // display: flex;
+  // flex-direction: column;
+  // gap: 23px;
+  min-width: 224px; // Prevents content from shrinking: 286px (total) - 2 * 31px (padding)
+  opacity: 1;       // Default visible state
+  transition: opacity 0.15s ease-out; // Smooth fade for content, faster than sidebar width animation
 }
 
 .sidebarFooter {

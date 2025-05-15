@@ -5,6 +5,9 @@
   overflow-y: auto;
   flex-grow: 1; /* Allow list to take available space */
   min-height: 0; /* Prevent flexbox overflow issues */
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   /* Add some padding if needed */
   /* padding: 10px 0; */
 }
@@ -20,27 +23,29 @@
   position: relative; /* Needed for absolute positioning of menu */
   user-select: none; /* Prevent text selection during drag */
   margin-bottom: 4px;
+  padding: 0 !important;
+  overflow: hidden;
+  transition: background-color 0.2s ease-in-out;
 }
 
 /* New style for the highlighted background container */
 .chat-item-highlight {
-  border-radius: 6px; /* Rounded corners for the highlight area */
-  padding: 0 15px; /* Inner horizontal padding within the 224px item */
-  width: 100%; /* Ensure it fills the chat-item */
-  height: 100%; /* Ensure it fills the chat-item */
-  display: flex; /* Use flex to align content within highlight */
+  display: flex;
   align-items: center;
-  // color: white;
+  width: 100%;
+  padding: 12px;
+  min-height: 48px;
+  box-sizing: border-box;
 }
 
 /* Style for the highlighted background ONLY when selected */
 .chat-item-selected-highlight {
-  background-color: #1E2941; /* Highlighted/selected cell color */
+  background-color: #1E2941;
 }
 
 /* Hover effect ONLY for non-selected items */
-.chat-item:hover .chat-item-highlight:not(.chat-item-selected-highlight) {
-   background-color: rgba(255, 255, 255, 0.05);
+.chat-item:hover {
+  /* Hover style for non-selected items - Figma doesn't specify, but a subtle change is good UX */
 }
 
 /* Remove the old selected style */
@@ -55,6 +60,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: white;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
 }
 
 .chat-item-title-text {
@@ -138,4 +147,53 @@
   height: 14px;
   margin-right: 8px;
   opacity: 0.7;
+}
+
+/* New styles for Date Group Headers */
+.chat-date-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-date-group + .chat-date-group {
+  margin-top: 24px;
+}
+
+.chat-date-header {
+  color: white;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  padding: 8px 0px;
+}
+
+.chat-item-info {
+  /* Existing code */
+}
+
+.chat-item-actions {
+  /* Existing code */
+}
+
+.chat-item-delete {
+  /* Existing code */
+}
+
+.chat-item-skeleton {
+  border-radius: 8px;
+  min-height: 48px;
+  padding: 0 !important;
+
+  .chat-item-highlight {
+    padding: 12px;
+    min-height: 48px;
+    box-sizing: border-box;
+  }
+
+  .chat-item-title {
+    span {
+      line-height: 1.5 !important;
+    }
+  }
 } 

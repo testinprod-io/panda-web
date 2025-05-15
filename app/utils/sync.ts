@@ -1,5 +1,4 @@
 import {
-  useAccessStore,
   useAppConfig,
   useChatStore,
 } from "@/app/store";
@@ -31,13 +30,11 @@ export type GetStoreState<T> = T extends { getState: () => infer U }
 // Turn these into functions that retrieve the methods when called
 const getLocalStateSetters = () => ({
   [StoreKey.Chat]: useChatStore.setState,
-  [StoreKey.Access]: useAccessStore.setState,
   [StoreKey.Config]: useAppConfig.setState,
 });
 
 const getLocalStateGetters = () => ({
   [StoreKey.Chat]: () => getNonFunctionFileds(useChatStore.getState()),
-  [StoreKey.Access]: () => getNonFunctionFileds(useAccessStore.getState()),
   [StoreKey.Config]: () => getNonFunctionFileds(useAppConfig.getState()),
 });
 
@@ -96,7 +93,6 @@ const MergeStates: StateMerger = {
     return localState;
   },
   [StoreKey.Config]: mergeWithUpdate<AppState[StoreKey.Config]>,
-  [StoreKey.Access]: mergeWithUpdate<AppState[StoreKey.Access]>,
 };
 
 export function getLocalAppState() {

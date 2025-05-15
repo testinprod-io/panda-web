@@ -115,7 +115,7 @@ export function PasswordPromptModal({ open }: PasswordPromptModalProps) {
         </Box>
         
         {/* Form Block (Input and Button) */}
-        <Box component="form" onSubmit={handleSubmit} sx={{ width: '372px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <TextField
             autoFocus
             required
@@ -196,7 +196,7 @@ export function PasswordPromptModal({ open }: PasswordPromptModalProps) {
                 fontWeight: '600', // Figma: fontWeight: '600'
                 boxShadow: 'none',
                 '&:hover': {
-                  background: password ? '#E5E5E5' : '#F3F3F3', // Darker on hover for enabled
+                //   background: password ? '#E5E5E5' : '#F3F3F3', // Darker on hover for enabled
                   boxShadow: 'none',
                 },
                 '&.Mui-disabled': { // Explicit styling for disabled state
