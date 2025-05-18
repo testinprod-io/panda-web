@@ -2,14 +2,9 @@
 
 import { useState, useMemo } from 'react';
 import { Box, IconButton, Tooltip, Button, Avatar, Menu, MenuItem, ListItemIcon, ListItemText, Typography, Divider } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
 import Person2RoundedIcon from '@mui/icons-material/Person2Rounded';
-import LogoutIcon from '@mui/icons-material/Logout';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import CheckIcon from '@mui/icons-material/Check';
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import SettingsIcon from '@mui/icons-material/Settings';
 import { usePrivy } from '@privy-io/react-auth';
 import { useAuthStatus } from '@/app/hooks/useAuthStatus';
 import { useAppConfig, useChatStore } from '@/app/store';

@@ -7,12 +7,8 @@ import { useDebouncedCallback } from "use-debounce";
 import {
   useAppConfig,
   useChatStore,
-  SubmitKey,
   ModelConfig,
 } from "@/app/store"; // Adjust paths
-import { ChatSession, ChatMessage } from "@/app/types";
-// import { usePromptStore } from "@/app/store/prompt";
-import { ChatCommandPrefix, useChatCommand } from "@/app/command";
 import { UNFINISHED_INPUT } from "@/app/constant";
 import { autoGrowTextArea, isVisionModel, safeLocalStorage, useMobileScreen } from "@/app/utils";
 import { uploadFile as uploadFileRemote } from "@/app/utils/chat"; // Corrected import
@@ -24,13 +20,10 @@ import { ChatControllerPool } from "@/app/client/controller"; // Import ChatCont
 import { DeleteImageButton } from "@/app/components/chat/DeleteImageButton";
 import { ChatAction } from "@/app/components/chat/ChatAction"; // Import ChatAction for ScrollToBottom
 
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'; // For the new '+' button
-import { CircularProgress } from '@mui/material'; // For uploading indicator
 import ArrowUpwardRoundedIcon from '@mui/icons-material/ArrowUpwardRounded';
 import StopRoundedIcon from '@mui/icons-material/StopRounded';
 import Button from '@mui/material/Button'; // Added MUI Button
 import { useApiClient } from "@/app/context/ApiProviderContext";
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'; // Import Scroll Down Icon
 import { useChatActions } from "@/app/hooks/useChatActions";
 import styles from "@/app/components/chat/chat.module.scss";
 import { UUID } from "crypto";
@@ -78,8 +71,6 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
     hitBottom,
     onSubmit,
     scrollToBottom,
-    setShowPromptModal,
-    setShowShortcutKeyModal,
   } = props;
 
   const apiClient = useApiClient();
@@ -90,7 +81,6 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   const isMobileScreen = useMobileScreen();
   const { submitKey, shouldSubmit } = useSubmitHandler();
   const { showSnackbar } = useSnackbar(); // Use Snackbar hook
-  const { newSession, deleteSession } = useChatActions();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   // Initialize userInput directly using the helper function
   const initialUserInput = React.useMemo(() => getInitialInput(sessionId), [sessionId]);

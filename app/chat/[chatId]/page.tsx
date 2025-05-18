@@ -76,8 +76,6 @@ export default function ChatPage() {
         _showEditMessageModalProp={handleShowEditMessageModal}
         _editingMessageProp={editingMessage}
         _setShowEditMessageModalStateProp={setShowEditMessageModal}
-        _showPromptModalStateProp={showPromptModal}
-        _setShowPromptModalStateProp={setShowPromptModal}
       />
   );
 }

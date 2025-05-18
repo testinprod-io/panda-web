@@ -4,19 +4,13 @@ import {
   ChatMessage,
   createMessage,
   MessageSyncState,
-  RequestMessage,
 } from "@/app/types/chat"; // Adjust path as needed
 import { useChatActions } from "./useChatActions";
 import { useApiClient } from "../context/ApiProviderContext";
 import { ChatApiService } from "../services/ChatApiService";
 import { MultimodalContent } from "@/app/client/api"; // Import MultimodalContent
-import { useSnackbar } from "@/app/components/SnackbarProvider"; // Optional, for error notifications
-import Locale from "@/app/locales"; // Optional
 import { ModelConfig } from "../store/config";
-import { mode } from "crypto-js";
-import { getMessageTextContent } from "../utils";
 import { ChatControllerPool } from "../client/controller";
-import { prettyObject } from "../utils/format";
 
 interface ChatSessionManagerResult {
   displayedMessages: ChatMessage[];

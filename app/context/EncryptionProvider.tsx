@@ -12,10 +12,6 @@ import React, {
 import { EncryptionService } from "@/app/services/EncryptionService";
 import { PasswordPromptModal } from "@/app/components/modal/PasswordPromptModal";
 import { CreatePasswordModal } from "@/app/components/modal/CreatePasswordModal";
-import { useChatStore } from "@/app/store/chat";
-import Alert from "@mui/material/Alert";
-import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
 import { useApiClient } from "@/app/context/ApiProviderContext";
 import { usePrivy } from "@privy-io/react-auth";
 
@@ -101,7 +97,10 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
           return;
         }
       } catch (error) {
-        console.error("[EncryptionProvider] Error verifying first time user:", error);
+        console.error(
+          "[EncryptionProvider] Error verifying first time user:",
+          error
+        );
       }
       setIsFirstTimeUser(true);
     };
@@ -191,8 +190,9 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
           user?.id,
           newPassword
         ); // This also creates and stores the verification token
-        
-        const encryptedVerificationToken = EncryptionService.encryptVerificationToken(user?.id);
+
+        const encryptedVerificationToken =
+          EncryptionService.encryptVerificationToken(user?.id);
         await apiClient.app.createEncryptedId(encryptedVerificationToken);
 
         setIsFirstTimeUser(false); // No longer a first-time user
@@ -253,39 +253,8 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
 
   return (
     <EncryptionContext.Provider value={contextValue}>
-      {/* Conditionally render the modal */}
       {isLocked && (
         <>
-          {/* {hasError && (
-            <Box
-              sx={{
-                position: "fixed",
-                top: "20px",
-                left: 0,
-                right: 0,
-                display: "flex",
-                justifyContent: "center",
-                zIndex: 9999,
-              }}
-            >
-              <Alert
-                severity="error"
-                sx={{ maxWidth: "80%" }}
-                action={
-                  <Button
-                    color="inherit"
-                    size="small"
-                    onClick={() => setHasError(false)}
-                  >
-                    Dismiss
-                  </Button>
-                }
-              >
-                Encryption error:{" "}
-                {errorMessage || "Please unlock with the correct password."}
-              </Alert>
-            </Box>
-          )} */}
           {isFirstTimeUser ? (
             <CreatePasswordModal
               open={true}

@@ -1,10 +1,7 @@
 import React, { useState } from "react";
-// Removed: import { List, ListItem, Modal } from "@/app/components/ui-lib"; 
 import { useChatStore } from "@/app/store"; 
 import { ChatSession } from "@/app/types";
-import Locale from "@/app/locales"; 
-// Removed: import CancelIcon from "@/app/icons/cancel.svg"; 
-// Removed: import ConfirmIcon from "@/app/icons/confirm.svg"; 
+import Locale from "@/app/locales"; ; 
 import { 
   IconButton, 
   TextField, 
@@ -12,30 +9,24 @@ import {
   DialogTitle, 
   DialogContent, 
   DialogActions,
-  List, // Added MUI List
-  ListItem, // Added MUI ListItem
-  ListItemText // Added MUI ListItemText
+  List, 
+  ListItem, 
+  ListItemText 
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close'; // Added MUI Icon
-import CheckIcon from '@mui/icons-material/Check'; // Added MUI Icon
+import CloseIcon from '@mui/icons-material/Close'; 
+import CheckIcon from '@mui/icons-material/Check'; 
 
 export function EditMessageModal(props: { onClose: () => void }) {
   const chatStore = useChatStore();
   const session = chatStore.currentSession();
   
   if (!session) {
-    return null; // Don't render if there's no session
+    return null; 
   }
 
-  // Keep track of the edited topic locally until confirmed
   const [editedTopic, setEditedTopic] = useState(session.topic);
-
-  // Note: The original component only allowed editing the topic,
-  // not individual messages. The name is a bit misleading.
-  // If message editing is intended, this component needs significant changes.
-
+  
   return (
-    // Removed: <div className="modal-mask">
       <Dialog open={true} onClose={props.onClose} fullWidth maxWidth="xs"> {/* Changed Modal to Dialog */}
         <DialogTitle>{Locale.Chat.EditMessage.Title}</DialogTitle> {/* Added DialogTitle */}
         <DialogContent> {/* Added DialogContent */}

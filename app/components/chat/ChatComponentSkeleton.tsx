@@ -4,7 +4,6 @@ import React from "react";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import styles from "./chat.module.scss"; // Use styles from the main chat component
-// import { MessageRole } from "@/app/types"; // Don't need the type import here
 
 export function ChatComponentSkeleton() {
   const skeletonMessageCount = 6; // Number of skeleton messages

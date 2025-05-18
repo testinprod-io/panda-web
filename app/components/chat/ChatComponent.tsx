@@ -9,34 +9,25 @@ import React, {
   useRef,
   useState,
 } from "react";
-import dynamic from "next/dynamic";
 import { useDebouncedCallback } from "use-debounce"; // Added import
 
 import { useAppConfig, useChatStore } from "@/app/store"; // Adjust path
 import {
-  EncryptedMessage,
-  ChatSession,
-  ChatMessage,
+  EncryptedMessage
 } from "@/app/types";
 
-import { useMobileScreen } from "@/app/utils"; // Adjust path
 import { ChatControllerPool } from "@/app/client/controller";
 
 import Locale from "@/app/locales"; // Adjust path
 import { useScrollToBottom } from "@/app/hooks/useScrollToBottom"; // Adjust path
 import { useSnackbar } from "@/app/components/SnackbarProvider"; // Added Snackbar hook
 
-import { ChatInputPanel } from "@/app/components/chat/ChatInputPanel"; // Import the new input panel
 import { ChatMessageCell } from "@/app/components/chat/ChatMessageCell"; // Import the new cell component
-import { ChatMessageCellSkeleton } from "@/app/components/chat/ChatMessageCellSkeleton"; // Import the new skeleton component
 
-import LoopIcon from "@mui/icons-material/Loop"; // Loading icon alternative
 import ArrowDownwardRoundedIcon from "@mui/icons-material/ArrowDownwardRounded";
 
 import styles from "./chat.module.scss";
 import { ChatAction } from "./ChatAction"; // Import ChatAction
-import { useApiClient } from "@/app/context/ApiProviderContext"; // <-- Import hook
-import { getAccessToken } from "@privy-io/react-auth";
 import { useDecryptionManager } from "@/app/hooks/useDecryptionManager"; // <-- Import the hook
 import { useChatSessionManager } from "@/app/hooks/useChatSessionManager";
 import { UUID } from "crypto";
@@ -45,11 +36,6 @@ import { useChatActions } from "@/app/hooks/useChatActions";
 // ChatComponentProps is now simpler as it gets most things from the store or direct sessionID
 export interface ChatComponentProps {
   sessionId: UUID;
-  // Callbacks for triggering modals that are now managed by Chat.tsx (or ChatPage via store)
-  // These would be passed if ChatMessageCell actions need to trigger them.
-  // For ChatInputPanel interaction, store is used.
-  onShowPromptModalRequest?: () => void; // Renamed from onShowPromptModal for clarity
-  onShowShortcutKeyModalRequest?: () => void;
   // Edit/Confirm modals are usually triggered from ChatMessageCell actions or context menus,
   // so Chat.tsx might still handle their state and ChatComponent might receive functions to trigger them.
   onShowEditMessageModal?: (message: EncryptedMessage) => void;
@@ -59,8 +45,6 @@ export interface ChatComponentProps {
 export function ChatComponent(props: ChatComponentProps) {
   const { 
     sessionId, 
-    onShowPromptModalRequest, 
-    onShowShortcutKeyModalRequest,
     onShowEditMessageModal,
     onShowConfirmDialog 
   } = props;
@@ -97,8 +81,7 @@ export function ChatComponent(props: ChatComponentProps) {
     // finalizeStreamedBotMessage, // Ensure this is used or removed if not
     // markMessageAsError, // Ensure this is used or removed if not
   } = useChatSessionManager(sessionId, config.modelConfig);
-
-  const { generateSessionTitle } = useChatActions();
+  
   const lastMessage = displayedMessages[displayedMessages.length - 1];
   const isBotStreaming = !!(lastMessage?.role === "system" && lastMessage.streaming);
 

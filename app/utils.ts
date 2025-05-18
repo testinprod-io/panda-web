@@ -6,7 +6,6 @@ import {
   REQUEST_TIMEOUT_MS_FOR_THINKING,
   ServiceProvider,
 } from "./constant";
-import { fetch as tauriStreamFetch } from "./utils/stream";
 import { ModelSize } from "@/app/types";
 import { ModelConfig } from "./store";
 
@@ -351,30 +350,6 @@ export function showPlugins(provider: ServiceProvider, model: string) {
   // }
   
   return false;
-}
-
-export function fetch(
-  url: string,
-  options?: Record<string, unknown>,
-): Promise<any> {
-  if (window.__TAURI__) {
-    return tauriStreamFetch(url, options);
-  }
-  return window.fetch(url, options);
-}
-
-export function adapter(config: Record<string, unknown>) {
-  const { baseURL, url, params, data: body, ...rest } = config;
-  const path = baseURL ? `${baseURL}${url}` : url;
-  const fetchUrl = params
-    ? `${path}?${new URLSearchParams(params as any).toString()}`
-    : path;
-  return fetch(fetchUrl as string, { ...rest, body }).then((res) => {
-    const { status, headers, statusText } = res;
-    return res
-      .text()
-      .then((data: string) => ({ status, statusText, headers, data }));
-  });
 }
 
 export function safeLocalStorage(): {

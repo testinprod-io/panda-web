@@ -1,8 +1,5 @@
-// export const OPENAI_BASE_URL = "https://api.openai.com";
-// export const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
 export const PANDA_BASE_URL = "http://4.246.68.189:8000/"; // "http://4.246.68.189:8000/";
 // export const PANDA_BASE_URL = "http://52.225.128.77:8000/";
-// export const XAI_BASE_URL = "https://api.x.ai";
 
 export const OWNER = "ChatGPTNextWeb";
 export const REPO = "ChatGPT-Next-Web";
@@ -35,9 +32,6 @@ export enum Path {
 export enum ApiPath {
   Cors = "",
   Panda = "/api/panda",
-  // OpenAI = "/api/openai",
-  // XAI = "/api/xai",
-  // DeepSeek = "/api/deepseek",
 }
 
 export const PandaPath = {
@@ -101,30 +95,8 @@ export enum GoogleSafetySettingsThreshold {
 }
 
 export enum ModelProvider {
-  // GPT = "GPT",
   Panda = "Panda",
-  // XAI = "XAI",
-  // DeepSeek = "DeepSeek",
 }
-
-// export const OpenaiPath = {
-//   ChatPath: "v1/chat/completions",
-//   SpeechPath: "v1/audio/speech",
-//   ImagePath: "v1/images/generations",
-//   UsagePath: "dashboard/billing/usage",
-//   SubsPath: "dashboard/billing/subscription",
-//   ListModelPath: "v1/models",
-// };
-
-// export const DeepSeek = {
-//   ExampleEndpoint: DEEPSEEK_BASE_URL,
-//   ChatPath: "chat/completions",
-// };
-
-// export const XAI = {
-//   ExampleEndpoint: XAI_BASE_URL,
-//   ChatPath: "v1/chat/completions",
-// };
 
 
 export const DEFAULT_INPUT_TEMPLATE = `{{input}}`; // input / time / model / lang
@@ -149,29 +121,6 @@ export const KnowledgeCutOffDate: Record<string, string> = {
   default: "2023-10",
   "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B": "2023-10",
   "Qwen/Qwen2.5-Omni-7B": "2024-01", // Example, adjust if needed
-  // "gpt-4-turbo": "2023-12",
-  // "gpt-4-turbo-2024-04-09": "2023-12",
-  // "gpt-4-turbo-preview": "2023-12",
-  // "gpt-4o": "2023-10",
-  // "gpt-4o-2024-05-13": "2023-10",
-  // "gpt-4o-2024-08-06": "2023-10",
-  // "gpt-4o-2024-11-20": "2023-10",
-  // "chatgpt-4o-latest": "2023-10",
-  // "gpt-4o-mini": "2023-10",
-  // "gpt-4o-mini-2024-07-18": "2023-10",
-  // "gpt-4-vision-preview": "2023-04",
-  // "o1-mini-2024-09-12": "2023-10",
-  // "o1-mini": "2023-10",
-  // "o1-preview-2024-09-12": "2023-10",
-  // "o1-preview": "2023-10",
-  // "o1-2024-12-17": "2023-10",
-  // o1: "2023-10",
-  // "o3-mini-2025-01-31": "2023-10",
-  // "o3-mini": "2023-10",
-  // "gemini-pro": "2023-12",
-  // "gemini-pro-vision": "2023-12",
-  // "deepseek-chat": "2024-07",
-  // "deepseek-coder": "2024-07",
 };
 
 export const VISION_MODEL_REGEXES = [
@@ -179,32 +128,6 @@ export const VISION_MODEL_REGEXES = [
   /vision/i, // Keep general vision keyword if model names might include it
 ];
 
-export const EXCLUDE_VISION_MODEL_REGEXES = [
-  // Add "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B" here if VISION_MODEL_REGEXES is too broad,
-  // or ensure VISION_MODEL_REGEXES is specific enough.
-  // For now, with specific Qwen/Qwen2.5-Omni-7B regex, this might not be strictly needed
-  // unless other regexes accidentally catch the non-vision model.
-];
-
-// const openaiModels = [
-//   "gpt-3.5-turbo",
-//   "gpt-4",
-//   "gpt-4-turbo",
-//   "gpt-4o",
-// ];
-
-// const deepseekModels = ["deepseek-chat", "deepseek-coder", "deepseek-reasoner"];
-
-// const xAIModes = [
-//   "grok-beta",
-//   "grok-2",
-//   "grok-2-1212",
-//   "grok-2-latest",
-//   "grok-vision-beta",
-//   "grok-2-vision-1212",
-//   "grok-2-vision",
-//   "grok-2-vision-latest",
-// ];
 
 const PandaModels = [
   "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
@@ -303,89 +226,9 @@ export const DEFAULT_MODELS: AppModelDefinition[] = [
       config,
     };
   }),
-  // ...xAIModes.map((name) => ({
-  //   name,
-  //   available: false,
-  //   sorted: seq++,
-  //   provider: {
-  //     id: "xai",
-  //     providerName: "XAI",
-  //     providerType: "xai",
-  //     sorted: 3,
-  //   },
-  //   knowledgeCutoff: KnowledgeCutOffDate[name] || KnowledgeCutOffDate.default,
-  //   isVisionModel: checkIsVisionModel(name),
-  //   config: { ...BASE_MODEL_CONFIG, max_tokens: name.includes("vision") ? 32000 : 8000 }, 
-  // })),
-  // ...deepseekModels.map((name) => ({
-  //   name,
-  //   available: false,
-  //   sorted: seq++,
-  //   provider: {
-  //     id: "deepseek",
-  //     providerName: "DeepSeek",
-  //     providerType: "deepseek",
-  //     sorted: 4,
-  //   },
-  //   knowledgeCutoff: KnowledgeCutOffDate[name] || KnowledgeCutOffDate.default,
-  //   isVisionModel: checkIsVisionModel(name),
-  //   config: name.includes("coder") ? DEEPSEEK_CODER_CONFIG : DEEPSEEK_CHAT_CONFIG,
-  // })),
-  // ...openaiModels.map((name) => {
-  //   let modelConfig = GPT4O_MINI_CONFIG; 
-  //   if (name === "gpt-4-turbo" || name.startsWith("gpt-4-turbo-") || name.startsWith("o1-preview") || name.startsWith("o1-2024")) {
-  //     modelConfig = GPT4_TURBO_CONFIG;
-  //   } else if (name === "gpt-4" || (name.startsWith("gpt-4-") && !name.includes("vision"))) {
-  //      modelConfig = { ...BASE_MODEL_CONFIG, max_tokens: 8192 };
-  //   } else if (name.includes("vision") || name.startsWith("gpt-4o")) {
-  //     modelConfig = name === "gpt-4o" ? {...GPT4_TURBO_CONFIG } : GPT4O_MINI_CONFIG; 
-  //   } else if (name === "gpt-3.5-turbo") {
-  //     modelConfig = { ...BASE_MODEL_CONFIG, max_tokens: 16385 }; 
-  //   }
-  //   return {
-  //     name,
-  //     available: true,
-  //     sorted: seq++, 
-  //     provider: {
-  //       id: "openai",
-  //       providerName: "OpenAI",
-  //       providerType: "openai",
-  //       sorted: 1, 
-  //     },
-  //     knowledgeCutoff: KnowledgeCutOffDate[name] || KnowledgeCutOffDate.default,
-  //     isVisionModel: checkIsVisionModel(name),
-  //     config: modelConfig,
-  //   };
-  // }),
 ];
 
 export const CHAT_PAGE_SIZE = 15;
 export const MAX_RENDER_MSG_COUNT = 45;
-
-// some famous webdav endpoints
-export const internalAllowedWebDavEndpoints = [
-  "https://dav.jianguoyun.com/dav/",
-  "https://dav.dropdav.com/",
-  "https://dav.box.com/dav",
-  "https://nanao.teracloud.jp/dav/",
-  "https://bora.teracloud.jp/dav/",
-  "https://webdav.4shared.com/",
-  "https://dav.idrivesync.com",
-  "https://webdav.yandex.com",
-  "https://app.koofr.net/dav/Koofr",
-];
-
-export const DEFAULT_GA_ID = "G-89WN60ZK2E";
-
-export const SAAS_CHAT_URL = "https://nextchat.club";
-export const SAAS_CHAT_UTM_URL = "https://nextchat.club?utm=github";
-
-// Helper function to check if a model is a vision model - CAN BE REMOVED if isVisionModel is set directly
-// const checkIsVisionModel = (modelName: string): boolean => {
-//   if (EXCLUDE_VISION_MODEL_REGEXES.some(regex => regex.test(modelName))) {
-//     return false;
-//   }
-//   return VISION_MODEL_REGEXES.some(regex => regex.test(modelName));
-// };
 
 export type ModelType = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B" | "Qwen/Qwen2.5-Omni-7B";

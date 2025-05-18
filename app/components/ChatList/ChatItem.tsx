@@ -1,27 +1,15 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
-import { createPortal } from "react-dom";
 import clsx from "clsx";
-import { ListItem, ListItemText, IconButton, Menu, MenuItem, TextField, Box, ListItemButton, ListItemIcon } from '@mui/material';
+import { ListItemText, IconButton, Menu, MenuItem, TextField, Box, ListItemButton, ListItemIcon } from '@mui/material';
 
 import styles from "./chat-list.module.scss";
-// import { ChatSession } from "@/app/store/chat"; // Type likely comes from types/session
 import type { ChatSession } from "@/app/types/session"; // Adjusted path
 
-import DeleteOutline from '@mui/icons-material/DeleteOutline';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import DriveFileRenameOutlineIcon from '@mui/icons-material/DriveFileRenameOutline';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import CheckIcon from '@mui/icons-material/Check';
-import CloseIcon from '@mui/icons-material/Close';
-import { FormattedDate } from '@/app/components/FormattedDate'; // Assuming this exists
 import Locale from '@/app/locales';
-import { EncryptionService } from '@/app/services/EncryptionService'; // Import Encryption Service
 
 // New Icons based on Figma
-import IosShareOutlinedIcon from '@mui/icons-material/IosShareOutlined'; // For Share
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';         // For Rename
-import ArchiveOutlinedIcon from '@mui/icons-material/ArchiveOutlined';   // For Archive
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined'; // For Delete
 
 interface ChatItemProps {
@@ -92,27 +80,7 @@ export function ChatItem({
       });
     }
   }, [showMenu]);
-
-  // Event handlers
-  const handleRename = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    setIsEditing(true);
-    setEditValue(session.topic);
-    setShowMenu(false);
-    setTimeout(() => {
-      inputRef.current?.focus();
-      inputRef.current?.select();
-    }, 10);
-  };
-
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    onDelete?.();
-    setShowMenu(false);
-  };
-
+  
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditValue(e.target.value);
   };

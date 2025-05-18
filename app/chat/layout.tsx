@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation'; // Added useRouter
 import { Box } from '@mui/material';
 import Sidebar from '@/app/components/sidebar';
 import ChatHeader from '@/app/components/ChatHeader';
-// import { ChatLayout as CustomChatLayout } from '@/app/components/chat/ChatLayout'; // No longer needed
 import { ChatInputPanel } from '@/app/components/chat/ChatInputPanel'; // Import ChatInputPanel directly
 import { useChatStore, useAppConfig } from '@/app/store';
 import { UNFINISHED_INPUT } from '@/app/constant'; // For saving initial message

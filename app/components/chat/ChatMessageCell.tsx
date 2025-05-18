@@ -2,11 +2,9 @@ import React, { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
-import { useAppConfig } from "@/app/store";
-import { EncryptedMessage, MessageRole, ChatMessage } from "@/app/types";
+import { ChatMessage } from "@/app/types";
 import { copyToClipboard } from "@/app/utils"; // Adjust path
 import Locale from "@/app/locales"; // Adjust path
-import { useSnackbar } from "@/app/components/SnackbarProvider";
 import { MultimodalContent } from "@/app/client/api";
 
 import { ChatAction } from "@/app/components/chat/ChatAction";
@@ -17,14 +15,11 @@ import { TextField, Button, Box, IconButton, Typography } from "@mui/material"; 
 import ReplayRoundedIcon from "@mui/icons-material/ReplayRounded";
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import ModeEditRoundedIcon from "@mui/icons-material/ModeEditRounded";
-import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded"; // Added for delete action
 
-import StopCircleIcon from "@mui/icons-material/StopCircle";
 import SendIcon from "@mui/icons-material/Send";
 import CancelIcon from "@mui/icons-material/Cancel";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore"; // For expand/collapse
 import ChevronRightIcon from "@mui/icons-material/ChevronRight"; // For expand/collapse
-import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh"; // Reasoning icon
 
 import styles from "./chat.module.scss";
 import { UUID } from "crypto";
