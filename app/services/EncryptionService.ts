@@ -238,6 +238,11 @@ export const EncryptionService = {
         return content;
     }
     // console.log("[EncryptionService] Content looks like base64, attempting decryption.");
-    return this.decrypt(content);
+    try {
+      return this.decrypt(content);
+    } catch (error) {
+      console.error("[EncryptionService] Decryption failed:", error);
+      return content;
+    }
   },
 }; 

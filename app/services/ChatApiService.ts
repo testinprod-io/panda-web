@@ -52,6 +52,7 @@ function decryptConversationData(conversation: Conversation): Conversation {
     try {
       decryptedConvo.title = EncryptionService.decrypt(decryptedConvo.title);
     } catch (err) {
+      decryptedConvo.title = "Invalid password";
       console.error("[ChatApiService] Error decrypting conversation title:", err);
       // Keep the encrypted title if decryption fails
     }

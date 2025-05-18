@@ -256,7 +256,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
       {/* Conditionally render the modal */}
       {isLocked && (
         <>
-          {hasError && (
+          {/* {hasError && (
             <Box
               sx={{
                 position: "fixed",
@@ -285,7 +285,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
                 {errorMessage || "Please unlock with the correct password."}
               </Alert>
             </Box>
-          )}
+          )} */}
           {isFirstTimeUser ? (
             <CreatePasswordModal
               open={true}

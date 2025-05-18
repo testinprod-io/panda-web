@@ -1117,3 +1117,34 @@
   // Add any specific styling for the wrapper if needed, e.g., padding, border-top
   // border-top: 1px solid var(--border-color); // Example
 }
+
+.chat-message-error-bubble {
+  background: #FFF4F4;
+  border-radius: 8px;
+  outline: 1px #F33D4F solid;
+  outline-offset: -1px;
+  color: #F33D4F;
+  box-shadow: none;
+  border: none;
+  padding: 16px 16px 12px 16px;
+  margin-top: 10px;
+  font-size: 1rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+}
+
+// Remove or override any full-width error container styles if present
+.chat-message-error {
+  width: auto;
+  background: none;
+  box-shadow: none;
+  border: none;
+  margin-bottom: 0;
+  gap: 0;
+  align-items: stretch;
+  justify-content: stretch;
+}
