@@ -1,4 +1,4 @@
-import { PANDA_BASE_URL, PandaPath } from "@/app/constant";
+import { PANDA_BASE_URL, PandaPath, DEFAULT_PANDA_MODEL_NAME } from "@/app/constant";
 import { ChatOptions, LLMApi, LLMModel, LLMUsage, MultimodalContent } from "@/app/client/api";
 
 // Type for the Privy getAccessToken function
@@ -31,6 +31,10 @@ export interface RequestPayload {
   max_completion_tokens?: number;
 }
 
+export interface SummaryResponse {
+  summary: string;
+}
+
 export class PandaApi implements LLMApi {
   private baseUrl: string = PANDA_BASE_URL;
   private disableListModels: boolean = false;
@@ -51,6 +55,7 @@ export class PandaApi implements LLMApi {
     return [this.baseUrl, path].join("/");
   }
 
+  
   async chat(options: ChatOptions) {
     const messages = options.messages.map((v) => ({
       role: v.role,
@@ -291,6 +296,49 @@ export class PandaApi implements LLMApi {
     } catch (error) {
       console.error("[Models] Panda: failed to fetch models", error);
       return []; // Return empty or default models on error
+    }
+  }
+
+  async summary(messages: RequestPayload["messages"], maxTokens: number = 1000): Promise<SummaryResponse> {
+    try {
+      const accessToken = await this.getAccessToken();
+      if (!accessToken) {
+        throw new Error("Panda API requires authentication. Access token not available.");
+      }
+      const bearerToken = `Bearer ${accessToken}`;
+
+      const requestUrl = this.path(PandaPath.SummaryPath);
+      
+      const requestBody = {
+        model: DEFAULT_PANDA_MODEL_NAME,
+        messages,
+        temperature: 0.2, // Hard-coded as specified
+        max_tokens: maxTokens,
+        stream: false, // Summary endpoint doesn't support streaming
+      };
+
+      const response = await fetch(requestUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": bearerToken,
+          "Accept": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[Panda Error] Summary response not OK:", response.status, response.statusText);
+        console.error("[Panda Error] Summary response body:", errorText);
+        throw new Error(`Panda API error: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const data = await response.json() as SummaryResponse;
+      return data;
+    } catch (error: any) {
+      console.error("[Panda Request] Summary failed", error);
+      throw error;
     }
   }
 } 

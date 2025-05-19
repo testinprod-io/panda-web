@@ -10,7 +10,11 @@ import {
   PaginatedConversationsResponse,
   PaginatedMessagesResponse,
   HTTPValidationError,
-  EncryptedIdResponse
+  EncryptedIdResponse,
+  FileResponse,
+  Summary,
+  SummaryCreateRequest,
+  SummaryResponse
 } from './types';
 import { UUID } from 'crypto';
 
@@ -40,7 +44,8 @@ export class ApiClient {
     path: string,
     queryParams?: Record<string, string | number | undefined | null>,
     body?: any,
-    requiresAuth: boolean = true
+    requiresAuth: boolean = true,
+    isBinaryResponse: boolean = false
   ): Promise<T> {
     const url = new URL(`${this.baseUrl}${path}`);
 
@@ -52,9 +57,12 @@ export class ApiClient {
       });
     }
 
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
+    const headers: HeadersInit = {};
+
+    // Only set Content-Type for JSON requests
+    if (!(body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     if (requiresAuth) {
       const token = await this.getAuthToken();
@@ -70,13 +78,17 @@ export class ApiClient {
     };
 
     if (body) {
-      options.body = JSON.stringify(body);
+      if (body instanceof FormData) {
+        options.body = body;
+      } else {
+        options.body = JSON.stringify(body);
+      }
     }
 
     // --- Log Request Details --- 
     console.log(`[API Request] ${method} ${url.toString()}`);
     console.log('[API Request Headers]', JSON.stringify(headers, null, 2));
-    if (options.body) {
+    if (options.body && !(body instanceof FormData)) {
         console.log('[API Request Body]', options.body);
     }
     // --- End Log Request Details ---
@@ -98,15 +110,19 @@ export class ApiClient {
 
       // Handle 204 No Content responses
       if (response.status === 204) {
-          return undefined as T; // Or potentially {} as T depending on expected void return
+          return undefined as T;
+      }
+
+      // Handle binary responses
+      if (isBinaryResponse) {
+        return response as T;
       }
 
       return await response.json() as T;
     } catch (error) {
         if (error instanceof ApiError) {
-            throw error; // Re-throw known API errors
+            throw error;
         }
-        // Handle network errors or other fetch-related issues
         console.error("Network or fetch error:", error);
         throw new ApiError(0, 'Network error or unable to reach API', error);
     }
@@ -162,5 +178,47 @@ export class ApiClient {
     return this.request<EncryptedIdResponse>('POST', '/me/encrypted-id', undefined, { encrypted_id: encryptedId });
   }
 
+  // --- Files ---
+  async getFile(conversationId: UUID, fileId: UUID): Promise<Response> {
+    return this.request<Response>(
+      'GET',
+      `/conversations/${conversationId}/files/${fileId}`,
+      undefined,
+      undefined,
+      true,
+      true
+    );
+  }
 
+  async uploadFile(conversationId: UUID, file: File): Promise<FileResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    return this.request<FileResponse>(
+      'POST',
+      `/conversations/${conversationId}/files`,
+      undefined,
+      formData
+    );
+  }
+
+  async deleteFile(conversationId: UUID, fileId: UUID): Promise<void> {
+    await this.request<void>(
+      'DELETE',
+      `/conversations/${conversationId}/files/${fileId}`
+    );
+  }
+
+  // --- Summaries ---
+  async getSummaries(conversationId: UUID): Promise<Summary[]> {
+    return this.request<Summary[]>('GET', `/conversations/${conversationId}/summaries`);
+  }
+
+  async createSummary(conversationId: UUID, data: SummaryCreateRequest): Promise<SummaryResponse> {
+    return this.request<SummaryResponse>('POST', `/conversations/${conversationId}/summaries`, undefined, data);
+  }
+
+  async deleteSummary(conversationId: UUID, summaryId: UUID): Promise<void> {
+    await this.request<void>('DELETE', `/conversations/${conversationId}/summaries/${summaryId}`);
+  }
 } 

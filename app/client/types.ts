@@ -101,3 +101,33 @@ export interface EncryptedIdResponse {
   created_at: string;
   updated_at: string;
 }
+
+export interface FileResponse {
+  file_id: UUID;
+  conversation_id: UUID;
+  file_type: 'pdf' | 'image';
+  content: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Summary {
+  summary_id: UUID;
+  conversation_id: UUID;
+  start_message_id: UUID;
+  end_message_id: UUID;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SummaryCreateRequest {
+  start_message_id: UUID;
+  end_message_id: UUID;
+  content: string;
+  timestamp?: string; // Optional ISO Date string
+}
+
+export interface SummaryResponse {
+  data: Summary;
+}

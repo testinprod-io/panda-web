@@ -36,6 +36,8 @@ export enum ApiPath {
 
 export const PandaPath = {
   ChatPath: "v1/chat/completions",
+  SummaryPath: "v1/summary",
+  InfoPath: "v1/info",
   ListModelPath: "v1/models",
 };
 

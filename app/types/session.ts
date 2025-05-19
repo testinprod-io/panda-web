@@ -2,6 +2,7 @@ import { UUID } from "crypto";
 import { ModelConfig, useAppConfig } from "../store/config";
 import { DEFAULT_TOPIC } from "../store/chat";
 import { ChatMessage } from "./chat";
+import { Summary } from "@/app/client/types";
 
 export enum SessionSyncState {
   SYNCED = 'synced',
@@ -53,6 +54,11 @@ export interface ChatSession {
   messagesLoadState: MessagesLoadState;
   /** Stores the cursor for fetching next page of messages from server */
   serverMessagesCursor?: string;
+
+  // Fields for chat history summarization
+  summaries: Summary[];
+  lastSummarizedMessageId: UUID | null;
+  isSummarizing: boolean;
 }
 
 /**
@@ -77,5 +83,9 @@ export function createNewSession(id: UUID): ChatSession {
     syncState: SessionSyncState.LOCAL,
     messagesLoadState: MessagesLoadState.FULL,
     serverMessagesCursor: undefined,
+    // Initialize summary fields
+    summaries: [],
+    lastSummarizedMessageId: null,
+    isSummarizing: false,
   };
 }

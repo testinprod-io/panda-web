@@ -10,7 +10,9 @@ import {
     MessageCreateRequest,
     GetConversationMessagesParams,
     ConversationUpdateRequest,
-    GetConversationsParams
+    GetConversationsParams,
+    Summary as ApiSummary,
+    SummaryCreateRequest,
 } from '@/app/client/types';
 import { UUID } from "crypto";
 import { ClientApi, MultimodalContent, RequestMessage } from '@/app/client/api';
@@ -22,6 +24,7 @@ import { prettyObject } from "@/app/utils/format";
 import { ModelType } from "@/app/store/config";
 import { ServiceProvider } from "@/app/store/config";
 import { EncryptionService } from '../services/EncryptionService';
+import { RequestPayload, PandaApi } from '@/app/client/platforms/panda';
 
 export function useChatActions() {
     const store = useChatStore();
@@ -390,11 +393,94 @@ export function useChatActions() {
         }
     }, [apiClient, store]);
 
+    const loadSummariesForSession = useCallback(async (sessionId: UUID): Promise<{ summaries: ApiSummary[], lastSummarizedMessageId: UUID | null }> => {
+        if (!apiClient) {
+            console.warn("[ChatActions] API client not available, cannot load summaries.");
+            return { summaries: [], lastSummarizedMessageId: null }; // Return empty/default
+        }
+
+        console.log(`[ChatActions] Loading summaries for session ${sessionId}...`);
+        try {
+            const fetchedSummaries = await apiClient.app.getSummaries(sessionId);
+            console.log(`[ChatActions] Received ${fetchedSummaries.length} summaries for session ${sessionId}.`);
+
+            const sortedSummaries = [...fetchedSummaries].sort((a, b) => 
+                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            );
+
+            let lastId: UUID | null = null;
+            if (sortedSummaries.length > 0) {
+                lastId = sortedSummaries[0].end_message_id;
+            }
+            // Removed direct store update here
+            return { summaries: sortedSummaries, lastSummarizedMessageId: lastId };
+        } catch (error) {
+            console.error(`[ChatActions] Failed to load summaries for session ${sessionId}:`, error);
+            return { summaries: [], lastSummarizedMessageId: null }; // Return empty/default on error
+        }
+    }, [apiClient]); // Removed store from dependencies as it's no longer directly updating it
+
+    const summarizeAndStoreMessages = useCallback(async (sessionId: UUID, messagesToSummarize: ChatMessage[]): Promise<ApiSummary | undefined> => {
+        if (!apiClient || !apiClient.llm || !apiClient.app) {
+            console.warn("[ChatActions] API client, LLM service, or App service not available, cannot summarize.");
+            return undefined;
+        }
+        if (messagesToSummarize.length === 0) {
+            console.warn("[ChatActions] No messages provided to summarize.");
+            return undefined;
+        }
+        // isSummarizing flag management is now responsibility of the caller (useChatSessionManager)
+        console.log(`[ChatActions] summarizeAndStoreMessages: Starting for session ${sessionId} with ${messagesToSummarize.length} messages.`);
+
+        try {
+            const apiMessages: RequestPayload["messages"] = messagesToSummarize
+                .filter(msg => msg.role === "user" || msg.role === "system") 
+                .map(msg => ({
+                    role: msg.role as "user" | "system", // Ensure role is correctly typed for API
+                    content: msg.content,
+                }));
+
+            const llmSummaryResponse = await (apiClient.llm as PandaApi).summary(apiMessages);
+            const summaryText = llmSummaryResponse.summary;
+
+            if (!summaryText || summaryText.trim().length === 0) {
+                console.warn("[ChatActions] LLM returned empty summary. Skipping storage.");
+                return undefined;
+            }
+
+            console.log(`[ChatActions] LLM summary received. Length: ${summaryText.length}`);
+
+            const startMessageId = messagesToSummarize[0].id;
+            const endMessageId = messagesToSummarize[messagesToSummarize.length - 1].id;
+
+            const summaryCreateRequest: SummaryCreateRequest = {
+                start_message_id: startMessageId,
+                end_message_id: endMessageId,
+                content: summaryText,
+            };
+
+            const appSummaryResponse = await apiClient.app.createSummary(sessionId, summaryCreateRequest);
+            const newSummary = appSummaryResponse.data; // This is of type ApiSummary
+
+            console.log(`[ChatActions] Summary stored on server. Summary ID: ${newSummary.summary_id}`);
+            return newSummary; // Return the newly created summary
+
+        } catch (error) {
+            console.error(`[ChatActions] Failed to summarize and store messages for session ${sessionId}:`, error);
+            return undefined; // Indicate failure
+        } finally {
+            // No longer manages isSummarizing flag for the global store here
+            console.log(`[ChatActions] summarizeAndStoreMessages: Process finished for session ${sessionId}.`);
+        }
+    }, [apiClient]);
+
     return {
         loadSessionsFromServer,
         newSession,
         selectSession,
         loadMessagesForSession,
+        loadSummariesForSession, // Modified
+        summarizeAndStoreMessages, 
         deleteSession,
         saveMessageToServer,
         generateSessionTitle,
