@@ -1,0 +1,96 @@
+/* Updated styles for a grouped skeleton loader */
+.skeletonWrapper {
+  width: 100%;
+  overflow: hidden;
+}
+
+.skeletonGroup {
+  margin-bottom: 28px; /* Corresponds to gap + header_margin_bottom roughly */
+  padding-left: 8px; /* Align with chat list items if they have padding */
+  padding-right: 8px;
+}
+
+.skeletonHeader {
+  height: 14px;
+  background: linear-gradient(270deg, rgba(36.78, 61.39, 115.10, 0.05) 0%, #1E2941 50%);
+//   border: 1px #253D73 solid;
+  border-radius: 3px;
+  margin-bottom: 18px; /* Space between header and first item */
+  position: relative;
+  overflow: hidden;
+}
+
+.skeletonHeader::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -200px;
+  height: 100%;
+  width: 200px;
+  background: linear-gradient(
+    to right,
+    rgba(37, 61, 115, 0.05) 0%,
+    rgba(30, 41, 65, 1) 50%
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+.skeletonItem {
+  height: 48px; /* As per Figma */
+  background-color: transparent; /* Items themselves don't have a background, lines do */
+  border-radius: 8px; /* As per Figma */
+  margin-bottom: 10px; /* Space between items within a group */
+  padding: 10px 12px; /* Approximate padding to position lines */
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Vertically center lines if padding adjusted */
+  gap: 8px; /* Space between skeleton lines within an item */
+//   border: 1px solid rgba(37, 61, 115, 0.3); // Optional: to see item boundaries
+  /* animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; */
+  /* animation-delay: 0.2s; */ /* Stagger animation slightly from header */
+}
+
+.skeletonLine {
+  height: 14px; /* As per Figma */
+  background: linear-gradient(270deg, rgba(36.78, 61.39, 115.10, 0.05) 0%, #1E2941 50%);
+//   border: 1px #253D73 solid;
+  border-radius: 3px; /* Consistent radius */
+  /* Width will be set inline */
+  position: relative;
+  overflow: hidden;
+  /* animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; */
+  /* animation-delay: 0.3s; */ /* Stagger animation */
+}
+
+.skeletonLine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -200px;
+  height: 100%;
+  width: 200px;
+  background: linear-gradient(
+    to right,
+    rgba(37, 61, 115, 0.05) 0%,
+    rgba(30, 41, 65, 1) 50%
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+/* @keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+} */
+
+@keyframes shimmer {
+  0% {
+    left: -200px;
+  }
+  100% {
+    left: 100%;
+  }
+}

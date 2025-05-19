@@ -1,45 +1,88 @@
 "use client";
 
 import React from "react";
-import Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css"; // Import skeleton styles
-import styles from "./chat-list.module.scss"; // Reuse existing styles if applicable
-import clsx from "clsx";
+import styles from "./chat-list-skeleton.module.scss";
 
 interface ChatListSkeletonProps {
-  count?: number; // Add count prop
+  targetHeight: number;
 }
 
-export function ChatListSkeleton({ count }: ChatListSkeletonProps) {
-  // Default to 1 item if count is not provided or for pagination, 
-  // or use a larger number for initial full-page skeleton.
-  // Let's make the default 1 for when it's used for pagination loading.
-  // If a larger number is needed for initial full page skeleton, ChatList can pass it.
-  const skeletonItemCount = count === undefined ? 5 : count;
+// Constants for calculating heights
+const SKELETON_HEADER_HEIGHT = 14; // px
+const SKELETON_HEADER_MARGIN_BOTTOM = 18; // px (gap before first item)
+const SKELETON_ITEM_HEIGHT = 48; // px
+const SKELETON_ITEM_MARGIN_BOTTOM = 10; // px (gap between items in a group)
+const SKELETON_GROUP_OUTER_MARGIN_BOTTOM = 28; // px (includes group specific margin + some item margin)
 
-  return (
-    <div className={styles["chat-list"]} aria-hidden="true">
-      {Array.from({ length: skeletonItemCount }).map((_, index) => (
-        // Each skeleton item should mimic the ChatItem structure
-        // The ChatItem's root is a ListItemButton, we can use a div with similar classes.
-        <div key={index} className={clsx(styles["chat-item"], styles["chat-item-skeleton"])}>
-          {/* Mimic the chat-item-highlight Box */}
-          <div className={styles["chat-item-highlight"]} style={{ width: '100%', paddingRight: '50px' }}>
-            {/* Title placeholder - should be more prominent */}
-            {/* The actual ChatItem title is a span or TextField */}
-            <span className={styles["chat-item-title"]}>
-              <Skeleton width={`100%`} height={`1.2em`} /> {/* Adjust width and height as needed */}
-            </span>
-            {/* No explicit "chat-item-info" in the ChatItem, so we can omit or simplify */}
-            {/* If we want a subtle line for date/time, it's usually smaller or part of actions */}
+const MIN_ITEMS_PER_GROUP = 1;
+const MAX_ITEMS_PER_GROUP = 4;
+const MIN_HEADER_WIDTH = 50; // px
+const MAX_HEADER_WIDTH = 120; // px
 
-            {/* Placeholder for action icons (MoreVertIcon) - optional, but good for structure */}
-            {/* <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)' }}>
-              <Skeleton circle width={24} height={24} />
-            </div> */}
-          </div>
+export function ChatListSkeleton({ targetHeight }: ChatListSkeletonProps) {
+  const skeletonGroups = [];
+  let accumulatedHeight = 0;
+  let groupKey = 0;
+
+  if (targetHeight <= 0) {
+    return null; // Or a single minimal skeleton if preferred
+  }
+
+  while (accumulatedHeight < targetHeight) {
+    const numItemsInGroup = 
+      Math.floor(Math.random() * (MAX_ITEMS_PER_GROUP - MIN_ITEMS_PER_GROUP + 1)) + MIN_ITEMS_PER_GROUP;
+    
+    const headerWidth = 
+      Math.floor(Math.random() * (MAX_HEADER_WIDTH - MIN_HEADER_WIDTH + 1)) + MIN_HEADER_WIDTH;
+
+    let currentGroupHeight = SKELETON_HEADER_HEIGHT + SKELETON_HEADER_MARGIN_BOTTOM;
+    if (numItemsInGroup > 0) {
+      currentGroupHeight += numItemsInGroup * SKELETON_ITEM_HEIGHT;
+      currentGroupHeight += (numItemsInGroup -1) * SKELETON_ITEM_MARGIN_BOTTOM; // Gaps between items
+    }
+    currentGroupHeight += SKELETON_GROUP_OUTER_MARGIN_BOTTOM; // Outer margin for the group
+
+    // Ensure at least one group is added if targetHeight is small but positive
+    if (skeletonGroups.length === 0 && currentGroupHeight === 0) {
+        currentGroupHeight = SKELETON_HEADER_HEIGHT + SKELETON_HEADER_MARGIN_BOTTOM + SKELETON_ITEM_HEIGHT + SKELETON_GROUP_OUTER_MARGIN_BOTTOM; // min height for one item group
+    }
+    
+    if (currentGroupHeight === 0) break; // Safety break if calculations somehow lead to zero height
+
+    const items = [];
+    for (let i = 0; i < numItemsInGroup; i++) {
+      const numLines = Math.random() > 0.3 ? 2 : 1; // 70% chance of 2 lines
+      const lines = [];
+      for (let j = 0; j < numLines; j++) {
+        const lineWidthPercentage = j === 0 ? 
+            (Math.random() * (0.9 - 0.6) + 0.6) * 100 : // First line: 60-90%
+            (Math.random() * (0.7 - 0.4) + 0.4) * 100;  // Second line: 40-70%
+        lines.push(
+          <div 
+            key={j} 
+            className={styles.skeletonLine} 
+            style={{ width: `${lineWidthPercentage}%` }}
+          />
+        );
+      }
+      items.push(
+        <div key={i} className={styles.skeletonItem}>
+          {lines}
         </div>
-      ))}
-    </div>
-  );
+      );
+    }
+
+    skeletonGroups.push(
+      <div key={groupKey++} className={styles.skeletonGroup}>
+        <div className={styles.skeletonHeader} style={{ width: `${headerWidth}px` }} />
+        {items}
+      </div>
+    );
+    accumulatedHeight += currentGroupHeight;
+
+    // Safety break if we are adding too many groups (e.g. if targetHeight is huge or calculation is off)
+    if (groupKey > 50) break; 
+  }
+
+  return <div className={styles.skeletonWrapper}>{skeletonGroups}</div>;
 } 

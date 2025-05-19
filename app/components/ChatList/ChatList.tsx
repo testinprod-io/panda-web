@@ -11,6 +11,26 @@ import { ChatItem } from "./ChatItem";
 import { ChatListSkeleton } from "./ChatListSkeleton";
 import styles from "./chat-list.module.scss";
 
+// Constants for calculating paging skeleton height, mirroring ChatListSkeleton.tsx logic
+const PAGING_SK_HEADER_HEIGHT = 14;
+const PAGING_SK_HEADER_MARGIN_BOTTOM = 18;
+const PAGING_SK_ITEM_HEIGHT = 48;
+const PAGING_SK_ITEM_MARGIN_BOTTOM = 10;
+const PAGING_SK_GROUP_OUTER_MARGIN_BOTTOM = 28;
+const PAGING_SK_MIN_ITEMS_PER_GROUP = 1;
+const PAGING_SK_MAX_ITEMS_PER_GROUP = 4;
+const ITEMS_PER_PAGE_FOR_SKELETON = 20; // We load 20 items per page
+
+const AVG_ITEMS_PER_SK_GROUP = (PAGING_SK_MIN_ITEMS_PER_GROUP + PAGING_SK_MAX_ITEMS_PER_GROUP) / 2;
+const H_SK_HEADER_AREA = PAGING_SK_HEADER_HEIGHT + PAGING_SK_HEADER_MARGIN_BOTTOM;
+const H_SK_ITEMS_AREA_AVG = 
+  AVG_ITEMS_PER_SK_GROUP * PAGING_SK_ITEM_HEIGHT + 
+  (AVG_ITEMS_PER_SK_GROUP > 1 ? (AVG_ITEMS_PER_SK_GROUP - 1) : 0) * PAGING_SK_ITEM_MARGIN_BOTTOM;
+const AVG_SK_GROUP_HEIGHT = H_SK_HEADER_AREA + H_SK_ITEMS_AREA_AVG + PAGING_SK_GROUP_OUTER_MARGIN_BOTTOM;
+const NUM_SK_GROUPS_FOR_PAGING = ITEMS_PER_PAGE_FOR_SKELETON / AVG_ITEMS_PER_SK_GROUP;
+const PAGING_SKELETON_TARGET_HEIGHT = NUM_SK_GROUPS_FOR_PAGING * AVG_SK_GROUP_HEIGHT;
+// console.log(`[ChatList] Calculated PAGING_SKELETON_TARGET_HEIGHT: ${PAGING_SKELETON_TARGET_HEIGHT}px`);
+
 // Helper to determine date group
 const getRelativeDateGroup = (dateInput: number): string => { // Changed to number for lastUpdate
   const now = new Date();
@@ -72,6 +92,7 @@ export function ChatList(props: ChatListProps) {
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [isInitialLoading, setIsInitialLoading] = useState<boolean>(false);
   const [isPagingLoading, setIsPagingLoading] = useState<boolean>(false);
+  const [skeletonContainerHeight, setSkeletonContainerHeight] = useState<number>(0);
 
   // Get actions and store state needed for selection/deletion
   const { deleteSession, selectSession, updateConversation, loadSessionsFromServer } = useChatActions();
@@ -173,6 +194,29 @@ export function ChatList(props: ChatListProps) {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMore, nextCursor, isPagingLoading, isInitialLoading, loadMoreSessions]); // Added loadMoreSessions to deps as it's used
+
+  // Effect to calculate skeleton count for initial load
+  useEffect(() => {
+    const calculateHeight = () => {
+      if (listContainerRef.current) {
+        const containerHeight = listContainerRef.current.clientHeight;
+        setSkeletonContainerHeight(containerHeight);
+        console.log(`[ChatList] Calculated skeleton container height: ${containerHeight}px`);
+      } else {
+        setSkeletonContainerHeight(500); // Fallback height
+      }
+    };
+
+    const shouldCalculateAndListen = (isInitialLoading && localSessions.length === 0) || isPagingLoading;
+
+    if (shouldCalculateAndListen) {
+      calculateHeight(); 
+      window.addEventListener('resize', calculateHeight);
+      return () => {
+        window.removeEventListener('resize', calculateHeight);
+      };
+    }
+  }, [isInitialLoading, isPagingLoading, localSessions.length]);
 
   // Optimistically add/update current session in the list
   useEffect(() => {
@@ -276,7 +320,7 @@ export function ChatList(props: ChatListProps) {
   });
 
   if (isInitialLoading && localSessions.length === 0) {
-    return <ChatListSkeleton count={10} />; // Show more skeletons for initial group loading
+    return <ChatListSkeleton targetHeight={skeletonContainerHeight} />;
   }
 
   return (
@@ -302,7 +346,7 @@ export function ChatList(props: ChatListProps) {
         </div>
       ))}
       {hasMore && <div ref={observerRef} style={{ height: "1px", marginTop: "-1px" }} />} {/* Make observer target very small and unobtrusive */}
-      {isPagingLoading && <ChatListSkeleton count={5} />}
+      {isPagingLoading && <ChatListSkeleton targetHeight={PAGING_SKELETON_TARGET_HEIGHT} />}
       {!isInitialLoading && localSessions.length === 0 && !hasMore && (
         <div className={styles["chat-list-item-title"]} >{"No conversations found"}</div>
       )}
