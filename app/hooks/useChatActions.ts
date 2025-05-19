@@ -4,7 +4,8 @@ import { ChatApiService, mapApiMessagesToChatMessages, mapApiMessageToChatMessag
 import { useApiClient } from '@/app/context/ApiProviderContext';
 import { ChatMessage, MessageSyncState } from '@/app/types/chat';
 import { MessagesLoadState, SessionSyncState, ChatSession } from '@/app/types/session';
-import { ModelConfig, useAppConfig } from '@/app/store/config';
+import { ModelConfig } from '@/app/constant';
+import { useAppConfig } from '@/app/store/config';
 import {
     ConversationCreateRequest,
     MessageCreateRequest,
@@ -286,6 +287,7 @@ export function useChatActions() {
         try {
             const savedMessage = await ChatApiService.createMessage(apiClient, conversationId, createRequest);
             console.log(`[ChatActions] Message ${localMessageId} saved successfully (Server ID: ${savedMessage.message_id} TS: ${savedMessage.timestamp} ${savedMessage.sender_type})`);
+            message.syncState = MessageSyncState.SYNCED;
             // Update store state on success
             store._onMessageSyncSuccess(conversationId, localMessageId, savedMessage);
         } catch (error: any) {
@@ -328,13 +330,11 @@ export function useChatActions() {
         // Determine Model for Title Generation (using compressModel or summarize logic)
         // Adapt logic from original store's getSummarizeModelConfig
         const modelConfig = session.modelConfig;
-        let titleModel = modelConfig.model;
-        let titleProvider = modelConfig.providerName;
+        let titleModel = modelConfig.name;
 
         const titleGenConfig: ModelConfig = {
             ...modelConfig,
-            model: titleModel as ModelType,
-            providerName: titleProvider as ServiceProvider,
+            name: titleModel as ModelType,
             temperature: 0.3,
             max_tokens: 100,
         };

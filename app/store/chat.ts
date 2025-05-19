@@ -12,8 +12,8 @@ import {
 } from "../constant";
 import Locale from "../locales";
 import { createPersistStore, MakeUpdater } from "../utils/store";
-import { ModelConfig, ModelType } from "./config";
-
+import { ModelType } from "./config";
+import { ModelConfig } from "@/app/constant";
 import { ChatSession,  SessionSyncState, MessagesLoadState } from "@/app/types/session";
 import { ChatMessage, createMessage, MessageSyncState } from "@/app/types/chat";
 import { useState, useEffect } from "react";
@@ -489,23 +489,20 @@ export const useChatStore = createPersistStore(
           get().updateTargetSession(session, (sess) => {
             sess.modelConfig = {
               ...sess.modelConfig,
-              model: defaultModelName as ModelType,
-              providerName: defaultProviderName,
+              name: defaultModelName as ModelType,
             };
           });
       },
 
-      updateCurrentSessionModel(model: ModelType, providerName: ServiceProvider) {
+      updateCurrentSessionModel(newModelConfig: ModelConfig) {
           const session = get().currentSession();
-          console.log("[Update Current Session Model - Store] ", model, providerName);
+          console.log("[Update Current Session Model - Store] ", newModelConfig);
           if (!session) return;
+          console.log("session", session);
 
           get().updateTargetSession(session, (sess) => {
-            sess.modelConfig = {
-              ...sess.modelConfig,
-              model: model,
-              providerName: providerName,
-            };
+            // sess.modelConfig is typed as ModelConfig from app/constant.ts
+            sess.modelConfig = newModelConfig;
           });
       },
 
@@ -613,7 +610,7 @@ export const useChatStore = createPersistStore(
         const systemPrompts: ChatMessage[] = [];
         // Simplified system prompt creation - fillTemplateWith moved, assume action handles it
         // Content here is assumed decrypted for LLM processing
-        systemPrompts.push(createMessage({ role: "system", content: `System prompt for ${modelConfig.model}` })); // Placeholder content
+        systemPrompts.push(createMessage({ role: "system", content: `System prompt for ${modelConfig.name}` })); // Placeholder content
 
         let memoryPrompt: ChatMessage | undefined = undefined;
         const shouldSendLongTermMemory = modelConfig.sendMemory && session.memoryPrompt && session.memoryPrompt.length > 0;

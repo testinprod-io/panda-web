@@ -8,7 +8,8 @@ import {
   DEFAULT_PANDA_MODEL_NAME,
 } from "../constant";
 import Locale, { getLang } from "../locales";
-import { ModelConfig, ModelType, useAppConfig } from "../store/config";
+import { ModelConfig } from '@/app/constant';
+import { ModelType, useAppConfig } from "../store/config";
 import { collectModelsWithDefaultModel } from "./model";
 import { estimateTokenLength } from "./token";
 import { ChatMessage, MessageRole } from "@/app/types/chat";
@@ -50,8 +51,8 @@ export function countMessages(msgs: ChatMessage[]): number {
 
 export function fillTemplateWith(input: string, modelConfig: ModelConfig): string {
   const cutoff =
-    KnowledgeCutOffDate[modelConfig.model] ?? KnowledgeCutOffDate.default;
-  const modelInfo = DEFAULT_MODELS.find((m) => m.name === modelConfig.model);
+    KnowledgeCutOffDate[modelConfig.name] ?? KnowledgeCutOffDate.default;
+  const modelInfo = DEFAULT_MODELS.find((m) => m.name === modelConfig.name);
   let serviceProvider = "OpenAI";
   if (modelInfo) {
     serviceProvider = modelInfo.provider.providerName;
@@ -59,7 +60,7 @@ export function fillTemplateWith(input: string, modelConfig: ModelConfig): strin
   const vars = {
     ServiceProvider: serviceProvider,
     cutoff,
-    model: modelConfig.model,
+    model: modelConfig.name,
     time: new Date().toString(),
     lang: getLang(),
     input: input,

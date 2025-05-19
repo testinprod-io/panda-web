@@ -1,5 +1,6 @@
 import { UUID } from "crypto";
-import { ModelConfig, useAppConfig } from "../store/config";
+import { useAppConfig } from "../store/config";
+import { ModelConfig } from "../constant";
 import { DEFAULT_TOPIC } from "../store/chat";
 import { ChatMessage } from "./chat";
 import { Summary } from "@/app/client/types";

@@ -9,7 +9,7 @@ import {
   // DEFAULT_OPENAI_MODEL_NAME, // Removed
   DEFAULT_PANDA_MODEL_NAME, // Used for default model selection
   AppModelDefinition,
-  DetailedModelConfig,
+  ModelConfig,
 } from "@/app/constant";
 import { createPersistStore } from "@/app/utils/store";
 import { useChatStore } from "./chat";
@@ -43,14 +43,6 @@ if (!defaultModelDefinition) {
   // This case should ideally not be reached if DEFAULT_MODELS has at least one entry.
   throw new Error("No default model definition found in DEFAULT_MODELS. Ensure app/constant.ts is configured.");
 }
-
-// Define ModelConfig type based on DetailedModelConfig and runtime properties
-export type ModelConfig = DetailedModelConfig & {
-  model: ModelType;
-  providerName: ServiceProvider;
-  // Ensure all fields from the old ModelConfig are covered
-  // compressModel and compressProviderName are now in DetailedModelConfig
-};
 
 export const DEFAULT_CONFIG = {
   lastUpdate: Date.now(), // timestamp, to merge state
@@ -151,29 +143,29 @@ export const useAppConfig = createPersistStore(
       }));
     },
 
-    setApiProvider(modelName: ModelType, provider: ServiceProvider) {
-      // Provider will always be Panda, so the provider argument might become redundant
-      // but the structure expects it.
-      if (provider !== ServiceProvider.Panda) {
-        console.warn(`Attempted to set API provider to ${provider}, but only Panda is supported.`);
-        // Optionally force it back to Panda or throw an error
-      }
-
-      const models = get().models;
+    setApiProvider(modelName: ModelType) {
+      const models = get().models; // These are AppModelDefinition[]
       const selectedModelDetail = models.find(
-        (m) => m.name === modelName && m.provider.id === ServiceProvider.Panda.toLowerCase(),
+        (m) => m.name === modelName,
       );
 
       if (selectedModelDetail) {
+        // selectedModelDetail.config is ModelConfig from app/constant.ts (name, displayName, temp, etc.)
+        // selectedModelDetail.name is the ModelType
+        // appConfig.modelConfig needs fields like 'model', 'providerName', and the ones from ModelConfig (app/constant)
+
         set((state) => ({
-          apiProvider: ServiceProvider.Panda, // Ensure it's Panda
+          apiProvider: ServiceProvider.Panda, // Global API provider set to Panda
           modelConfig: {
-            ...selectedModelDetail.config,
-            model: modelName,
-            providerName: ServiceProvider.Panda,
+            ...selectedModelDetail.config, // Spread fields from selected model's config (temp, top_p, name, displayName etc.)
+            model: selectedModelDetail.name as ModelType, // Explicitly set the 'model' field for appConfig.modelConfig
+            providerName: ServiceProvider.Panda,      // Explicitly set top-level 'providerName' for appConfig.modelConfig
           },
         }));
-        useChatStore.getState().updateCurrentSessionModel(modelName, ServiceProvider.Panda);
+        
+        // Update the current chat session to use the selected model's specific config
+        // selectedModelDetail.config is (ModelConfig from app/constant.ts)
+        useChatStore.getState().updateCurrentSessionModel(selectedModelDetail.config);
       } else {
         console.warn(`Model ${modelName} with provider Panda not found. Cannot set API provider.`);
       }

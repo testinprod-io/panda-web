@@ -10,6 +10,7 @@ import { useAuthStatus } from '@/app/hooks/useAuthStatus';
 import { useAppConfig, useChatStore } from '@/app/store';
 import { ServiceProvider } from '@/app/constant';
 import { ModelType } from '@/app/store/config';
+import { ModelConfig, DEFAULT_MODELS } from '@/app/constant';
 import LoginSignupPopup from './LoginSignupPopup';
 import styles from './chat-header.module.scss';
 import clsx from 'clsx';
@@ -24,7 +25,13 @@ export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar, isMobi
   const { login, logout, user } = usePrivy();
   const { isReady, isAuthenticated } = useAuthStatus();
   const { models: availableModels, setApiProvider } = useAppConfig();
-  const { currentSession, updateCurrentSessionModel } = useChatStore();
+
+  const activeSessionModelName = useChatStore(state => state.currentSession()?.modelConfig?.name);
+  const activeSessionModelDisplayName = useChatStore(state => state.currentSession()?.modelConfig?.displayName);
+
+  const globalModelIdentifier = useAppConfig(state => state.modelConfig.model);
+  const globalModelName = useAppConfig(state => state.modelConfig.name);
+  const globalModelDisplayName = useAppConfig(state => state.modelConfig.displayName);
 
   const [profileAnchorEl, setProfileAnchorEl] = useState<null | HTMLElement>(null);
   const profileMenuOpen = Boolean(profileAnchorEl);
@@ -54,10 +61,13 @@ export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar, isMobi
     logout();
   };
 
-  const handleModelSelect = (modelName: ModelType, providerName: ServiceProvider) => {
-    const selectedModelDetails = availableModels.find(m => m.name === modelName && m.provider.providerName === providerName);
+  const handleModelSelect = (modelName: ModelType) => {
+    console.log("handleModelSelect", modelName);
+    const selectedModelDetails = availableModels.find(m => m.name === modelName);
+    console.log("selectedModelDetails", selectedModelDetails);
     if (selectedModelDetails && selectedModelDetails.available) {
-      setApiProvider(modelName, providerName);
+      console.log("setting api provider", selectedModelDetails.provider.providerName);
+      setApiProvider(modelName);
     }
     handleModelClose();
   };
@@ -78,11 +88,23 @@ export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar, isMobi
     login();
   };
 
-  const currentModelConfig = currentSession()?.modelConfig;
+  const displayModelName = 
+    activeSessionModelDisplayName || 
+    activeSessionModelName || 
+    globalModelDisplayName || 
+    globalModelName || 
+    DEFAULT_MODELS[0].config.displayName;
+
+  const currentModelNameForSelectionLogic = activeSessionModelName || globalModelIdentifier;
 
   const modelsToDisplay = useMemo(() => {
     return availableModels;
   }, [availableModels]);
+
+  console.log("activeSessionModelName:", activeSessionModelName);
+  console.log("activeSessionModelDisplayName:", activeSessionModelDisplayName);
+  console.log("globalModelIdentifier:", globalModelIdentifier);
+  console.log("displayModelName used in UI:", displayModelName);
 
   return (
     <Box
@@ -97,7 +119,7 @@ export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar, isMobi
           </Tooltip>
         )}
 
-        {isReady && isAuthenticated && currentSession() && currentModelConfig && (
+        {isReady && isAuthenticated && (
           <Box className={styles.modelSelectorContainer}>
             <Button
               id="model-selector-button"
@@ -110,7 +132,7 @@ export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar, isMobi
               endIcon={<ExpandMoreIcon />}
               className={styles.modelSelectorButton}
             >
-              {currentModelConfig.model.split("/")[0]}
+              {displayModelName}
             </Button>
             <Menu
               id="model-selector-menu"
@@ -131,16 +153,14 @@ export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar, isMobi
               className={styles.modelSelectorMenu}
             >
               {modelsToDisplay.map((model) => {
-                const isSelected = model.name === currentModelConfig.model && model.provider.providerName === currentModelConfig.providerName;
+                const isSelected = model.name === currentModelNameForSelectionLogic;
                 const isActuallyAvailable = model.available;
 
                 return (
                   <MenuItem 
                     key={`${model.provider.id}-${model.name}`}
                     onClick={() => {
-                      if (isActuallyAvailable) {
-                        handleModelSelect(model.name as ModelType, model.provider.providerName as ServiceProvider)
-                      }
+                      handleModelSelect(model.name as ModelType)
                     }}
                     className={clsx(
                       styles.modelMenuItem, 

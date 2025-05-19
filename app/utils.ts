@@ -7,7 +7,7 @@ import {
   ServiceProvider,
 } from "./constant";
 import { ModelSize } from "@/app/types";
-import { ModelConfig } from "./store";
+import { ModelConfig } from '@/app/constant';
 
 export function trimTopic(topic: string) {
   // Fix an issue where double quotes still show in the Indonesian language
@@ -292,7 +292,7 @@ export function getMessageImages(message: RequestMessage): string[] {
 }
 
 export function isVisionModel(modelConfig: ModelConfig | undefined) {
-  return modelConfig?.model === "Qwen/Qwen2.5-Omni-7B";
+  return modelConfig?.name === "Qwen/Qwen2.5-Omni-7B";
 //   const visionModels = useAccessStore.getState().visionModels;
 //   const envVisionModels = visionModels?.split(",").map((m) => m.trim());
 //   if (envVisionModels?.includes(model)) {

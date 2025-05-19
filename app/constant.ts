@@ -138,7 +138,7 @@ const PandaModels = [
 
 let seq = 1000;
 
-export interface DetailedModelConfig {
+export interface ModelConfig {
   temperature: number;
   top_p: number;
   max_tokens: number;
@@ -153,10 +153,14 @@ export interface DetailedModelConfig {
   template: string;
   stream: boolean;
   reasoning?: boolean;
+  name: string;
+  displayName: string;
 }
 
 // Define a base config for common models
-export const BASE_MODEL_CONFIG: DetailedModelConfig = {
+export const BASE_MODEL_CONFIG: ModelConfig = {
+  name: "",
+  displayName: "",
   temperature: 0.7,
   top_p: 1.0,
   max_tokens: 4096,
@@ -186,17 +190,19 @@ export interface AppModelDefinition {
   sorted: number;
   knowledgeCutoff: string;
   isVisionModel: boolean;
-  config: DetailedModelConfig;
+  config: ModelConfig;
 }
 
 export const DEFAULT_MODELS: AppModelDefinition[] = [
   ...PandaModels.map((name) => {
-    let config: DetailedModelConfig;
+    let config: ModelConfig;
     let isVision = false;
 
     if (name === "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B") {
       config = { 
         ...BASE_MODEL_CONFIG, 
+        name: name,
+        displayName: name.split("/")[0],
         max_tokens: 8000, // Example
         reasoning: true,
       };
@@ -204,13 +210,16 @@ export const DEFAULT_MODELS: AppModelDefinition[] = [
     } else if (name === "Qwen/Qwen2.5-Omni-7B") {
       config = { 
         ...BASE_MODEL_CONFIG, 
+        name: name,
+        displayName: name.split("/")[0],
         max_tokens: 16000, // Example for vision model
         reasoning: true,
       };
       isVision = true;
     } else {
       // Fallback, though ideally all PandaModels are handled above
-      config = { ...BASE_MODEL_CONFIG, reasoning: true };
+      config = { ...BASE_MODEL_CONFIG, name: name,
+        displayName: name, reasoning: true };
     }
     
     return {
@@ -226,7 +235,7 @@ export const DEFAULT_MODELS: AppModelDefinition[] = [
       },
       knowledgeCutoff: KnowledgeCutOffDate[name] || KnowledgeCutOffDate.default,
       isVisionModel: isVision, // Use specific assignment
-      config,
+      config: config,
     };
   }),
 ];

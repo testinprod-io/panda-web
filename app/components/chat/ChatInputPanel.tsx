@@ -3,11 +3,11 @@ import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { isEmpty } from "lodash-es";
 import { useDebouncedCallback } from "use-debounce";
+import { ModelConfig } from '@/app/constant';
 
 import {
   useAppConfig,
   useChatStore,
-  ModelConfig,
 } from "@/app/store"; // Adjust paths
 import { UNFINISHED_INPUT } from "@/app/constant";
 import { autoGrowTextArea, isVisionModel, safeLocalStorage, useMobileScreen } from "@/app/utils";
@@ -23,8 +23,6 @@ import { ChatAction } from "@/app/components/chat/ChatAction"; // Import ChatAct
 import ArrowUpwardRoundedIcon from '@mui/icons-material/ArrowUpwardRounded';
 import StopRoundedIcon from '@mui/icons-material/StopRounded';
 import Button from '@mui/material/Button'; // Added MUI Button
-import { useApiClient } from "@/app/context/ApiProviderContext";
-import { useChatActions } from "@/app/hooks/useChatActions";
 import styles from "@/app/components/chat/chat.module.scss";
 import { UUID } from "crypto";
 import CloseIcon from '@mui/icons-material/Close'; // For the new 'x' delete button
@@ -73,7 +71,6 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
     scrollToBottom,
   } = props;
 
-  const apiClient = useApiClient();
   const chatStore = useChatStore();
   const config = useAppConfig();
   const router = useRouter();
@@ -250,7 +247,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
         }
       }
     },
-    [modelConfig?.model, attachedFiles.length, showSnackbar],
+    [modelConfig?.name, attachedFiles.length, showSnackbar],
   );
 
   // Handle file uploading via button click

@@ -9,7 +9,7 @@ import { useChatActions } from "./useChatActions";
 import { useApiClient } from "../context/ApiProviderContext";
 import { ChatApiService } from "../services/ChatApiService";
 import { MultimodalContent, RequestMessage } from "@/app/client/api"; // Import MultimodalContent and RequestMessage
-import { ModelConfig } from "../store/config";
+import { ModelConfig } from '@/app/constant';
 import { ChatControllerPool } from "../client/controller";
 import { useChatStore } from '@/app/store/chat'; // Corrected import
 import { ChatSession } from '@/app/types/session'; // Added import for ChatSession
@@ -144,8 +144,20 @@ export function useChatSessionManager(
           `[useChatSessionManager] Initial summaries fetched. Count: ${fetchedSummaries.length}. LastSummarizedID: ${newLastSummarizedId}`
         );
 
-        const serverMessagesForDisplay = fetchedChatMessages.slice().reverse();
-        setDisplayedMessages(serverMessagesForDisplay); // Assuming no optimistic messages at this very initial point
+        const serverMessagesChronological = fetchedChatMessages.slice().reverse();
+        setDisplayedMessages(prevMessages => {
+          // Filter out optimistic messages from the current state (prevMessages)
+          // that are not present in the newly fetched server messages.
+          console.log(`[useChatSessionManager] Filtering out optimistic messages from the current state (prevMessages) that are not present in the newly fetched server messages.`);
+          console.log(`[useChatSessionManager] PrevMessages:`, prevMessages);
+          console.log(`[useChatSessionManager] ServerMessagesChronological:`, serverMessagesChronological);
+          const optimisticMessagesToKeep = prevMessages.filter(
+            msg => msg.syncState === MessageSyncState.PENDING_CREATE &&
+                   !serverMessagesChronological.some(sm => sm.id === msg.id)
+          );
+          // The new state will be the server messages followed by any such optimistic messages.
+          return [...serverMessagesChronological, ...optimisticMessagesToKeep];
+        });
         
         setHasMoreServerMessages(messagesPagination.has_more);
         setNextServerMessageCursor(messagesPagination.next_cursor ?? undefined);
@@ -520,7 +532,7 @@ export function useChatSessionManager(
         return updatedMessages;
       });
     },
-    [sessionId, saveMessageToServer] // displayedMessages is removed as we use functional update
+    [sessionId, displayedMessages] // displayedMessages is removed as we use functional update
   );
 
   const sendNewQuery = useCallback(
@@ -593,7 +605,7 @@ export function useChatSessionManager(
       let reasoningStartTimeForThisQuery: number | null = null;
       const botMessage = createMessage({
         role: "system", content: "", reasoning: "", isReasoning: false, 
-        streaming: true, model: modelConfig.model, syncState: MessageSyncState.PENDING_CREATE,
+        streaming: true, model: modelConfig.name, syncState: MessageSyncState.PENDING_CREATE,
       });
       const localBotMessageId = botMessage.id;
       setDisplayedMessages((prev) => [...prev, botMessage]);
