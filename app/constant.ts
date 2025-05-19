@@ -215,6 +215,7 @@ export const DEFAULT_MODELS: AppModelDefinition[] = [
     
     return {
       name,
+      displayName: name.split("/")[0],
       available: true, // Assuming Panda models are available by default
       sorted: seq++,
       provider: {

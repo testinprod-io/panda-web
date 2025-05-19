@@ -377,7 +377,7 @@
   align-items: center; // To align bar and textarea
   gap: 8px; // Space for the bar if it was added
   min-height: 32px; // Default height for the area
-  margin-bottom: 16px; // Space to the controls-row below
+  // margin-bottom: 16px; // Space to the controls-row below
 }
 
 .chat-input-label { // New class to wrap textarea, if needed for styling like the vertical bar

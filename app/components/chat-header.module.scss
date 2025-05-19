@@ -40,6 +40,7 @@
   color: var(--text-primary) !important;
   font-size: 24px !important;
   font-weight: 700 !important;
+  border-radius: 8px !important;
   // Mui Button already has padding, size="small" also affects it.
   // endIcon will have its own margin usually.
 }

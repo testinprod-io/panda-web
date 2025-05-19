@@ -17,9 +17,10 @@ import clsx from 'clsx';
 interface ChatHeaderProps {
   isSidebarCollapsed: boolean;
   onRevealSidebar: () => void;
+  isMobile?: boolean;
 }
 
-export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar }: ChatHeaderProps) {
+export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar, isMobile }: ChatHeaderProps) {
   const { login, logout, user } = usePrivy();
   const { isReady, isAuthenticated } = useAuthStatus();
   const { models: availableModels, setApiProvider } = useAppConfig();
@@ -109,7 +110,7 @@ export default function ChatHeader({ isSidebarCollapsed, onRevealSidebar }: Chat
               endIcon={<ExpandMoreIcon />}
               className={styles.modelSelectorButton}
             >
-              {currentModelConfig.model}
+              {currentModelConfig.model.split("/")[0]}
             </Button>
             <Menu
               id="model-selector-menu"
