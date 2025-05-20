@@ -19,11 +19,13 @@ import {
 import { UUID } from "crypto";
 import { ChatMessage, createMessage, MessageRole } from "@/app/types/chat";
 import { ChatSession, createNewSession } from "@/app/types/session";
-import { ModelConfig, ModelType } from "@/app/store/config";
+import { ModelType } from "@/app/store/config";
+import { ModelConfig } from "@/app/constant";
 import Locale from "@/app/locales";
 import { DEFAULT_TOPIC } from "@/app/store/chat"; // Assuming these are exported from store
 import { trimTopic, getMessageTextContent } from "@/app/utils"; // Import from utils
 import { EncryptionService } from "@/app/services/EncryptionService";
+import { LLMConfig } from "@/app/client/api";
 
 // Helper to encrypt/decrypt conversation data
 function encryptConversationData(conversation: Conversation): Conversation {
@@ -322,8 +324,29 @@ export const ChatApiService = {
   ): Promise<void> {
     console.log("[ChatApiService] Calling LLM chat:", { messagesCount: args.messages.length, config: args.config });
     try {
-      // Pass all new args to api.llm.chat
-      await api.llm.chat(args); 
+      // Prepare the LLMConfig for api.llm.chat, including the targetEndpoint
+      const llmChatConfig: LLMConfig = {
+        model: args.config.name, // ModelConfig (app/constant) uses 'name' for model identifier
+        temperature: args.config.temperature,
+        top_p: args.config.top_p,
+        stream: args.config.stream ?? true,
+        presence_penalty: args.config.presence_penalty,
+        frequency_penalty: args.config.frequency_penalty,
+        reasoning: args.config.reasoning ?? false,
+        targetEndpoint: args.config.endpoint, // Pass the endpoint from ModelConfig
+      };
+
+      await api.llm.chat({
+        messages: args.messages,
+        config: llmChatConfig,
+        onReasoningStart: args.onReasoningStart,
+        onReasoningChunk: args.onReasoningChunk,
+        onReasoningEnd: args.onReasoningEnd,
+        onContentChunk: args.onContentChunk,
+        onFinish: args.onFinish,
+        onError: args.onError,
+        onController: args.onController,
+      }); 
       console.log("[ChatApiService] LLM chat call initiated.");
     } catch (error) {
       console.error("[ChatApiService] Failed to initiate LLM chat call:", error);
@@ -342,9 +365,19 @@ export const ChatApiService = {
   ): Promise<{ message: string, date: Date }> {
     console.log("[ChatApiService] Calling LLM summarize:", { messagesCount: messages.length, config });
     return new Promise((resolve, reject) => {
+      const llmSummarizeConfig: LLMConfig = {
+        model: config.name, // Use name from ModelConfig for model identifier
+        temperature: config.temperature,
+        top_p: config.top_p,
+        presence_penalty: config.presence_penalty,
+        frequency_penalty: config.frequency_penalty,
+        reasoning: config.reasoning ?? false,
+        stream: false, // Ensure stream is false for summarize
+        targetEndpoint: config.endpoint, // Pass the endpoint
+      };
       api.llm.chat({
-        messages: messages.concat(createMessage({ role: "system", content: prompt, date: new Date() })),
-        config: { ...config, stream: false }, // Ensure stream is false
+        messages: messages.concat(createMessage({ role: "system", content: prompt, date: new Date() }) as unknown as RequestMessage[]),
+        config: llmSummarizeConfig,
         onFinish: (message, date, responseRes) => {
           if (responseRes?.status === 200) {
             console.log("[ChatApiService] LLM summarize finished successfully.");
@@ -370,9 +403,19 @@ export const ChatApiService = {
   ): Promise<string> {
     console.log("[ChatApiService] Calling LLM generate title:", { config });
     return new Promise((resolve, reject) => {
+      const llmTitleConfig: LLMConfig = {
+        model: config.name, // Use name from ModelConfig for model identifier
+        temperature: config.temperature,
+        top_p: config.top_p,
+        presence_penalty: config.presence_penalty,
+        frequency_penalty: config.frequency_penalty,
+        reasoning: config.reasoning ?? false,
+        stream: false, // Ensure stream is false for title generation
+        targetEndpoint: config.endpoint, // Pass the endpoint
+      };
       api.llm.chat({
-        messages: [createMessage({ role: "user", content: prompt })],
-        config: { ...config, stream: false }, // Ensure stream is false
+        messages: [createMessage({ role: "user", content: prompt }) as unknown as RequestMessage],
+        config: llmTitleConfig,
         onFinish: (title, date, responseRes) => {
           if (responseRes?.status === 200) {
             const cleanedTitle = title && title.length > 0 ? trimTopic(title) : DEFAULT_TOPIC;

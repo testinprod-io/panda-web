@@ -1,6 +1,6 @@
 .sidebar {
   background-color: #131A28;
-  width: 286px;
+  width: 378x;
   height: 100%; // Assuming full height
   display: flex;
   flex-direction: column;
@@ -70,7 +70,7 @@
   flex-direction: column;
   flex-grow: 1; // Allow it to grow within the potentially fixed-height sidebar
   padding: 17px 31px; // Original sidebar padding
-  gap: 30px; // Original gap between header and content
+  gap: 72px; // Original gap between header and content
   min-height: min-content; // Important for scroll to work correctly with flex children
   box-sizing: border-box;
 }
@@ -81,7 +81,7 @@
   gap: 20px; // Figma: Gap between icon row and logo row
   align-self: stretch;
   flex-shrink: 0; // Prevent header from shrinking
-  min-width: 224px; // Prevents content from shrinking: 286px (total) - 2 * 31px (padding)
+  min-width: 316px; // Prevents content from shrinking: 286px (total) - 2 * 31px (padding)
   opacity: 1;       // Default visible state
 }
 
@@ -138,18 +138,23 @@
 }
 
 .logoTextBold {
+  font-family: 'Montserrat', sans-serif;
   font-weight: 600; // Figma: Panda
+  font-size: 20px;
+  letter-spacing: 0.80;
 }
 
 .logoTextNormal {
+  font-family: 'Montserrat', sans-serif;
   font-weight: 500; // Figma: AI
+  font-size: 20px;
+  letter-spacing: 0.80;
 }
 
 .sidebarContent {
   // Styles for the main content area of the sidebar (e.g., the chat list container)
   flex-grow: 1;
-  padding: 0; // Relies on parent .sidebar padding now - THIS IS FINE (now means .sidebarInnerWrapper)
-  min-width: 224px; // Prevents content from shrinking: 286px (total) - 2 * 31px (padding)
+  min-width: 316px; // Prevents content from shrinking: 286px (total) - 2 * 31px (padding)
   opacity: 1;       // Default visible state
   transition: opacity 0.15s ease-out; // Smooth fade for content, faster than sidebar width animation
   display: flex; // Added to ensure ChatList can grow if it needs to

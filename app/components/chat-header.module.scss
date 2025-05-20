@@ -4,7 +4,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px;
+  padding: 34px 31px;
   // border-bottom: 1px solid transparent; // From borderColor: divider, assuming divider is transparent or a variable
   height: 112px;
   flex-shrink: 0;
@@ -15,13 +15,24 @@
   display: flex;
   align-items: center;
 
+  .newChatButton {
+    // margin-right: 8px; // Corresponds to sx={{ mr: 1 }}
+    height: 48px;
+    width: 48px;
+    filter: invert(9%) sepia(0%) saturate(0%) hue-rotate(134deg) brightness(94%) contrast(92%);
+    // Add icon color if needed, e.g., color: var(--icon-color);
+  }
+
   .revealSidebarButton {
-    margin-right: 8px; // Corresponds to sx={{ mr: 1 }}
+    // margin-right: 8px; // Corresponds to sx={{ mr: 1 }}
+    height: 48px;
+    width: 48px;
+    filter: invert(9%) sepia(0%) saturate(0%) hue-rotate(134deg) brightness(94%) contrast(92%);
     // Add icon color if needed, e.g., color: var(--icon-color);
   }
 
   .modelSelectorContainer {
-    margin-right: 8px; // Corresponds to sx={{ mr: 1 }}
+    // margin-right: 8px; // Corresponds to sx={{ mr: 1 }}
   }
 }
 
@@ -41,6 +52,7 @@
   font-size: 24px !important;
   font-weight: 700 !important;
   border-radius: 8px !important;
+  padding: 4px 16px !important;
   // Mui Button already has padding, size="small" also affects it.
   // endIcon will have its own margin usually.
 }

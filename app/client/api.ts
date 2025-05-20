@@ -31,6 +31,7 @@ export interface LLMConfig {
   presence_penalty?: number;
   frequency_penalty?: number;
   reasoning?: boolean;
+  targetEndpoint?: string;
 }
 
 export interface ChatOptions {
@@ -82,7 +83,8 @@ export class ClientApi {
     if (!getAccessToken) {
       throw new Error("getAccessToken function is required for Panda provider");
     }
-    this.llm = new PandaApi(getAccessToken);
+    const defaultPandaBaseUrl = ""; // Or a more sensible default like from an env var or appConfig
+    this.llm = new PandaApi(defaultPandaBaseUrl, getAccessToken);
     this.app = new ApiClient("http://3.15.240.252:8000", getAccessToken);
   }
 

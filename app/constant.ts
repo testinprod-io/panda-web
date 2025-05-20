@@ -1,6 +1,3 @@
-export const PANDA_BASE_URL = "http://4.246.68.189:8000/"; // "http://4.246.68.189:8000/";
-// export const PANDA_BASE_URL = "http://52.225.128.77:8000/";
-
 export const OWNER = "ChatGPTNextWeb";
 export const REPO = "ChatGPT-Next-Web";
 export const REPO_URL = `https://github.com/${OWNER}/${REPO}`;
@@ -122,7 +119,7 @@ export const DEFAULT_PANDA_MODEL_NAME = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.
 export const KnowledgeCutOffDate: Record<string, string> = {
   default: "2023-10",
   "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B": "2023-10",
-  "Qwen/Qwen2.5-Omni-7B": "2024-01", // Example, adjust if needed
+  "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16": "2024-01", // Example, adjust if needed
 };
 
 export const VISION_MODEL_REGEXES = [
@@ -133,7 +130,7 @@ export const VISION_MODEL_REGEXES = [
 
 const PandaModels = [
   "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
-  "Qwen/Qwen2.5-Omni-7B",
+  "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16",
 ];
 
 let seq = 1000;
@@ -155,6 +152,7 @@ export interface ModelConfig {
   reasoning?: boolean;
   name: string;
   displayName: string;
+  endpoint: string;
 }
 
 // Define a base config for common models
@@ -175,6 +173,7 @@ export const BASE_MODEL_CONFIG: ModelConfig = {
   template: DEFAULT_INPUT_TEMPLATE,
   stream: true,
   reasoning: false,
+  endpoint: "",
 };
 
 export interface AppModelDefinition {
@@ -205,15 +204,17 @@ export const DEFAULT_MODELS: AppModelDefinition[] = [
         displayName: name.split("/")[0],
         max_tokens: 8000, // Example
         reasoning: true,
+        endpoint: "http://4.246.68.189:8000/"
       };
       isVision = false;
-    } else if (name === "Qwen/Qwen2.5-Omni-7B") {
+    } else if (name === "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16") {
       config = { 
         ...BASE_MODEL_CONFIG, 
         name: name,
         displayName: name.split("/")[0],
         max_tokens: 16000, // Example for vision model
         reasoning: true,
+        endpoint: "http://52.225.128.77:8000/"
       };
       isVision = true;
     } else {
@@ -243,4 +244,4 @@ export const DEFAULT_MODELS: AppModelDefinition[] = [
 export const CHAT_PAGE_SIZE = 15;
 export const MAX_RENDER_MSG_COUNT = 45;
 
-export type ModelType = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B" | "Qwen/Qwen2.5-Omni-7B";
+export type ModelType = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B" | "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16";

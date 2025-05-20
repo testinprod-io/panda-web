@@ -611,7 +611,7 @@ export function useChatSessionManager(
       setDisplayedMessages((prev) => [...prev, botMessage]);
 
       ChatApiService.callLlmChat(apiClient, {
-        messages: messagesForApi.reverse(),
+        messages: messagesForApi,
         config: { ...modelConfig, stream: true, reasoning: modelConfig.reasoning },
         onReasoningStart: () => {
           reasoningStartTimeForThisQuery = Date.now();

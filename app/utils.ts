@@ -292,7 +292,7 @@ export function getMessageImages(message: RequestMessage): string[] {
 }
 
 export function isVisionModel(modelConfig: ModelConfig | undefined) {
-  return modelConfig?.name === "Qwen/Qwen2.5-Omni-7B";
+  return modelConfig?.name === "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16";
 //   const visionModels = useAccessStore.getState().visionModels;
 //   const envVisionModels = visionModels?.split(",").map((m) => m.trim());
 //   if (envVisionModels?.includes(model)) {

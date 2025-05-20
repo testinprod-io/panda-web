@@ -38,7 +38,7 @@ export default function Sidebar({
       )}
       // Apply inline style for width animation ONLY if NOT in overlay mode
       style={!isOverlayMode ? {
-        width: isSidebarCollapsed ? 0 : "286px",
+        width: isSidebarCollapsed ? 0 : "378px",
       } : {}}
       // sx prop from layout.tsx applies for overlay mode styling (transform, fixed width, etc.)
       // or can be used for additional desktop styling if ever passed from there.

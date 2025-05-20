@@ -286,7 +286,7 @@ export function ChatItem({
       onMouseLeave={() => setIsHovered(false)}
       sx={{ 
           padding: 0, 
-          minHeight: '50px', 
+          minHeight: '48px', 
           alignItems: 'stretch', 
           '&:hover': {
             backgroundColor: 'transparent',
@@ -314,7 +314,7 @@ export function ChatItem({
                 {!isEditing && (
                   <>
                     <IconButton edge="end" aria-label="actions" onClick={handleMenuClick} size="small">
-                      <MoreVertIcon fontSize="small" sx={{ color: 'white' }} />
+                      <img src="/icons/more.svg" alt="More" style={{ width: '24px', height: '24px' }} />
                     </IconButton>
                     <Menu
                       anchorEl={anchorEl}

@@ -1,4 +1,4 @@
-import { PANDA_BASE_URL, PandaPath, DEFAULT_PANDA_MODEL_NAME } from "@/app/constant";
+import { PandaPath, DEFAULT_PANDA_MODEL_NAME } from "@/app/constant";
 import { ChatOptions, LLMApi, LLMModel, LLMUsage, MultimodalContent } from "@/app/client/api";
 
 // Type for the Privy getAccessToken function
@@ -36,23 +36,26 @@ export interface SummaryResponse {
 }
 
 export class PandaApi implements LLMApi {
-  private baseUrl: string = PANDA_BASE_URL;
+  private baseUrl: string;
   private disableListModels: boolean = false;
   private getAccessToken: GetAccessTokenFn;
 
-  constructor(getAccessToken: GetAccessTokenFn, disableListModels?: boolean) {
+  constructor(baseUrl: string, getAccessToken: GetAccessTokenFn, disableListModels?: boolean) {
+    this.baseUrl = baseUrl;
     this.getAccessToken = getAccessToken;
     if (disableListModels) {
       this.disableListModels = disableListModels;
     }
   }
 
-  path(path: string): string {
-    if (this.baseUrl.endsWith("/")) {
-      this.baseUrl = this.baseUrl.slice(0, this.baseUrl.length - 1);
-    }
-    console.log("[Panda Endpoint] ", this.baseUrl, path);
-    return [this.baseUrl, path].join("/");
+  path(path: string, targetEndpoint?: string): string {
+    const baseUrlToUse = targetEndpoint || this.baseUrl;
+    // Ensure no double slashes and handle if baseUrlToUse is empty
+    const A = baseUrlToUse.endsWith("/") ? baseUrlToUse.slice(0, -1) : baseUrlToUse;
+    const B = path.startsWith("/") ? path.slice(1) : path;
+    const finalPath = `${A}/${B}`;
+    console.log("[Panda Endpoint Used] ", finalPath);
+    return finalPath;
   }
 
   
@@ -77,7 +80,8 @@ export class PandaApi implements LLMApi {
       }
       const bearerToken = `Bearer ${accessToken}`;
 
-      const requestUrl = this.path(PandaPath.ChatPath);
+      // Use targetEndpoint from options.config if available, otherwise default to this.baseUrl via this.path
+      const requestUrl = this.path(PandaPath.ChatPath, options.config.targetEndpoint);
       
       const requestBody = {
         model: options.config.model,
@@ -215,7 +219,7 @@ export class PandaApi implements LLMApi {
           },
         },
         {
-          name: "Qwen/Qwen2.5-Omni-7B",
+          name: "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16",
           available: true,
           sorted: 1001,
           provider: {

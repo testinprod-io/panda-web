@@ -43,7 +43,7 @@ export function PasswordPromptModal({ open }: PasswordPromptModalProps) {
       if (success) {
         setPassword('');
       } else {
-        setError('Incorrect password. Please try again.');
+        setError('*Incorrect password');
       }
     } catch (err: any) {
       console.error('[PasswordPromptModal] Password error:', err);
@@ -89,7 +89,27 @@ export function PasswordPromptModal({ open }: PasswordPromptModalProps) {
       {/* New Fixed-width Centered Inner Container */}
       <Box sx={{ width: '372px', margin: '0 auto', flexDirection: 'column', alignItems: 'center' }}>
         {/* Combined Title and Paragraph Block with Gap */}
-        <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '40px', marginBottom: '24px' }}>
+        <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', marginBottom: '24px' }}>
+          <Box sx={{
+            width: '48px !important',
+            height: '48px',
+            borderRadius: '50%',
+            backgroundColor: '#F33D4F',
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'center',
+            margin: '0 auto'
+          }}>
+            <img 
+              src="/icons/lock.svg" 
+              alt="Lock" 
+              style={{ 
+                width: '24px', 
+                height: '30px',
+                marginTop: '6px'
+              }} 
+            />
+          </Box>
           <DialogTitle sx={{ textAlign: 'center', padding: 0 }}>
             <Typography variant="h5" component="div" sx={{ 
               color: '#131A28', // Figma: color: '#131A28'
@@ -98,7 +118,7 @@ export function PasswordPromptModal({ open }: PasswordPromptModalProps) {
               fontWeight: '600', // Figma: fontWeight: '600'
               wordWrap: 'break-word'
             }}>
-              Unlock Data Encryption
+              Unlock Panda
             </Typography>
           </DialogTitle>
           <DialogContent sx={{ textAlign: 'center', padding: 0 }}>
@@ -109,13 +129,29 @@ export function PasswordPromptModal({ open }: PasswordPromptModalProps) {
               fontWeight: '400', // Figma: fontWeight: '400'
               wordWrap: 'break-word'
             }}>
-              Please enter your password to decrypt your chat data. This password is only stored temporarily in your browser's memory.
+              Please enter your password to decrypt your chat data.
             </Typography>
           </DialogContent>
         </Box>
         
         {/* Form Block (Input and Button) */}
-        <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {error && (
+            <Typography 
+              variant="caption" // Or body2, adjust as needed
+              sx={{
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '16px', 
+                fontWeight: '400',
+                color: '#F33D4F', // Using the same red as the error border
+                textAlign: 'left',
+                width: '100%',
+                // The gap from the parent Box should provide spacing, adjust if needed
+              }}
+            >
+              {error}
+            </Typography>
+          )}
           <TextField
             autoFocus
             required
@@ -127,17 +163,17 @@ export function PasswordPromptModal({ open }: PasswordPromptModalProps) {
             value={password}
             onChange={handlePasswordChange}
             error={!!error}
-            helperText={error}
-            InputLabelProps={{ style: { width: '100% !important', fontFamily: 'Inter, sans-serif' } }} // For consistency if label were used
-            FormHelperTextProps={{
-              style: {
-                fontFamily: 'Inter, sans-serif',
-                fontSize: '14px', // Figma shows 16px for error, but typically helper is smaller. Let's use 14px for now.
-                // color: '#D32F2F' // MUI default error color
-                marginLeft: 0, // Align with input
-                textAlign: 'left', // Align error text to the left as is common
-              }
-            }}
+            // helperText={error} // Removed
+            // InputLabelProps={{ style: { width: '100% !important', fontFamily: 'Inter, sans-serif' } }} // For consistency if label were used
+            // FormHelperTextProps={{ // Removed
+            //   style: {
+            //     fontFamily: 'Inter, sans-serif',
+            //     fontSize: '16px', 
+            //     fontWeight: '400',
+            //     marginLeft: 0, 
+            //     textAlign: 'left', 
+            //   }
+            // }}
             sx={{ 
               '& .MuiOutlinedInput-root': {
                 borderRadius: '8px', // Figma: borderRadius: 8
@@ -154,7 +190,7 @@ export function PasswordPromptModal({ open }: PasswordPromptModalProps) {
                   borderColor: '#007AFF', 
                 },
                 '&.Mui-error fieldset': {
-                  borderColor: '#D32F2F', // Default MUI error color for border
+                  borderColor: '#F33D4F', // Default MUI error color for border
                 }
               },
               '& .MuiInputBase-input': {
@@ -202,7 +238,8 @@ export function PasswordPromptModal({ open }: PasswordPromptModalProps) {
                 '&.Mui-disabled': { // Explicit styling for disabled state
                   background: '#F3F3F3',
                   color: '#CACACA',
-                }
+                },
+                marginTop: '8px',
               }}
             >
               Unlock

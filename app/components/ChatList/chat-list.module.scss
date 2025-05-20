@@ -7,7 +7,6 @@
   min-height: 0; /* Prevent flexbox overflow issues */
   display: flex;
   flex-direction: column;
-  gap: 4px;
   /* Add some padding if needed */
   /* padding: 10px 0; */
   overflow-x: hidden;
@@ -18,13 +17,12 @@
   display: flex;
   align-items: center;
   margin: 0 auto;
-  width: 224px;
+  width: 316px;
   height: 48px;
   border-radius: 8px;
   cursor: pointer;
   position: relative; /* Needed for absolute positioning of menu */
   user-select: none; /* Prevent text selection during drag */
-  margin-bottom: 4px;
   padding: 0 !important;
   overflow: hidden;
   transition: background-color 0.2s ease-in-out;
@@ -36,8 +34,7 @@
   align-items: center;
   width: 100%;
   padding: 12px;
-  min-height: 48px;
-  border-radius: 8px;
+  border-radius: 19px;
   box-sizing: border-box;
 }
 
@@ -67,12 +64,11 @@
   font-family: 'Inter', sans-serif;
   font-size: 16px;
   font-weight: 400;
-  line-height: 1.5;
 }
 
 .chat-item-title-text {
   display: block; /* Ensure it takes full width for ellipsis */
-  font-size: 0.9rem;
+  font-size: 16px;
   color: white;
 }
 
