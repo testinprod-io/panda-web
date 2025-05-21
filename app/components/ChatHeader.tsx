@@ -309,21 +309,10 @@ export default function ChatHeader({
                  <Tooltip title="Click to cycle status (Dev only)">
                     <Box
                         onClick={cycleEncryptionStatus} // Added for demo
+                        className={styles.encryptionStatus}
                         sx={{
                             cursor: 'pointer', // Indicate it\'s clickable for demo
-                            paddingLeft: "10px",
-                            paddingRight: "10px",
-                            paddingTop: "6px",
-                            paddingBottom: "6px",
                             background: currentStatusInfo.bgColor,
-                            borderRadius: "24px",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            gap: "4px",
-                            display: "inline-flex",
-                            marginLeft: "8px", // Add some margin from model selector
-                            marginTop: "6px",
-                            marginBottom: "6px",
                         }}
                         >
                         <Box
@@ -350,13 +339,9 @@ export default function ChatHeader({
                             />
                         </Box>
                         <Typography
+                            className={styles.encryptionStatusText}
                             sx={{
                             color: currentStatusInfo.textColor,
-                            fontSize: "16px",
-                            fontFamily: "Inter, sans-serif",
-                            fontWeight: "500",
-                            // wordWrap: "break-word", // Typography handles this
-                            lineHeight: 'normal', // Added for better vertical centering
                             }}
                         >
                             {currentStatusInfo.text}

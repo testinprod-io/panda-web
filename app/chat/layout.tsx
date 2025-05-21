@@ -297,7 +297,7 @@ export default function RootChatGroupLayout({
             minWidth: { xs: "auto", md: "460px" }, // Min width from Figma
             textAlign: "center",
             color: "#646464", // Figma style
-            fontSize: "16px", // Figma style. Assuming 1rem = 16px
+            fontSize: "14px", // Figma style. Assuming 1rem = 16px
             fontFamily: "Inter", // Figma style
             fontWeight: "400", // Figma style
             lineHeight: "32px", // Figma style

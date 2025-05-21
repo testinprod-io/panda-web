@@ -125,6 +125,33 @@
   }
 }
 
+.encryptionStatus {       
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  border-radius: 24px;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  display: inline-flex;
+  margin-left: 8px; // Add some margin from model selector
+  margin-top: 6px;
+  margin-bottom: 6px;
+
+  @media (max-width: 768px) { // Or your preferred breakpoint
+    .encryptionStatusText {
+      display: none; // Hide text
+    }
+  }
+}
+
+.encryptionStatusText {
+  font-size: 14px !important;
+  font-weight: 500 !important; // 500
+  font-family: 'Inter', sans-serif !important;
+}
+
 .iconContainer {
   min-width: 24px; // Width of the icon area from Figma
   height: 24px;    // Height of the icon area from Figma
