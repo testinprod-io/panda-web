@@ -1,5 +1,6 @@
 import { PandaPath, DEFAULT_PANDA_MODEL_NAME } from "@/app/constant";
-import { ChatOptions, LLMApi, LLMModel, LLMUsage, MultimodalContent } from "@/app/client/api";
+import { ChatOptions, LLMApi, LLMModel, LLMUsage, MultimodalContent, LLMConfig } from "@/app/client/api";
+import { RequestMessage } from "@/app/types";
 
 // Type for the Privy getAccessToken function
 export type GetAccessTokenFn = () => Promise<string | null>;
@@ -303,7 +304,7 @@ export class PandaApi implements LLMApi {
     }
   }
 
-  async summary(messages: RequestPayload["messages"], maxTokens: number = 1000): Promise<SummaryResponse> {
+  async summary(config: LLMConfig, messages: RequestMessage[], maxTokens: number = 1000): Promise<SummaryResponse> {
     try {
       const accessToken = await this.getAccessToken();
       if (!accessToken) {
@@ -311,7 +312,7 @@ export class PandaApi implements LLMApi {
       }
       const bearerToken = `Bearer ${accessToken}`;
 
-      const requestUrl = this.path(PandaPath.SummaryPath);
+      const requestUrl = this.path(PandaPath.SummaryPath, config.targetEndpoint);
       
       const requestBody = {
         model: DEFAULT_PANDA_MODEL_NAME,

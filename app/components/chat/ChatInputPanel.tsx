@@ -26,6 +26,8 @@ import Button from '@mui/material/Button';
 import styles from "@/app/components/chat/chat.module.scss";
 import { UUID } from "crypto";
 import CloseIcon from '@mui/icons-material/Close';
+import LanguageIcon from '@mui/icons-material/Language';
+import { useApiClient } from "@/app/context/ApiProviderContext";
 
 // Helper component for the generic file icon
 const GenericFileIcon = () => (
@@ -62,9 +64,9 @@ interface AttachedClientFile {
   name: string;
   size: number;
   uploadStatus: 'pending' | 'uploading' | 'success' | 'error';
-  fileId?: string;
+  fileId?: UUID;
   uploadProgress?: number;
-  xhr?: XMLHttpRequest;
+  abortUpload?: () => void;
 }
 
 interface SubmittedFile {
@@ -120,7 +122,7 @@ interface ChatInputPanelProps {
   modelConfig?: ModelConfig;
   isLoading: boolean;
   hitBottom: boolean;
-  onSubmit: (input: string, files: SubmittedFile[]) => Promise<void>;
+  onSubmit: (input: string, files: SubmittedFile[], enableSearch: boolean) => Promise<void>;
   scrollToBottom: () => void;
   setShowPromptModal: () => void;
   setShowShortcutKeyModal: () => void;
@@ -141,6 +143,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
 
   const chatStore = useChatStore();
   const { getAccessToken } = usePrivy();
+  const apiClient = useApiClient();
   const config = useAppConfig();
   const router = useRouter();
   const isMobileScreen = useMobileScreen();
@@ -152,8 +155,9 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   const [attachedFiles, setAttachedFiles] = useState<AttachedClientFile[]>([]);
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
   const [inputRows, setInputRows] = useState(1);
+  const [enableSearch, setEnableSearch] = useState(false);
   const autoFocus = !isMobileScreen;
-  const activeUploadsRef = useRef<Map<string, XMLHttpRequest>>(new Map());
+  const activeUploadsRef = useRef<Map<string, () => void>>(new Map());
 
   useEffect(() => {
     const currentlyUploading = attachedFiles.some(file => file.uploadStatus === 'uploading');
@@ -164,6 +168,10 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
     const initialInput = getInitialInput(sessionId);
     setUserInput(initialInput);
   }, [sessionId]);
+
+  useEffect(() => {
+    console.log('[EFFECT:attachedFiles changed]', JSON.stringify(attachedFiles.map(f => ({ clientId: f.clientId, name: f.name, status: f.uploadStatus, fileId: f.fileId, progress: f.uploadProgress, type: f.type, size: f.size })), null, 2));
+  }, [attachedFiles]);
 
   const debouncedSaveInput = useDebouncedCallback((currentSessionId?: UUID, currentInput?: string) => {
     if (currentSessionId && typeof currentInput === 'string') {
@@ -242,6 +250,8 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
       showSnackbar(errorMessages.join('\n'), 'error');
     }
 
+    console.log(`[executeFileUploads] filesToUpload:`, filesToUpload);
+
     if (filesToUpload.length === 0) return;
 
     const newClientFilesPromises = filesToUpload.map(async (file) => {
@@ -265,109 +275,87 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
     });
     
     const newClientFiles = await Promise.all(newClientFilesPromises);
-
+    console.log(`[executeFileUploads] newClientFiles:`, newClientFiles);
     setAttachedFiles(prev => [...prev, ...newClientFiles]);
 
-    const API_BASE_URL = "http://3.15.240.252:8000";
-
     for (const clientFile of newClientFiles) {
-      const xhr = new XMLHttpRequest();
-      activeUploadsRef.current.set(clientFile.clientId, xhr);
-
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const progress = Math.round((event.loaded / event.total) * 100);
+      setAttachedFiles(prev => prev.map(f => f.clientId === clientFile.clientId ? { ...f, uploadStatus: 'uploading' as const } : f));
+      
+      const uploadPromise = apiClient.app.uploadFile(
+        sessionId!,
+        clientFile.originalFile,
+        (progress) => {
           console.log(`[Upload Progress] ClientID: ${clientFile.clientId}, Progress: ${progress}%`);
-          setAttachedFiles(prev => 
-            prev.map(f => 
+          setAttachedFiles(prev =>
+            prev.map(f =>
               f.clientId === clientFile.clientId ? { ...f, uploadProgress: progress } : f
             )
           );
         }
-      };
+      );
 
-      xhr.onload = () => {
-        activeUploadsRef.current.delete(clientFile.clientId);
-        if (xhr.status === 200 || xhr.status === 201) {
-          try {
-            const response = JSON.parse(xhr.responseText);
-            setAttachedFiles(prev => 
-              prev.map(f => 
-                f.clientId === clientFile.clientId ? { ...f, uploadStatus: 'success' as const, fileId: response.file_id, uploadProgress: 100 } : f
-              )
-            );
-          } catch (parseError) {
-            console.error(`[Chat] File upload JSON parse failed for ${clientFile.name}:`, parseError);
-            setAttachedFiles(prev => 
-              prev.map(f => 
-                f.clientId === clientFile.clientId ? { ...f, uploadStatus: 'error' as const } : f
-              )
-            );
-            showSnackbar(`Upload failed: Invalid server response for ${clientFile.name}`, 'error');
-          }
-        } else {
-          console.error(`[Chat] File upload failed for ${clientFile.name} with status ${xhr.status}:`, xhr.responseText);
-          setAttachedFiles(prev => 
-            prev.map(f => 
-              f.clientId === clientFile.clientId ? { ...f, uploadStatus: 'error' as const } : f
-            )
-          );
-          showSnackbar(`Upload failed for ${clientFile.name}: ${xhr.statusText || 'Server error'}`, 'error');
+      uploadPromise.then(uploadResponse => {
+        activeUploadsRef.current.set(clientFile.clientId, uploadResponse.abort); // Store abort right away
+        console.log(`[Upload Success] ClientID: ${clientFile.clientId}, Response:`, JSON.stringify(uploadResponse, null, 2));
+
+        if (!uploadResponse || !uploadResponse.fileResponse || !uploadResponse.fileResponse.file_id) {
+          console.error(`[Upload Success Error] ClientID: ${clientFile.clientId}, Missing fileId in response! Response:`, JSON.stringify(uploadResponse, null, 2));
         }
-      };
-
-      xhr.onerror = () => {
+        
+        setAttachedFiles(prev =>
+          prev.map(f =>
+            f.clientId === clientFile.clientId ? { ...f, uploadStatus: 'success' as const, fileId: uploadResponse.fileResponse.file_id as UUID, uploadProgress: 100, abortUpload: uploadResponse.abort } : f
+          )
+        );
+      }).catch(error => {
+        // Ensure abort controller is removed if it was set before error
         activeUploadsRef.current.delete(clientFile.clientId);
-        console.error(`[Chat] File upload network error for ${clientFile.name}:`, xhr.statusText);
-        setAttachedFiles(prev => 
-          prev.map(f => 
+        console.error(`[Chat] File upload failed for ${clientFile.name}:`, error);
+        let errorMessage = `Upload failed for ${clientFile.name}`;
+        if (error && error.message) {
+          errorMessage += `: ${error.message}`;
+        } else if (error && error.statusText) {
+          errorMessage += `: ${error.statusText}`;
+        } else if (typeof error === 'string') {
+          errorMessage += `: ${error}`;
+        } else {
+          errorMessage += ": Unknown error";
+        }
+        
+        setAttachedFiles(prev =>
+          prev.map(f =>
             f.clientId === clientFile.clientId ? { ...f, uploadStatus: 'error' as const } : f
           )
         );
-        showSnackbar(`Upload failed for ${clientFile.name}: Network error`, 'error');
-      };
-
-      xhr.onabort = () => {
-        activeUploadsRef.current.delete(clientFile.clientId);
-        setAttachedFiles(prev => 
-          prev.map(f => 
-            f.clientId === clientFile.clientId ? { ...f, uploadStatus: 'error' as const, uploadProgress: 0 } : f
-          )
-        );
-      };
-      
-      const formData = new FormData();
-      formData.append('file', clientFile.originalFile);
-
-      setAttachedFiles(prev => prev.map(f => f.clientId === clientFile.clientId ? { ...f, uploadStatus: 'uploading' as const } : f));
-      
-      getAccessToken().then(token => {
-        if (!token) {
-          showSnackbar("Authentication error, cannot upload file.", "error");
-          setAttachedFiles(prev => prev.map(f => f.clientId === clientFile.clientId ? { ...f, uploadStatus: 'error' as const } : f));
-          activeUploadsRef.current.delete(clientFile.clientId);
-          return;
-        }
-        xhr.open('POST', `${API_BASE_URL}/conversations/${sessionId}/files`, true);
-        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-        xhr.send(formData);
-      }).catch(authError => {
-        console.error("[Chat] Auth token retrieval failed:", authError);
-        showSnackbar("Authentication failed. Cannot upload files.", "error");
-        setAttachedFiles(prev => prev.map(f => f.clientId === clientFile.clientId ? { ...f, uploadStatus: 'error' as const } : f));
-        activeUploadsRef.current.delete(clientFile.clientId);
+        showSnackbar(errorMessage, 'error');
+        // If the error indicates an abort, we might not want to show a generic snackbar
+        // or handle it differently, e.g. if (error.message === "Upload aborted by user") {}
       });
     }
-  }, [attachedFiles, modelConfig, showSnackbar, sessionId, getAccessToken]);
+  }, [apiClient, attachedFiles, modelConfig, showSnackbar, sessionId, getAccessToken]);
 
   const doSubmit = () => {
-    if (isLoading || isUploadingFiles || (userInput.trim() === "" && isEmpty(attachedFiles.filter(f => f.uploadStatus === 'success')))) return;
+    console.log('[doSubmit] Called. isLoading:', isLoading, 'isUploadingFiles:', isUploadingFiles);
+    console.log('[doSubmit] userInput:', `"${userInput}"`);
+    console.log('[doSubmit] attachedFiles at start of doSubmit:', JSON.stringify(attachedFiles.map(f => ({ clientId: f.clientId, name: f.name, status: f.uploadStatus, fileId: f.fileId, type: f.type, size: f.size })), null, 2));
 
-    const filesForSubmission: SubmittedFile[] = attachedFiles
-      .filter(file => file.uploadStatus === 'success' && file.fileId)
+    const successfullyUploadedFiles = attachedFiles.filter(f => f.uploadStatus === 'success' && f.fileId);
+    console.log('[doSubmit] successfullyUploadedFiles (after filter):', JSON.stringify(successfullyUploadedFiles.map(f => ({ clientId: f.clientId, name: f.name, status: f.uploadStatus, fileId: f.fileId, type: f.type, size: f.size })), null, 2));
+    
+    if (isLoading || isUploadingFiles || (userInput.trim() === "" && isEmpty(successfullyUploadedFiles))) {
+      console.log('[doSubmit] Submission criteria not met. Exiting.');
+      if (isLoading) console.log('[doSubmit] Reason: isLoading is true.');
+      if (isUploadingFiles) console.log('[doSubmit] Reason: isUploadingFiles is true.');
+      if (userInput.trim() === "" && isEmpty(successfullyUploadedFiles)) console.log('[doSubmit] Reason: userInput is empty AND no successfully uploaded files.');
+      return;
+    }
+
+    const filesForSubmission: SubmittedFile[] = successfullyUploadedFiles
       .map(({ previewUrl, fileId, type, name }) => ({ url: previewUrl, fileId: fileId!, type, name }));
 
-    onSubmit(userInput, filesForSubmission); 
+    console.log(`[doSubmit] filesForSubmission (to be sent):`, JSON.stringify(filesForSubmission, null, 2));
+
+    onSubmit(userInput, filesForSubmission, enableSearch); 
     
     const currentSessionIdForClear = sessionId;
     setUserInput("");
@@ -441,15 +429,20 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
     fileInput.click();
   }, [attachedFiles, showSnackbar, sessionId, executeFileUploads]);
 
-  const handleRemoveFile = (clientIdToRemove: string) => {
-    const xhr = activeUploadsRef.current.get(clientIdToRemove);
-    if (xhr) {
-      xhr.abort();
-      activeUploadsRef.current.delete(clientIdToRemove);
+  const handleRemoveFile = useCallback(async (file: AttachedClientFile) => {
+    const abortUpload = activeUploadsRef.current.get(file.clientId);
+    if (abortUpload) {
+      abortUpload(); // Call the abort function
+      activeUploadsRef.current.delete(file.clientId);
     }
-    setAttachedFiles((prev) => prev.filter((f) => f.clientId !== clientIdToRemove));
-  };
+    
+    if (sessionId && file.fileId) {
+      apiClient.app.deleteFile(sessionId, file.fileId);
+    }
 
+    setAttachedFiles((prev) => prev.filter((f) => f.clientId !== file.clientId));
+  }, [attachedFiles, sessionId, apiClient]);
+  console.log("model config: ", modelConfig?.name);
   return (
     <div className={styles["chat-input-panel"]} ref={ref}>
       {attachedFiles.length > 0 && (
@@ -501,7 +494,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
                 
                 {isImage ? (
                   <div className={styles["attach-file-mask-image"]}>
-                    <DeleteImageButton deleteImage={() => handleRemoveFile(file.clientId)} />
+                    <DeleteImageButton deleteImage={() => handleRemoveFile(file)} />
                   </div>
                 ) : (
                   <>
@@ -514,7 +507,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
                     </div>
                     <button
                       className={styles["doc-file-delete-button"]}
-                      onClick={() => handleRemoveFile(file.clientId)}
+                      onClick={() => handleRemoveFile(file)}
                       aria-label="Remove file"
                     >
                       <CloseIcon sx={{ fontSize: 14 }} />
@@ -554,7 +547,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
         <div className={styles["chat-input-controls-left"]}>
           <button
             onClick={uploadFile}
-            disabled={!isVisionModel(modelConfig) || !sessionId}
+            disabled={!isVisionModel(modelConfig)}
             className={styles["chat-input-action-plus-new"]}
             aria-label={Locale.Chat.InputActions.UploadImage}
           >
@@ -563,6 +556,21 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
               alt={Locale.Chat.InputActions.UploadImage} 
               style={{ width: '16px', height: '16px' }} 
             />
+          </button>
+          <button
+            onClick={() => setEnableSearch(!enableSearch)}
+            className={clsx(
+              styles["chat-input-action-search-new"],
+              { [styles.active]: enableSearch }
+            )}
+            disabled={isLoading || isUploadingFiles}
+            aria-pressed={enableSearch}
+            aria-label={enableSearch ? "Disable web search" : "Enable web search"}
+          >
+            <span className={styles['search-button-icon']}>
+              <img src="/icons/search.svg" alt="Search" style={{ width: '16px', height: '16px' }} />
+            </span>
+            <span className={styles['search-button-text']}>Search</span>
           </button>
         </div>
         <div className={styles["chat-input-controls-right"]}>

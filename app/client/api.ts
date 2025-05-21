@@ -1,8 +1,9 @@
-import { ModelProvider, ServiceProvider } from "@/app/constant";
+import { ModelConfig, ModelProvider, ServiceProvider } from "@/app/constant";
 import { ModelType } from "@/app/store";
 import { ChatMessage } from "@/app/types";
 import { PandaApi, GetAccessTokenFn } from "@/app/client/platforms/panda";
 import { ApiClient } from "@/app/client/client";
+import { SummaryResponse } from "@/app/client/platforms/panda";
 
 export const ROLES = ["system", "user"] as const;
 export type MessageRole = (typeof ROLES)[number];
@@ -73,6 +74,7 @@ export abstract class LLMApi {
   abstract chat(options: ChatOptions): Promise<void>;
   abstract usage(): Promise<LLMUsage>;
   abstract models(): Promise<LLMModel[]>;
+  abstract summary(config: LLMConfig, messages: RequestMessage[], maxTokens: number): Promise<SummaryResponse>;
 }
 
 export class ClientApi {

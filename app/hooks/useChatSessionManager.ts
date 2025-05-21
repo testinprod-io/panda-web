@@ -261,7 +261,7 @@ export function useChatSessionManager(
       messagesToConsiderForSummarization = displayedMessages; // No summaries yet for this session instance
     }
     
-    const finalMessagesToConsider = messagesToConsiderForSummarization.filter((msg: ChatMessage) => !msg.streaming && !msg.isError);
+    const finalMessagesToConsider = messagesToConsiderForSummarization.filter((msg: ChatMessage) => msg.syncState === MessageSyncState.SYNCED && !msg.isError);
 
     if (finalMessagesToConsider.length >= SUMMARIZE_INTERVAL) {
       const batchToSummarize = finalMessagesToConsider.slice(0, SUMMARIZE_INTERVAL);
@@ -285,7 +285,7 @@ export function useChatSessionManager(
         });
     }
   // Depends on displayedMessages now, instead of store.sessions
-  }, [sessionId, displayedMessages, localIsSummarizing, localLastSummarizedMessageId]);
+  }, [sessionId, displayedMessages, actionSummarize, localIsSummarizing, localLastSummarizedMessageId]);
 
   const loadMoreMessages = useCallback(async () => {
     if (!sessionId) {
@@ -413,6 +413,8 @@ export function useChatSessionManager(
       if (files && files.length > 0) {
         const contentParts: MultimodalContent[] = [{ type: "text", text: input }];
         for (const file of files) {
+          console.log(`[useChatSessionManager] Adding file to message:`, file);
+          console.log(`[useChatSessionManager] File type:`, file.type);
           if (file.type.startsWith("image/")) {
             // Assuming Panda API format based on user request
             contentParts.push({ 
@@ -573,6 +575,7 @@ export function useChatSessionManager(
           content: `Summary of previous conversation context (from ${summary.start_message_id} to ${summary.end_message_id}):\n${summary.content}`
         });
       });
+      console.log("[ChatSessionManager] Summaries added to messagesForApi:", messagesForApi);
 
       let recentMessagesToInclude: ChatMessage[];
       // currentDisplayedMessagesSnapshot are the messages that were in displayedMessages when sendNewUserMessage was called.

@@ -91,7 +91,7 @@
   display: flex;
   flex-direction: row;
   margin-bottom: 10px; /* Add some space between messages */
-  width: 60%; /* Default width for larger screens */
+  width: 70%; /* Default width for larger screens */
   margin-left: auto; /* Center the message row */
   margin-right: auto; /* Center the message row */
 
@@ -116,6 +116,8 @@
   margin-top: 0px;
   display: flex;
   align-items: center;
+  flex-direction: row;
+  gap: 16px;
   /* Removed chat-message-actions from here */
 
   .chat-model-name {
@@ -126,22 +128,22 @@
 }
 
 .chat-message-container {
-  max-width: var(--message-max-width);
+  // max-width: var(--message-max-width);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-
+  width: 100%;
   /* Hover effect to show actions */
   &:hover {
-    .chat-message-edit { /* Edit action on avatar */
-      opacity: 0.9;
-    }
+    // .chat-message-edit { /* Edit action on avatar */
+    //   opacity: 0.9;
+    // }
 
-    .chat-message-actions {
-      opacity: 1;
-      pointer-events: all;
-      transform: scale(1) translateY(0);
-    }
+    // .chat-message-actions {
+    //   opacity: 1;
+    //   pointer-events: all;
+    //   transform: scale(1) translateY(0);
+    // }
   }
 }
 
@@ -151,8 +153,8 @@
 }
 
 .chat-message-avatar {
-  /* position: relative; */ // No longer needed if hidden
-  display: none; // Hide the avatar element
+  width: 32px !important;
+  height: 32px !important;
 
   /* .chat-message-edit removed as avatar is hidden */
 }
@@ -164,7 +166,8 @@
   margin: 0px;
   border-radius: 48px; // Default for bot
   // background-color: rgba(0, 0, 0, 0.05); /* REMOVED Default bubble color for bot */
-  padding: 24px 32px; /* Adjusted padding */
+
+  padding: 16px 24px; /* Adjusted padding */
   // font-size: 1rem; // Default font size, will be overridden by prop for content
   user-select: text;
   word-break: break-word;
@@ -172,6 +175,11 @@
   position: relative;
   transition: all ease 0.3s;
   overflow-x: auto; // Added to handle horizontal overflow
+}
+
+.chat-message-system > .chat-message-container > .chat-message-item {
+  padding: 0px 0px 0px 48px;
+  border-radius: 0px;
 }
 
 /* User message bubble color and styling */
@@ -192,8 +200,6 @@
   justify-content: flex-start; // Align buttons to the start (left for bot, right for user due to row-reverse)
   transition: all ease 0.3s;
   margin: 0; // Add margin top, remove horizontal margin
-  opacity: 0; // Make initially invisible
-  pointer-events: none; // Make initially non-interactive
   height: 32px;
   width: 32px; // Take full width
   padding: 0; // Add slight padding
@@ -351,7 +357,7 @@
   border-radius: 24px; // Figma
   box-shadow: 0px 2px 7px rgba(0, 0, 0, 0.20); // Figma
   // margin: 32px auto; // Center horizontally, keep vertical margin
-  width: 60%; // Default width, same as chat content
+  width: 70%; // Default width, same as chat content
   box-sizing: border-box;
   position: relative;
   bottom: 0;
@@ -433,7 +439,7 @@
 .chat-input-controls-left {
   display: flex;
   align-items: center;
-  // gap: 6px; // Figma
+  gap: 6px; // Figma
 }
 
 .chat-input-controls-right {
@@ -525,6 +531,82 @@
   /* Hide text label within the button if any MUI default adds it */
   .MuiButton-label, span:not([class*="MuiSvgIcon"]) {
     display: none !important;
+  }
+}
+
+/* New Search Button Style */
+.chat-input-action-search-new {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px; // Figma: paddingLeft: 12, paddingRight: 12
+  height: 32px; // Match plus button height for consistency
+  border-radius: 48px !important; // Figma
+  border: 1px solid #CACACA !important; // Figma: outline: 1px #CACACA solid
+  // outline-offset: -1px; // Figma - border handles this
+  background-color: transparent !important;
+  cursor: pointer;
+  gap: 6px; // Figma: gap: 6
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+
+  .search-button-icon {
+    // data-size="16" style={{width: 16, height: 16, position: 'relative', overflow: 'hidden'}}
+    // The globe icon itself from MUI is targeted.
+    // color is for the icon itself, not the outline mentioned in the div
+    color: #757575 !important; // Figma: var(--Icon-Default-Secondary, #757575)
+    display: flex;
+    align-items: center;
+  }
+
+  .search-button-text {
+    // color: '#646464', fontSize: 16, fontFamily: 'Inter', fontWeight: '400', lineHeight: 32
+    color: #646464;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 32px; // Figma
+    white-space: nowrap;
+  }
+
+  &:hover:not(:disabled) {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+    border-color: #A0A0A0 !important;
+  }
+
+  &.active {
+    background-color: #C1FF83 !important; // Changed to new tint
+    border-color: #A0D468 !important; // Adjusted border for new tint
+    .search-button-icon {
+      color: #203D00 !important; // Darker icon for new tint
+    }
+    .search-button-text {
+      color: #203D00; // Darker text for new tint
+    }
+  }
+
+  &:disabled {
+    background: #F0F0F0 !important;
+    border-color: #CACACA !important;
+    cursor: not-allowed;
+    opacity: 0.5 !important;
+    .search-button-icon,
+    .search-button-text {
+      color: #BDBDBD !important;
+    }
+  }
+
+  // Responsive adjustments for smaller screens
+  @media (max-width: 768px) { // Or your preferred breakpoint
+    width: 32px; // Make it circular, same as plus button
+    height: 32px;
+    padding: 0 !important; // Remove padding to make it circular
+
+    .search-button-text {
+      display: none; // Hide text
+    }
+    .search-button-icon {
+      // Ensure icon is centered if needed, but flex properties on parent should handle it.
+    }
   }
 }
 
@@ -1128,10 +1210,17 @@
   overflow-y: hidden; // Changed from auto to hidden
   position: relative; // For potential absolute positioned elements within
   min-height: 0; // Added to allow shrinking in flex layout
+  padding-bottom: -24px; /* To extend background behind the input panel. Approx. height of input panel. */
+  margin-bottom: -24px; /* To pull the input panel up over the extended background. */
 }
 
 
 .chat-layout-input-panel-wrapper {
+  background-color: transparent !important;
+  color: transparent !important;
+  // border-color: transparent !important; // Make the border color transparent
+  border-radius: 24px; // Add border-radius to match the child panel
+  // overflow: hidden; // Clip content to the border-radius
   flex-shrink: 0; // Prevent input panel from shrinking when content grows
   // Add any specific styling for the wrapper if needed, e.g., padding, border-top
   // border-top: 1px solid var(--border-color); // Example

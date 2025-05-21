@@ -203,6 +203,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
       className={clsx(
         styles["chat-message"],
         isUser && styles["chat-message-user"],
+        !isUser && styles["chat-message-system"],
         (streaming || isReasoning) && styles["chat-message-streaming"]
       )}
     >
@@ -224,59 +225,67 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
               }
         }
       >
-        {!isUser && (
-          <div className={styles["chat-message-header"]}>
-            <div className={styles["chat-message-avatar"]}></div>
-          </div>
-        )}
-        
-        {showActions && !isEditing && (
-          <Box
-            className={styles["chat-message-actions"]}
-            sx={
-              isUser
-                ? {
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    alignItems: "center",
-                    gap: "4px",
-                  }
-                : {}
-            }
-          >
-            {!(streaming || isReasoning) && (
-              <>
-                {!isUser && (
-                  <>
-                    <button
-                      onClick={() =>
-                        copyToClipboard(
-                          currentTextContent +
-                            (currentReasoningText
-                              ? `\n\n[Reasoning]:\n${currentReasoningText}`
-                              : "")
-                        )
-                      }
-                      disabled={isChatLoading}
-                      className={styles['user-action-button']}
-                      aria-label="Copy message content and reasoning"
-                    >
-                      <img src="/icons/copy.svg" alt="Copy message content and reasoning" />
-                    </button>
-                    <button
-                      onClick={handleResend}
-                      disabled={isChatLoading}
-                      className={styles['user-action-button']}
-                      aria-label="Resend message"
-                    >
-                      <img src="/icons/refresh.svg" alt="Resend message" />
-                      {/* <ReplayRoundedIcon /> */}
-                    </button>
-                  </>
-                )}
-                {isUser && (
-                  <>
-                    {/* <button
+        <div className={styles["chat-message-header"]}>
+          {!isUser && (
+            <div className={styles["chat-message-avatar"]}>
+              <img
+                src="/icons/panda.svg"
+                alt="Panda"
+                style={{ width: "32px", height: "32px" }}
+              />
+            </div>
+          )}
+
+          {showActions && !isEditing && (
+            <Box
+              className={styles["chat-message-actions"]}
+              sx={
+                isUser
+                  ? {
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      alignItems: "center",
+                      gap: "4px",
+                    }
+                  : {}
+              }
+            >
+              {!(streaming || isReasoning) && (
+                <>
+                  {!isUser && (
+                    <>
+                      <button
+                        onClick={() =>
+                          copyToClipboard(
+                            currentTextContent +
+                              (currentReasoningText
+                                ? `\n\n[Reasoning]:\n${currentReasoningText}`
+                                : "")
+                          )
+                        }
+                        disabled={isChatLoading}
+                        className={styles["user-action-button"]}
+                        aria-label="Copy message content and reasoning"
+                      >
+                        <img
+                          src="/icons/copy.svg"
+                          alt="Copy message content and reasoning"
+                        />
+                      </button>
+                      <button
+                        onClick={handleResend}
+                        disabled={isChatLoading}
+                        className={styles["user-action-button"]}
+                        aria-label="Resend message"
+                      >
+                        <img src="/icons/refresh.svg" alt="Resend message" />
+                        {/* <ReplayRoundedIcon /> */}
+                      </button>
+                    </>
+                  )}
+                  {isUser && (
+                    <>
+                      {/* <button
                       onClick={handleEditClick}
                       disabled={isChatLoading}
                       className={styles['user-action-button']}
@@ -284,21 +293,22 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                     >
                       <ModeEditRoundedIcon />
                     </button> */}
-                    <button
-                      onClick={() => copyToClipboard(currentTextContent)}
-                      // disabled={isChatLoading}
-                      className={styles['user-action-button']}
-                      aria-label="Copy message"
-                    >
-                      <img src="/icons/copy.svg" alt="Copy message" />
-                    </button>
-                  </>
-                )}
-              </>
-            )}
-          </Box>
-        )}
-      {currentImageUrls.length > 0 && (
+                      <button
+                        onClick={() => copyToClipboard(currentTextContent)}
+                        // disabled={isChatLoading}
+                        className={styles["user-action-button"]}
+                        aria-label="Copy message"
+                      >
+                        <img src="/icons/copy.svg" alt="Copy message" />
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
+            </Box>
+          )}
+        </div>
+        {currentImageUrls.length > 0 && (
           <Box
             sx={{
               display: "flex",
@@ -327,9 +337,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
           </Box>
         )}
 
-        <Box
-          className={styles["chat-message-item"]}
-        >
+        <Box className={styles["chat-message-item"]}>
           {showReasoning && (
             <Box
               className={styles["chat-message-reasoning-container"]}

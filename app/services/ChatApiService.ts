@@ -361,9 +361,8 @@ export const ChatApiService = {
   async callLlmSummarize(
     api: ClientApi,
     messages: RequestMessage[],
-    config: ModelConfig,
-    prompt: string
-  ): Promise<{ message: string, date: Date }> {
+    config: ModelConfig
+  ): Promise<string> {
     console.log("[ChatApiService] Calling LLM summarize:", { messagesCount: messages.length, config });
     return new Promise((resolve, reject) => {
       const llmSummarizeConfig: LLMConfig = {
@@ -376,22 +375,12 @@ export const ChatApiService = {
         stream: false, // Ensure stream is false for summarize
         targetEndpoint: config.endpoint, // Pass the endpoint
       };
-      api.llm.chat({
-        messages: messages.concat(createMessage({ role: "system", content: prompt, date: new Date() }) as unknown as RequestMessage[]),
-        config: llmSummarizeConfig,
-        onFinish: (message, date, responseRes) => {
-          if (responseRes?.status === 200) {
-            console.log("[ChatApiService] LLM summarize finished successfully.");
-            resolve({ message, date });
-          } else {
-            console.error("[ChatApiService] LLM summarize finished with non-200 status:", responseRes?.status);
-            reject(new Error(`Summarization failed with status: ${responseRes?.status}`));
-          }
-        },
-        onError: (error) => {
-          console.error("[ChatApiService] LLM summarize failed:", error);
-          reject(error);
-        },
+      api.llm.summary(llmSummarizeConfig, messages, 1000).then((response) => {
+        console.log("[ChatApiService] LLM summarize finished successfully.");
+        resolve(response.summary);
+      }).catch((error) => {
+        console.error("[ChatApiService] LLM summarize failed:", error);
+        reject(error);
       });
     });
   },

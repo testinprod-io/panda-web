@@ -430,19 +430,28 @@ export function useChatActions() {
             console.warn("[ChatActions] No messages provided to summarize.");
             return undefined;
         }
+
+        const session = useChatStore.getState().sessions.find(s => s.id === sessionId);
+        if (!session) {
+            console.warn(`[ChatActions] Session not found: ${sessionId}`);
+            return undefined;
+        }
+
+        const modelConfig = session.modelConfig;
+
         // isSummarizing flag management is now responsibility of the caller (useChatSessionManager)
         console.log(`[ChatActions] summarizeAndStoreMessages: Starting for session ${sessionId} with ${messagesToSummarize.length} messages.`);
 
         try {
-            const apiMessages: RequestPayload["messages"] = messagesToSummarize
-                .filter(msg => msg.role === "user" || msg.role === "system") 
-                .map(msg => ({
-                    role: msg.role as "user" | "system", // Ensure role is correctly typed for API
-                    content: msg.content,
-                }));
-
-            const llmSummaryResponse = await (apiClient.llm as PandaApi).summary(apiMessages);
-            const summaryText = llmSummaryResponse.summary;
+            const apiMessages: RequestMessage[] = messagesToSummarize
+                // .filter(msg => msg.role === "user" || msg.role === "system") 
+                // .map(msg => ({
+                //     role: msg.role as "user" | "system", // Ensure role is correctly typed for API
+                //     content: msg.content,
+                // }));
+                
+            
+            const summaryText = await ChatApiService.callLlmSummarize(apiClient,  apiMessages, modelConfig);
 
             if (!summaryText || summaryText.trim().length === 0) {
                 console.warn("[ChatActions] LLM returned empty summary. Skipping storage.");
@@ -459,7 +468,6 @@ export function useChatActions() {
                 end_message_id: endMessageId,
                 content: summaryText,
             };
-
             const appSummaryResponse = await apiClient.app.createSummary(sessionId, summaryCreateRequest);
             const newSummary = appSummaryResponse.data; // This is of type ApiSummary
 

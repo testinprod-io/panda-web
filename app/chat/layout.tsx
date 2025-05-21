@@ -166,7 +166,7 @@ export default function RootChatGroupLayout({ // Renamed for clarity
           isMobile={isMobile} // Pass isMobile to ChatHeader
         />
         {/* Conditional rendering for the main content area */}
-        <Box
+        {/* <Box
           sx={{
             flexGrow: 1,
             display: 'flex',
@@ -179,7 +179,7 @@ export default function RootChatGroupLayout({ // Renamed for clarity
               overflowY: 'auto', // Allow scrolling if content overflows (e.g. on small screens)
             }),
           }}
-        >
+        > */}
           {/* Children (page content) wrapper */}
           <Box
             className={!isNewChatPage ? styles["chat-layout-main-content"] : undefined}
@@ -265,7 +265,7 @@ export default function RootChatGroupLayout({ // Renamed for clarity
             By messaging Panda AI, you agree to our Terms and have read our Privacy Policy.
           </Typography>
         </Box>
-      </Box>
+      {/* </Box> */}
     </Box>
   );
 } 
