@@ -28,7 +28,6 @@ import { UUID } from "crypto";
 import CloseIcon from '@mui/icons-material/Close';
 import LanguageIcon from '@mui/icons-material/Language';
 import { useApiClient } from "@/app/context/ApiProviderContext";
-
 // Helper component for the generic file icon
 const GenericFileIcon = () => (
   <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -142,7 +141,8 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   } = props;
 
   const chatStore = useChatStore();
-  const { getAccessToken } = usePrivy();
+
+  const { authenticated, getAccessToken } = usePrivy();
   const apiClient = useApiClient();
   const config = useAppConfig();
   const router = useRouter();
@@ -529,7 +529,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
             id="chat-input"
             ref={inputRef}
             className={styles["chat-input"]}
-            placeholder={Locale.Chat.Input(submitKey)}
+            placeholder={authenticated ? Locale.Chat.Input(submitKey) : "Please login to chat"}
             onInput={(e) => setUserInput(e.currentTarget.value)}
             value={userInput}
             onKeyDown={onInputKeyDown}
@@ -538,6 +538,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
             onPaste={handlePaste}
             rows={inputRows}
             autoFocus={autoFocus}
+            disabled={!authenticated}
             aria-label={Locale.Chat.Input(submitKey)}
           />
         </label>
@@ -578,7 +579,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
             className={styles["chat-input-send-new"]}
             variant="contained"
             onClick={isLoading ? stopGeneration : doSubmit}
-            disabled={isUploadingFiles || isLoading || (userInput.trim() === "" && attachedFiles.filter(f => f.uploadStatus === 'success').length === 0)}
+            disabled={!authenticated|| isUploadingFiles || isLoading || (userInput.trim() === "" && attachedFiles.filter(f => f.uploadStatus === 'success').length === 0)}
             aria-label={isLoading ? Locale.Chat.InputActions.Stop : Locale.Chat.Send}
           >
             {isLoading ? <StopRoundedIcon /> : <ArrowUpwardRoundedIcon />}
