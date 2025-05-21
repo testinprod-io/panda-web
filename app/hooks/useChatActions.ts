@@ -282,6 +282,7 @@ export function useChatActions() {
             content: content,
             reasoning_content: message.reasoning,
             reasoning_time: message.reasoningTime ? message.reasoningTime.toString() : undefined,
+            file_ids: message.fileIds,
         };
 
         try {

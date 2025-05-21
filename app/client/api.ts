@@ -10,9 +10,12 @@ export type MessageRole = (typeof ROLES)[number];
 export type ChatModel = ModelType;
 
 export interface MultimodalContent {
-  type: "text" | "image_url";
+  type: "text" | "image_url" | "pdf_url";
   text?: string;
   image_url?: {
+    url: string;
+  };
+  pdf_url?: {
     url: string;
   };
 }

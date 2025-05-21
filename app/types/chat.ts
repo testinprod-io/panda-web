@@ -62,6 +62,7 @@ export enum MessageSyncState {
  */
 export type ChatMessage = Omit<RequestMessage, 'content'> & { // Omit original content
   content: string | MultimodalContent[]; // Allow MultimodalContent[]
+  fileIds: string[];  
   date: Date;
   streaming: boolean;
   isError: boolean;
@@ -126,6 +127,7 @@ export function createMessage(override: Partial<ChatMessage>): ChatMessage { // 
    date: new Date(),
    role: "user",
    content: "", // Default to empty string, will be overridden
+   fileIds: [],
    streaming: false,
    isError: false,
    syncState: MessageSyncState.PENDING_CREATE,

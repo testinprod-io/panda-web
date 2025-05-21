@@ -106,7 +106,8 @@ export function PasswordPromptModal({ open }: PasswordPromptModalProps) {
               style={{ 
                 width: '24px', 
                 height: '30px',
-                marginTop: '6px'
+                marginTop: '6px',
+                filter: 'invert(100%) sepia(0%) saturate(7500%) hue-rotate(137deg) brightness(118%) contrast(91%)'
               }} 
             />
           </Box>

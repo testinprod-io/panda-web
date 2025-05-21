@@ -2,6 +2,7 @@ import { Roboto } from 'next/font/google';
 import { Inter } from 'next/font/google';
 import { Providers } from './providers';
 import '@/app/styles/globals.scss';
+import "@/app/styles/markdown.scss";
 
 const roboto = Roboto({ 
   subsets: ['latin'],

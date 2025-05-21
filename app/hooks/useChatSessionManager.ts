@@ -28,7 +28,7 @@ interface ChatSessionManagerResult {
   ) => void;
   sendNewUserMessage: (
     input: string,
-    files?: {url: string, type: string, name: string}[],
+    files?: {url: string, fileId: string, type: string, name: string}[],
     callbacks?: {
       onReasoningStart?: (messageId: UUID) => void;
       onReasoningChunk?: (messageId: UUID, reasoningChunk: string) => void;
@@ -152,8 +152,7 @@ export function useChatSessionManager(
           console.log(`[useChatSessionManager] PrevMessages:`, prevMessages);
           console.log(`[useChatSessionManager] ServerMessagesChronological:`, serverMessagesChronological);
           const optimisticMessagesToKeep = prevMessages.filter(
-            msg => msg.syncState === MessageSyncState.PENDING_CREATE &&
-                   !serverMessagesChronological.some(sm => sm.id === msg.id)
+            msg => !serverMessagesChronological.some(sm => sm.id === msg.id)
           );
           // The new state will be the server messages followed by any such optimistic messages.
           return [...serverMessagesChronological, ...optimisticMessagesToKeep];
@@ -386,7 +385,7 @@ export function useChatSessionManager(
   const sendNewUserMessage = useCallback(
     async (
       input: string,
-      files?: {url: string, type: string, name: string}[],
+      files?: {url: string, fileId: string, type: string, name: string}[],
       callbacks?: {
         onReasoningStart?: (messageId: UUID) => void;
         onReasoningChunk?: (messageId: UUID, reasoningChunk: string) => void;
@@ -410,6 +409,7 @@ export function useChatSessionManager(
       }
 
       let messageContent: string | MultimodalContent[];
+      let fileIds: string[] = [];
       if (files && files.length > 0) {
         const contentParts: MultimodalContent[] = [{ type: "text", text: input }];
         for (const file of files) {
@@ -419,6 +419,14 @@ export function useChatSessionManager(
               type: "image_url", 
               image_url: { url: file.url } // file.url is already the base64 data URI
             });
+            fileIds.push(file.fileId);
+          } else if (file.type.startsWith("application/pdf")) {
+            // Assuming Panda API format based on user request
+            contentParts.push({ 
+              type: "pdf_url", 
+              pdf_url: { url: file.url } // file.url is already the base64 data URI
+            });
+            fileIds.push(file.fileId);
           } else {
             // For other file types, we might send a link or just text representation
             // For now, let's add a text representation as requested for the payload structure
@@ -444,6 +452,7 @@ export function useChatSessionManager(
         role: "user",
         content: messageContent, // Use the potentially multimodal content
         syncState: MessageSyncState.PENDING_CREATE,
+        fileIds: fileIds,
       });
       if (!userMessage) {
         const error = new Error(

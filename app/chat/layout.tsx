@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation'; // Added useRouter
-import { Box, useMediaQuery } from '@mui/material';
+import { Box, Typography, useMediaQuery } from '@mui/material'; // Added Typography
 import { useTheme } from '@mui/material/styles';
 import Sidebar from '@/app/components/sidebar';
 import ChatHeader from '@/app/components/ChatHeader';
@@ -26,7 +26,7 @@ export default function RootChatGroupLayout({ // Renamed for clarity
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Using 'sm' breakpoint for mobile
 
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true); // Default to collapsed
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // Default to collapsed
   const params = useParams();
   const router = useRouter(); // For redirecting after new session
   const appConfig = useAppConfig();
@@ -45,7 +45,8 @@ export default function RootChatGroupLayout({ // Renamed for clarity
   const [internalIsSubmitting, setInternalIsSubmitting] = useState(false); // For new chat submissions
 
   const currentChatId = params?.chatId as UUID | undefined;
-  
+  const isNewChatPage = !currentChatId; // Determine if it's the new chat page
+
   useEffect(() => {
     // Adjust sidebar collapsed state based on mobile status after initial mount
     // This prevents hydration mismatch if server-rendered differently
@@ -69,15 +70,13 @@ export default function RootChatGroupLayout({ // Renamed for clarity
   }, [currentChatId, appConfig.modelConfig, useChatStore.getState().sessions]); // Added sessions to dependency array
 
   const handleLayoutSubmit = useCallback(
-    async (input: string, files: {url: string, type: string, name: string}[]) => {
+    async (input: string, files: {url: string, fileId: string, type: string, name: string}[]) => {
       if ((!input || !input.trim()) && files.length === 0) return;
       
       setInternalIsSubmitting(true);
       try {
         if (currentChatId && onSendMessageHandlerFromStore) { // Existing chat
           await onSendMessageHandlerFromStore(input, files);
-          // Clearing unfinished input for existing chat is handled by ChatLayout.tsx's handleChatSubmit using this handler
-          // No, it should be here after successful send via store handler
           localStorage.removeItem(UNFINISHED_INPUT(currentChatId));
         } else { // New chat (currentChatId is undefined)
           console.log("[RootChatGroupLayout] Starting new chat with:", input, files);
@@ -99,7 +98,7 @@ export default function RootChatGroupLayout({ // Renamed for clarity
         setInternalIsSubmitting(false);
       }
     },
-    [currentChatId, onSendMessageHandlerFromStore, newSession, router, showSnackbar, appConfig.modelConfig] // Removed appConfig.modelConfig as it's covered by modelConfig
+    [currentChatId, onSendMessageHandlerFromStore, newSession, router, showSnackbar] // Removed modelConfig dependency as it's not directly used here for submission logic itself
   );
 
   const handleCollapseSidebar = () => setIsSidebarCollapsed(true);
@@ -155,7 +154,7 @@ export default function RootChatGroupLayout({ // Renamed for clarity
         component="main"
         sx={{
           flexGrow: 1,
-          height: '100%',
+          height: '100%', // Ensure main content area takes full height
           display: 'flex',
           flexDirection: 'column',
           // On mobile, this Box will not be pushed by the fixed sidebar
@@ -166,27 +165,105 @@ export default function RootChatGroupLayout({ // Renamed for clarity
           onRevealSidebar={handleRevealSidebar}
           isMobile={isMobile} // Pass isMobile to ChatHeader
         />
-        {/* Inlined structure from the old CustomChatLayout */}
-        <Box 
-          className={styles["chat-layout-main-content"]} 
-          // sx={{ flexGrow: 1, overflowY: 'auto', position: 'relative' }} // Use SCSS or combine if needed
+        {/* Conditional rendering for the main content area */}
+        <Box
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            ...(isNewChatPage && {
+              background: 'linear-gradient(177deg, white 0%, #FEFEFE 27%, #F6FFFC 75%, #DAF7EF 100%)',
+              // paddingLeft: { xs: '16px', sm: '32px', md: '128px' }, // Responsive horizontal padding from Figma
+              // paddingRight: { xs: '16px', sm: '32px', md: '128px' },
+              alignItems: 'center', // Center children like InputPanel and Terms text horizontally
+              overflowY: 'auto', // Allow scrolling if content overflows (e.g. on small screens)
+            }),
+          }}
         >
-          {children} {/* Page content goes here */}
-        </Box>
-        <Box 
-          className={styles["chat-layout-input-panel-wrapper"]} 
-          // sx={{ flexShrink: 0 }} // Use SCSS or combine if needed
-        >
-          <ChatInputPanel
-            sessionId={currentChatId}
-            modelConfig={modelConfig}
-            isLoading={isChatComponentBusyFromStore || internalIsSubmitting}
-            hitBottom={hitBottomFromStore}
-            onSubmit={handleLayoutSubmit}
-            scrollToBottom={scrollToBottomHandlerFromStore || (() => console.warn("ScrollToBottom handler not set in store"))}
-            setShowPromptModal={showPromptModalHandlerFromStore || (() => console.warn("ShowPromptModal handler not set in store"))}
-            setShowShortcutKeyModal={showShortcutKeyModalHandlerFromStore || (() => console.warn("ShowShortcutKeyModal handler not set in store"))}
-          />
+          {/* Children (page content) wrapper */}
+          <Box
+            className={!isNewChatPage ? styles["chat-layout-main-content"] : undefined}
+            sx={{
+              width: '100%', // Take full width within the gradient container
+              ...(isNewChatPage && {
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center', // Center the Welcome content from app/chat/page.tsx
+                paddingTop: { xs: '60px', sm: '100px', md: '140px' }, // Space above Welcome content
+                flexShrink: 0, // Welcome content shouldn't grow, its size is fixed
+              }),
+              // For existing chats, styles["chat-layout-main-content"] provides flexGrow:1 and overflowY:'auto'
+              ...(!isNewChatPage && {
+                // flexGrow: 1, // Ensure it takes available space for chat messages
+                // overflowY: 'auto',
+                // position: 'relative' 
+              })
+            }}
+          >
+            {children} {/* Page content goes here (Welcome text or Chat messages) */}
+          </Box>
+
+          {/* ChatInputPanel wrapper */}
+          <Box
+            className={styles["chat-layout-input-panel-wrapper"]}
+            sx={{
+              width: '100%', // Wrapper takes full width to center its child
+              display: 'flex', // To center ChatInputPanel
+              justifyContent: 'center', // To center ChatInputPanel
+              ...(isNewChatPage && {
+                // Styles for the new chat page input panel "card"
+                // maxWidth: { xs: 'calc(100% - 32px)', sm: '608px', md: '992px' }, // Responsive max width from Figma
+                // minWidth: { xs: 'calc(100% - 32px)', sm: 'auto', md: '608px' }, // Responsive min width
+                // padding: '16px', // Figma's padding for the card
+                // background: 'white', // Figma's card background
+                // boxShadow: '0px 2px 7px rgba(0, 0, 0, 0.20)', // Figma's shadow
+                // borderRadius: '24px', // Figma's border radius
+                // border: '1px solid #CACACA', // Figma's outline (approximated with border)
+                marginTop: { xs: '24px', md: '48px' }, // Spacer 1 from Figma (responsive)
+                // marginBottom: '8px', // Gap before Terms text from Figma
+                // boxSizing: 'border-box',
+              }),
+              // For existing chats, styles["chat-layout-input-panel-wrapper"] provides flexShrink:0
+              ...(!isNewChatPage && {
+                  flexShrink: 0,
+                  // marginBottom
+              })
+            }}
+          >
+            <ChatInputPanel
+              sessionId={currentChatId}
+              modelConfig={modelConfig}
+              isLoading={isChatComponentBusyFromStore || internalIsSubmitting}
+              hitBottom={hitBottomFromStore}
+              onSubmit={handleLayoutSubmit}
+              scrollToBottom={scrollToBottomHandlerFromStore || (() => console.warn("ScrollToBottom handler not set in store"))}
+              setShowPromptModal={showPromptModalHandlerFromStore || (() => console.warn("ShowPromptModal handler not set in store"))}
+              setShowShortcutKeyModal={showShortcutKeyModalHandlerFromStore || (() => console.warn("ShowShortcutKeyModal handler not set in store"))}
+              // Pass a prop to ChatInputPanel if its internal styling/placeholder needs to change for new chat page
+              // isNewChatPageLayout={isNewChatPage} // Example prop
+            />
+          </Box>
+
+          {/* "By messaging Panda AI..." text, only for new chat page */}
+          <Typography
+            sx={{
+              minWidth: { xs: 'auto', md: '460px' }, // Min width from Figma
+              textAlign: 'center',
+              color: '#646464', // Figma style
+              fontSize: '16px', // Figma style. Assuming 1rem = 16px
+              fontFamily: 'Inter', // Figma style
+              fontWeight: '400', // Figma style
+              lineHeight: '32px', // Figma style
+              wordWrap: 'break-word',
+              marginTop: '8px', // Margin is handled by InputPanel's marginBottom
+              marginBottom: '16px', // Spacer 2 from Figma (responsive)
+              paddingLeft: '16px', // Ensure text doesn't touch edges on small screens
+              paddingRight: '16px',
+              boxSizing: 'border-box',
+            }}
+          >
+            By messaging Panda AI, you agree to our Terms and have read our Privacy Policy.
+          </Typography>
         </Box>
       </Box>
     </Box>

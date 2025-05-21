@@ -97,7 +97,7 @@ export function ChatComponent(props: ChatComponentProps) {
   }, [internalHitBottom, setHitBottom]);
 
   const doSubmit = useCallback(
-    async (input: string, files: {url: string, type: string, name: string}[]) => {
+    async (input: string, files: {url: string, fileId: string, type: string, name: string}[]) => {
       setIsChatComponentBusy(true);
       try {
         await new Promise<void>((resolve, reject) => {

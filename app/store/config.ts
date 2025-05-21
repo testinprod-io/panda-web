@@ -49,8 +49,8 @@ export const DEFAULT_CONFIG = {
 
   submitKey: SubmitKey.Enter,
   avatar: "1f603",
-  fontSize: 14,
-  fontFamily: "",
+  fontSize: 16,
+  fontFamily: "Inter",
   theme: Theme.Auto as Theme,
   tightBorder: false,
   sendPreviewBubble: false,

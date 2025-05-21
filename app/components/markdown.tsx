@@ -433,6 +433,7 @@ export function Markdown(
     loading?: boolean;
     fontSize?: number;
     fontFamily?: string;
+    fontColor?: string;
     parentRef?: RefObject<HTMLDivElement>;
     defaultShow?: boolean;
   } & React.DOMAttributes<HTMLDivElement>,
@@ -443,8 +444,11 @@ export function Markdown(
     <div
       className="markdown-body"
       style={{
-        fontSize: `${props.fontSize ?? 14}px`,
+        fontSize: `${props.fontSize ?? 16}px`,
         fontFamily: props.fontFamily || "inherit",
+        fontWeight: "500",
+        wordWrap: "break-word",
+        color: props.fontColor || "inherit",
       }}
       ref={mdRef}
       onContextMenu={props.onContextMenu}

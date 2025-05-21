@@ -19,6 +19,7 @@ export interface Message {
   content: string;
   message_id: UUID;
   conversation_id: UUID;
+  file_ids: string[];
   timestamp: string; // ISO Date string
   reasoning_content?: string;
   reasoning_time?: string;
@@ -60,6 +61,7 @@ export interface MessageCreateRequest {
   sender_type: SenderTypeEnum;
   message_id: UUID;
   content: string;
+  file_ids: string[];
   reasoning_content?: string;
   reasoning_time?: string;
 }

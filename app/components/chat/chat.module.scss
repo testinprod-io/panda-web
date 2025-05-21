@@ -36,6 +36,7 @@
   padding-bottom: 120px; /* Space below last message, adjust as needed */
   position: relative; /* For potential absolute children like dividers */
   overscroll-behavior: none; /* Prevents scrolling chain */
+  min-height: 0; /* Added to ensure flex item can shrink and scroll */
   /* height: 100%; */ /* Usually not needed with flex-grow: 1 */
   /* background-color: green; */ /* Debug color */
   /* max-height: calc(100vh - 200px); */ /* Conflicts with flex-grow, likely unnecessary */
@@ -160,16 +161,17 @@
 .chat-message-item {
   box-sizing: border-box;
   max-width: 100%;
-  margin-top: 10px;
-  border-radius: 24px; // Default for bot
+  margin: 0px;
+  border-radius: 48px; // Default for bot
   // background-color: rgba(0, 0, 0, 0.05); /* REMOVED Default bubble color for bot */
-  padding: 0px 16px; /* Adjusted padding */
-  font-size: 1rem; // Default font size, will be overridden by prop for content
+  padding: 24px 32px; /* Adjusted padding */
+  // font-size: 1rem; // Default font size, will be overridden by prop for content
   user-select: text;
   word-break: break-word;
   border: none; // Ensure no border for bot message
   position: relative;
   transition: all ease 0.3s;
+  overflow-x: auto; // Added to handle horizontal overflow
 }
 
 /* User message bubble color and styling */
@@ -192,7 +194,8 @@
   margin: 0; // Add margin top, remove horizontal margin
   opacity: 0; // Make initially invisible
   pointer-events: none; // Make initially non-interactive
-  width: 100%; // Take full width
+  height: 32px;
+  width: 32px; // Take full width
   padding: 0; // Add slight padding
 
   /* Uses the same action styles as input panel, but nowrap */
@@ -201,6 +204,11 @@
     flex-wrap: nowrap; 
     // gap: 8px; // Add gap between action buttons
   }
+}
+
+.chat-message-action-button {
+  margin: 6px;
+  background-color: red;
 }
 
 /* Date/time stamp below message - push below actions */
@@ -342,7 +350,7 @@
   outline-offset: -1px; // Figma
   border-radius: 24px; // Figma
   box-shadow: 0px 2px 7px rgba(0, 0, 0, 0.20); // Figma
-  margin: 32px auto; // Center horizontally, keep vertical margin
+  // margin: 32px auto; // Center horizontally, keep vertical margin
   width: 60%; // Default width, same as chat content
   box-sizing: border-box;
   position: relative;
@@ -463,9 +471,18 @@
     // Width and height are set via inline styles in the TSX (16px)
   }
 
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: rgba(0, 0, 0, 0.05) !important; // Subtle hover
     border-color: #A0A0A0 !important;
+  }
+
+  &:disabled {
+    // background-color: rgba(0, 0, 0, 0.05) !important; // Disabled state
+    background: #F0F0F0 !important; // Lighter for disabled
+
+    border-color: #CACACA !important;
+    pointer-events: none !important; // Prevent hover effects
+    opacity: 0.5 !important; // Reduce opacity to indicate disabled
   }
 }
 
@@ -1108,9 +1125,11 @@
 
 .chat-layout-main-content {
   flex-grow: 1;
-  overflow-y: auto; // Important for scrollable chat messages
+  overflow-y: hidden; // Changed from auto to hidden
   position: relative; // For potential absolute positioned elements within
+  min-height: 0; // Added to allow shrinking in flex layout
 }
+
 
 .chat-layout-input-panel-wrapper {
   flex-shrink: 0; // Prevent input panel from shrinking when content grows
@@ -1147,4 +1166,60 @@
   gap: 0;
   align-items: stretch;
   justify-content: stretch;
+}
+
+.user-action-button {
+  padding: 6px;
+  border-radius: 4px;
+  border: 0px;
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  // Target MUI SvgIcon components directly if they are children
+  .MuiSvgIcon-root {
+    font-size: 20px !important; // Override MUI default if needed
+    color: #757575 !important; // Icon color
+  }
+}
+
+.file-status-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.65); /* Slightly darker overlay for better contrast */
+  color: white;
+  display: flex;
+  flex-direction: column; 
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4px;
+  font-size: 0.9em; /* Slightly larger for error text */
+  border-radius: 8px; 
+}
+
+.circular-progress-svg {
+  width: 24px; /* Adjusted size */
+  height: 24px; /* Adjusted size */
+  display: block; /* Prevents extra space below SVG */
+}
+
+.circular-progress-track {
+  stroke: rgba(255, 255, 255, 0.325); /* Light track color */
+}
+
+.circular-progress-value {
+  stroke: #ffffff; /* White progress color */
+  transition: stroke-dashoffset 0.3s ease-in-out; /* Changed to stroke-dashoffset */
 }

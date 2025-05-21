@@ -3,31 +3,50 @@
 import { Box, Typography } from "@mui/material";
 
 export default function NewChatPage() {
-  // This page now just renders its content. 
-  // app/chat/layout.tsx will provide the surrounding layout including ChatInputPanel.
+  // This page now just renders the Welcome content.
+  // The surrounding layout (app/chat/layout.tsx) will handle the gradient,
+  // positioning of this content, the ChatInputPanel, and the "Terms" text
+  // when on the new chat route.
   return (
-      <Box
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        textAlign: "center",
+        // Removed height, justifyContent, p, and background from here,
+        // as these will be controlled by the layout for the new chat page view.
+      }}
+    >
+      <img
+        style={{ width: 48, height: 45 }} // Added marginBottom for spacing
+        src="/icons/panda.svg"
+        alt="Panda AI Logo"
+      />
+      <Typography
+        // variant="h2" // Keep variant for semantics, but override styles
+        gutterBottom // Keep for some spacing, or manage explicitly
         sx={{
-          display: "flex",
-          flexDirection: "column",
-          height: "100%", // Ensure it takes full height within its parent container in the layout
-          justifyContent: "center",
-          alignItems: "center",
-          textAlign: "center",
-          p: 3,
+          color: "#131A28", // Figma style
+          fontSize: "32px", // Figma style
+          fontWeight: "600", // Figma style
+          lineHeight: "38.74px", // Figma style
+          margin: "0px",
+          // Removed original fontSize, fontWeight, color
         }}
       >
-        <Typography
-          variant="h2"
-          gutterBottom
-          sx={{
-            fontSize: "1.75rem",
-            fontWeight: "bold",
-            color: "#333",
-          }}
-        >
-          How can I help you today?
-        </Typography>
-      </Box>
+        Welcome,
+      </Typography>
+      <Typography // New Typography for the second line
+        sx={{
+          color: "#131A28", // Figma style
+          fontSize: "32px", // Figma style
+          fontWeight: "400", // Figma style
+          lineHeight: "38.74px", // Figma style
+        }}
+      >
+        What can I help with?
+      </Typography>
+    </Box>
   );
 }
