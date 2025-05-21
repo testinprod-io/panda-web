@@ -25,7 +25,7 @@ export default function RootChatGroupLayout({
   children: React.ReactNode;
 }) {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm")); // Using 'sm' breakpoint for mobile
+  const isMobile = useMediaQuery(theme.breakpoints.down("md")); // Using 'sm' breakpoint for mobile
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // Default to collapsed
   const params = useParams();
