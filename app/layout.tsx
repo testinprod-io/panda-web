@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import { Providers } from './providers';
 import '@/app/styles/globals.scss';
 import "@/app/styles/markdown.scss";
+import SettingsModalHandler from './components/SettingsModalHandler';
 
 const roboto = Roboto({ 
   subsets: ['latin'],
@@ -27,6 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <SettingsModalHandler />
         <Providers>
           {children}
         </Providers>

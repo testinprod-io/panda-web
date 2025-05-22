@@ -60,7 +60,7 @@ interface ChatSessionManagerResult {
     }
   ) => Promise<void>;
 
-  clearMessages: (fromMessageId: UUID) => void;
+  clearMessages: (fromMessageId: UUID) => Promise<void>;
   markMessageAsError: (messageId: string, errorInfo?: any) => void;
   finalizeStreamedBotMessage: (botMessageId: UUID, finalContent: string, date: Date) => void;
 }
@@ -735,7 +735,7 @@ export function useChatSessionManager(
   );
 
   const clearMessages = useCallback(
-    (fromMessageId: UUID) => {
+    async (fromMessageId: UUID) => {
       console.log(
         "[useChatSessionManager] Clearing messages from:",
         fromMessageId,
@@ -754,13 +754,20 @@ export function useChatSessionManager(
         );
         return;
       }
+      const messageIdsToRemove = displayedMessages.slice(clearIndex).map(msg => msg.id);
+      await apiClient.app.deleteMessages(sessionId, messageIdsToRemove).then(response => {
+        console.log("[useChatSessionManager] deleteMessages response:", response);
+      }).catch(error => {
+        console.error("[useChatSessionManager] deleteMessages error:", error);
+      });
+
       if (clearIndex > 0) {
         setDisplayedMessages((prev) => prev.slice(0, clearIndex));
       } else {
         setDisplayedMessages([]);
       }
     },
-    [displayedMessages]
+    [apiClient, sessionId, displayedMessages]
   );
 
   return {

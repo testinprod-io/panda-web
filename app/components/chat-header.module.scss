@@ -193,11 +193,22 @@
     box-shadow: 0px 2px 20px rgba(0, 0, 0, 0.10) !important; // Figma: boxShadow
     border-radius: 16px !important; // Figma: borderRadius: 16
     border: 1px solid #CACACA !important; // Figma: outline: '1px #CACACA solid'
-    margin-top: 8px; // Keep a small gap from the avatar
+    margin-top: 18px; // Keep a small gap from the avatar
     min-width: 280px; // Adjusted for content, Figma had 120min/400max
     max-width: 400px;
+    
     // gap: 10px; // This will be handled by margins on child elements or flex gap on inner containers
+
+    // Target the MuiList within the Paper to apply flex gap
+    :global(.MuiList-root) {
+      display: flex;
+      flex-direction: column;
+      gap: 10px; // This creates the 10px gap between MenuItems
+      padding-top: 0; // Reset default MUI List padding
+      padding-bottom: 0; // Reset default MUI List padding
+    }
   }
+  // gap: 10px; // Removed this as it was incorrectly placed and likely ineffective here
 
   // Container for user avatar and email
   .profileMenuUserSection {
@@ -231,6 +242,7 @@
       font-family: 'Inter', sans-serif !important; // Figma: fontFamily: 'Inter'
       font-weight: 400 !important; // Figma: fontWeight: '400'
       line-height: 24px !important; // Figma: lineHeight: 32 (adjusted for better fit)
+      height: 32px !important;
       white-space: normal; // Changed from nowrap to allow wrapping
       overflow-wrap: break-word; // Allow long words to break and wrap
       // overflow: hidden; // Removed for wrapping
@@ -255,8 +267,8 @@
 .profileMenuItem {
   padding: 8px 16px !important; // Figma: paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16. Adjusted slightly for Mui MenuItem default padding.
   border-radius: 8px !important; // Figma: borderRadius: 8
-  margin: 4px 0 !important; // Simulates gap: 10px in parent, more controlled per item
-  gap: 12px !important; // Figma: gap: 8, increased slightly
+  margin: 0 !important; // Removed previous margin, gap is now handled by the parent MuiList-root
+  gap: 12px !important; // Figma: gap: 8, increased slightly (this is for content *inside* the item)
   min-height: auto !important; // Override Mui default min-height
 
   &:hover {

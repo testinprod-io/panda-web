@@ -40,6 +40,15 @@ export interface FileUploadResponseData {
   updated_at: string;
 }
 
+export interface DeleteMessagesResponse {
+  deleted_count: number;
+  failed_messages: Array<{
+    message_id: UUID;
+    reason: string;
+    error_message: string;
+  }>;
+}
+
 export interface UploadFileResponse {
   fileResponse: FileUploadResponseData;
   abort: () => void;
@@ -177,6 +186,10 @@ export class ApiClient {
 
   async createMessage(conversationId: UUID, data: MessageCreateRequest): Promise<Message> {
     return this.request<Message>('POST', `/conversations/${conversationId}/messages`, undefined, data);
+  }
+
+  async deleteMessages(conversationId: UUID, messageIds: UUID[]): Promise<DeleteMessagesResponse> {
+    return this.request<DeleteMessagesResponse>('DELETE', `/conversations/${conversationId}/messages`, undefined, { message_ids: messageIds });
   }
 
   // --- Models ---

@@ -1,0 +1,231 @@
+/* Settings Modal Styles */
+
+.modalBackdrop {
+  /* Styles for the modal backdrop, if needed (e.g., background blur) */
+  /* backdropFilter: 'blur(5px)'; // Example */
+}
+
+.modalContent {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  max-width: 712px; // Adjusted for a slightly wider modal to accommodate columns
+  min-width: 512px;
+  background: white;
+  box-shadow: 0px 2px 20px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  outline: 1px solid #cacaca;
+  padding: 0; // Padding will be handled by inner elements
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow: hidden; // Prevent content from spilling before internal scroll is set
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 18px 32px; // Adjusted padding
+
+  .title {
+    color: #131a28;
+    font-size: 20px;
+    font-family: "Inter", sans-serif;
+    font-weight: 600;
+    line-height: 32px;
+  }
+
+  .closeButton {
+    color: #1e1e1e;
+  }
+  .backButton {
+    color: #1e1e1e;
+    margin-right: 8px; // Space between back button and title
+  }
+}
+
+.divider {
+  border-color: #b3b3b3;
+  margin: 0 24px; // Apply margin to keep it within padding
+}
+
+.mainArea {
+  display: flex;
+  flex-grow: 1;
+  overflow: hidden; // Important for children to scroll independently if needed
+  padding: 24px 24px 32px 18px; // Adjusted padding
+  // padding-top: 18px; // Space below divider
+  // padding-bottom: 32px; // Bottom padding for the modal
+}
+
+.leftNav {
+  width: 200px; // Fixed width for the left navigation panel
+  // padding-left: 24px;
+  padding-right: 10px; // Gap between nav and content
+  // border-right: 1px solid #e0e0e0; // Visual separator
+  flex-shrink: 0;
+  overflow-y: auto; // Scroll if nav items exceed height
+
+  .navItem {
+    border-radius: 8px;
+    margin-bottom: 4px; // Space between nav items
+    padding-top: 8px;
+    padding-bottom: 8px;
+
+    &:hover {
+      background-color: #f0f0f0;
+    }
+
+    .navItemIcon {
+        min-width: auto; // Override MUI default
+        margin-right: 12px; // Space icon from text
+        color: #131A28;
+    }
+
+    &.navItemActive {
+      background-color: #f3f3f3;
+      font-weight: 500;
+
+      .navItemIcon {
+        color: #131A28; // Ensure icon color matches active state if needed
+      }
+    }
+  }
+}
+
+.rightPanel {
+  flex-grow: 1;
+  padding-left: 24px;
+  padding-right: 24px;
+  overflow-y: auto; // Allow content to scroll if it overflows
+  display: flex;
+  flex-direction: column;
+}
+
+.promptsViewFullArea {
+    flex-grow: 1;
+    padding: 0 24px 24px 24px; // Match rightPanel padding, but applies to the full area post-header
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.generalSettings {
+  display: flex;
+  flex-direction: column;
+  gap: 0px; // Reduced gap, padding will handle spacing
+}
+
+.settingItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0; // Vertical padding for each item
+  border-bottom: 1px solid #e8e8e8; // Separator line
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .settingItemLabel {
+    color: #131a28;
+    font-size: 16px;
+    font-family: "Inter", sans-serif;
+    font-weight: 400;
+    line-height: 32px; // Matches Figma
+    flex-grow: 1;
+    margin-right: 16px; // Space before control
+  }
+
+  .settingItemControl {
+    display: flex;
+    align-items: center;
+    // Styles for specific controls are below
+  }
+}
+
+/* Specific Control Styles */
+.selectControl {
+  min-width: 150px; // Ensure select has enough width
+  .MuiSelect-select {
+    padding-right: 32px !important; // Ensure space for icon
+    font-size: 15px;
+    font-family: "Inter", sans-serif;
+    font-weight: 500;
+    color: #131A28;
+  }
+  .MuiOutlinedInput-notchedOutline {
+    border: none !important; // Figma shows no border directly on select itself
+  }
+  &:hover .MuiOutlinedInput-notchedOutline {
+    // border-color: #131A28; // Optional: show border on hover
+  }
+  &.Mui-focused .MuiOutlinedInput-notchedOutline {
+    // border-color: #1976d2; // MUI default focus, or custom
+  }
+}
+
+.selectMenuPaper {
+    box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.1) !important;
+    border: 1px solid #d0d0d0 !important;
+    border-radius: 8px !important;
+}
+
+
+.actionButtonText {
+  color: #131A28 !important;
+  font-size: 15px !important;
+  font-family: "Inter", sans-serif !important;
+  font-weight: 500 !important;
+  text-transform: none !important; // Keep text as is
+  padding: 4px 0px !important; // Adjust padding to better match Figma for text buttons
+  border-radius: 48px !important;
+  line-height: 32px !important;
+
+  .MuiButton-endIcon {
+    margin-left: 6px !important;
+    color: #757575 !important; // Icon color from Figma
+  }
+
+  &:hover,
+  &:active {
+    background-color: transparent !important; // Override MUI hover/active background
+  }
+}
+
+.actionButton {
+  font-size: 15px !important;
+  font-family: "Inter", sans-serif !important;
+  font-weight: 500 !important;
+  text-transform: none !important; // Keep text as is
+  padding: 4px 16px !important;
+  border-radius: 48px !important;
+  border: 1px solid #cacaca !important;
+  color: #131A28 !important;
+  line-height: 32px !important; // Explicitly set line-height to match Figma's visual height
+
+  &:hover {
+    border: 1px solid #131A28;
+    background-color: #f9f9f9;
+  }
+}
+
+.deleteButton {
+  background-color: #f33d4f !important;
+  color: #f3f3f3 !important; // Figma has light text for delete button
+  font-size: 15px !important;
+  font-family: "Inter", sans-serif !important;
+  font-weight: 500 !important;
+  text-transform: none !important;
+  padding: 4px 16px !important;
+  border-radius: 48px !important;
+  line-height: 32px !important;
+  box-shadow: 0px !important;
+
+  &:hover {
+    background-color: #d03140 !important; // Darker shade for hover
+  }
+} 

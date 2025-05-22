@@ -180,8 +180,8 @@ export function ChatComponent(props: ChatComponentProps) {
       const resendingIndex = displayedMessages.findIndex((m) => m.id === messageId);
       if (resendingIndex <= 0) return;
       const messages = displayedMessages.slice(0, resendingIndex);
-      clearMessages(messageId);
       setIsChatComponentBusy(true);
+      await clearMessages(messageId);
       try {
         await new Promise<void>((resolve, reject) => {
           sendNewQuery(messages, {
