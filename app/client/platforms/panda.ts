@@ -73,6 +73,7 @@ export class PandaApi implements LLMApi {
     let reasoningStartedForThisMessage = false;
     let mainContentText = "";
     let timestamp = new Date();
+    const usePdf = messages.some((v) => Array.isArray(v.content) && v.content.some((c) => c.type === "pdf_url"));
 
     try {
       const accessToken = await this.getAccessToken();
@@ -90,6 +91,7 @@ export class PandaApi implements LLMApi {
         temperature: options.config.temperature ?? 0.7,
         stream: options.config.stream ?? true,
         reasoning: options.config.reasoning ?? false,
+        use_pdf: usePdf,
       };
 
       const response = await fetch(requestUrl, {

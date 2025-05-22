@@ -2,14 +2,22 @@ import React, { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
-import { ChatMessage } from "@/app/types";
+import { ChatMessage, RequestMessage } from "@/app/types";
 import { copyToClipboard } from "@/app/utils"; // Adjust path
 import Locale from "@/app/locales"; // Adjust path
 import { MultimodalContent } from "@/app/client/api";
 
 import { ChatAction } from "@/app/components/chat/ChatAction";
 import { LoadingAnimation } from "@/app/components/common/LoadingAnimation";
-
+// import { GenericFileIcon } from "@/app/components/common/GenericFileIcon";
+import CloseIcon from "@mui/icons-material/Close";
+const GenericFileIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="32" height="32" rx="5.33333" fill="none"/>
+    <path d="M21.3333 24H10.6666C9.92778 24 9.33325 23.4055 9.33325 22.6667V9.33333C9.33325 8.5945 9.92778 8 10.6666 8H16L22.6666 12.6667V22.6667C22.6666 23.4055 22.0721 24 21.3333 24Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M22.6666 12.6667H17.3333C16.5944 12.6667 16 12.0722 16 11.3333V8" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
 // MUI Imports
 import { TextField, Button, Box, IconButton, Typography } from "@mui/material"; // IconButton not used
 import ReplayRoundedIcon from "@mui/icons-material/ReplayRounded";
@@ -23,12 +31,14 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight"; // For expand/c
 
 import styles from "./chat.module.scss";
 import { UUID } from "crypto";
+import { useApiClient } from "@/app/context/ApiProviderContext";
 
 const Markdown = dynamic(async () => (await import("../markdown")).Markdown, {
   loading: () => <LoadingAnimation />,
 });
 
 interface ChatMessageCellProps {
+  sessionId: UUID;
   messageId: UUID;
   message: ChatMessage;
   index: number;
@@ -43,6 +53,16 @@ interface ChatMessageCellProps {
   onEditSubmit: (messageId: UUID, newText: string) => void;
 }
 
+interface LoadedFile {
+  id: UUID;
+  name: string;
+  type: "image" | "pdf" | "other";
+  url: string;
+  isLoading: boolean;
+  error?: string;
+  originalType: string;
+}
+
 function getTextContent(
   content: string | MultimodalContent[] | null | undefined
 ): string {
@@ -54,6 +74,12 @@ function getTextContent(
     );
   }
   return "";
+}
+
+function getFileUrls(
+  message: ChatMessage,
+): string[] {
+  return message.fileIds
 }
 
 function getImageUrls(
@@ -80,6 +106,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
   props: ChatMessageCellProps
 ) {
   const {
+    sessionId,
     messageId,
     message,
     index,
@@ -94,7 +121,8 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     onEditSubmit,
   } = props;
 
-  const { role, content, reasoning, streaming, isError, isReasoning } = message;
+  const { role, content, reasoning, streaming, isError, isReasoning, fileIds } =
+    message;
 
   const handleResend = useCallback(
     () => onResend(messageId),
@@ -108,12 +136,114 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState("");
   const [isReasoningCollapsed, setIsReasoningCollapsed] = useState(true);
+  const [loadedFiles, setLoadedFiles] = useState<LoadedFile[]>([]);
 
   const isUser = role === "user";
 
   const currentTextContent = getTextContent(content);
   const currentImageUrls = getImageUrls(content);
   const currentReasoningText = getReasoningText(reasoning);
+  
+  const apiClient = useApiClient();
+
+  useEffect(() => {
+    if (!fileIds || fileIds.length === 0) {
+      setLoadedFiles([]);
+      return;
+    }
+
+    const fetchFiles = async () => {
+      // Initialize files with loading state
+      setLoadedFiles(
+        fileIds.map((id) => ({
+          id: id as UUID,
+          name: "Loading...",
+          type: "other", // Default, will be updated
+          url: "",
+          isLoading: true,
+          originalType: "",
+        }))
+      );
+
+      const newLoadedFiles: LoadedFile[] = [];
+
+      for (const fileId of fileIds) {
+        try {
+          const response = await apiClient.app.getFile(sessionId, fileId as UUID);
+          if (!response) {
+            throw new Error("File response is undefined");
+          }
+
+          const contentType = response.headers.get("Content-Type") || "application/octet-stream";
+          const contentDisposition = response.headers.get("Content-Disposition");
+          let fileName = `file_${fileId}`; // Default filename
+
+          if (contentDisposition) {
+            const match = contentDisposition.match(/filename="?([^"]+)"?/i);
+            if (match && match[1]) {
+              fileName = match[1];
+            }
+          }
+          
+          const reader = response.body?.getReader();
+          if (!reader) {
+            throw new Error("ReadableStream not available");
+          }
+
+          const chunks: Uint8Array[] = [];
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value) {
+              chunks.push(value);
+            }
+          }
+          const blob = new Blob(chunks, { type: contentType });
+          const url = URL.createObjectURL(blob);
+
+          let fileType: "image" | "pdf" | "other" = "other";
+          if (contentType.startsWith("image/")) {
+            fileType = "image";
+          } else if (contentType === "application/pdf") {
+            fileType = "pdf";
+          }
+
+          newLoadedFiles.push({
+            id: fileId as UUID,
+            name: fileName,
+            type: fileType,
+            url: url,
+            isLoading: false,
+            originalType: contentType,
+          });
+        } catch (error) {
+          console.error("Error fetching file:", fileId, error);
+          newLoadedFiles.push({
+            id: fileId as UUID,
+            name: "Error loading file",
+            type: "other",
+            url: "",
+            isLoading: false,
+            error: (error as Error).message || "Unknown error",
+            originalType: "",
+          });
+        }
+      }
+      setLoadedFiles(newLoadedFiles);
+    };
+
+    fetchFiles();
+
+    // Cleanup function to revoke object URLs
+    return () => {
+      loadedFiles.forEach((file) => {
+        if (file.url && file.url.startsWith("blob:")) {
+          URL.revokeObjectURL(file.url);
+        }
+      });
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps 
+  }, [fileIds, sessionId, apiClient]); // Ensure apiClient is stable or memoized if it comes from context
 
   // Ref to store the previous value of message.isReasoning
   const prevIsReasoningRef = React.useRef(message.isReasoning);
@@ -197,7 +327,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
   }
 
   const showReasoning = !isUser && (currentReasoningText || isReasoning);
-
+  console.log(`MEssagen status: ${isEditing} ${isReasoning} ${streaming}`)
   return (
     <div
       className={clsx(
@@ -263,7 +393,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                                 : "")
                           )
                         }
-                        disabled={isChatLoading}
+                        // disabled={isChatLoading}
                         className={styles["user-action-button"]}
                         aria-label="Copy message content and reasoning"
                       >
@@ -308,32 +438,158 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
             </Box>
           )}
         </div>
-        {currentImageUrls.length > 0 && (
+        
+        {loadedFiles.length > 0 && (
           <Box
             sx={{
               display: "flex",
-              flexWrap: "wrap",
-              gap: "8px",
-              justifyContent: isUser ? "flex-end" : "flex-start",
+              flexDirection: "column",
+              gap: "10px",
+              alignItems: isUser ? "flex-end" : "flex-start",
               width: "100%",
               maxWidth: "460px",
             }}
           >
-            {currentImageUrls.map((image, imgIndex) => (
-              <Image
-                key={imgIndex}
-                className={styles["chat-message-item-image-outside"]}
-                src={image}
-                alt={`attached image ${imgIndex + 1}`}
-                width={160}
-                height={160}
-                style={{
-                  borderRadius: "8px",
-                  outline: "1px #CACACA solid",
-                  objectFit: "cover",
-                }}
-              />
-            ))}
+            {loadedFiles.map((file) => {
+              if (file.isLoading) {
+                return (
+                  <Box key={file.id} className={styles["chat-message-item-loading"]} style={{
+                    borderRadius: "8px",
+                    outline: "1px #CACACA solid",
+                    backgroundColor: "#F0F0F0",
+                    objectFit: "cover",
+                    width: "160px",
+                    height: "160px",
+                  }} >
+                    <LoadingAnimation />
+                    {/* <Typography variant="caption">Loading {file.name}...</Typography> */}
+                  </Box>
+                );
+              }
+              if (file.error) {
+                return (
+                  <Box key={file.id} className={styles["chat-message-file-item-error"]}>
+                    <GenericFileIcon /> {/* Or a specific error icon */}
+                    <Typography variant="caption" color="error">
+                      Error: {file.name} ({file.error})
+                    </Typography>
+                  </Box>
+                );
+              }
+              if (file.type === "image") {
+                return (
+                  <a 
+                    key={`${file.id}-anchor`}
+                    href={file.url} 
+                    download={file.name} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ textDecoration: 'none' }} // Optional: remove underline from link
+                  >
+                    <Image
+                      key={file.id}
+                      className={styles["chat-message-item-image-outside"]}
+                      src={file.url}
+                      alt={file.name || `attached image ${file.id}`}
+                      width={160} // Adjust as needed
+                      height={160} // Adjust as needed
+                      style={{
+                        borderRadius: "8px",
+                        outline: "1px #CACACA solid",
+                        objectFit: "cover",
+                        display: "block", // Ensure image behaves like a block for the anchor
+                      }}
+                    />
+                  </a>
+                );
+              }
+              if (file.type === "pdf") {
+                return (
+                  <a 
+                    key={`${file.id}-anchor`}
+                    href={file.url} 
+                    download={file.name} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ textDecoration: 'none', display: 'block' }} // Optional: remove underline and make it block
+                  >
+                    <Box
+                      key={file.id}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px",
+                        borderRadius: "8px",
+                        backgroundColor: "#f0f0f0", // Light background for the PDF item
+                        border: "1px solid #e0e0e0",
+                        maxWidth: "100%",
+                        cursor: "pointer", // Indicate it's clickable
+                      }}
+                    >
+                      <GenericFileIcon />
+                      <Box sx={{ overflow: "hidden" }}>
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            whiteSpace: "nowrap", 
+                            overflow: "hidden", 
+                            textOverflow: "ellipsis",
+                            fontWeight: 500,
+                          }}
+                        >
+                          {file.name}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          PDF Document {file.originalType ? `(${file.originalType})` : ""}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </a>
+                );
+              }
+              // Fallback for 'other' file types
+              return (
+                <a 
+                  key={`${file.id}-anchor`}
+                  href={file.url} 
+                  download={file.name}
+                  style={{ textDecoration: 'none', display: 'block' }} // Optional: remove underline and make it block
+                >
+                  <Box
+                    key={file.id}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "8px",
+                      borderRadius: "8px",
+                      backgroundColor: "#f0f0f0",
+                      border: "1px solid #e0e0e0",
+                      cursor: "pointer", // Indicate it's clickable
+                    }}
+                  >
+                    <GenericFileIcon />
+                    <Box sx={{ overflow: "hidden" }}>
+                      <Typography 
+                        variant="body2"
+                        sx={{ 
+                          whiteSpace: "nowrap", 
+                          overflow: "hidden", 
+                          textOverflow: "ellipsis",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {file.name}
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        {file.originalType || "File"}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </a>
+              );
+            })}
           </Box>
         )}
 

@@ -278,6 +278,7 @@ export function ChatComponent(props: ChatComponentProps) {
         {messagesToRender.map((msgObject, i) => (
           <Fragment key={msgObject.id}>
             <ChatMessageCell
+              sessionId={sessionId}
               messageId={msgObject.id}
               message={msgObject}
               index={i}

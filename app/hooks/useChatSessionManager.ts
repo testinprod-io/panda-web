@@ -487,6 +487,7 @@ export function useChatSessionManager(
         let messageToSave: ChatMessage | undefined;
         const updatedMessages = prevMessages.map((msg) => {
           if (msg.id === botMessageId) {
+            msg.streaming = false;
             messageToSave = msg;
             // This is the message that should have been updated by onReasoningChunk, etc.
             // const completeReasoning = msg.reasoning || "";

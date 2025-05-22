@@ -55,8 +55,6 @@ export function CreatePasswordModal({
     <Dialog
       open={open}
       disableEscapeKeyDown
-      fullWidth
-      maxWidth="sm" // Adjusted maxWidth for potentially wider content from Figma (width: 448 for text block)
       BackdropProps={{
         style: {
           backgroundColor: "rgba(0, 0, 0, 0.6)",
@@ -70,31 +68,36 @@ export function CreatePasswordModal({
           borderRadius: "8px", // Figma: borderRadius: 8
           paddingTop: "40px", // New top padding
           paddingBottom: "40px", // New bottom padding
-          paddingLeft: "46px", // New left padding
-          paddingRight: "46px", // New right padding
+          paddingLeft: "86px", // New left padding
+          paddingRight: "86px", // New right padding
         },
       }}
     >
       {/* Main content flex container */}
-      <Box
-        sx={{
-          width: "448px",
-          margin: "0 auto",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
+      <Box sx={{ width: '372px', margin: '0 auto', flexDirection: 'column', alignItems: 'center' }}>
         {/* Title and Paragraph Block */}
-        <Box
-          sx={{
-            width: "100%",
-            display: "block",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "40px",
-            marginBottom: "24px",
-          }}
-        >
+        <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', marginBottom: '24px' }}>
+        <Box sx={{
+            width: '48px !important',
+            height: '48px',
+            borderRadius: '50%',
+            backgroundColor: '#C1FF83',
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'center',
+            margin: '0 auto'
+          }}>
+            <img 
+              src="/icons/lock.svg" 
+              alt="Lock" 
+              style={{ 
+                width: '24px', 
+                height: '30px',
+                marginTop: '6px',
+                filter: 'invert(0%) sepia(0%) saturate(23%) hue-rotate(67deg) brightness(104%) contrast(103%)'
+              }} 
+            />
+          </Box>
           <DialogTitle sx={{ textAlign: "center", padding: 0 }}>
             <Typography
               variant="h5"
@@ -105,14 +108,13 @@ export function CreatePasswordModal({
                 fontFamily: "Inter, sans-serif",
                 fontWeight: "600", // Figma: fontWeight: '600'
                 wordWrap: "break-word",
-                marginBottom: "24px",
               }}
             >
               Create Encryption Password
             </Typography>
           </DialogTitle>
           <DialogContent
-            sx={{ textAlign: "center", padding: 0, width: "100%" }}
+            sx={{ textAlign: "center", padding: 0}}
           >
             <Typography
               variant="body1"
@@ -124,9 +126,8 @@ export function CreatePasswordModal({
                 wordWrap: "break-word",
               }}
             >
-              To protect your chat data, please set a password. <br />
-              If you forget it, you'll need to reset the service, which will
-              permanently delete all data
+              To protect your chat data, set a password. 
+              If you forget it, you’ll need to reset the service, which will permanently delete all data
             </Typography>
           </DialogContent>
         </Box>
@@ -139,9 +140,27 @@ export function CreatePasswordModal({
             width: "100%",
             display: "block",
             flexDirection: "column",
-            gap: "16px",
+            gap: "8px",
           }}
         >
+          {(password &&
+                (password.length < MIN_PASSWORD_LENGTH ||
+                password.length > MAX_PASSWORD_LENGTH)) && (
+          <Typography 
+            variant="caption" // Or body2, adjust as needed
+            sx={{
+              fontFamily: 'Inter, sans-serif',
+              fontSize: '16px', 
+              fontWeight: '400',
+              color: '#F33D4F', // Using the same red as the error border
+              textAlign: 'left',
+              width: '100%',
+              // The gap from the parent Box should provide spacing, adjust if needed
+            }}
+          >
+            *Password must be 10-20 characters.
+          </Typography>
+          )}
           <TextField
             autoFocus
             required
@@ -152,44 +171,41 @@ export function CreatePasswordModal({
             value={password}
             onChange={handlePasswordChange}
             error={!!error}
-            helperText={error || " "} // Ensure helperText space is reserved to prevent layout shifts
             placeholder={`Enter ${MIN_PASSWORD_LENGTH}–${MAX_PASSWORD_LENGTH} characters.`} // Figma: Enter 10–20 characters.
             variant="outlined"
             InputLabelProps={{ style: { fontFamily: "Inter, sans-serif" } }}
             sx={{
-              marginBottom: "16px",
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "8px", // Figma: borderRadius: 8
-                backgroundColor: "white",
-                height: "56px", // Figma: height: 56
-                fontFamily: "Inter, sans-serif",
-                "& fieldset": {
-                  borderColor: "#CACACA", // Figma: outline: '1px #CACACA solid'
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '8px', // Figma: borderRadius: 8
+                backgroundColor: 'white', // Figma: background: 'white'
+                height: '56px', // Figma: height: 56
+                fontFamily: 'Inter, sans-serif',
+                '& fieldset': {
+                  borderColor: '#CACACA', // Figma: outline: '1px #CACACA solid'
                 },
-                "&:hover fieldset": {
-                  borderColor: "#A0A0A0",
+                '&:hover fieldset': {
+                  borderColor: '#A0A0A0', // Darker shade for hover
                 },
-                "&.Mui-focused fieldset": {
-                  borderColor: "#007AFF",
+                '&.Mui-focused fieldset': {
+                  borderColor: '#007AFF', 
                 },
-                "&.Mui-error fieldset": {
-                  borderColor: "#D32F2F",
-                },
+                '&.Mui-error fieldset': {
+                  borderColor: '#F33D4F', // Default MUI error color for border
+                }
               },
-              "& .MuiInputBase-input": {
-                padding: "0 14px",
-                height: "100%",
-                fontSize: "16px",
-                fontFamily: "Inter, sans-serif",
-                fontWeight: "400",
-                "&::placeholder": {
-                  color: "#CACACA", // Figma: color: '#CACACA' for placeholder
-                  opacity: 1,
-                  fontFamily: "Inter, sans-serif",
-                  fontSize: "16px",
-                  fontWeight: "400",
-                },
-              },
+              '& .MuiInputBase-input': {
+                width: '100% !important',
+                padding: '0 14px', // Adjusted padding to vertically center text in 56px height
+                height: '100%', // Ensure input takes full height of MuiOutlinedInput-root
+                color: '#131A28', // Figma: color: '#131A28' (for text inside input)
+                fontSize: '16px', // Figma: fontSize: 16
+                fontFamily: 'Inter, sans-serif', // Figma: fontFamily: 'Inter'
+                fontWeight: '400', // Figma: fontWeight: '400'
+                '&::placeholder': {
+                  // color: '#757575', // A typical placeholder color
+                  opacity: 1, // Ensure placeholder is visible
+                }
+              }
             }}
           />
           <DialogActions sx={{ padding: 0, width: "100%" }}>
@@ -222,6 +238,8 @@ export function CreatePasswordModal({
                   background: "#F3F3F3",
                   color: "#CACACA",
                 },
+                marginTop: '8px',
+
               }}
             >
               Confirm

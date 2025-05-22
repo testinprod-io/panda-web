@@ -172,7 +172,7 @@ export default function RootChatGroupLayout({
               top: 0,
               left: 0,
               height: "100vh",
-              width: 280, // Standard width for mobile drawer
+              width: '378px', // Standard width for mobile drawer
               transform: isSidebarCollapsed
                 ? "translateX(-100%)"
                 : "translateX(0)",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Box,
   IconButton,
@@ -198,6 +198,18 @@ export default function ChatHeader({
   console.log("activeSessionModelDisplayName:", activeSessionModelDisplayName);
   console.log("globalModelIdentifier:", globalModelIdentifier);
   console.log("displayModelName used in UI:", displayModelName);
+
+  const handleOpenSettings = () => {
+    // Attempt to blur the currently focused element (likely the clicked menu item)
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    handleProfileClose(); // Close the profile menu first
+
+    requestAnimationFrame(() => {
+      window.location.hash = 'settings'; // Directly set the hash
+    });
+  };
 
   return (
     <Box className={styles.chatHeader}>
@@ -413,17 +425,17 @@ export default function ChatHeader({
                   }}
                 />
               </Box>
-              <Box className={styles.profileMenuCompanySection}>
+              {/*<Box className={styles.profileMenuCompanySection}>
                 <ListItemText
                   primary="Company name is very lonoooooooooooooooooooooooooooog case"
                   className={styles.profileMenuText}
                   primaryTypographyProps={{
                     style: {
-                      /* overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' */
                     },
                   }}
                 />
               </Box>
+              */}
               <Divider className={styles.profileMenuDivider} />
               <MenuItem
                 onClick={() => {
@@ -445,7 +457,7 @@ export default function ChatHeader({
               </MenuItem>
               <MenuItem
                 onClick={() => {
-                  /* Placeholder for Settings */ handleProfileClose();
+                  handleOpenSettings();
                 }}
                 className={styles.profileMenuItem}
               >
