@@ -4,6 +4,7 @@ import { Providers } from './providers';
 import '@/app/styles/globals.scss';
 import "@/app/styles/markdown.scss";
 import SettingsModalHandler from './components/SettingsModalHandler';
+import React from 'react';
 
 const roboto = Roboto({ 
   subsets: ['latin'],
@@ -28,7 +29,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <SettingsModalHandler />
+        <React.Suspense fallback={<div></div>}>
+          <SettingsModalHandler />
+        </React.Suspense>
         <Providers>
           {children}
         </Providers>

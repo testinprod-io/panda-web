@@ -10,6 +10,9 @@ const theme = createTheme({
       default: '#ffffff',
       paper: '#f7f7f8',
     },
+    action: {
+      hoverOpacity: 0,
+    },
   },
   typography: {
     fontFamily: 'Inter, system-ui, sans-serif',
@@ -20,6 +23,11 @@ const theme = createTheme({
         root: {
           textTransform: 'none',
         },
+      },
+    },
+    MuiButtonBase: {
+      defaultProps: {
+        disableRipple: true,
       },
     },
     MuiTooltip: {
