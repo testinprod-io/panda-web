@@ -7,6 +7,8 @@ import type { ChatSession } from "@/app/types/session"; // Adjusted path
 
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Locale from '@/app/locales';
+import { useEncryption } from "@/app/context/EncryptionProvider"; // Added
+import { EncryptionService } from "@/app/services/EncryptionService"; // Added
 
 // New Icons based on Figma
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';         // For Rename
@@ -44,18 +46,33 @@ export function ChatItem({
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(session.topic);
+  const [editValue, setEditValue] = useState(""); // Initialized with actualDecryptedTopic later
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
   const [isHovered, setIsHovered] = useState(false);
-  const listItemRef = useRef<HTMLDivElement | null>(null); // Corrected Ref type for ListItemButton (defaults to div)
+  const listItemRef = useRef<HTMLDivElement | null>(null);
 
-  // Update edit value if the session topic changes externally
+  const { isLocked } = useEncryption();
+  const [actualDecryptedTopic, setActualDecryptedTopic] = useState(session.topic || Locale.Store.DefaultTopic);
+  const [displayedTitle, setDisplayedTitle] = useState(actualDecryptedTopic);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const animationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const topicToProcess = session.topic || Locale.Store.DefaultTopic;
+    if (isLocked) {
+      setActualDecryptedTopic(topicToProcess);
+    } else {
+      setActualDecryptedTopic(EncryptionService.decryptChatMessageContent(topicToProcess));
+    }
+  }, [isLocked, session.topic]);
+
+  // Update editValue when actualDecryptedTopic changes and not editing
   useEffect(() => {
     if (!isEditing) {
-      setEditValue(session.topic);
+      setEditValue(actualDecryptedTopic);
     }
-  }, [session.topic, isEditing]);
+  }, [actualDecryptedTopic, isEditing]);
 
   // Scroll into view when selected
   useEffect(() => {
@@ -90,14 +107,14 @@ export function ChatItem({
       handleSaveEdit();
     } else if (e.key === 'Escape') {
       setIsEditing(false);
-      setEditValue(session.topic);
+      setEditValue(actualDecryptedTopic); // Revert to actual decrypted topic
     }
   };
 
   const handleSaveEdit = () => {
     if (
       editValue.trim() !== '' &&
-      editValue !== session.topic &&
+      editValue !== actualDecryptedTopic && // Compare with actual decrypted topic
       onRename
     ) {
       onRename(editValue.trim());
@@ -105,17 +122,19 @@ export function ChatItem({
     setIsEditing(false);
   };
 
-  // Close menu/edit on outside click
   const handleClickOutside = useCallback(
     (e: MouseEvent) => {
       if (showMenu && menuRef.current && !menuRef.current.contains(e.target as Node) && dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setShowMenu(false);
       }
       if (isEditing && inputRef.current && !inputRef.current.contains(e.target as Node)) {
-        handleSaveEdit();
+        // Check if the click is outside the edit input specifically
+        if (editInputRef.current && !editInputRef.current.contains(e.target as Node)) {
+            handleSaveEdit();
+        }
       }
     },
-    [showMenu, isEditing, handleSaveEdit] // Added handleSaveEdit dependency
+    [showMenu, isEditing, handleSaveEdit] 
   );
 
   useEffect(() => {
@@ -125,41 +144,32 @@ export function ChatItem({
     };
   }, [handleClickOutside]);
 
-  // --- Animation State ---
-  const decryptedTopic = session.topic || Locale.Store.DefaultTopic; // The final target text
-  const [displayedTitle, setDisplayedTitle] = useState(decryptedTopic); // Initially show decrypted (or default)
-  const [isAnimating, setIsAnimating] = useState(false);
-  const animationIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  // --- End Animation State ---
-
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
-    event.stopPropagation(); // Prevent click from selecting the item
+    event.stopPropagation();
     setAnchorEl(event.currentTarget);
-    setIsHovered(false); // Explicitly set hover to false, menu 'open' state will manage visibility
+    setIsHovered(false); 
   };
 
   const handleMenuClose = (event?: React.MouseEvent<HTMLElement> | {}, reason?: "backdropClick" | "escapeKeyDown") => {
-    // Check if event is a MouseEvent before stopping propagation
     if (event && typeof event === 'object' && 'stopPropagation' in event && typeof event.stopPropagation === 'function') {
         (event as React.MouseEvent<HTMLElement>).stopPropagation();
     }
     const menuWasPreviouslyOpen = Boolean(anchorEl);
-    setAnchorEl(null); // This will make 'open' false
+    setAnchorEl(null); 
 
     if (menuWasPreviouslyOpen) {
-        // After menu is marked to close, check actual hover state of the item using a zero-delay setTimeout.
         setTimeout(() => {
           if (listItemRef.current) {
             const isCurrentlyHoveredOverItem = listItemRef.current.matches(':hover');
             setIsHovered(isCurrentlyHoveredOverItem);
           }
-        }, 0); // Use setTimeout with 0 delay
+        }, 0);
     }
   };
 
   const handleEdit = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
-    setEditValue(decryptedTopic); // Start editing with the actual decrypted topic
+    setEditValue(actualDecryptedTopic); // Start editing with the actual decrypted topic
     setIsEditing(true);
     handleMenuClose();
   };
@@ -167,98 +177,86 @@ export function ChatItem({
   const handleCancelEdit = (event?: React.MouseEvent<HTMLElement>) => {
     event?.stopPropagation();
     setIsEditing(false);
-    setEditValue(decryptedTopic); // Revert to original decrypted topic
-    handleMenuClose(); // Close menu if open
+    setEditValue(actualDecryptedTopic); // Revert to original decrypted topic
+    handleMenuClose(); 
   };
 
-  // Focus input when editing starts
   useEffect(() => {
     if (isEditing) {
       editInputRef.current?.focus();
     }
   }, [isEditing]);
 
-  // --- Decryption Animation Effect ---
+  // Decryption Animation Effect
   useEffect(() => {
-    // Only animate if the topic is not the default placeholder
-    if (session.topic && session.topic !== Locale.Store.DefaultTopic) {
-      setIsAnimating(true);
-      // 1. Get the temporary encrypted representation for the animation start
-      const encryptedDisplay = session.topic;
-      setDisplayedTitle(encryptedDisplay); // Show encrypted version first
-
-      // Clear any existing interval
-      if (animationIntervalRef.current) {
-        clearInterval(animationIntervalRef.current);
-      }
-
-      let revealedCount = 0;
-      const targetLength = decryptedTopic.length;
-      const encryptedLength = encryptedDisplay.length;
-
-      // 2. Start the interval to reveal decrypted characters
-      animationIntervalRef.current = setInterval(() => {
-        revealedCount++;
-        // Construct the title: part decrypted, part encrypted
-        const newTitle =
-          decryptedTopic.substring(0, revealedCount) +
-          encryptedDisplay.substring(revealedCount);
-
-        setDisplayedTitle(newTitle);
-
-        // 3. Stop when the full decrypted title is shown
-        if (revealedCount >= targetLength && revealedCount >= encryptedLength) {
-             if (animationIntervalRef.current) {
-               clearInterval(animationIntervalRef.current);
-               animationIntervalRef.current = null;
-             }
-             setDisplayedTitle(decryptedTopic); // Ensure final state is perfect
-             setIsAnimating(false);
-        }
-      }, DECRYPTION_INTERVAL_MS);
-
-    } else {
-        // If it's the default topic or empty, just display it directly, no animation
-        setDisplayedTitle(decryptedTopic);
-        setIsAnimating(false);
-         // Clear interval if it was running for a previous topic
-         if (animationIntervalRef.current) {
-            clearInterval(animationIntervalRef.current);
-            animationIntervalRef.current = null;
-         }
+    if (animationIntervalRef.current) {
+      clearInterval(animationIntervalRef.current);
+      animationIntervalRef.current = null;
     }
 
-    // Cleanup function to clear interval on unmount or if session.topic changes
+    const rawTopic = session.topic || Locale.Store.DefaultTopic;
+
+    if (isLocked || rawTopic === Locale.Store.DefaultTopic || !session.topic) {
+      // If locked, or it's the default topic, or no session topic, just display the actual (possibly raw) topic
+      setDisplayedTitle(actualDecryptedTopic);
+      setIsAnimating(false);
+      return;
+    }
+
+    // App is unlocked and it's not a default topic, proceed with animation
+    setIsAnimating(true);
+    // Start animation from the raw (potentially encrypted) topic
+    const animationStartDisplay = rawTopic; 
+    setDisplayedTitle(animationStartDisplay);
+
+    let revealedCount = 0;
+    const targetLength = actualDecryptedTopic.length;
+    const startDisplayLength = animationStartDisplay.length;
+
+    animationIntervalRef.current = setInterval(() => {
+      revealedCount++;
+      const newTitle =
+        actualDecryptedTopic.substring(0, revealedCount) +
+        animationStartDisplay.substring(revealedCount);
+
+      setDisplayedTitle(newTitle);
+
+      if (revealedCount >= targetLength && revealedCount >= startDisplayLength) {
+        if (animationIntervalRef.current) {
+          clearInterval(animationIntervalRef.current);
+          animationIntervalRef.current = null;
+        }
+        setDisplayedTitle(actualDecryptedTopic); // Ensure final state is perfect
+        setIsAnimating(false);
+      }
+    }, DECRYPTION_INTERVAL_MS);
+
     return () => {
       if (animationIntervalRef.current) {
         clearInterval(animationIntervalRef.current);
         animationIntervalRef.current = null;
       }
     };
-  }, [session.topic, decryptedTopic]); // Rerun effect if the underlying topic changes
-  // --- End Decryption Animation Effect ---
+  }, [session.topic, actualDecryptedTopic, isLocked]); // Rerun if underlying topic, its decrypted version, or lock state changes
 
   const handleItemClick = () => {
     if (isAnimating) {
-        // If animating, stop animation and show full title immediately
-        if (animationIntervalRef.current) {
-            clearInterval(animationIntervalRef.current);
-            animationIntervalRef.current = null;
-        }
-        setDisplayedTitle(decryptedTopic);
-        setIsAnimating(false);
+      if (animationIntervalRef.current) {
+        clearInterval(animationIntervalRef.current);
+        animationIntervalRef.current = null;
+      }
+      setDisplayedTitle(actualDecryptedTopic);
+      setIsAnimating(false);
     }
-    onClick?.(); // Proceed with original click handler
+    onClick?.();
   };
 
   const open = Boolean(anchorEl);
 
-  // Placeholder handlers for new actions
   const handleShare = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
     onShare?.();
     handleMenuClose();
-    // Implement share logic or call onShare prop
     console.log("Share action triggered for session:", session.id);
   };
 
@@ -266,7 +264,6 @@ export function ChatItem({
     event.stopPropagation();
     onArchive?.();
     handleMenuClose();
-    // Implement archive logic or call onArchive prop
     console.log("Archive action triggered for session:", session.id);
   };
   
@@ -278,10 +275,10 @@ export function ChatItem({
 
   return (
     <ListItemButton
-      ref={listItemRef} // Add ref here
-      onClick={handleItemClick} // Use the wrapper click handler
-      className={styles['chat-item']} // Use the base class
-      disableTouchRipple={true} // Disable the MUI ripple effect
+      ref={listItemRef} 
+      onClick={handleItemClick} 
+      className={styles['chat-item']} 
+      disableTouchRipple={true} 
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       sx={{ 
@@ -293,7 +290,6 @@ export function ChatItem({
           },
       }}
     >
-        {/* Highlight Container - Apply conditional class here */}
         <Box className={clsx(styles['chat-item-highlight'], selected && styles['chat-item-selected-highlight'])} 
              sx={{ 
                  display: 'flex', 
@@ -301,13 +297,12 @@ export function ChatItem({
                  width: '100%', 
                  paddingRight: ((isHovered || open) && !isEditing) ? '50px' : '12px',
              }}>
-            {/* Secondary action container needs to be inside highlight or positioned absolutely relative to chat-item */}
             <Box sx={{ 
                 position: 'absolute', 
-                right: 12, // Adjust position based on new padding
+                right: 12, 
                 top: '50%', 
                 transform: 'translateY(-50%)', 
-                zIndex: 1, // Ensure it's above the text
+                zIndex: 1, 
                 display: ((isHovered || open) && !isEditing) ? 'flex' : 'none',
                 alignItems: 'center',
             }}>
@@ -318,40 +313,28 @@ export function ChatItem({
                     </IconButton>
                     <Menu
                       anchorEl={anchorEl}
-                      open={open} // Use state variable
+                      open={open} 
                       onClose={handleMenuClose}
-                      onClick={(e) => e.stopPropagation()} // Prevent menu clicks from closing due to outside click handler on item
+                      onClick={(e) => e.stopPropagation()} 
                       PaperProps={{
-                        className: styles.chatActionMenuPaper, // Defined in SCSS
+                        className: styles.chatActionMenuPaper, 
                       }}
                       MenuListProps={{
                         sx: { 
                           paddingTop: 0, 
                           paddingBottom: 0,
-                          display: 'flex',       // Re-adding for gap styling
-                          flexDirection: 'column', // Re-adding for gap styling
-                          gap: '10px',           // Re-adding for gap styling (Figma spec)
+                          display: 'flex',       
+                          flexDirection: 'column', 
+                          gap: '10px',           
                         }
                       }}
                     >
-                      {/* <MenuItem onClick={handleShare} className={styles.chatActionMenuItem}>
-                        <ListItemIcon className={styles.chatActionMenuItemIcon}>
-                          <IosShareOutlinedIcon fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText primary="Share" className={styles.chatActionMenuItemText} />
-                      </MenuItem> */}
                       <MenuItem onClick={handleEdit} className={styles.chatActionMenuItem}>
                         <ListItemIcon className={styles.chatActionMenuItemIcon}>
                           <EditOutlinedIcon fontSize="small" />
                         </ListItemIcon>
                         <ListItemText primary="Rename" className={styles.chatActionMenuItemText} />
                       </MenuItem>
-                      {/* <MenuItem onClick={handleArchive} className={styles.chatActionMenuItem}>
-                        <ListItemIcon className={styles.chatActionMenuItemIcon}>
-                          <ArchiveOutlinedIcon fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText primary="Archive" className={styles.chatActionMenuItemText} />
-                      </MenuItem> */}
                       <MenuItem onClick={handleDeleteClick} className={clsx(styles.chatActionMenuItem, styles.deleteAction)}>
                         <ListItemIcon className={clsx(styles.chatActionMenuItemIcon, styles.deleteActionIcon)}>
                           <DeleteOutlineOutlinedIcon fontSize="small" />
@@ -363,16 +346,14 @@ export function ChatItem({
                 )}
             </Box>
 
-            {/* Main content area - Conditional rendering */}
             {isEditing ? (
-                // Editing state: Box + TextField
-                <Box component="form" onSubmit={handleSaveEdit} sx={{ width: '100%', flexGrow: 1 /* Make Box grow */ }}>
+                <Box component="form" onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }} sx={{ width: '100%', flexGrow: 1 }}>
                     <TextField 
                       className={styles["chat-item-title-input"]}
                       value={editValue}
                       onChange={handleEditChange}
                       onKeyDown={handleEditKeyDown}
-                      onBlur={() => { setTimeout(() => handleSaveEdit(), 100); }}
+                      onBlur={handleSaveEdit} // Save on blur
                       onClick={(e) => e.stopPropagation()}
                       inputRef={editInputRef}
                       autoFocus
@@ -380,7 +361,6 @@ export function ChatItem({
                       InputProps={{ 
                           disableUnderline: true, 
                       }} 
-                      // Keep refined TextField styles 
                       sx={{
                         backgroundColor: 'transparent',
                         width: '100%',
@@ -411,13 +391,11 @@ export function ChatItem({
                     />
                 </Box>
             ) : (
-                // Non-editing state: Span
-                // We will add flexGrow to this span via CSS module
-                <span className={styles['chat-item-title']} title={decryptedTopic}>
+                <span className={styles['chat-item-title']} title={actualDecryptedTopic}>
                     {displayedTitle}
                 </span>
             )}
-        </Box> {/* End Highlight Container */}
+        </Box> 
     </ListItemButton>
   );
 } 

@@ -277,7 +277,6 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
       )}
       {/* Always render children with a key that changes when unlocked, forcing re-render */}
       <div
-        key={isLocked ? "locked" : "unlocked"}
         style={{
           filter: isLocked ? "blur(3px) brightness(0.8)" : "none",
           transition: "filter 0.5s ease-in-out",
