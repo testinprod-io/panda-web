@@ -293,7 +293,7 @@ export function ChatComponent(props: ChatComponentProps) {
         onTouchStart={() => setAutoScroll(false)}
         // style={{ scrollBehavior: "smooth" }}
       >
-        {isLoadingMessages && hasMoreMessages && (
+        {displayedMessages.length !== 0 && isLoadingMessages && hasMoreMessages && (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
             <CircularProgress size={24} color="inherit" />
           </div>

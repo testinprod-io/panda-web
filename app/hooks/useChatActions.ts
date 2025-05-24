@@ -408,6 +408,9 @@ export function useChatActions() {
             const sortedSummaries = [...fetchedSummaries].sort((a, b) => 
                 new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
             );
+            sortedSummaries.forEach(summary => {
+                summary.content = EncryptionService.decrypt(summary.content);
+            });
 
             let lastId: UUID | null = null;
             if (sortedSummaries.length > 0) {
@@ -466,11 +469,12 @@ export function useChatActions() {
             const summaryCreateRequest: SummaryCreateRequest = {
                 start_message_id: startMessageId,
                 end_message_id: endMessageId,
-                content: summaryText,
+                content: EncryptionService.encrypt(summaryText),
             };
             const appSummaryResponse = await apiClient.app.createSummary(sessionId, summaryCreateRequest);
             const newSummary = appSummaryResponse.data; // This is of type ApiSummary
-
+            newSummary.content = EncryptionService.decrypt(newSummary.content);
+            
             console.log(`[ChatActions] Summary stored on server. Summary ID: ${newSummary.summary_id}`);
             return newSummary; // Return the newly created summary
 

@@ -140,6 +140,15 @@ export function useChatSessionManager(
           return msg;
         })
       );
+      setLocalSummaries(prevSummaries => 
+        prevSummaries.map(summary => {
+          const decrypted = EncryptionService.decrypt(summary.content);
+          if (decrypted !== summary.content) {
+            return { ...summary, content: decrypted };
+          }
+          return summary;
+        })
+      );
     } else {
       console.log(`[useChatSessionManager] App is LOCKED. Ensuring messages are in their original/encrypted state.`);
       // If you need to revert to an encrypted state or placeholder when locked:
