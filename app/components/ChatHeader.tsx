@@ -132,7 +132,7 @@ export default function ChatHeader({
 
   const handleNewChat = () => {
     store.setCurrentSessionIndex(-1);
-    router.push(`/chat`);
+    router.push(`/`);
   };
 
   const displayModelName =

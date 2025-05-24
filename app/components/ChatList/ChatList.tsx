@@ -279,7 +279,7 @@ export function ChatList(props: ChatListProps) {
 
       if (wasGloballyCurrent || isLastSessionInList) {
         setCurrentSessionIndex(-1); // Set current session to none BEFORE navigating
-        router.push("/chat");       // Navigation starts
+        router.push("/");       // Navigation starts
 
         // Delay deletion operations if navigation occurred
         setTimeout(() => {

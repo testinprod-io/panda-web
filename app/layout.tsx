@@ -1,19 +1,14 @@
-import { Roboto } from 'next/font/google';
+import React from 'react'; // Keep React for JSX
 import { Inter } from 'next/font/google';
 import { Providers } from './providers';
 import '@/app/styles/globals.scss';
 import "@/app/styles/markdown.scss";
 import SettingsModalHandler from './components/SettingsModalHandler';
-import React from 'react';
-
-const roboto = Roboto({ 
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '700'] 
-});
+import ChatLayoutContent from '@/app/components/ChatLayout'; // Import the new client component
 
 const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'], 
+  weight: ['400', '500', '600', '700'],
 });
 
 export const metadata = {
@@ -33,7 +28,7 @@ export default function RootLayout({
           <SettingsModalHandler />
         </React.Suspense>
         <Providers>
-          {children}
+          <ChatLayoutContent>{children}</ChatLayoutContent>
         </Providers>
       </body>
     </html>

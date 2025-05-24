@@ -59,7 +59,7 @@ export default function ChatPage() {
   useEffect(() => {
     if (!isLoadingState && !isValidSession) {
       toast.error(`Chat session not found: ${chatId || "Invalid ID"}`);
-      router.replace("/chat");
+      router.replace("/");
     }
   }, [isLoadingState, isValidSession, chatId, router]);
 
