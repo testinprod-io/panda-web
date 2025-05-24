@@ -26,7 +26,6 @@ import Button from '@mui/material/Button';
 import styles from "@/app/components/chat/chat.module.scss";
 import { UUID } from "crypto";
 import CloseIcon from '@mui/icons-material/Close';
-import LanguageIcon from '@mui/icons-material/Language';
 import { useApiClient } from "@/app/context/ApiProviderContext";
 // Helper component for the generic file icon
 const GenericFileIcon = () => (
@@ -37,22 +36,9 @@ const GenericFileIcon = () => (
   </svg>
 );
 
-const localStorage = safeLocalStorage();
-
-const getInitialInput = (sessionId?: UUID): string => {
-  if (!sessionId) return "";
-  const key = UNFINISHED_INPUT(sessionId.toString());
-  const savedInput = localStorage.getItem(key);
-  return savedInput || "";
-};
-
-const MAX_IMAGE_FILES = 10;
-const MAX_PDF_AGGREGATE_SIZE = 25 * 1024 * 1024; // 25MB
-const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"];
-
 interface FileError {
   fileName: string;
-  reason: "type" | "image_limit" | "pdf_size_limit" | "pdf_individual_size_limit" | "no_session_id";
+  reason: "type" | "image_limit" | "pdf_size_limit" | "pdf_individual_size_limit" | "no_session_id" | "content_mismatch";
 }
 
 interface AttachedClientFile {
@@ -73,12 +59,107 @@ interface SubmittedFile {
   fileId: string;
   type: string;
   name: string;
+  size: number;
 }
 
-const filterValidFilesForUpload = (
+interface SessionState {
+  userInput: string;
+  persistedAttachedFiles: SubmittedFile[];
+  enableSearch: boolean;
+}
+
+const localStorage = safeLocalStorage();
+
+const loadSessionState = (sessionId?: UUID): SessionState => {
+  const defaultState: SessionState = { userInput: "", persistedAttachedFiles: [], enableSearch: false };
+  if (!sessionId) return defaultState;
+
+  const key = UNFINISHED_INPUT(sessionId.toString());
+  const savedStateString = localStorage.getItem(key);
+
+  if (savedStateString) {
+    try {
+      const savedState = JSON.parse(savedStateString) as Partial<SessionState>;
+      // Ensure all parts of the state have defaults if not present in savedState
+      return {
+        userInput: savedState.userInput || "",
+        persistedAttachedFiles: savedState.persistedAttachedFiles || [],
+        enableSearch: savedState.enableSearch || false,
+      };
+    } catch (error) {
+      console.error("Failed to parse session state from localStorage:", error);
+      localStorage.removeItem(key); // Clear corrupted state
+      return defaultState;
+    }
+  }
+  return defaultState;
+};
+
+const MAX_IMAGE_FILES = 10;
+const MAX_PDF_AGGREGATE_SIZE = 25 * 1024 * 1024; // 25MB
+const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"];
+
+// Helper to read file start as hex string
+const getFileHeader = (file: File, bytesToRead: number = 8): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = (e) => {
+      if (e.target?.readyState === FileReader.DONE) {
+        const arr = new Uint8Array(e.target.result as ArrayBuffer).subarray(0, bytesToRead);
+        const header = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+        resolve(header);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file.slice(0, bytesToRead));
+  });
+};
+
+// Verify file content against its MIME type
+const verifyFileContent = async (file: File): Promise<boolean> => {
+  const type = file.type;
+  try {
+    if (type === "image/jpeg") {
+      const header = await getFileHeader(file, 3);
+      return header.startsWith("FFD8FF");
+    } else if (type === "image/png") {
+      const header = await getFileHeader(file, 8);
+      return header === "89504E470D0A1A0A";
+    } else if (type === "image/gif") {
+      const header = await getFileHeader(file, 6);
+      return header === "474946383761" || header === "474946383961";
+    } else if (type === "image/webp") {
+      // RIFFxxxxWEBP
+      const first4 = await getFileHeader(file, 4);
+      if (first4 !== "52494646") return false; // 'RIFF'
+      // Skip 4 bytes (file size) and check for 'WEBP'
+      const webpHeader = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = (e) => {
+          if (e.target?.readyState === FileReader.DONE) {
+            const arr = new Uint8Array(e.target.result as ArrayBuffer).subarray(8, 12);
+            resolve(Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase());
+          }
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file.slice(0,12));
+      });
+      return webpHeader === "57454250";
+    } else if (type === "application/pdf") {
+      const header = await getFileHeader(file, 5);
+      return header === "255044462D"; // %PDF-
+    }
+    return true; // For types not explicitly checked, assume valid for now or rely on server
+  } catch (error) {
+    console.error(`Error verifying file content for ${file.name}:`, error);
+    return false; // If reading fails, treat as invalid
+  }
+};
+
+const filterValidFilesForUpload = async (
   incomingFiles: File[],
   currentAttachedFiles: AttachedClientFile[]
-): { filesToUpload: File[]; errors: FileError[] } => {
+): Promise<{ filesToUpload: File[]; errors: FileError[] }> => {
   const filesToUpload: File[] = [];
   const errors: FileError[] = [];
 
@@ -90,6 +171,13 @@ const filterValidFilesForUpload = (
   for (const file of incomingFiles) {
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
       errors.push({ fileName: file.name, reason: "type" });
+      continue;
+    }
+
+    // Verify actual file content against claimed type
+    const isContentValid = await verifyFileContent(file);
+    if (!isContentValid) {
+      errors.push({ fileName: file.name, reason: "content_mismatch" });
       continue;
     }
 
@@ -150,7 +238,6 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   const { submitKey, shouldSubmit } = useSubmitHandler();
   const { showSnackbar } = useSnackbar();
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const initialUserInput = React.useMemo(() => getInitialInput(sessionId), [sessionId]);
   const [userInput, setUserInput] = useState<string>("");
   const [attachedFiles, setAttachedFiles] = useState<AttachedClientFile[]>([]);
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
@@ -165,31 +252,72 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   }, [attachedFiles]);
 
   useEffect(() => {
-    const initialInput = getInitialInput(sessionId);
-    setUserInput(initialInput);
+    if (sessionId) {
+      const initialState = loadSessionState(sessionId);
+      setUserInput(initialState.userInput);
+      setEnableSearch(initialState.enableSearch);
+
+      const restoredAttachedFiles: AttachedClientFile[] = initialState.persistedAttachedFiles.map(
+        (persistedFile): AttachedClientFile => ({
+          clientId: typeof window !== "undefined" && window.crypto?.randomUUID ? window.crypto.randomUUID() : Date.now().toString() + Math.random().toString(),
+          originalFile: null as any, // Original file object is not persisted
+          previewUrl: persistedFile.url,
+          type: persistedFile.type,
+          name: persistedFile.name,
+          size: persistedFile.size,
+          uploadStatus: 'success', // Restored files are assumed to be successfully uploaded
+          fileId: persistedFile.fileId as UUID,
+          uploadProgress: 100,
+          abortUpload: undefined,
+        }),
+      );
+      setAttachedFiles(restoredAttachedFiles);
+    } else {
+      // Reset state if there's no session ID (e.g., new chat)
+      setUserInput("");
+      setAttachedFiles([]);
+      setEnableSearch(false);
+    }
   }, [sessionId]);
 
   useEffect(() => {
     console.log('[EFFECT:attachedFiles changed]', JSON.stringify(attachedFiles.map(f => ({ clientId: f.clientId, name: f.name, status: f.uploadStatus, fileId: f.fileId, progress: f.uploadProgress, type: f.type, size: f.size })), null, 2));
   }, [attachedFiles]);
 
-  const debouncedSaveInput = useDebouncedCallback((currentSessionId?: UUID, currentInput?: string) => {
-    if (currentSessionId && typeof currentInput === 'string') {
+  const debouncedSaveInput = useDebouncedCallback((currentSessionId?: UUID, currentInput?: string, currentAttachedFiles?: AttachedClientFile[], currentEnableSearch?: boolean) => {
+    if (currentSessionId) {
       const key = UNFINISHED_INPUT(currentSessionId.toString());
-      if (currentInput.trim() === "") {
+      const filesToPersist: SubmittedFile[] = (currentAttachedFiles || [])
+        .filter(f => f.uploadStatus === 'success' && f.fileId)
+        .map(f => ({
+          url: f.previewUrl,
+          fileId: f.fileId!,
+          type: f.type,
+          name: f.name,
+          size: f.size,
+        }));
+
+      if (
+        (currentInput || "").trim() === "" &&
+        filesToPersist.length === 0 &&
+        !(currentEnableSearch || false)
+      ) {
         localStorage.removeItem(key);
       } else {
-        localStorage.setItem(key, currentInput);
+        const stateToSave: SessionState = {
+          userInput: currentInput || "",
+          persistedAttachedFiles: filesToPersist,
+          enableSearch: currentEnableSearch || false,
+        };
+        localStorage.setItem(key, JSON.stringify(stateToSave));
       }
-    } else if (currentSessionId) {
-      const key = UNFINISHED_INPUT(currentSessionId.toString());
-      localStorage.removeItem(key);
     }
   }, 500);
 
   useEffect(() => {
-    debouncedSaveInput(sessionId, userInput);
-  }, [userInput, sessionId, debouncedSaveInput]);
+    // Debounce saving the entire session state
+    debouncedSaveInput(sessionId, userInput, attachedFiles, enableSearch);
+  }, [userInput, attachedFiles, enableSearch, sessionId, debouncedSaveInput]);
 
   const stopGeneration = () => {
     ChatControllerPool.stopAll();
@@ -232,7 +360,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
       return;
     }
     
-    const { filesToUpload, errors: filterErrors } = filterValidFilesForUpload(
+    const { filesToUpload, errors: filterErrors } = await filterValidFilesForUpload(
       candidateFiles,
       attachedFiles
     );
@@ -244,6 +372,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
           case "image_limit": return `Image limit (${MAX_IMAGE_FILES}) reached. Could not add: ${err.fileName}`;
           case "pdf_individual_size_limit": return `PDF file too large (max ${MAX_PDF_AGGREGATE_SIZE / (1024*1024)}MB): ${err.fileName}`;
           case "pdf_size_limit": return `Total PDF size limit (${MAX_PDF_AGGREGATE_SIZE / (1024*1024)}MB) reached. Could not add: ${err.fileName}`;
+          case "content_mismatch": return `File content does not match its type: ${err.fileName}`;
           default: return `Unknown error for file: ${err.fileName}`;
         }
       });
@@ -351,7 +480,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
     }
 
     const filesForSubmission: SubmittedFile[] = successfullyUploadedFiles
-      .map(({ previewUrl, fileId, type, name }) => ({ url: previewUrl, fileId: fileId!, type, name }));
+      .map(({ previewUrl, fileId, type, name, size }) => ({ url: previewUrl, fileId: fileId!, type, name, size }));
 
     console.log(`[doSubmit] filesForSubmission (to be sent):`, JSON.stringify(filesForSubmission, null, 2));
 
@@ -360,8 +489,11 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
     const currentSessionIdForClear = sessionId;
     setUserInput("");
     setAttachedFiles([]); 
+    setEnableSearch(false); // Reset enableSearch state
+
     if (currentSessionIdForClear) {
-        debouncedSaveInput.cancel();
+        debouncedSaveInput.cancel(); // Cancel any pending save
+        // Clear the saved state from localStorage for this session
         localStorage.removeItem(UNFINISHED_INPUT(currentSessionIdForClear.toString()));
     }
     
@@ -579,7 +711,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
             className={styles["chat-input-send-new"]}
             variant="contained"
             onClick={isLoading ? stopGeneration : doSubmit}
-            disabled={!authenticated|| isUploadingFiles || isLoading || (userInput.trim() === "" && attachedFiles.filter(f => f.uploadStatus === 'success').length === 0)}
+            disabled={!authenticated|| isUploadingFiles } // || !isLoading }
             aria-label={isLoading ? Locale.Chat.InputActions.Stop : Locale.Chat.Send}
           >
             {isLoading ? <StopRoundedIcon /> : <ArrowUpwardRoundedIcon />}

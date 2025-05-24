@@ -32,8 +32,6 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight"; // For expand/c
 import styles from "./chat.module.scss";
 import { UUID } from "crypto";
 import { useApiClient } from "@/app/context/ApiProviderContext";
-import { EncryptionService } from "@/app/services/EncryptionService";
-import { useEncryption } from "@/app/context/EncryptionProvider";
 
 const Markdown = dynamic(async () => (await import("../markdown")).Markdown, {
   loading: () => <LoadingAnimation />,
@@ -123,24 +121,8 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     onEditSubmit,
   } = props;
 
-  const { role, streaming, isError, isReasoning, fileIds, content: rawContent, reasoning: rawReasoning } =
+  const { role, streaming, isError, isReasoning, fileIds, content, reasoning } =
     message;
-  
-  const { isLocked } = useEncryption();
-  const [decryptedContent, setDecryptedContent] = useState("");
-  const [decryptedReasoning, setDecryptedReasoning] = useState<string | null>(null);
-  
-  useEffect(() => {
-    if (isLocked) {
-      // Show placeholders or encrypted text if locked
-      setDecryptedContent(typeof rawContent === 'string' ? rawContent : getTextContent(rawContent)); 
-      setDecryptedReasoning(typeof rawReasoning === 'string' ? rawReasoning : getReasoningText(rawReasoning));
-    } else {
-      // App is unlocked, decrypt the content
-      setDecryptedContent(EncryptionService.decryptChatMessageContent(getTextContent(rawContent)));
-      setDecryptedReasoning(rawReasoning ? EncryptionService.decryptChatMessageContent(getReasoningText(rawReasoning)) : null);
-    }
-  }, [isLocked, rawContent, rawReasoning]);
 
   const handleResend = useCallback(
     () => onResend(messageId),
@@ -158,7 +140,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
 
   const isUser = role === "user";
 
-  const currentImageUrls = getImageUrls(rawContent);
+  const currentImageUrls = getImageUrls(content);
   
   const apiClient = useApiClient();
 
@@ -266,9 +248,9 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
 
   useEffect(() => {
     if (isEditing) {
-      setEditedText(decryptedContent);
+      setEditedText(content as string);
     }
-  }, [decryptedContent, isEditing]);
+  }, [content, isEditing]);
 
   useEffect(() => {
     // On initial mount or if reasoning starts
@@ -285,22 +267,23 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
   }, [message.isReasoning]); // Only re-run when message.isReasoning changes
 
   const handleEditClick = useCallback(() => {
-    setEditedText(decryptedContent);
+    setEditedText(content as string);
     setIsEditing(true);
-  }, [decryptedContent]);
+  }, [content]);
 
   const handleCancelClick = useCallback(() => {
     setIsEditing(false);
   }, []);
 
   const handleSendClick = useCallback(() => {
-    if (editedText.trim() === decryptedContent.trim()) {
+    if (typeof content !== 'string') { return; }
+    if (editedText.trim() === content.trim()) {
       setIsEditing(false);
       return;
     }
     onEditSubmit(messageId, editedText);
     setIsEditing(false);
-  }, [messageId, editedText, decryptedContent, onEditSubmit]);
+  }, [messageId, editedText, content, onEditSubmit]);
 
   const toggleReasoningCollapse = useCallback(() => {
     setIsReasoningCollapsed((prev) => !prev);
@@ -342,7 +325,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     );
   }
 
-  const showReasoning = !isUser && (decryptedReasoning || isReasoning);
+  const showReasoning = !isUser && (reasoning || isReasoning);
   console.log(`MEssagen status: ${isEditing} ${isReasoning} ${streaming}`)
   return (
     <div
@@ -403,9 +386,9 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                       <button
                         onClick={() =>
                           copyToClipboard(
-                            decryptedContent +
-                              (decryptedReasoning
-                                ? `\n\n[Reasoning]:\n${decryptedReasoning}`
+                            content +
+                              (reasoning
+                                ? `\n\n[Reasoning]:\n${reasoning}`
                                 : "")
                           )
                         }
@@ -440,7 +423,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                       <ModeEditRoundedIcon />
                     </button> */}
                       <button
-                        onClick={() => copyToClipboard(decryptedContent)}
+                        onClick={() => copyToClipboard(content as string)}
                         // disabled={isChatLoading}
                         className={styles["user-action-button"]}
                         aria-label="Copy message"
@@ -640,13 +623,13 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                       )} seconds`
                     : "Processing complete"}
                 </Typography>
-                {isReasoning && !decryptedReasoning && (
+                {isReasoning && !reasoning && (
                   <Box sx={{ ml: 1 }}>
                     <LoadingAnimation />
                   </Box>
                 )}
               </Box>
-              {!isReasoningCollapsed && decryptedReasoning && (
+              {!isReasoningCollapsed && reasoning && (
                 <Box
                   sx={{
                     mt: 1,
@@ -657,7 +640,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                   }}
                 >
                   <Markdown
-                    content={decryptedReasoning}
+                    content={reasoning}
                     fontSize={fontSize * 0.85}
                     fontFamily={fontFamily}
                     parentRef={scrollRef as React.RefObject<HTMLDivElement>}
@@ -708,18 +691,18 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
             </Box>
           ) : (
             <>
-              {(decryptedContent ||
+              {(content ||
                 currentImageUrls.length > 0 ||
                 (streaming && !isUser && !showReasoning)) && (
                 <Markdown
                   key={`${messageId}-${streaming ? "streaming" : "done"}-${
                     isReasoning ? "reasoning" : "content"
                   }`}
-                  content={decryptedContent}
+                  content={content as string}
                   loading={
                     streaming &&
                     !isUser &&
-                    decryptedContent.length === 0 &&
+                    content.length === 0 &&
                     !isReasoning
                   }
                   fontSize={fontSize}

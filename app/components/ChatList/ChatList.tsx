@@ -96,7 +96,7 @@ export function ChatList(props: ChatListProps) {
 
   // Get actions and store state needed for selection/deletion
   const { deleteSession, selectSession, updateConversation, loadSessionsFromServer } = useChatActions();
-  const { currentSessionIndex } = useChatStore(); // For highlighting selected item
+  const { currentSessionIndex, setCurrentSessionIndex } = useChatStore(); // For highlighting selected item
   const store = useChatStore(); // For setCurrentSessionIndex
   const currentSessionFromStore = store.currentSession(); // Get the full current session object
 
@@ -240,9 +240,23 @@ export function ChatList(props: ChatListProps) {
         // We update if the object reference itself has changed, implying an update in the store.
         if (sessionInLocalList !== currentSessionFromStore) {
           setLocalSessions(prevSessions =>
-            prevSessions.map(s =>
-              s.id === currentSessionFromStore.id ? currentSessionFromStore : s
-            )
+            prevSessions.map(s => {
+              if (s.id === currentSessionFromStore.id) {
+                const storeSession = currentSessionFromStore;
+                const localSessionCandidate = s; // This 's' is from prevSessions
+
+                // If the local candidate (potentially our optimistic update) has a matching topic
+                // to the store version (confirming it's the same rename context) and its
+                // lastUpdate is newer, prefer the optimistic lastUpdate.
+                // This prevents the store sync from reverting our fresh optimistic timestamp.
+                if (localSessionCandidate.topic === storeSession.topic &&
+                    localSessionCandidate.lastUpdate > storeSession.lastUpdate) {
+                  return { ...storeSession, lastUpdate: localSessionCandidate.lastUpdate };
+                }
+                return storeSession; // Otherwise, take the store's version as is.
+              }
+              return s;
+            })
           );
         }
       }
@@ -250,24 +264,34 @@ export function ChatList(props: ChatListProps) {
     // localSessions is a dependency because we read from it (find) and map over it.
     // currentSessionFromStore is the primary trigger for this effect.
     // setLocalSessions is stable and provided by useState.
-  }, [currentSessionFromStore, localSessions, setLocalSessions]);
+  }, [currentSessionFromStore, localSessions]); // setLocalSessions removed as per React guidelines for setters in deps
 
   const handleSelectItem = (session: ChatSession) => {
     selectSession(session.id);
     router.replace(`/chat/${session.id}`);
   };
 
-  const handleDeleteItem = async (session: ChatSession) => {
+  const handleDeleteItem = (session: ChatSession) => {
     if (window.confirm(Locale.Home.DeleteChat)) {
-      deleteSession(session.id);
-
-      setLocalSessions(prev => prev.filter(s => s.id !== session.id));
-
       const globallyCurrentSession = store.currentSession();
       const wasGloballyCurrent = globallyCurrentSession ? globallyCurrentSession.id === session.id : false;
+      const isLastSessionInList = localSessions.length === 1;
 
-      if (wasGloballyCurrent || localSessions.length === 1) {
-        router.push("/chat");
+      if (wasGloballyCurrent || isLastSessionInList) {
+        setCurrentSessionIndex(-1); // Set current session to none BEFORE navigating
+        router.push("/chat");       // Navigation starts
+
+        // Delay deletion operations if navigation occurred
+        setTimeout(() => {
+          deleteSession(session.id);
+          setLocalSessions(prev => prev.filter(s => s.id !== session.id));
+          // setCurrentSessionIndex(-1); // This is already set before push, and covered by the else block or end of function for non-nav cases
+        }, 1000); // 1-second delay
+      } else {
+        // If not navigating, delete immediately
+        deleteSession(session.id);
+        setLocalSessions(prev => prev.filter(s => s.id !== session.id));
+        setCurrentSessionIndex(-1); // Reset index if no navigation happened
       }
     }
   };
@@ -275,12 +299,17 @@ export function ChatList(props: ChatListProps) {
   const handleRenameItem = (session: ChatSession, newName: string) => {
     const trimmedName = newName.trim();
     if (trimmedName && session.id) {
-      updateConversation(session.id, { title: trimmedName });
-      setLocalSessions(prevSessions => 
-        prevSessions.map(s => 
-          s.id === session.id ? { ...s, topic: trimmedName } : s
+      const optimisticUpdateTime = Date.now();
+      // Optimistically update local state first for immediate re-sorting
+      setLocalSessions(prevSessions =>
+        prevSessions.map(s =>
+          s.id === session.id
+            ? { ...s, topic: trimmedName, lastUpdate: optimisticUpdateTime }
+            : s
         )
       );
+      // Then, call the actual update operation
+      updateConversation(session.id, { title: trimmedName });
     } else {
       console.error("[ChatList] Cannot rename session - missing identifier or empty name");
     }

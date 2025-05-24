@@ -23,7 +23,8 @@ export interface MultimodalContent {
 
 export interface RequestMessage {
   role: MessageRole;
-  content: string | MultimodalContent[];
+  content: string;
+  attachments?: MultimodalContent[];
 }
 
 export interface LLMConfig {
@@ -35,6 +36,7 @@ export interface LLMConfig {
   presence_penalty?: number;
   frequency_penalty?: number;
   reasoning?: boolean;
+  useSearch?: boolean;
   targetEndpoint?: string;
 }
 

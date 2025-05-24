@@ -467,6 +467,7 @@
   svg { // Target icon within
     font-size: 16px !important; // Figma data-size="16" for icon container
     color: #757575 !important; // Figma icon color (var(--Icon-Default-Secondary, #757575))
+    transition: fill 0.2s ease-in-out, stroke 0.2s ease-in-out, opacity 0.2s ease-in-out; // Refined transition
     // The Figma shows a square outline for the plus, AddCircleOutlineIcon is circular.
     // To get a square plus, we'd need a different icon or custom SVG.
     // For now, using AddCircleOutlineIcon and styling its size/color.
@@ -474,6 +475,7 @@
 
   img { // Target the custom SVG image
     display: block; // Helps with precise centering by removing inline characteristics
+    transition: opacity 0.2s ease-in-out; // Added to prevent flicker
     // Width and height are set via inline styles in the TSX (16px)
   }
 
@@ -512,6 +514,7 @@
     fill: #F3F3F3 !important; // Ensure fill for some icons
     stroke: #F3F3F3 !important; // Ensure stroke for outline icons like ArrowUpward
     stroke-width: 1.5; // Make icon a bit bolder if needed
+    transition: color 0.2s ease-in-out, fill 0.2s ease-in-out, stroke 0.2s ease-in-out, opacity 0.2s ease-in-out; // Added to prevent flicker
   }
 
   &:hover:not(:disabled) {
@@ -547,7 +550,7 @@
   background-color: transparent !important;
   cursor: pointer;
   gap: 6px; // Figma: gap: 6
-  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+  // transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
 
   .search-button-icon {
     // data-size="16" style={{width: 16, height: 16, position: 'relative', overflow: 'hidden'}}
@@ -556,6 +559,10 @@
     color: #757575 !important; // Figma: var(--Icon-Default-Secondary, #757575)
     display: flex;
     align-items: center;
+    // transition: color 0.2s ease-in-out, opacity 0.2s ease-in-out; // Transition for the container
+    // svg { // Explicitly target SVG within the icon container
+    //   transition: fill 0.2s ease-in-out, stroke 0.2s ease-in-out, opacity 0.2s ease-in-out; // Refined transition for the SVG itself
+    // }
   }
 
   .search-button-text {

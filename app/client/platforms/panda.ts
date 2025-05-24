@@ -63,7 +63,7 @@ export class PandaApi implements LLMApi {
   async chat(options: ChatOptions) {
     const messages = options.messages.map((v) => ({
       role: v.role,
-      content: v.content,
+      content: v.attachments ? [...v.attachments, { type: "text", text: v.content }] : v.content,
     }));
 
     const controller = new AbortController();
@@ -92,6 +92,7 @@ export class PandaApi implements LLMApi {
         stream: options.config.stream ?? true,
         reasoning: options.config.reasoning ?? false,
         use_pdf: usePdf,
+        use_search: options.config.useSearch ?? false,
       };
 
       const response = await fetch(requestUrl, {
@@ -192,7 +193,9 @@ export class PandaApi implements LLMApi {
         options.onFinish(mainMessageToFinish, timestamp, response);
       }
     } catch (error: any) {
-      console.error("[Panda Request] failed", error);
+      if (error.name !== "AbortError") {
+        console.error("[Panda Request] failed", error);
+      }
       if (inReasoningPhase) {
         options.onReasoningEnd?.(undefined);
       }

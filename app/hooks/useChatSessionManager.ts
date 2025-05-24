@@ -14,6 +14,8 @@ import { ChatControllerPool } from "../client/controller";
 import { useChatStore } from '@/app/store/chat'; // Corrected import
 import { ChatSession } from '@/app/types/session'; // Added import for ChatSession
 import { Summary } from "@/app/client/types"; // Import Summary type
+import { useEncryption } from "../context/EncryptionProvider";
+import { EncryptionService } from "../services/EncryptionService";
 
 interface ChatSessionManagerResult {
   displayedMessages: ChatMessage[];
@@ -97,6 +99,70 @@ export function useChatSessionManager(
   const [localIsSummarizing, setLocalIsSummarizing] = useState<boolean>(false);
 
   const loadInProgress = useRef(false); // Prevents concurrent fetch operations
+
+  const { isLocked } = useEncryption();
+
+  useEffect(() => {
+    if (!isLocked) {
+      console.log(`[useChatSessionManager] App is UNLOCKED. Processing messages for decryption.`);
+      setDisplayedMessages(prevMessages => 
+        prevMessages.map(msg => {
+          // Avoid re-decrypting if content is not a string (already an object like MultimodalContent or already processed)
+          // or if it doesn't look like it needs decryption (e.g., simple heuristic or flag).
+          // For this example, we'll proceed if it's a string.
+          const originalContent = msg.content;
+          const originalReasoning = msg.reasoning;
+          let contentChanged = false;
+
+          let newContent = originalContent;
+          if (typeof originalContent === 'string') {
+            const decrypted = EncryptionService.decryptChatMessageContent(originalContent);
+            if (decrypted !== originalContent) {
+              newContent = decrypted;
+              contentChanged = true;
+            }
+          }
+          // TODO: Handle MultimodalContent parts if they can be encrypted individually
+
+          let newReasoning = originalReasoning;
+          if (typeof originalReasoning === 'string') {
+            const decryptedR = EncryptionService.decryptChatMessageContent(originalReasoning);
+            if (decryptedR !== originalReasoning) {
+              newReasoning = decryptedR;
+              contentChanged = true;
+            }
+          }
+
+          if (contentChanged) {
+            console.log(`[useChatSessionManager] Decrypted message ID: ${msg.id}`);
+            return { ...msg, content: newContent, reasoning: newReasoning };
+          }
+          return msg;
+        })
+      );
+    } else {
+      console.log(`[useChatSessionManager] App is LOCKED. Ensuring messages are in their original/encrypted state.`);
+      // If you need to revert to an encrypted state or placeholder when locked:
+      // This assumes that the initial load (when locked) provides encrypted data.
+      // If displayedMessages could hold decrypted data from a previous unlock,
+      // you might need to fetch the original encrypted versions or apply a placeholder.
+      // For now, we'll assume messages are fetched encrypted or this useEffect handles the toggle.
+      setDisplayedMessages(prevMessages => 
+        prevMessages.map(msg => {
+          // This is a simplified placeholder logic. Ideally, you'd revert to actual encrypted strings
+          // or have a clear way to distinguish between pre-decryption and post-decryption states.
+          // For this example, if it was decrypted, it might be complex to re-encrypt without original. 
+          // So, this else block might be more about ensuring new messages loaded while locked are treated as raw.
+          // If msg.content was previously decrypted and isLocked is now true, 
+          // we should show a placeholder or the original encrypted form if available.
+          // This part requires careful state management of original encrypted values if true reversion is needed.
+          // For simplicity, this example doesn't revert already decrypted messages back to encrypted on lock.
+          // It primarily focuses on decrypting when unlocked.
+          return msg; // No change on lock in this simplified version; assumes messages are fetched encrypted.
+        })
+      );
+    }
+  }, [isLocked]); // Removed displayedMessages from deps to avoid loop with setDisplayedMessages, isLocked is the trigger.
 
   // Effect for initial message and summary load
   useEffect(() => {
@@ -408,23 +474,24 @@ export function useChatSessionManager(
         return;
       }
 
-      let messageContent: string | MultimodalContent[];
+      let messageContent = input;
+      let attachments: MultimodalContent[] = [];
       let fileIds: string[] = [];
+      
       if (files && files.length > 0) {
-        const contentParts: MultimodalContent[] = [{ type: "text", text: input }];
         for (const file of files) {
           console.log(`[useChatSessionManager] Adding file to message:`, file);
           console.log(`[useChatSessionManager] File type:`, file.type);
           if (file.type.startsWith("image/")) {
             // Assuming Panda API format based on user request
-            contentParts.push({ 
+            attachments.push({ 
               type: "image_url", 
               image_url: { url: file.url } // file.url is already the base64 data URI
             });
             fileIds.push(file.fileId);
           } else if (file.type.startsWith("application/pdf")) {
             // Assuming Panda API format based on user request
-            contentParts.push({ 
+            attachments.push({ 
               type: "pdf_url", 
               pdf_url: { url: file.url } // file.url is already the base64 data URI
             });
@@ -439,20 +506,13 @@ export function useChatSessionManager(
             console.warn(`File ${file.name} is not an image and will be ignored for Panda API multimodal content.`);
           }
         }
-        // If only text was provided, or no images were processed, keep it as string
-        if (contentParts.length > 1) { // More than just the initial text part
-          messageContent = contentParts;
-        } else {
-          messageContent = input; 
-        }
-      } else {
-        messageContent = input;
       }
 
       // Add user message to store
       const userMessage = createMessage({
         role: "user",
         content: messageContent, // Use the potentially multimodal content
+        attachments: attachments,
         syncState: MessageSyncState.PENDING_CREATE,
         fileIds: fileIds,
       });
@@ -604,6 +664,7 @@ export function useChatSessionManager(
         messagesForApi.push({
           role: (msg.role === "user" ? "user" : "system") as "user" | "system",
           content: msg.content,
+          attachments: msg.attachments,
         });
       });
       
@@ -611,6 +672,7 @@ export function useChatSessionManager(
       messagesForApi.push({
         role: (newUserMessage.role === "user" ? "user" : "system") as "user" | "system",
         content: newUserMessage.content,
+        attachments: newUserMessage.attachments,
       });
       
       // ... (rest of sendNewQuery: create bot message placeholder, call ChatApiService.callLlmChat)
@@ -676,6 +738,25 @@ export function useChatSessionManager(
           ChatControllerPool.remove(sessionId, localBotMessageId);
         },
         onError(error: Error) {
+          console.log(`[useChatSessionManager] onError:`, error);
+          if (error.name === "AbortError") {
+            console.log(`[useChatSessionManager] onError: AbortError. Ignoring.`);
+            let finalContent: string = "";
+            setDisplayedMessages((prev) =>
+              prev.map((msg) => {
+                if (msg.id === localBotMessageId) {
+                  console.log(`[useChatSessionManager] onError: Finalizing last bot message. ID: ${localBotMessageId}, Content: ${msg.content}`);
+                  finalizeStreamedBotMessage(localBotMessageId, msg.content as string, new Date());
+                  callbacks?.onSuccess?.(localBotMessageId, msg.content as string, new Date());
+                  finalContent = msg.content as string;
+                }
+                return msg;
+              })
+            );
+
+            return;
+          }
+          
           let duration = 0;
           if (reasoningStartTimeForThisQuery !== null) {
             duration = Date.now() - reasoningStartTimeForThisQuery;

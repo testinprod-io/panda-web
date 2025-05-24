@@ -87,7 +87,7 @@ export default function RootChatGroupLayout({
   const handleLayoutSubmit = useCallback(
     async (
       input: string,
-      files: { url: string; fileId: string; type: string; name: string }[]
+      files: { url: string; fileId: string; type: string; name: string }[],
     ) => {
       if ((!input || !input.trim()) && files.length === 0) return;
 
@@ -124,6 +124,7 @@ export default function RootChatGroupLayout({
         console.error("[RootChatGroupLayout] Error during submission:", error);
         showSnackbar(Locale.Store.Error, "error");
       } finally {
+        console.log("[RootChatGroupLayout] Setting internalIsSubmitting to false");
         setInternalIsSubmitting(false);
       }
     },

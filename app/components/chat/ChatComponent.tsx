@@ -25,6 +25,7 @@ import { useSnackbar } from "@/app/components/SnackbarProvider"; // Added Snackb
 import { ChatMessageCell } from "@/app/components/chat/ChatMessageCell"; // Import the new cell component
 
 import ArrowDownwardRoundedIcon from "@mui/icons-material/ArrowDownwardRounded";
+import CircularProgress from "@mui/material/CircularProgress"; // Assuming MUI is used
 
 import styles from "./chat.module.scss";
 import { ChatAction } from "./ChatAction"; // Import ChatAction
@@ -70,6 +71,9 @@ export function ChatComponent(props: ChatComponentProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [internalHitBottom, setInternalHitBottom] = useState(true); // Local state for UI button
 
+  const previousScrollHeightRef = useRef<number | null>(null);
+  const previousScrollTopRef = useRef<number | null>(null);
+
   const { 
     displayedMessages, 
     isLoading: isLoadingMessages, 
@@ -99,7 +103,6 @@ export function ChatComponent(props: ChatComponentProps) {
   const doSubmit = useCallback(
     async (input: string, files: {url: string, fileId: string, type: string, name: string}[]) => {
       setIsChatComponentBusy(true);
-      try {
         await new Promise<void>((resolve, reject) => {
           sendNewUserMessage(input, files, {
             onReasoningStart: () => {},
@@ -119,9 +122,7 @@ export function ChatComponent(props: ChatComponentProps) {
           });
         });
         setAutoScroll(true);
-      } catch (error) {
-        // Error already handled by onFailure, isChatComponentBusy set to false there
-      }
+
     },
     [sessionId, sendNewUserMessage, setAutoScroll, showSnackbar, setIsChatComponentBusy]
   );
@@ -233,11 +234,23 @@ export function ChatComponent(props: ChatComponentProps) {
   );
 
   // Layout effect for initial scroll
+  // useLayoutEffect(() => {
+  //   if (sessionId && !isLoadingMessages) { 
+  //     scrollDomToBottom();
+  //   }
+  // }, [sessionId, isLoadingMessages, scrollDomToBottom]);
+
+  // Layout effect for scroll adjustment after loading more messages
   useLayoutEffect(() => {
-    if (sessionId && !isLoadingMessages) { 
-      scrollDomToBottom();
+    if (previousScrollHeightRef.current !== null && scrollRef.current && !isLoadingMessages) {
+      const scrollHeightDiff = scrollRef.current.scrollHeight - previousScrollHeightRef.current;
+      if (scrollHeightDiff > 0 && previousScrollTopRef.current !== null) { // Ensure height actually increased
+        scrollRef.current.scrollTop = previousScrollTopRef.current + scrollHeightDiff;
+      }
+      previousScrollHeightRef.current = null; // Reset after adjustment
+      previousScrollTopRef.current = null; // Reset after adjustment
     }
-  }, [sessionId, isLoadingMessages, scrollDomToBottom]);
+  }, [displayedMessages, isLoadingMessages]); // Triggered when messages or loading state change
 
   const isMessageAreaLoading = isLoadingMessages || isBotStreaming;
 
@@ -260,6 +273,10 @@ export function ChatComponent(props: ChatComponentProps) {
       const edgeThreshold = 50;
       const isTouchTopEdge = scrollTop <= edgeThreshold;
       if (isTouchTopEdge && !isLoadingMessages) { 
+        if (scrollRef.current) {
+          previousScrollHeightRef.current = scrollRef.current.scrollHeight;
+          previousScrollTopRef.current = scrollRef.current.scrollTop;
+        }
         loadMoreMessages();
       }
     },
@@ -274,7 +291,13 @@ export function ChatComponent(props: ChatComponentProps) {
         ref={scrollRef}
         onScroll={onChatBodyScroll}
         onTouchStart={() => setAutoScroll(false)}
+        // style={{ scrollBehavior: "smooth" }}
       >
+        {isLoadingMessages && hasMoreMessages && (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
+            <CircularProgress size={24} color="inherit" />
+          </div>
+        )}
         {messagesToRender.map((msgObject, i) => (
           <Fragment key={msgObject.id}>
             <ChatMessageCell

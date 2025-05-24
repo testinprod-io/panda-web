@@ -17,8 +17,8 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: 'ChatGPT Clone',
-  description: 'A ChatGPT-like web application',
+  title: 'Panda',
+  description: 'Your private AI assistant',
 };
 
 export default function RootLayout({

@@ -61,7 +61,8 @@ export enum MessageSyncState {
  * but is NOT stored this way.
  */
 export type ChatMessage = Omit<RequestMessage, 'content'> & { // Omit original content
-  content: string | MultimodalContent[]; // Allow MultimodalContent[]
+  content: string; // Allow MultimodalContent[]
+  attachments?: MultimodalContent[];
   fileIds: string[];  
   date: Date;
   streaming: boolean;
