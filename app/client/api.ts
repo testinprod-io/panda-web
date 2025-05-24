@@ -90,9 +90,10 @@ export class ClientApi {
     if (!getAccessToken) {
       throw new Error("getAccessToken function is required for Panda provider");
     }
-    const defaultPandaBaseUrl = ""; // Or a more sensible default like from an env var or appConfig
-    this.llm = new PandaApi(defaultPandaBaseUrl, getAccessToken);
-    this.app = new ApiClient("http://3.15.240.252:8000", getAccessToken);
+    const pandaBaseUrl = ""; 
+    this.llm = new PandaApi(pandaBaseUrl, getAccessToken);
+    const appBaseUrl = process.env.NEXT_PUBLIC_APP_SERVER_ENDPOINT || "";
+    this.app = new ApiClient(appBaseUrl, getAccessToken);
   }
 
   async share(messages: ChatMessage[], avatarUrl: string | null = null) {

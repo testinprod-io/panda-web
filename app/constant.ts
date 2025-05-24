@@ -110,7 +110,7 @@ Latex block: $$e=mc^2$$
 
 // Default model names for switching providers
 // export const DEFAULT_OPENAI_MODEL_NAME = "gpt-4o-mini";
-export const DEFAULT_PANDA_MODEL_NAME = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B";
+export const DEFAULT_PANDA_MODEL_NAME = "ig1/r1-1776-AWQ";
 
 // export const SUMMARIZE_MODEL = "gpt-4o-mini";
 // export const GEMINI_SUMMARIZE_MODEL = "gemini-pro";
@@ -123,13 +123,18 @@ export const KnowledgeCutOffDate: Record<string, string> = {
 };
 
 export const VISION_MODEL_REGEXES = [
-  /Panda2\.5-Omni-7B/i, // Specifically target Qwen/Qwen2.5-Omni-7B
+  /Panda2\\.5-Omni-7B/i, // Specifically target Qwen/Qwen2.5-Omni-7B
   /vision/i, // Keep general vision keyword if model names might include it
 ];
 
+// Helper function to generate environment variable names for model endpoints
+function getModelEndpointEnvVarName(modelName: string): string {
+  const slug = modelName.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase();
+  return `NEXT_PUBLIC_MODEL_ENDPOINT_${slug}`;
+}
 
 const PandaModels = [
-  "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+  "ig1/r1-1776-AWQ",
   "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16",
 ];
 
@@ -197,30 +202,38 @@ export const DEFAULT_MODELS: AppModelDefinition[] = [
     let config: ModelConfig;
     let isVision = false;
 
+    // Default endpoint, can be overridden by environment variables
+    let defaultEndpoint = ""; 
+    if (name === "ig1/r1-1776-AWQ") {
+      defaultEndpoint = process.env.NEXT_PUBLIC_LLM_SERVER_ENDPOINT || "";
+    } else if (name === "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16") {
+      defaultEndpoint = process.env.NEXT_PUBLIC_LLM_OMNI_SERVER_ENDPOINT || "";
+    }
+
     if (name === "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B") {
-      config = { 
-        ...BASE_MODEL_CONFIG, 
+      config = {
+        ...BASE_MODEL_CONFIG,
         name: name,
         displayName: name.split("/")[0],
         max_tokens: 8000, // Example
         reasoning: true,
-        endpoint: "http://4.246.68.189:8000/"
+        endpoint: defaultEndpoint,
       };
       isVision = false;
     } else if (name === "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16") {
-      config = { 
-        ...BASE_MODEL_CONFIG, 
+      config = {
+        ...BASE_MODEL_CONFIG,
         name: name,
         displayName: name.split("/")[0],
         max_tokens: 16000, // Example for vision model
         reasoning: true,
-        endpoint: "http://52.225.128.77:8000/"
+        endpoint: defaultEndpoint,
       };
       isVision = true;
     } else {
       // Fallback, though ideally all PandaModels are handled above
       config = { ...BASE_MODEL_CONFIG, name: name,
-        displayName: name, reasoning: true };
+        displayName: name, reasoning: true, endpoint: defaultEndpoint };
     }
     
     return {
@@ -244,4 +257,4 @@ export const DEFAULT_MODELS: AppModelDefinition[] = [
 export const CHAT_PAGE_SIZE = 15;
 export const MAX_RENDER_MSG_COUNT = 45;
 
-export type ModelType = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B" | "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16";
+export type ModelType = "ig1/r1-1776-AWQ" | "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16";
