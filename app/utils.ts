@@ -245,30 +245,11 @@ export function isMacOS(): boolean {
 }
 
 export function getMessageTextContent(message: RequestMessage) {
-  if (typeof message.content === "string") {
-    return message.content;
-  }
-  for (const c of message.content) {
-    if (c.type === "text") {
-      return c.text ?? "";
-    }
-  }
-  return "";
+  return message.content;
 }
 
 export function getMessageTextContentWithoutThinking(message: RequestMessage) {
-  let content = "";
-
-  if (typeof message.content === "string") {
-    content = message.content;
-  } else {
-    for (const c of message.content) {
-      if (c.type === "text") {
-        content = c.text ?? "";
-        break;
-      }
-    }
-  }
+  let content = message.content;
 
   // Filter out thinking lines (starting with "> ")
   return content
@@ -279,16 +260,7 @@ export function getMessageTextContentWithoutThinking(message: RequestMessage) {
 }
 
 export function getMessageImages(message: RequestMessage): string[] {
-  if (typeof message.content === "string") {
-    return [];
-  }
-  const urls: string[] = [];
-  for (const c of message.content) {
-    if (c.type === "image_url") {
-      urls.push(c.image_url?.url ?? "");
-    }
-  }
-  return urls;
+  return message.attachments?.filter(a => a.type === "image_url")?.map(a => a.image_url?.url ?? "") ?? [];
 }
 
 export function isVisionModel(modelConfig: ModelConfig | undefined) {

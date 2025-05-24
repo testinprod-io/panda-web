@@ -70,14 +70,11 @@ export function compressImage(file: Blob, maxSize: number): Promise<string> {
 }
 
 export async function preProcessImageContentBase(
-  content: RequestMessage["content"],
+  message: RequestMessage,
   transformImageUrl: (url: string) => Promise<{ [key: string]: any }>,
 ) {
-  if (typeof content === "string") {
-    return content;
-  }
   const result = [];
-  for (const part of content) {
+  for (const part of message.attachments ?? []) {
     if (part?.type == "image_url" && part?.image_url?.url) {
       try {
         const url = await cacheImageToBase64Image(part?.image_url?.url);
@@ -93,18 +90,18 @@ export async function preProcessImageContentBase(
 }
 
 export async function preProcessImageContent(
-  content: RequestMessage["content"],
+  message: RequestMessage,
 ) {
-  return preProcessImageContentBase(content, async (url) => ({
+  return preProcessImageContentBase(message, async (url) => ({
     type: "image_url",
     image_url: { url },
   })) as Promise<MultimodalContent[] | string>;
 }
 
 export async function preProcessImageContentForAlibabaDashScope(
-  content: RequestMessage["content"],
+  message: RequestMessage,
 ) {
-  return preProcessImageContentBase(content, async (url) => ({
+  return preProcessImageContentBase(message, async (url) => ({
     image: url,
   }));
 }
