@@ -1,4 +1,4 @@
-import { ServiceProvider } from '../app/constant';
+import { ServiceProvider } from './constant';
 import { ModelType } from '../store/config';
 import { nanoid } from 'nanoid';
 import { MultimodalContent } from "@/client/api";

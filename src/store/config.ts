@@ -10,12 +10,12 @@ import {
   DEFAULT_PANDA_MODEL_NAME, // Used for default model selection
   AppModelDefinition,
   ModelConfig,
-} from "@/app/constant";
+} from "@/types/constant";
 import { createPersistStore } from "@/utils/store";
 import { useChatStore } from "./chat";
 
 // Re-export ServiceProvider if it's defined in constant.ts
-export { ServiceProvider } from "@/app/constant";
+export { ServiceProvider } from "@/types/constant";
 
 export type ModelType = AppModelDefinition["name"];
 

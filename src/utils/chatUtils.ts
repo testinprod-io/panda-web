@@ -6,16 +6,16 @@ import {
   ServiceProvider,
   StoreKey,
   DEFAULT_PANDA_MODEL_NAME,
-} from "@/app/constant";
+} from "@/types/constant";
 import Locale, { getLang } from "@/locales";
-import { ModelConfig } from '@/app/constant';
+import { ModelConfig } from '@/types/constant';
 import { ModelType, useAppConfig } from "@/store/config";
 import { collectModelsWithDefaultModel } from "./model";
 import { estimateTokenLength } from "./token";
 import { ChatMessage, MessageRole } from "@/types/chat";
-import { getMessageTextContent, trimTopic } from "@/app/utils";
+import { getMessageTextContent, trimTopic } from "@/utils/utils";
 
-export { trimTopic } from "@/app/utils";
+export { trimTopic } from "@/utils/utils";
 
 export function getSummarizeModel(
   currentModel: string,

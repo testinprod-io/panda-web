@@ -10,8 +10,8 @@ import {
 import { useParams } from "next/navigation";
 import { nanoid } from "nanoid";
 import Locale from "../locales";
-import { copyToClipboard, downloadAs, safeShowSnackbar } from "../app/utils";
-import { Path, ApiPath, REPO_URL } from "../app/constant";
+import { copyToClipboard, downloadAs, safeShowSnackbar } from "../utils/utils";
+import { Path, ApiPath, REPO_URL } from "../types/constant";
 import { useSnackbar } from "./SnackbarProvider";
 import MuiIconButton from '@mui/material/IconButton';
 import Dialog from '@mui/material/Dialog';

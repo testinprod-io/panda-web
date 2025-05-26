@@ -2,7 +2,7 @@ import {
   CACHE_URL_PREFIX,
   UPLOAD_URL,
   REQUEST_TIMEOUT_MS,
-} from "@/app/constant";
+} from "@/types/constant";
 import { MultimodalContent, RequestMessage } from "@/client/api";
 
 export function compressImage(file: Blob, maxSize: number): Promise<string> {

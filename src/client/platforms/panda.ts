@@ -1,4 +1,4 @@
-import { PandaPath, DEFAULT_PANDA_MODEL_NAME } from "@/app/constant";
+import { PandaPath, DEFAULT_PANDA_MODEL_NAME } from "@/types/constant";
 import { ChatOptions, LLMApi, LLMModel, LLMUsage, MultimodalContent, LLMConfig } from "@/client/api";
 import { RequestMessage } from "@/types";
 

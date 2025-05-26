@@ -3,22 +3,22 @@ import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { isEmpty } from "lodash-es";
 import { useDebouncedCallback } from "use-debounce";
-import { ModelConfig } from '@/app/constant';
+import { ModelConfig } from '@/types/constant';
 import { usePrivy } from "@privy-io/react-auth";
 
 import {
   useAppConfig,
   useChatStore,
 } from "@/store"; // Adjust paths
-import { UNFINISHED_INPUT } from "@/app/constant";
-import { autoGrowTextArea, isVisionModel, safeLocalStorage, useMobileScreen } from "@/app/utils";
+import { UNFINISHED_INPUT } from "@/types/constant";
+import { autoGrowTextArea, isVisionModel, safeLocalStorage, useMobileScreen } from "@/utils/utils";
 import Locale from "@/locales";
 import { useSubmitHandler } from "@/hooks/useSubmitHandler";
 import { useSnackbar } from "@/components/SnackbarProvider";
 import { ChatControllerPool } from "@/client/controller";
 
-import { DeleteImageButton } from "@/components/chat/DeleteImageButton";
-import { ChatAction } from "@/components/chat/ChatAction";
+import { ActionButton } from "@/components/ui/ActionButton";
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 
 import ArrowUpwardRoundedIcon from '@mui/icons-material/ArrowUpwardRounded';
 import StopRoundedIcon from '@mui/icons-material/StopRounded';
@@ -626,7 +626,13 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
                 
                 {isImage ? (
                   <div className={styles["attach-file-mask-image"]}>
-                    <DeleteImageButton deleteImage={() => handleRemoveFile(file)} />
+                    <ActionButton
+                      icon={<img src="/icons/delete.svg" width={16} height={16} style={{ filter: "invert(100%) sepia(0%) saturate(7500%) hue-rotate(257deg) brightness(113%) contrast(103%)" }} alt="Delete attached image" />}
+                      onClick={() => handleRemoveFile(file)}
+                      className={styles.deleteImageActionButton}
+                      ariaLabel="Delete attached image"
+                      title="Delete image"
+                    />
                   </div>
                 ) : (
                   <>

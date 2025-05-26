@@ -5,9 +5,9 @@ import {
   REQUEST_TIMEOUT_MS,
   REQUEST_TIMEOUT_MS_FOR_THINKING,
   ServiceProvider,
-} from "./constant";
+} from "../types/constant";
 import { ModelSize } from "@/types";
-import { ModelConfig } from '@/app/constant';
+import { ModelConfig } from '@/types/constant';
 
 export function trimTopic(topic: string) {
   // Fix an issue where double quotes still show in the Indonesian language

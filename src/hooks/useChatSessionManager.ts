@@ -9,7 +9,7 @@ import { useChatActions } from "./useChatActions";
 import { useApiClient } from "@/context/ApiProviderContext";
 import { ChatApiService } from "@/services/ChatApiService";
 import { MultimodalContent, RequestMessage } from "@/client/api"; // Import MultimodalContent and RequestMessage
-import { ModelConfig } from '@/app/constant';
+import { ModelConfig } from '@/types/constant';
 import { ChatControllerPool } from "@/client/controller";
 import { useChatStore } from '@/store/chat'; // Corrected import
 import { ChatSession } from '@/types/session'; // Added import for ChatSession

@@ -20,10 +20,10 @@ import { UUID } from "crypto";
 import { ChatMessage, createMessage, MessageRole } from "@/types/chat";
 import { ChatSession, createNewSession } from "@/types/session";
 import { ModelType } from "@/store/config";
-import { ModelConfig } from "@/app/constant";
+import { ModelConfig } from "@/types/constant";
 import Locale from "@/locales";
 import { DEFAULT_TOPIC } from "@/store/chat"; // Assuming these are exported from store
-import { trimTopic, getMessageTextContent } from "@/app/utils"; // Import from utils
+import { trimTopic, getMessageTextContent } from "@/utils/utils"; // Import from utils
 import { EncryptionService } from "@/services/EncryptionService";
 import { LLMConfig } from "@/client/api";
 
@@ -130,7 +130,6 @@ export function mapConversationToSession(conversation: Conversation): ChatSessio
   const session = createNewSession(decryptedConvo.conversation_id);
   session.topic = decryptedConvo.title || DEFAULT_TOPIC;
   session.lastUpdate = new Date(decryptedConvo.updated_at).getTime();
-  session.messages = [];
   return session;
 }
 

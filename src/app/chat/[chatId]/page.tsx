@@ -22,15 +22,6 @@ export default function ChatPage() {
   const [isValidSession, setIsValidSession] = useState<boolean>(false);
   const [sessionDataForValidation, setSessionDataForValidation] = useState<ChatSession | null>(null);
 
-  const [showEditMessageModal, setShowEditMessageModal] = useState(false);
-  const [editingMessage, setEditingMessage] = useState<EncryptedMessage | undefined>();
-  const [showPromptModal, setShowPromptModal] = useState(false);
-
-  const handleShowEditMessageModal = (message: EncryptedMessage) => {
-      setEditingMessage(message);
-      setShowEditMessageModal(true);
-  };
-
   useEffect(() => {
     const isStoreHydrated = store._hasHydrated;
     if (!isAuthReady || !isStoreHydrated) {
@@ -73,9 +64,6 @@ export default function ChatPage() {
   return (
       <Chat 
         _sessionId={sessionDataForValidation.id}
-        _showEditMessageModalProp={handleShowEditMessageModal}
-        _editingMessageProp={editingMessage}
-        _setShowEditMessageModalStateProp={setShowEditMessageModal}
       />
   );
 }

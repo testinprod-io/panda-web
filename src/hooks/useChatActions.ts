@@ -4,7 +4,7 @@ import { ChatApiService, mapApiMessagesToChatMessages, mapApiMessageToChatMessag
 import { useApiClient } from '@/context/ApiProviderContext';
 import { ChatMessage, MessageSyncState } from '@/types/chat';
 import { MessagesLoadState, SessionSyncState, ChatSession } from '@/types/session';
-import { ModelConfig } from '@/app/constant';
+import { ModelConfig } from '@/types/constant';
 import { useAppConfig } from '@/store/config';
 import {
     ConversationCreateRequest,
@@ -18,7 +18,7 @@ import {
 import { UUID } from "crypto";
 import { ClientApi, MultimodalContent, RequestMessage } from '@/client/api';
 import { DEFAULT_TOPIC } from '@/store/chat';
-import { getMessageTextContent, trimTopic } from "@/app/utils";
+import { getMessageTextContent, trimTopic } from "@/utils/utils";
 import { ModelType } from "@/store/config";
 import { EncryptionService } from '@/services/EncryptionService';
 
@@ -244,7 +244,7 @@ export function useChatActions() {
         if (!apiClient) {
             console.warn("[ChatActions] API client not available, cannot save message.");
             // Update local state to error immediately if API isn't available?
-            store._onMessageSyncError(conversationId, message.id);
+            // store._onMessageSyncError(conversationId, message.id);
             return;
         }
 
@@ -285,11 +285,11 @@ export function useChatActions() {
             console.log(`[ChatActions] Message ${localMessageId} saved successfully (Server ID: ${savedMessage.message_id} TS: ${savedMessage.timestamp} ${savedMessage.sender_type})`);
             message.syncState = MessageSyncState.SYNCED;
             // Update store state on success
-            store._onMessageSyncSuccess(conversationId, localMessageId, savedMessage);
+            // store._onMessageSyncSuccess(conversationId, localMessageId, savedMessage);
         } catch (error: any) {
             console.error(`[ChatActions] Failed saving message ${localMessageId}:`, error);
             // Update store state on error
-            store._onMessageSyncError(conversationId, localMessageId);
+            // store._onMessageSyncError(conversationId, localMessageId);
             // Optionally show error to user
         }
     }, [apiClient, store]);

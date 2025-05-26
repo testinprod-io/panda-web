@@ -6,7 +6,7 @@ import RehypeKatex from "rehype-katex";
 import RemarkGfm from "remark-gfm";
 import RehypeHighlight from "rehype-highlight";
 import { useRef, useState, RefObject, useEffect, useMemo, useCallback } from "react";
-import { copyToClipboard, useWindowSize } from "@/app/utils";
+import { copyToClipboard, useWindowSize } from "@/utils/utils";
 import mermaid from "mermaid";
 import Locale from "@/locales";
 import React from "react";

@@ -1,7 +1,5 @@
 import { UUID } from 'crypto';
 
-// Base Schemas from OpenAPI spec
-
 export enum SenderTypeEnum {
   USER = 'user',
   SYSTEM = 'system',
@@ -10,8 +8,8 @@ export enum SenderTypeEnum {
 export interface Conversation {
   title: string | null;
   conversation_id: UUID;
-  created_at: string; // ISO Date string
-  updated_at: string; // ISO Date string
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Message {
@@ -46,8 +44,6 @@ export interface HTTPValidationError {
   detail?: ValidationError[];
 }
 
-// Request Body Schemas
-
 export interface ConversationCreateRequest {
   title?: string | null;
   initial_messages?: InitialMessageContent[] | null;
@@ -78,15 +74,6 @@ export interface PaginatedMessagesResponse {
   pagination: PaginationInfo;
 }
 
-// Generic Response for Health Check (simplified)
-export interface HealthCheckResponse {
-    success: boolean;
-    message: string;
-    data?: Record<string, any> | null;
-}
-
-// API Client Method Parameter Types
-
 export interface GetConversationsParams {
     cursor?: string | null;
     limit?: number; // Default: 20, Max: 20
@@ -94,7 +81,7 @@ export interface GetConversationsParams {
 
 export interface GetConversationMessagesParams {
     cursor?: string | null;
-    limit?: number; // Default: 20, Max: 30
+    limit?: number; // Default: 20, Max: 200
 } 
 
 export interface EncryptedIdResponse { 
@@ -127,7 +114,7 @@ export interface SummaryCreateRequest {
   start_message_id: UUID;
   end_message_id: UUID;
   content: string;
-  timestamp?: string; // Optional ISO Date string
+  timestamp?: string;
 }
 
 export interface SummaryResponse {

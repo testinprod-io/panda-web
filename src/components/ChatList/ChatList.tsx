@@ -377,7 +377,7 @@ export function ChatList(props: ChatListProps) {
       {hasMore && <div ref={observerRef} style={{ height: "1px", marginTop: "-1px" }} />} {/* Make observer target very small and unobtrusive */}
       {isPagingLoading && <ChatListSkeleton targetHeight={PAGING_SKELETON_TARGET_HEIGHT} />}
       {!isInitialLoading && localSessions.length === 0 && !hasMore && (
-        <div className={styles["chat-list-item-title"]} >{"No conversations found"}</div>
+        <div className={styles["chat-date-header"]}>{"No conversations found"}</div>
       )}
     </div>
   );

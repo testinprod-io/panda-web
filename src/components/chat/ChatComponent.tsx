@@ -28,7 +28,7 @@ import ArrowDownwardRoundedIcon from "@mui/icons-material/ArrowDownwardRounded";
 import CircularProgress from "@mui/material/CircularProgress"; // Assuming MUI is used
 
 import styles from "./chat.module.scss";
-import { ChatAction } from "./ChatAction"; // Import ChatAction
+import { ActionButton } from "@/components/ui/ActionButton"; // Import ChatAction
 import { useDecryptionManager } from "@/hooks/useDecryptionManager"; // <-- Import the hook
 import { useChatSessionManager } from "@/hooks/useChatSessionManager";
 import { UUID } from "crypto";
@@ -37,18 +37,11 @@ import { useChatActions } from "@/hooks/useChatActions";
 // ChatComponentProps is now simpler as it gets most things from the store or direct sessionID
 export interface ChatComponentProps {
   sessionId: UUID;
-  // Edit/Confirm modals are usually triggered from ChatMessageCell actions or context menus,
-  // so Chat.tsx might still handle their state and ChatComponent might receive functions to trigger them.
-  onShowEditMessageModal?: (message: EncryptedMessage) => void;
-  onShowConfirmDialog?: (title: string, content: string, onConfirm: () => void) => void;
 }
 
 export function ChatComponent(props: ChatComponentProps) {
   const { 
-    sessionId, 
-    onShowEditMessageModal,
-    onShowConfirmDialog 
-  } = props;
+    sessionId  } = props;
 
   const chatStore = useChatStore();
   // Destructure setters and states from the store
@@ -323,7 +316,7 @@ export function ChatComponent(props: ChatComponentProps) {
           className={styles["scroll-to-bottom-chatview-wrapper"]}
           style={{ bottom: '20px' }}
         >
-          <ChatAction
+          <ActionButton
             onClick={internalScrollToBottom}
             text={null}
             icon={<ArrowDownwardRoundedIcon />}

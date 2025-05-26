@@ -8,8 +8,8 @@ import Sidebar from "@/components/sidebar/sidebar";
 import ChatHeader from "@/components/ChatHeader";
 import { ChatInputPanel } from "@/components/chat/ChatInputPanel";
 import { useChatStore, useAppConfig } from "@/store";
-import { UNFINISHED_INPUT } from "@/app/constant";
-import { safeLocalStorage } from "@/app/utils";
+import { UNFINISHED_INPUT } from "@/types/constant";
+import { safeLocalStorage } from "@/utils/utils";
 import { useChatActions } from "@/hooks/useChatActions";
 import type { UUID } from "crypto"; // Keep as type import
 import Locale from "@/locales";

@@ -1,4 +1,4 @@
-import { ModelConfig, ModelProvider, ServiceProvider } from "@/app/constant";
+import { ModelConfig, ModelProvider, ServiceProvider } from "@/types/constant";
 import { ModelType } from "@/store";
 import { ChatMessage } from "@/types";
 import { PandaApi, GetAccessTokenFn } from "@/client/platforms/panda";

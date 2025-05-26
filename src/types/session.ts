@@ -1,6 +1,6 @@
 import { UUID } from "crypto";
 import { useAppConfig } from "@/store/config";
-import { ModelConfig } from "@/app/constant";
+import { ModelConfig } from "@/types/constant";
 import { DEFAULT_TOPIC } from "@/store/chat";
 import { ChatMessage } from "./chat";
 import { Summary } from "@/client/types";
@@ -38,16 +38,16 @@ export interface ChatSession {
   id: UUID;
   topic: string;
   memoryPrompt: string;
-  messages: ChatMessage[];
+  // messages: ChatMessage[];
   stat: ChatStat;
   lastUpdate: number;
   lastSummarizeIndex: number;
   clearContextIndex?: number;
   
-  maskAvatar: boolean;
+  // maskAvatar: boolean;
   modelConfig: ModelConfig;
-  context: ChatMessage[];
-  hideContext: boolean;
+  // context: ChatMessage[];
+  // hideContext: boolean;
 
   /** Tracks synchronization status of the entire session with the server */
   syncState: SessionSyncState;
@@ -57,7 +57,7 @@ export interface ChatSession {
   serverMessagesCursor?: string;
 
   // Fields for chat history summarization
-  summaries: Summary[];
+  // summaries: Summary[];
   lastSummarizedMessageId: UUID | null;
   isSummarizing: boolean;
 }
@@ -72,20 +72,20 @@ export function createNewSession(id: UUID): ChatSession {
     id: id,
     topic: DEFAULT_TOPIC,
     memoryPrompt: "",
-    messages: [],
+    // messages: [],
     stat: { tokenCount: 0, wordCount: 0, charCount: 0 },
     lastUpdate: now,
     lastSummarizeIndex: 0,
     clearContextIndex: 0,
-    maskAvatar: false,
-    context: [],
-    hideContext: true,
+    // maskAvatar: false,
+    // context: [],
+    // hideContext: true,
     modelConfig: { ...useAppConfig.getState().modelConfig },
     syncState: SessionSyncState.LOCAL,
     messagesLoadState: MessagesLoadState.FULL,
     serverMessagesCursor: undefined,
     // Initialize summary fields
-    summaries: [],
+    // summaries: [],
     lastSummarizedMessageId: null,
     isSummarizing: false,
   };

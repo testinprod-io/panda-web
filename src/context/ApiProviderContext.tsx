@@ -4,7 +4,7 @@ import React, { createContext, useContext, useMemo } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { useAppConfig } from '@/store';
 import { ClientApi, getClientApi } from '@/client/api';
-import { ServiceProvider } from '@/app/constant';
+import { ServiceProvider } from '@/types/constant';
 import type { GetAccessTokenFn } from '@/client/platforms/panda'; // Import the type
 
 // Define a default/placeholder getAccessToken function

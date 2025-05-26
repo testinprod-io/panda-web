@@ -1,7 +1,7 @@
 import {
   getMessageTextContent,
   safeLocalStorage,
-} from "@/app/utils";
+} from "@/utils/utils";
 
 import { indexedDBStorage } from "@/utils/indexedDB-storage";
 import { UUID } from "crypto";
@@ -9,11 +9,11 @@ import {
   ServiceProvider,
   StoreKey,
   DEFAULT_PANDA_MODEL_NAME,
-} from "../app/constant";
+} from "../types/constant";
 import Locale from "@/locales";
 import { createPersistStore, MakeUpdater } from "@/utils/store";
 import { ModelType } from "./config";
-import { ModelConfig } from "@/app/constant";
+import { ModelConfig } from "@/types/constant";
 import { ChatSession,  SessionSyncState, MessagesLoadState } from "@/types/session";
 import { ChatMessage, createMessage, MessageSyncState } from "@/types/chat";
 import { useState, useEffect } from "react";
@@ -281,74 +281,74 @@ export const useChatStore = createPersistStore(
       },
 
       // Add a user message to the current session (synchronous part)
-      addUserMessage(content: string) {
-          const currentSession = get().currentSession();
-          if (!currentSession) return null;
+      // addUserMessage(content: string) {
+      //     const currentSession = get().currentSession();
+      //     if (!currentSession) return null;
 
-          const userMessage = createMessage({
-              role: "user",
-              content: content, // TODO: Store encrypted content in memory
-              syncState: MessageSyncState.PENDING_CREATE,
-          });
+      //     const userMessage = createMessage({
+      //         role: "user",
+      //         content: content, // TODO: Store encrypted content in memory
+      //         syncState: MessageSyncState.PENDING_CREATE,
+      //     });
 
-          get().updateTargetSession(currentSession, (session) => {
-              session.messages = [...session.messages, userMessage] as ChatMessage[];
-              session.lastUpdate = Date.now(); // Update timestamp
-          });
-          // Encryption of content happens when saving state via wrapper OR sending via ApiService
-          return userMessage; // Return the created message (decrypted form)
-      },
+      //     get().updateTargetSession(currentSession, (session) => {
+      //         session.messages = [...session.messages, userMessage] as ChatMessage[];
+      //         session.lastUpdate = Date.now(); // Update timestamp
+      //     });
+      //     // Encryption of content happens when saving state via wrapper OR sending via ApiService
+      //     return userMessage; // Return the created message (decrypted form)
+      // },
 
       // Add a placeholder for bot response (synchronous part)
-      addBotMessagePlaceholder(model: ModelType | string) {
-          const currentSession = get().currentSession();
-          if (!currentSession) return null;
+      // addBotMessagePlaceholder(model: ModelType | string) {
+      //     const currentSession = get().currentSession();
+      //     if (!currentSession) return null;
 
-          const botMessage = createMessage({
-              role: "system",
-              content: "", // Start empty (decrypted)
-              streaming: true,
-              model: model as ModelType, // Store the model used
-              syncState: MessageSyncState.PENDING_CREATE, // Also needs saving eventually
-          });
+      //     const botMessage = createMessage({
+      //         role: "system",
+      //         content: "", // Start empty (decrypted)
+      //         streaming: true,
+      //         model: model as ModelType, // Store the model used
+      //         syncState: MessageSyncState.PENDING_CREATE, // Also needs saving eventually
+      //     });
 
-          get().updateTargetSession(currentSession, (session) => {
-              session.messages = [...session.messages, botMessage] as ChatMessage[];
-              // Don't update lastUpdate here, wait for bot response finish
-          });
-          // Encryption happens when saving state via wrapper OR receiving final message via ApiService
-          return botMessage; // Return the placeholder (decrypted form)
-      },
+      //     get().updateTargetSession(currentSession, (session) => {
+      //         session.messages = [...session.messages, botMessage] as ChatMessage[];
+      //         // Don't update lastUpdate here, wait for bot response finish
+      //     });
+      //     // Encryption happens when saving state via wrapper OR receiving final message via ApiService
+      //     return botMessage; // Return the placeholder (decrypted form)
+      // },
 
       // Update a specific message (e.g., for streaming updates, setting sync state)
-      updateMessage(
-          sessionId: UUID,
-          messageId: string,
-          updater: (message: ChatMessage) => void // Operates on decrypted message draft
-      ) {
-        //   const sessionIdentifier = sessionId ? { id: sessionId } : get().currentSession();
-        //   if (!sessionIdentifier) return;
+      // updateMessage(
+      //     sessionId: UUID,
+      //     messageId: string,
+      //     updater: (message: ChatMessage) => void // Operates on decrypted message draft
+      // ) {
+      //   //   const sessionIdentifier = sessionId ? { id: sessionId } : get().currentSession();
+      //   //   if (!sessionIdentifier) return;
 
-          get().updateTargetSession({ id: sessionId }, (session) => {
-              const msgIndex = session.messages.findIndex(m => m.id === messageId);
-              if (msgIndex !== -1) {
-                  const messageToUpdate = { ...session.messages[msgIndex] }; // Shallow copy (decrypted)
-                  updater(messageToUpdate); // Apply updates to decrypted draft
-                  session.messages = [
-                      ...session.messages.slice(0, msgIndex),
-                      messageToUpdate,
-                      ...session.messages.slice(msgIndex + 1),
-                  ] as ChatMessage[];
-                  // Optionally update session lastUpdate time if message content is finalized
-                  if (!messageToUpdate.streaming && messageToUpdate.syncState !== 'pending_create') {
-                      session.lastUpdate = Date.now();
-                  }
-              } else {
-                   console.warn(`[updateMessage] Message ${messageId} not found in session ${sessionId}`);
-              }
-          });
-          // Encryption happens when saving state via wrapper
-      },
+      //     get().updateTargetSession({ id: sessionId }, (session) => {
+      //         const msgIndex = session.messages.findIndex(m => m.id === messageId);
+      //         if (msgIndex !== -1) {
+      //             const messageToUpdate = { ...session.messages[msgIndex] }; // Shallow copy (decrypted)
+      //             updater(messageToUpdate); // Apply updates to decrypted draft
+      //             session.messages = [
+      //                 ...session.messages.slice(0, msgIndex),
+      //                 messageToUpdate,
+      //                 ...session.messages.slice(msgIndex + 1),
+      //             ] as ChatMessage[];
+      //             // Optionally update session lastUpdate time if message content is finalized
+      //             if (!messageToUpdate.streaming && messageToUpdate.syncState !== 'pending_create') {
+      //                 session.lastUpdate = Date.now();
+      //             }
+      //         } else {
+      //              console.warn(`[updateMessage] Message ${messageId} not found in session ${sessionId}`);
+      //         }
+      //     });
+      //     // Encryption happens when saving state via wrapper
+      // },
 
       // Moves a session from one index to another
       moveSession(from: number, to: number) {
@@ -432,19 +432,19 @@ export const useChatStore = createPersistStore(
       },
 
       // Resets the current session's messages and memory prompt
-      resetCurrentSessionMessages() {
-        const session = get().currentSession();
-        if (!session) return;
-        get().updateTargetSession(session, (sess) => {
-            sess.messages = []; // BOT_HELLO content is static, assumed decrypted
-            sess.memoryPrompt = "";
-            sess.clearContextIndex = 0;
-            sess.lastSummarizeIndex = 0;
-            sess.stat = { tokenCount: 0, wordCount: 0, charCount: 0 }; // Reset stats
-            sess.messagesLoadState = MessagesLoadState.FULL; // Since we reset to BOT_HELLO, it's "fully loaded" locally
-            sess.serverMessagesCursor = undefined;
-        });
-      },
+      // resetCurrentSessionMessages() {
+      //   const session = get().currentSession();
+      //   if (!session) return;
+      //   get().updateTargetSession(session, (sess) => {
+      //       sess.messages = []; // BOT_HELLO content is static, assumed decrypted
+      //       sess.memoryPrompt = "";
+      //       sess.clearContextIndex = 0;
+      //       sess.lastSummarizeIndex = 0;
+      //       sess.stat = { tokenCount: 0, wordCount: 0, charCount: 0 }; // Reset stats
+      //       sess.messagesLoadState = MessagesLoadState.FULL; // Since we reset to BOT_HELLO, it's "fully loaded" locally
+      //       sess.serverMessagesCursor = undefined;
+      //   });
+      // },
 
       // Updates session stats (synchronous) - operates on decrypted message content
       updateStat(message: ChatMessage) {
@@ -519,126 +519,126 @@ export const useChatStore = createPersistStore(
 
       // Called by loadMessagesForSession action after successful API call
       // Expects serverApiMessages to have content already decrypted by ApiService
-      _onServerMessagesLoaded(
-          sessionId: UUID,
-          serverApiMessages: ApiMessage[],
-          hasMore: boolean,
-          nextCursor: string | null
-      ) {
-          // Map API messages (decrypted by ApiService) to ChatMessage format
-          const serverMessages = serverApiMessages.map(m => ({
-              id: m.message_id,
-              role: m.sender_type === SenderTypeEnum.USER ? 'user' : 'system',
-              content: m.content, // Content is now directly used (assumed string | MultimodalContent[])
-              date: new Date(m.timestamp),
-              syncState: 'synced'
-          } as ChatMessage));
+      // _onServerMessagesLoaded(
+      //     sessionId: UUID,
+      //     serverApiMessages: ApiMessage[],
+      //     hasMore: boolean,
+      //     nextCursor: string | null
+      // ) {
+      //     // Map API messages (decrypted by ApiService) to ChatMessage format
+      //     const serverMessages = serverApiMessages.map(m => ({
+      //         id: m.message_id,
+      //         role: m.sender_type === SenderTypeEnum.USER ? 'user' : 'system',
+      //         content: m.content, // Content is now directly used (assumed string | MultimodalContent[])
+      //         date: new Date(m.timestamp),
+      //         syncState: 'synced'
+      //     } as ChatMessage));
 
 
-          get().updateTargetSession({ id: sessionId }, (sess) => {
-              // Merge server messages with local messages
-              const { mergedMessages } = mergeMessages(sess.messages, serverMessages, sess.messagesLoadState ?? 'none');
-              sess.messages = mergedMessages as ChatMessage[];
-              sess.messagesLoadState = hasMore ? MessagesLoadState.PARTIAL : MessagesLoadState.FULL;
-              sess.serverMessagesCursor = nextCursor ?? undefined; // nextCursor can be string | null
-          });
-      },
+      //     get().updateTargetSession({ id: sessionId }, (sess) => {
+      //         // Merge server messages with local messages
+      //         const { mergedMessages } = mergeMessages(sess.messages, serverMessages, sess.messagesLoadState ?? 'none');
+      //         sess.messages = mergedMessages as ChatMessage[];
+      //         sess.messagesLoadState = hasMore ? MessagesLoadState.PARTIAL : MessagesLoadState.FULL;
+      //         sess.serverMessagesCursor = nextCursor ?? undefined; // nextCursor can be string | null
+      //     });
+      // },
 
-      // Called by loadMessagesForSession action after failed API call
-      _setMessagesLoadState(sessionId: UUID, loadState: MessagesLoadState) {
-          get().updateTargetSession({ id: sessionId }, (sess) => {
-              sess.messagesLoadState = loadState;
-          });
-      },
+      // // Called by loadMessagesForSession action after failed API call
+      // _setMessagesLoadState(sessionId: UUID, loadState: MessagesLoadState) {
+      //     get().updateTargetSession({ id: sessionId }, (sess) => {
+      //         sess.messagesLoadState = loadState;
+      //     });
+      // },
 
-      // Called by saveMessageToServer action after successful API call
-      // Expects savedMessage to have content already decrypted by ApiService
-      _onMessageSyncSuccess(sessionId: UUID, localMessageId: string, savedMessage: ApiMessage) {
-          get().updateTargetSession({ id: sessionId }, (sess) => {
-              const msgIndex = sess.messages.findIndex(m => m.id === localMessageId);
-              if (msgIndex !== -1) {
-                  const updatedMessage: ChatMessage = {
-                     ...sess.messages[msgIndex],
-                     content: savedMessage.content, // Update with content from server response (already correct type)
-                     id: savedMessage.message_id, // Update ID to server ID
-                     syncState: MessageSyncState.SYNCED,
-                     isError: false, // Clear error on success
-                     date: new Date(savedMessage.timestamp), // Update timestamp from server
-                  };
-                  sess.messages = [
-                      ...sess.messages.slice(0, msgIndex),
-                      updatedMessage,
-                      ...sess.messages.slice(msgIndex + 1),
-                  ] as ChatMessage[];
-                   console.log(`[ChatStore] Synced local msg ${localMessageId} to server msg ${savedMessage.message_id}`);
-              } else {
-                  console.warn(`[ChatStore] Could not find local message ${localMessageId} to mark as synced.`);
-              }
-          });
-      },
+      // // Called by saveMessageToServer action after successful API call
+      // // Expects savedMessage to have content already decrypted by ApiService
+      // _onMessageSyncSuccess(sessionId: UUID, localMessageId: string, savedMessage: ApiMessage) {
+      //     get().updateTargetSession({ id: sessionId }, (sess) => {
+      //         const msgIndex = sess.messages.findIndex(m => m.id === localMessageId);
+      //         if (msgIndex !== -1) {
+      //             const updatedMessage: ChatMessage = {
+      //                ...sess.messages[msgIndex],
+      //                content: savedMessage.content, // Update with content from server response (already correct type)
+      //                id: savedMessage.message_id, // Update ID to server ID
+      //                syncState: MessageSyncState.SYNCED,
+      //                isError: false, // Clear error on success
+      //                date: new Date(savedMessage.timestamp), // Update timestamp from server
+      //             };
+      //             sess.messages = [
+      //                 ...sess.messages.slice(0, msgIndex),
+      //                 updatedMessage,
+      //                 ...sess.messages.slice(msgIndex + 1),
+      //             ] as ChatMessage[];
+      //              console.log(`[ChatStore] Synced local msg ${localMessageId} to server msg ${savedMessage.message_id}`);
+      //         } else {
+      //             console.warn(`[ChatStore] Could not find local message ${localMessageId} to mark as synced.`);
+      //         }
+      //     });
+      // },
 
-       // Called by saveMessageToServer action after failed API call
-      _onMessageSyncError(sessionId: UUID, localMessageId: string) {
-           get().updateTargetSession({ id: sessionId }, (sess) => {
-              const msgIndex = sess.messages.findIndex(m => m.id === localMessageId);
-              if (msgIndex !== -1) {
-                  const updatedMessage: ChatMessage = {
-                     ...sess.messages[msgIndex],
-                     syncState: MessageSyncState.ERROR,
-                     isError: true, // Mark as error
-                  };
-                   sess.messages = [
-                      ...sess.messages.slice(0, msgIndex),
-                      updatedMessage,
-                      ...sess.messages.slice(msgIndex + 1),
-                  ] as ChatMessage[];
-                  console.log(`[ChatStore] Marked local msg ${localMessageId} as error after sync fail.`);
-              } else {
-                    console.warn(`[ChatStore] Could not find local message ${localMessageId} to mark as error.`);
-              }
-          });
-      },
+      //  // Called by saveMessageToServer action after failed API call
+      // _onMessageSyncError(sessionId: UUID, localMessageId: string) {
+      //      get().updateTargetSession({ id: sessionId }, (sess) => {
+      //         const msgIndex = sess.messages.findIndex(m => m.id === localMessageId);
+      //         if (msgIndex !== -1) {
+      //             const updatedMessage: ChatMessage = {
+      //                ...sess.messages[msgIndex],
+      //                syncState: MessageSyncState.ERROR,
+      //                isError: true, // Mark as error
+      //             };
+      //              sess.messages = [
+      //                 ...sess.messages.slice(0, msgIndex),
+      //                 updatedMessage,
+      //                 ...sess.messages.slice(msgIndex + 1),
+      //             ] as ChatMessage[];
+      //             console.log(`[ChatStore] Marked local msg ${localMessageId} as error after sync fail.`);
+      //         } else {
+      //               console.warn(`[ChatStore] Could not find local message ${localMessageId} to mark as error.`);
+      //         }
+      //     });
+      // },
 
       // --- Getters needed by Actions/Components ---
 
       // Simplified getMessagesWithMemory - operates on decrypted state
       // Actual token counting / message slicing for API call should happen in actions
-      getMemoryContextPrompts(modelConfig: ModelConfig): { systemPrompts: ChatMessage[], memoryPrompt?: ChatMessage, contextPrompts: ChatMessage[] } {
-        const session = get().currentSession();
-        if (!session) return { systemPrompts: [], contextPrompts: [] };
+      // getMemoryContextPrompts(modelConfig: ModelConfig): { systemPrompts: ChatMessage[], memoryPrompt?: ChatMessage, contextPrompts: ChatMessage[] } {
+      //   const session = get().currentSession();
+      //   if (!session) return { systemPrompts: [], contextPrompts: [] };
 
-        const systemPrompts: ChatMessage[] = [];
-        // Simplified system prompt creation - fillTemplateWith moved, assume action handles it
-        // Content here is assumed decrypted for LLM processing
-        systemPrompts.push(createMessage({ role: "system", content: `System prompt for ${modelConfig.name}` })); // Placeholder content
+      //   const systemPrompts: ChatMessage[] = [];
+      //   // Simplified system prompt creation - fillTemplateWith moved, assume action handles it
+      //   // Content here is assumed decrypted for LLM processing
+      //   systemPrompts.push(createMessage({ role: "system", content: `System prompt for ${modelConfig.name}` })); // Placeholder content
 
-        let memoryPrompt: ChatMessage | undefined = undefined;
-        const shouldSendLongTermMemory = modelConfig.sendMemory && session.memoryPrompt && session.memoryPrompt.length > 0;
-        if (shouldSendLongTermMemory) {
-            // Memory prompt content is assumed decrypted
-            memoryPrompt = createMessage({ role: "system", content: Locale.Store.Prompt.History(session.memoryPrompt), date: new Date() });
-        }
-        // Context messages are assumed decrypted
-        const contextPrompts = session.context.slice(); // Assuming context is already ChatMessage[]
+      //   let memoryPrompt: ChatMessage | undefined = undefined;
+      //   const shouldSendLongTermMemory = modelConfig.sendMemory && session.memoryPrompt && session.memoryPrompt.length > 0;
+      //   if (shouldSendLongTermMemory) {
+      //       // Memory prompt content is assumed decrypted
+      //       memoryPrompt = createMessage({ role: "system", content: Locale.Store.Prompt.History(session.memoryPrompt), date: new Date() });
+      //   }
+      //   // Context messages are assumed decrypted
+      //   const contextPrompts = session.context.slice(); // Assuming context is already ChatMessage[]
 
-        return { systemPrompts, memoryPrompt, contextPrompts };
-      },
+      //   return { systemPrompts, memoryPrompt, contextPrompts };
+      // },
 
       // Retrieves recent messages based on count, skipping errors
       // Used by actions before sending to API (content will be encrypted by ApiService)
-      getRecentMessagesForApi(count: number): ChatMessage[] {
-          const session = get().currentSession();
-          if (!session) return [];
-          const messages = session.messages; // Decrypted messages
-          const recentMessages: ChatMessage[] = [];
-          for (let i = messages.length - 1; i >= 0 && recentMessages.length < count; i--) {
-              const msg = messages[i];
-              if (!msg.isError) { // Skip messages marked as errors
-                  recentMessages.push(msg);
-              }
-          }
-          return recentMessages.reverse(); // Return in chronological order (decrypted)
-      },
+      // getRecentMessagesForApi(count: number): ChatMessage[] {
+      //     const session = get().currentSession();
+      //     if (!session) return [];
+      //     const messages = session.messages; // Decrypted messages
+      //     const recentMessages: ChatMessage[] = [];
+      //     for (let i = messages.length - 1; i >= 0 && recentMessages.length < count; i--) {
+      //         const msg = messages[i];
+      //         if (!msg.isError) { // Skip messages marked as errors
+      //             recentMessages.push(msg);
+      //         }
+      //     }
+      //     return recentMessages.reverse(); // Return in chronological order (decrypted)
+      // },
 
       // --- New methods for chat interaction state ---
       setOnSendMessageHandler: (handler: ((input: string, files: {url: string, fileId: string, type: string, name: string}[]) => Promise<void>) | null) => {

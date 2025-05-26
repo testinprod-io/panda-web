@@ -3,11 +3,11 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
 import { ChatMessage, RequestMessage } from "@/types";
-import { copyToClipboard } from "@/app/utils"; // Adjust path
+import { copyToClipboard } from "@/utils/utils"; // Adjust path
 import Locale from "@/locales"; // Adjust path
 import { MultimodalContent } from "@/client/api";
 
-import { ChatAction } from "@/components/chat/ChatAction";
+import { ActionButton } from "@/components/ui/ActionButton";
 import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
 // import { GenericFileIcon } from "@/components/common/GenericFileIcon";
 import CloseIcon from "@mui/icons-material/Close";
@@ -295,7 +295,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
         <div className={styles["chat-message-container"]}>
           <div className={styles["chat-message-actions"]}>
             <div className={styles["chat-input-actions"]}>
-              <ChatAction
+              <ActionButton
                 text={null}
                 icon={<img src="/icons/refresh.svg" alt="Resend message" />}
                 onClick={handleResend}

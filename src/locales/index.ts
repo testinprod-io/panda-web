@@ -1,7 +1,7 @@
 import en from "./en";
 import ko from "./ko";
 import { merge } from "@/utils/merge";
-import { safeLocalStorage } from "@/app/utils";
+import { safeLocalStorage } from "@/utils/utils";
 
 import type { LocaleType } from "./en";
 export type { LocaleType, PartialLocaleType } from "./en";
