@@ -12,7 +12,7 @@ import { nanoid } from "nanoid";
 import Locale from "../locales";
 import { copyToClipboard, downloadAs, safeShowSnackbar } from "../utils/utils";
 import { Path, ApiPath, REPO_URL } from "../types/constant";
-import { useSnackbar } from "./SnackbarProvider";
+import { useSnackbar } from "../providers/snackbar-provider";
 import MuiIconButton from '@mui/material/IconButton';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';

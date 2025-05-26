@@ -7,8 +7,8 @@ import { copyToClipboard } from "@/utils/utils"; // Adjust path
 import Locale from "@/locales"; // Adjust path
 import { MultimodalContent } from "@/client/api";
 
-import { ActionButton } from "@/components/ui/ActionButton";
-import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
+import { ActionButton } from "@/components/ui/action-button";
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 // import { GenericFileIcon } from "@/components/common/GenericFileIcon";
 import CloseIcon from "@mui/icons-material/Close";
 const GenericFileIcon = () => (
@@ -31,7 +31,7 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight"; // For expand/c
 
 import styles from "./chat.module.scss";
 import { UUID } from "crypto";
-import { useApiClient } from "@/context/ApiProviderContext";
+import { useApiClient } from "@/providers/api-client-provider";
 
 const Markdown = dynamic(async () => (await import("../ui/markdown")).Markdown, {
   loading: () => <LoadingAnimation />,

@@ -1,6 +1,6 @@
 "use client";
 
-import { MemoizedChatComponent } from "@/components/chat/ChatComponent";
+import { MemoizedChatComponent } from "@/components/chat/chat-component";
 import { UUID } from "crypto";
 
 interface ChatContainerProps {

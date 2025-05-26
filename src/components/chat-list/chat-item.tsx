@@ -7,7 +7,7 @@ import type { ChatSession } from "@/types/session"; // Adjusted path
 
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Locale from '@/locales';
-import { useEncryption } from "@/context/EncryptionProvider"; // Added
+import { useEncryption } from "@/providers/encryption-provider"; // Added
 import { EncryptionService } from "@/services/EncryptionService"; // Added
 
 // New Icons based on Figma

@@ -36,7 +36,7 @@ import ReloadIcon from '@mui/icons-material/Replay'; // Replaced ReloadButtonIco
 
 // MUI Imports for LoopIcon
 import LoopIcon from '@mui/icons-material/Loop';
-import { LoadingAnimation } from "./LoadingAnimation";
+import { LoadingAnimation } from "./loading-animation";
 
 export function Mermaid(props: { code: string }) {
   const ref = useRef<HTMLDivElement>(null);

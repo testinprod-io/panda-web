@@ -12,23 +12,24 @@ import React, {
 import { useDebouncedCallback } from "use-debounce"; // Added import
 
 import { useAppConfig, useChatStore } from "@/store"; // Adjust path
+
 import { ChatControllerPool } from "@/client/controller";
 
 import Locale from "@/locales"; // Adjust path
-import { useScrollToBottom } from "@/hooks/useScrollToBottom"; // Adjust path
-import { useSnackbar } from "@/components/SnackbarProvider"; // Added Snackbar hook
+import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom"; // Adjust path
+import { useSnackbar } from "@/providers/snackbar-provider"; // Added Snackbar hook
 
-import { ChatMessageCell } from "@/components/chat/ChatMessageCell"; // Import the new cell component
+import { ChatMessageCell } from "@/components/chat/chat-message-cell"; // Import the new cell component
 
 import ArrowDownwardRoundedIcon from "@mui/icons-material/ArrowDownwardRounded";
 import CircularProgress from "@mui/material/CircularProgress"; // Assuming MUI is used
 
 import styles from "./chat.module.scss";
-import { ActionButton } from "@/components/ui/ActionButton"; // Import ChatAction
-import { useDecryptionManager } from "@/hooks/useDecryptionManager"; // <-- Import the hook
-import { useChatSessionManager } from "@/hooks/useChatSessionManager";
+import { ActionButton } from "@/components/ui/action-button"; // Import ChatAction
+import { useDecryptionManager } from "@/hooks/use-decryption-manager"; // <-- Import the hook
+import { useChatSessionManager } from "@/hooks/use-chat-session-manager";
 import { UUID } from "crypto";
-import { useChatActions } from "@/hooks/useChatActions";
+import { useChatActions } from "@/hooks/use-chat-actions";
 
 // ChatComponentProps is now simpler as it gets most things from the store or direct sessionID
 export interface ChatComponentProps {

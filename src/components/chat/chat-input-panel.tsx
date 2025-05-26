@@ -13,11 +13,11 @@ import {
 import { UNFINISHED_INPUT } from "@/types/constant";
 import { autoGrowTextArea, isVisionModel, safeLocalStorage, useMobileScreen } from "@/utils/utils";
 import Locale from "@/locales";
-import { useSubmitHandler } from "@/hooks/useSubmitHandler";
-import { useSnackbar } from "@/components/SnackbarProvider";
+import { useSubmitHandler } from "@/hooks/use-submit-handler";
+import { useSnackbar } from "@/providers/snackbar-provider";
 import { ChatControllerPool } from "@/client/controller";
 
-import { ActionButton } from "@/components/ui/ActionButton";
+import { ActionButton } from "@/components/ui/action-button";
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 
 import ArrowUpwardRoundedIcon from '@mui/icons-material/ArrowUpwardRounded';
@@ -26,7 +26,7 @@ import Button from '@mui/material/Button';
 import styles from "@/components/chat/chat.module.scss";
 import { UUID } from "crypto";
 import CloseIcon from '@mui/icons-material/Close';
-import { useApiClient } from "@/context/ApiProviderContext";
+import { useApiClient } from "@/providers/api-client-provider";
 // Helper component for the generic file icon
 const GenericFileIcon = () => (
   <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">

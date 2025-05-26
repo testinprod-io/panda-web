@@ -1,9 +1,9 @@
 "use client"; // Make it a client component
 
 import { Box } from "@mui/material";
-import { ChatList } from "@/components/ChatList/ChatList";
+import { ChatList } from "@/components/chat-list/chat-list";
 import SidebarHeader from "@/components/sidebar/sidebar-header";
-import { useAuthStatus } from "@/hooks/useAuthStatus";
+import { useAuthStatus } from "@/hooks/use-auth-status";
 import styles from "./sidebar.module.scss";
 import clsx from "clsx"; // For conditional class names
 import { SxProps, Theme } from "@mui/material/styles"; // Import SxProps and Theme

@@ -7,10 +7,10 @@ import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from '@/theme';
-import { SnackbarProvider } from '@/components/SnackbarProvider';
+import { SnackbarProvider } from '@/providers/snackbar-provider';
 import { AuthChatListener } from '@/store/chat';
-import { ApiClientProvider } from '@/context/ApiProviderContext';
-import { EncryptionProvider } from '@/context/EncryptionProvider';
+import { ApiClientProvider } from '@/providers/api-client-provider';
+import { EncryptionProvider } from '@/providers/encryption-provider';
 
 // NEW COMPONENT: Wraps content that depends on Privy authentication state
 function AuthenticatedContentWrapper({ children }: { children: React.ReactNode }) {

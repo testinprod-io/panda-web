@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import clsx from "clsx";
-import styles from "./actionButton.module.scss";
+import styles from "./action-button.module.scss";
 
 export interface ActionButtonProps {
   text?: string | null; // Text is now optional

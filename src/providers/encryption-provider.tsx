@@ -10,8 +10,8 @@ import React, {
   ReactNode,
 } from "react";
 import { EncryptionService } from "@/services/EncryptionService";
-import { PasswordModal } from "@/components/modal/PasswordModal";
-import { useApiClient } from "@/context/ApiProviderContext";
+import { PasswordModal } from "@/components/modal/password-modal";
+import { useApiClient } from "@/providers/api-client-provider";
 import { usePrivy } from "@privy-io/react-auth";
 
 // Define the inactivity timeout (e.g., 15 minutes) in milliseconds

@@ -23,8 +23,8 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // For back navigation
 import styles from "./settings-modal.module.scss";
-import { SettingsPage } from './SettingsModalHandler'; // Import the type
-import CustomizePromptsView from './CustomizePromptsView'; // Import the new view
+import { SettingsPage } from './settings-modal-handler'; // Import the type
+import CustomizePromptsView from '../customize-prompts-view'; // Import the new view
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'; // For navigation
 
 interface SettingsModalProps {

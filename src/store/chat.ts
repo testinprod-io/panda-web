@@ -18,9 +18,9 @@ import { ChatSession,  SessionSyncState, MessagesLoadState } from "@/types/sessi
 import { ChatMessage, createMessage, MessageSyncState } from "@/types/chat";
 import { useState, useEffect } from "react";
 import { usePrivy } from "@privy-io/react-auth";
-import { useApiClient } from "@/context/ApiProviderContext";
+import { useApiClient } from "@/providers/api-client-provider";
 import { Conversation, Message as ApiMessage, SenderTypeEnum } from "@/client/types"; // Added SenderTypeEnum
-import { useChatActions } from "@/hooks/useChatActions"; // Import the actions hook
+import { useChatActions } from "@/hooks/use-chat-actions"; // Import the actions hook
 import { createJSONStorage } from "zustand/middleware"; // Added StateStorage
 import { mapConversationToSession } from "@/services/ChatApiService";
 

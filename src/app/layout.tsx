@@ -1,10 +1,10 @@
 import React from 'react'; // Keep React for JSX
 import { Inter } from 'next/font/google';
 import { Providers } from './providers';
+import SettingsModalHandler from '../components/modal/settings-modal-handler';
+import ChatLayoutContent from '@/components/chat-layout'; // Import the new client component
 import '@/styles/globals.scss';
 import "@/styles/markdown.scss";
-import SettingsModalHandler from '../components/SettingsModalHandler';
-import ChatLayoutContent from '@/components/ChatLayout'; // Import the new client component
 
 const inter = Inter({
   subsets: ['latin'],

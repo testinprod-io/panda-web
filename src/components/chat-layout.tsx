@@ -5,15 +5,15 @@ import { useParams, useRouter } from "next/navigation";
 import { Box, Typography, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import Sidebar from "@/components/sidebar/sidebar";
-import ChatHeader from "@/components/ChatHeader";
-import { ChatInputPanel } from "@/components/chat/ChatInputPanel";
+import ChatHeader from "@/components/chat-header";
+import { ChatInputPanel } from "@/components/chat/chat-input-panel";
 import { useChatStore, useAppConfig } from "@/store";
 import { UNFINISHED_INPUT } from "@/types/constant";
 import { safeLocalStorage } from "@/utils/utils";
-import { useChatActions } from "@/hooks/useChatActions";
+import { useChatActions } from "@/hooks/use-chat-actions";
 import type { UUID } from "crypto"; // Keep as type import
 import Locale from "@/locales";
-import { useSnackbar } from "@/components/SnackbarProvider";
+import { useSnackbar } from "@/providers/snackbar-provider";
 import styles from "@/components/chat/chat.module.scss";
 
 const localStorage = safeLocalStorage();

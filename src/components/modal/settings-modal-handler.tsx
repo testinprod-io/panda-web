@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import SettingsModal from './SettingsModal';
+import SettingsModal from './settings-modal';
 
 export type SettingsPage = 'general' | 'prompts';
 

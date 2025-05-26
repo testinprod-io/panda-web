@@ -5,8 +5,8 @@ import {
   createMessage,
   MessageSyncState,
 } from "@/types/chat"; // Adjust path as needed
-import { useChatActions } from "./useChatActions";
-import { useApiClient } from "@/context/ApiProviderContext";
+import { useChatActions } from "./use-chat-actions";
+import { useApiClient } from "@/providers/api-client-provider";
 import { ChatApiService } from "@/services/ChatApiService";
 import { MultimodalContent, RequestMessage } from "@/client/api"; // Import MultimodalContent and RequestMessage
 import { ModelConfig } from '@/types/constant';
@@ -14,7 +14,7 @@ import { ChatControllerPool } from "@/client/controller";
 import { useChatStore } from '@/store/chat'; // Corrected import
 import { ChatSession } from '@/types/session'; // Added import for ChatSession
 import { Summary } from "@/client/types"; // Import Summary type
-import { useEncryption } from "@/context/EncryptionProvider";
+import { useEncryption } from "@/providers/encryption-provider";
 import { EncryptionService } from "@/services/EncryptionService";
 
 interface ChatSessionManagerResult {

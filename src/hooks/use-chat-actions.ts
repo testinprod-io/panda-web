@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useChatStore } from '@/store/chat';
 import { ChatApiService, mapApiMessagesToChatMessages, mapApiMessageToChatMessage, mapConversationToSession, mapRoleToSenderType} from '@/services/ChatApiService';
-import { useApiClient } from '@/context/ApiProviderContext';
+import { useApiClient } from '@/providers/api-client-provider';
 import { ChatMessage, MessageSyncState } from '@/types/chat';
 import { MessagesLoadState, SessionSyncState, ChatSession } from '@/types/session';
 import { ModelConfig } from '@/types/constant';

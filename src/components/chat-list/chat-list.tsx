@@ -4,11 +4,11 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 import { useChatStore } from "@/store/chat";
-import { useChatActions } from "@/hooks/useChatActions";
+import { useChatActions } from "@/hooks/use-chat-actions";
 import type { ChatSession } from "@/types/session"; 
 import Locale from "@/locales"; 
-import { ChatItem } from "./ChatItem";
-import { ChatListSkeleton } from "./ChatListSkeleton";
+import { ChatItem } from "./chat-item";
+import { ChatListSkeleton } from "./chat-list-skeleton";
 import styles from "./chat-list.module.scss";
 
 // Constants for calculating paging skeleton height, mirroring ChatListSkeleton.tsx logic
