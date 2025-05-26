@@ -10,8 +10,7 @@ import React, {
   ReactNode,
 } from "react";
 import { EncryptionService } from "@/services/EncryptionService";
-import { PasswordPromptModal } from "@/components/modal/PasswordPromptModal";
-import { CreatePasswordModal } from "@/components/modal/CreatePasswordModal";
+import { PasswordModal } from "@/components/modal/PasswordModal";
 import { useApiClient } from "@/context/ApiProviderContext";
 import { usePrivy } from "@privy-io/react-auth";
 
@@ -256,9 +255,10 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
       {isLocked && (
         <>
           {isFirstTimeUser ? (
-            <CreatePasswordModal
+            <PasswordModal
               open={true}
-              onCreate={handleCreatePassword}
+              modalType="create"
+              onCreateSubmit={handleCreatePassword}
               onClose={() => {
                 // If CreatePasswordModal had a cancel button or explicit close,
                 // we might want to ensure the app remains locked or re-evaluate isFirstTimeUser.
@@ -269,8 +269,16 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
               }}
             />
           ) : (
-            <PasswordPromptModal
+            <PasswordModal
               open={isLocked} // Pass open prop directly
+              modalType="unlock"
+              onUnlockSubmit={contextUnlockApp}
+              onClose={() => {
+                // Corrected log message and made it more relevant
+                console.log(
+                  "[EncryptionProvider] Unlock PasswordModal onClose triggered. App state (isLocked):", isLocked
+                );
+              }}
             />
           )}
         </>

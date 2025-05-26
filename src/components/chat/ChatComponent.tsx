@@ -12,10 +12,6 @@ import React, {
 import { useDebouncedCallback } from "use-debounce"; // Added import
 
 import { useAppConfig, useChatStore } from "@/store"; // Adjust path
-import {
-  EncryptedMessage
-} from "@/types";
-
 import { ChatControllerPool } from "@/client/controller";
 
 import Locale from "@/locales"; // Adjust path
