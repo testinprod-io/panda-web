@@ -221,7 +221,7 @@ export default function ChatHeader({
   return (
     <Box className={styles.chatHeader}>
       <Box className={styles.headerLeft}>
-        {isReady && isAuthenticated && isSidebarCollapsed && (
+        {isReady && isAuthenticated && (isSidebarCollapsed || isMobile) && (
           <>
             <Tooltip title="Reveal Sidebar">
               <IconButton

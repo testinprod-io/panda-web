@@ -8,7 +8,7 @@ const styles = `
   border-radius: 50%;
   display: inline-block;
   animation: roll 1s infinite linear;
-  margin: 2px 5px; /* Adjust margin as needed */
+  margin: 2px 10px; /* Adjust margin as needed */
 }
 
 @keyframes roll {

@@ -19,7 +19,7 @@ const GenericFileIcon = () => (
   </svg>
 );
 // MUI Imports
-import { TextField, Button, Box, IconButton, Typography } from "@mui/material"; // IconButton not used
+import { TextField, Button, Box, IconButton, Typography, CircularProgress } from "@mui/material"; // IconButton not used
 import ReplayRoundedIcon from "@mui/icons-material/ReplayRounded";
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import ModeEditRoundedIcon from "@mui/icons-material/ModeEditRounded";
@@ -458,7 +458,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
             {loadedFiles.map((file) => {
               if (file.isLoading) {
                 return (
-                  <Box key={file.id} className={styles["chat-message-item-loading"]} style={{
+                  <Box key={file.id} className={styles["chat-message-item-loading"]} display="flex" alignItems="center" justifyContent="center" style={{
                     borderRadius: "8px",
                     outline: "1px #CACACA solid",
                     backgroundColor: "#F0F0F0",
@@ -466,7 +466,9 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                     width: "160px",
                     height: "160px",
                   }} >
-                    <LoadingAnimation />
+                     {/* <Box display="flex" alignItems="center" sx={{ ml: 1 }}> */}
+                      <CircularProgress size={24} color="inherit"/>
+                  {/* </Box> */}
                     {/* <Typography variant="caption">Loading {file.name}...</Typography> */}
                   </Box>
                 );

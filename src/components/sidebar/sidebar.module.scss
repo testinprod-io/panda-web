@@ -5,7 +5,7 @@
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  transition: width 3s ease, padding 0.3s ease; // Ensure padding is part of the transition
+  transition: visibility 0.5s ease, width 0.5s ease, padding 0.5s ease; // Ensure padding is part of the transition
   overflow-x: hidden; // Prevent horizontal scrollbar for the entire sidebar
   overflow-y: auto; // Make sidebar scrollable
 

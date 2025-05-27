@@ -13,6 +13,8 @@ import {
 } from "@/types/constant";
 import { createPersistStore } from "@/utils/store";
 import { useChatStore } from "./chat";
+import { indexedDBStorage } from "@/utils/indexedDB-storage";
+import { createJSONStorage } from "zustand/middleware";
 
 // Re-export ServiceProvider if it's defined in constant.ts
 export { ServiceProvider } from "@/types/constant";
@@ -206,6 +208,7 @@ export const useAppConfig = createPersistStore(
   {
     name: StoreKey.Config,
     version: 1.1, // Incremented version due to significant model changes
+    storage: createJSONStorage(() => indexedDBStorage), // Use indexedDBStorage directly
   },
 );
 

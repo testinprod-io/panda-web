@@ -14,10 +14,9 @@ const theme = createTheme({
       short: 250,
       standard: 300,
       complex: 375,
-      enteringScreen: 2025,
-      leavingScreen: 195,
+      enteringScreen: 200,
+      leavingScreen: 100,
     },
-    
   },
   palette: {
     mode: 'light',
