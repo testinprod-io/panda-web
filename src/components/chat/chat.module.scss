@@ -350,14 +350,14 @@
 
 /* Container pushed to bottom by .chat-body's flex-grow - NOW STYLED */
 .chat-input-panel {
-  padding: 16px; // Figma: padding 16
+  padding: 1rem; // Figma: padding 16
   background-color: #ffffff; // Figma: background white
   border: 1px solid #CACACA; // Figma: outline: 1px #CACACA solid
   outline-offset: -1px; // Figma
   border-radius: 24px; // Figma
   box-shadow: 0px 2px 7px rgba(0, 0, 0, 0.20); // Figma
   // margin: 32px auto; // Center horizontally, keep vertical margin
-  width: 70%; // Default width, same as chat content
+  // width: 70%; // Default width, same as chat content
   box-sizing: border-box;
   position: relative;
   bottom: 0;
@@ -403,7 +403,7 @@
 /* Textarea */
 .chat-input {
   flex: 1; /* Takes available horizontal space */
-  width: 100%; /* Takes full width */
+  width: min(80vw, 60rem); /* Responsive width that scales down on smaller screens */
   border: none;
   background: transparent;
   outline: none;
@@ -453,8 +453,8 @@
   // This targets the ChatAction component wrapper.
   // ChatAction default styles might apply, we override as needed.
   // The Figma plus button: 32x32, padding 8, round, 1px #CACACA border
-  width: 32px !important; // Figma
-  height: 32px !important; // Figma
+  width: 2rem !important; // Figma
+  height: 2rem !important; // Figma
   padding: 0 !important; // Reset padding, icon size and its sx prop will handle inner spacing
   border-radius: 48px !important; // Figma (effectively circular)
   border: 1px solid #CACACA !important; // Figma (outline is border here)
@@ -498,10 +498,10 @@
 /* New Send button / Stop button Style */
 .chat-input-send-new {
   // MUI Button overrides
-  min-width: 40px !important; // Figma
-  width: 40px !important; // Figma
-  height: 40px !important; // Figma
-  padding: 8px !important; // Figma
+  min-width: 2.5rem !important; // Figma
+  width: 2.5rem !important; // Figma
+  height: 2.5rem !important; // Figma
+  // padding: 0.5rem !important; // Figma
   background: #1E1E1E !important; // Figma
   border-radius: 48px !important; // Figma (circular)
   box-shadow: none !important; // No shadow from MUI default

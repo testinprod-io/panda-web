@@ -1,35 +1,18 @@
-import {
-  getMessageTextContent,
-  safeLocalStorage,
-} from "@/utils/utils";
-
 import { indexedDBStorage } from "@/utils/indexedDB-storage";
 import { UUID } from "crypto";
 import {
-  ServiceProvider,
   StoreKey,
-  DEFAULT_PANDA_MODEL_NAME,
 } from "../types/constant";
 import Locale from "@/locales";
 import { createPersistStore, MakeUpdater } from "@/utils/store";
-import { ModelType } from "./config";
 import { ModelConfig } from "@/types/constant";
 import { ChatSession,  SessionSyncState, MessagesLoadState } from "@/types/session";
-import { ChatMessage, createMessage, MessageSyncState } from "@/types/chat";
-import { useState, useEffect } from "react";
-import { usePrivy } from "@privy-io/react-auth";
-import { useApiClient } from "@/providers/api-client-provider";
-import { Conversation, Message as ApiMessage, SenderTypeEnum } from "@/client/types"; // Added SenderTypeEnum
-import { useChatActions } from "@/hooks/use-chat-actions"; // Import the actions hook
-import { createJSONStorage } from "zustand/middleware"; // Added StateStorage
+import { ChatMessage, MessageSyncState } from "@/types/chat";
+import { Conversation } from "@/client/types";
+import { createJSONStorage } from "zustand/middleware";
 import { mapConversationToSession } from "@/services/ChatApiService";
 
 export const DEFAULT_TOPIC = Locale.Store.DefaultTopic; // Use locale
-export const BOT_HELLO: ChatMessage = createMessage({
-  role: "system",
-  content: Locale.Store.BotHello,
-  syncState: MessageSyncState.SYNCED, // Bot hello is always synced
-});
 
 // Initial state for the new interaction slice
 const DEFAULT_CHAT_INTERACTION_STATE = {
@@ -93,9 +76,8 @@ export const useChatStore = createPersistStore(
                  mergedSessions.push({ ...localSession, syncState: SessionSyncState.LOCAL });
             } else {
                  // Local session points to a server ID that doesn't exist anymore (deleted elsewhere?)
-                 console.warn(`[Merge] Local session ${localSession.id} points to deleted server ConvID ${serverId}. Keeping as local.`);
-                 // TODO: Implement this
-                //  mergedSessions.push({ ...localSession, conversationId: undefined, syncState: 'local', topic: localSession.topic || DEFAULT_TOPIC });
+                 console.warn(`[Merge] Local session ${localSession.id} points to deleted server ConvID ${serverId}. Converting to local.`);
+                 mergedSessions.push({ ...localSession, id: localSession.id, syncState: SessionSyncState.LOCAL, topic: localSession.topic || DEFAULT_TOPIC, messagesLoadState: MessagesLoadState.NONE });
             }
         });
 
@@ -113,7 +95,7 @@ export const useChatStore = createPersistStore(
 
          // Ensure there's always at least one session (create a new local one if needed)
          if (mergedSessions.length === 0) {
-             console.log("[Merge] No sessions after merge, creating a default local session.");
+             console.log("[Merge] No sessions after merge, returning empty array.");
             //  mergedSessions.push(createEmptySession()); // Creates a 'local' session
          }
 
@@ -173,17 +155,17 @@ export const useChatStore = createPersistStore(
         });
 
         const merged = Array.from(messageMap.values());
-        // Ensure BOT_HELLO is present if it's the only message potentially
-        if (merged.length === 1 && merged[0].id === BOT_HELLO.id && merged[0].content !== BOT_HELLO.content) {
-             // If the only message is a modified BOT_HELLO (e.g., error state), replace with original BOT_HELLO
-             merged[0] = BOT_HELLO;
-        } else if (merged.length > 1 && merged[0].id === BOT_HELLO.id) {
-            // Remove BOT_HELLO if real messages exist
-            merged.shift();
-        } else if (merged.length === 0) {
-            // Add BOT_HELLO if no messages exist at all
-            merged.push(BOT_HELLO);
-        }
+        // // Ensure BOT_HELLO is present if it's the only message potentially
+        // if (merged.length === 1 && merged[0].id === BOT_HELLO.id && merged[0].content !== BOT_HELLO.content) {
+        //      // If the only message is a modified BOT_HELLO (e.g., error state), replace with original BOT_HELLO
+        //      merged[0] = BOT_HELLO;
+        // } else if (merged.length > 1 && merged[0].id === BOT_HELLO.id) {
+        //     // Remove BOT_HELLO if real messages exist
+        //     merged.shift();
+        // } else if (merged.length === 0) {
+        //     // Add BOT_HELLO if no messages exist at all
+        //     merged.push(BOT_HELLO);
+        // }
 
         // Sort by date, handling potential parsing issues
         merged.sort((a, b) => {
@@ -221,7 +203,6 @@ export const useChatStore = createPersistStore(
       },
 
       addSession(session: ChatSession) {
-         // TODO: Should we order by latest session
          set(state => ({
              sessions: [session, ...state.sessions],
              currentSessionIndex: 0, // Select the new session
@@ -252,7 +233,7 @@ export const useChatStore = createPersistStore(
       // Updates a session identified by its local id or conversationId
       updateTargetSession(
           identifier: { id?: UUID },
-          updater: (session: ChatSession) => void // Can modify session draft (in decrypted form)
+          updater: (session: ChatSession) => void
       ) {
           set(state => {
              let index = -1;
@@ -280,109 +261,10 @@ export const useChatStore = createPersistStore(
           });
       },
 
-      // Add a user message to the current session (synchronous part)
-      // addUserMessage(content: string) {
-      //     const currentSession = get().currentSession();
-      //     if (!currentSession) return null;
 
-      //     const userMessage = createMessage({
-      //         role: "user",
-      //         content: content, // TODO: Store encrypted content in memory
-      //         syncState: MessageSyncState.PENDING_CREATE,
-      //     });
-
-      //     get().updateTargetSession(currentSession, (session) => {
-      //         session.messages = [...session.messages, userMessage] as ChatMessage[];
-      //         session.lastUpdate = Date.now(); // Update timestamp
-      //     });
-      //     // Encryption of content happens when saving state via wrapper OR sending via ApiService
-      //     return userMessage; // Return the created message (decrypted form)
-      // },
-
-      // Add a placeholder for bot response (synchronous part)
-      // addBotMessagePlaceholder(model: ModelType | string) {
-      //     const currentSession = get().currentSession();
-      //     if (!currentSession) return null;
-
-      //     const botMessage = createMessage({
-      //         role: "system",
-      //         content: "", // Start empty (decrypted)
-      //         streaming: true,
-      //         model: model as ModelType, // Store the model used
-      //         syncState: MessageSyncState.PENDING_CREATE, // Also needs saving eventually
-      //     });
-
-      //     get().updateTargetSession(currentSession, (session) => {
-      //         session.messages = [...session.messages, botMessage] as ChatMessage[];
-      //         // Don't update lastUpdate here, wait for bot response finish
-      //     });
-      //     // Encryption happens when saving state via wrapper OR receiving final message via ApiService
-      //     return botMessage; // Return the placeholder (decrypted form)
-      // },
-
-      // Update a specific message (e.g., for streaming updates, setting sync state)
-      // updateMessage(
-      //     sessionId: UUID,
-      //     messageId: string,
-      //     updater: (message: ChatMessage) => void // Operates on decrypted message draft
-      // ) {
-      //   //   const sessionIdentifier = sessionId ? { id: sessionId } : get().currentSession();
-      //   //   if (!sessionIdentifier) return;
-
-      //     get().updateTargetSession({ id: sessionId }, (session) => {
-      //         const msgIndex = session.messages.findIndex(m => m.id === messageId);
-      //         if (msgIndex !== -1) {
-      //             const messageToUpdate = { ...session.messages[msgIndex] }; // Shallow copy (decrypted)
-      //             updater(messageToUpdate); // Apply updates to decrypted draft
-      //             session.messages = [
-      //                 ...session.messages.slice(0, msgIndex),
-      //                 messageToUpdate,
-      //                 ...session.messages.slice(msgIndex + 1),
-      //             ] as ChatMessage[];
-      //             // Optionally update session lastUpdate time if message content is finalized
-      //             if (!messageToUpdate.streaming && messageToUpdate.syncState !== 'pending_create') {
-      //                 session.lastUpdate = Date.now();
-      //             }
-      //         } else {
-      //              console.warn(`[updateMessage] Message ${messageId} not found in session ${sessionId}`);
-      //         }
-      //     });
-      //     // Encryption happens when saving state via wrapper
-      // },
-
-      // Moves a session from one index to another
-      moveSession(from: number, to: number) {
-        set(state => {
-          const { sessions, currentSessionIndex: oldIndex } = state;
-          // Basic validation
-          if (from < 0 || from >= sessions.length || to < 0 || to >= sessions.length) {
-              return state;
-          }
-
-          const newSessions = [...sessions];
-          const [movedSession] = newSessions.splice(from, 1); // Remove item
-          newSessions.splice(to, 0, movedSession); // Insert item
-
-          // Adjust currentSessionIndex after move
-          let newIndex = oldIndex;
-          if (oldIndex === from) {
-            newIndex = to; // Follow the moved item
-          } else if (from < oldIndex && to >= oldIndex) {
-            newIndex--; // Item moved from before to after current
-          } else if (from > oldIndex && to <= oldIndex) {
-            newIndex++; // Item moved from after to before current
-          }
-
-          return {
-            sessions: newSessions,
-            currentSessionIndex: newIndex,
-          };
-        });
-      },
 
       clearSessions() {
-          console.log("[ChatStore] Clearing sessions, adding one default local session.");
-          // const newSession = createEmptySession(); // Creates a 'local' session
+          console.log("[ChatStore] Clearing sessions.");
           set({
             sessions: [],
             currentSessionIndex: -1,
@@ -390,11 +272,6 @@ export const useChatStore = createPersistStore(
           });
       },
 
-      // Renamed from selectSession to avoid implying async ops
-      _selectSessionIndex(index: number) {
-        set({ currentSessionIndex: index });
-        // Loading messages is now an action, triggered elsewhere
-      },
 
       currentSession() {
         const { sessions, currentSessionIndex } = _get();
@@ -424,79 +301,39 @@ export const useChatStore = createPersistStore(
       clearHistoryContext(index: number) {
         const session = get().currentSession();
         if (!session) return;
-        get().updateTargetSession(session, (sess) => {
+        get().updateTargetSession({ id: session.id }, (sess) => {
             sess.clearContextIndex = index;
             sess.memoryPrompt = ""; // Also clear memory prompt when context is cleared
             sess.lastSummarizeIndex = 0; // Reset summarize index
         });
       },
 
-      // Resets the current session's messages and memory prompt
-      // resetCurrentSessionMessages() {
-      //   const session = get().currentSession();
-      //   if (!session) return;
-      //   get().updateTargetSession(session, (sess) => {
-      //       sess.messages = []; // BOT_HELLO content is static, assumed decrypted
-      //       sess.memoryPrompt = "";
-      //       sess.clearContextIndex = 0;
-      //       sess.lastSummarizeIndex = 0;
-      //       sess.stat = { tokenCount: 0, wordCount: 0, charCount: 0 }; // Reset stats
-      //       sess.messagesLoadState = MessagesLoadState.FULL; // Since we reset to BOT_HELLO, it's "fully loaded" locally
-      //       sess.serverMessagesCursor = undefined;
-      //   });
-      // },
-
-      // Updates session stats (synchronous) - operates on decrypted message content
-      updateStat(message: ChatMessage) {
-          const session = get().currentSession();
-          if (!session || message.isError || message.streaming) return; // Only update for final, non-error messages
-
-          const content = getMessageTextContent(message); // Use util on decrypted content
-          const wordCount = content.split(/\s+/).filter(Boolean).length;
-          // We need estimateTokenLength back or handled in actions
-          // For now, let's assume token count update happens in actions or isn't critical here
-          // const tokenCount = estimateTokenLength(content);
-
-          get().updateTargetSession(session, (sess) => {
-            sess.stat = {
-                ...sess.stat,
-                charCount: (sess.stat?.charCount || 0) + content.length,
-                wordCount: (sess.stat?.wordCount || 0) + wordCount,
-                // tokenCount: (sess.stat?.tokenCount || 0) + tokenCount,
-            };
-          });
-      },
-
-      // Removed clearAllData - This is dangerous, should be an action with confirmation? Or handled by Auth listener logout.
+      
       // We keep a simple state reset for logout scenario.
       clearCurrentStateToDefault() {
           console.log("[ChatStore] Resetting chat state to default.");
-          // TODO: Implement this
-        //   set({ ...DEFAULT_CHAT_STATE, sessions: [createNewSession()], currentSessionIndex: 0 }); // Ensure one empty session
+          set({ ...DEFAULT_CHAT_STATE });
       },
 
-      setLastInput(lastInput: string) {
-        set({ lastInput }); // lastInput is likely fine unencrypted
-      },
+      // updateCurrentSessionConfigForProvider(provider: ServiceProvider) {
+      //     const session = get().currentSession();
+      //     if (!session) return;
 
-      updateCurrentSessionConfigForProvider(provider: ServiceProvider) {
-          const session = get().currentSession();
-          if (!session) return;
+      //     const defaultModelName = DEFAULT_PANDA_MODEL_NAME;
+      //     const defaultProviderName = ServiceProvider.Panda;
 
-          const defaultModelName = DEFAULT_PANDA_MODEL_NAME;
-          const defaultProviderName = ServiceProvider.Panda;
-
-          get().updateTargetSession(session, (sess) => {
-            sess.modelConfig = {
-              ...sess.modelConfig,
-              name: defaultModelName as ModelType,
-            };
-          });
-      },
+      //     get().updateTargetSession(session, (sess) => {
+      //       sess.modelConfig = {
+      //         ...sess.modelConfig,
+      //         name: defaultModelName as ModelType,
+      //       };
+      //     });
+      // },
 
       updateCurrentSessionModel(newModelConfig: ModelConfig) {
           const session = get().currentSession();
           console.log("[Update Current Session Model - Store] ", newModelConfig);
+          
           if (!session) return;
           console.log("session", session);
 
@@ -516,88 +353,6 @@ export const useChatStore = createPersistStore(
               currentSessionIndex: newCurrentIndex
           });
       },
-
-      // Called by loadMessagesForSession action after successful API call
-      // Expects serverApiMessages to have content already decrypted by ApiService
-      // _onServerMessagesLoaded(
-      //     sessionId: UUID,
-      //     serverApiMessages: ApiMessage[],
-      //     hasMore: boolean,
-      //     nextCursor: string | null
-      // ) {
-      //     // Map API messages (decrypted by ApiService) to ChatMessage format
-      //     const serverMessages = serverApiMessages.map(m => ({
-      //         id: m.message_id,
-      //         role: m.sender_type === SenderTypeEnum.USER ? 'user' : 'system',
-      //         content: m.content, // Content is now directly used (assumed string | MultimodalContent[])
-      //         date: new Date(m.timestamp),
-      //         syncState: 'synced'
-      //     } as ChatMessage));
-
-
-      //     get().updateTargetSession({ id: sessionId }, (sess) => {
-      //         // Merge server messages with local messages
-      //         const { mergedMessages } = mergeMessages(sess.messages, serverMessages, sess.messagesLoadState ?? 'none');
-      //         sess.messages = mergedMessages as ChatMessage[];
-      //         sess.messagesLoadState = hasMore ? MessagesLoadState.PARTIAL : MessagesLoadState.FULL;
-      //         sess.serverMessagesCursor = nextCursor ?? undefined; // nextCursor can be string | null
-      //     });
-      // },
-
-      // // Called by loadMessagesForSession action after failed API call
-      // _setMessagesLoadState(sessionId: UUID, loadState: MessagesLoadState) {
-      //     get().updateTargetSession({ id: sessionId }, (sess) => {
-      //         sess.messagesLoadState = loadState;
-      //     });
-      // },
-
-      // // Called by saveMessageToServer action after successful API call
-      // // Expects savedMessage to have content already decrypted by ApiService
-      // _onMessageSyncSuccess(sessionId: UUID, localMessageId: string, savedMessage: ApiMessage) {
-      //     get().updateTargetSession({ id: sessionId }, (sess) => {
-      //         const msgIndex = sess.messages.findIndex(m => m.id === localMessageId);
-      //         if (msgIndex !== -1) {
-      //             const updatedMessage: ChatMessage = {
-      //                ...sess.messages[msgIndex],
-      //                content: savedMessage.content, // Update with content from server response (already correct type)
-      //                id: savedMessage.message_id, // Update ID to server ID
-      //                syncState: MessageSyncState.SYNCED,
-      //                isError: false, // Clear error on success
-      //                date: new Date(savedMessage.timestamp), // Update timestamp from server
-      //             };
-      //             sess.messages = [
-      //                 ...sess.messages.slice(0, msgIndex),
-      //                 updatedMessage,
-      //                 ...sess.messages.slice(msgIndex + 1),
-      //             ] as ChatMessage[];
-      //              console.log(`[ChatStore] Synced local msg ${localMessageId} to server msg ${savedMessage.message_id}`);
-      //         } else {
-      //             console.warn(`[ChatStore] Could not find local message ${localMessageId} to mark as synced.`);
-      //         }
-      //     });
-      // },
-
-      //  // Called by saveMessageToServer action after failed API call
-      // _onMessageSyncError(sessionId: UUID, localMessageId: string) {
-      //      get().updateTargetSession({ id: sessionId }, (sess) => {
-      //         const msgIndex = sess.messages.findIndex(m => m.id === localMessageId);
-      //         if (msgIndex !== -1) {
-      //             const updatedMessage: ChatMessage = {
-      //                ...sess.messages[msgIndex],
-      //                syncState: MessageSyncState.ERROR,
-      //                isError: true, // Mark as error
-      //             };
-      //              sess.messages = [
-      //                 ...sess.messages.slice(0, msgIndex),
-      //                 updatedMessage,
-      //                 ...sess.messages.slice(msgIndex + 1),
-      //             ] as ChatMessage[];
-      //             console.log(`[ChatStore] Marked local msg ${localMessageId} as error after sync fail.`);
-      //         } else {
-      //               console.warn(`[ChatStore] Could not find local message ${localMessageId} to mark as error.`);
-      //         }
-      //     });
-      // },
 
       // --- Getters needed by Actions/Components ---
 
@@ -706,65 +461,3 @@ export const useChatStore = createPersistStore(
     },
   },
 );
-
-// --- Auth Listener ---
-// Uses the action hook to trigger data loading/clearing based on auth state.
-export function AuthChatListener() {
-  const { ready, authenticated } = usePrivy();
-  const apiClient = useApiClient();
-
-  // Direct store access for synchronous state clearing on logout
-  const clearState = useChatStore((state) => state.clearCurrentStateToDefault);
-
-  // Get actions from the hook
-  const actions = useChatActions();
-
-  const [prevAuthState, setPrevAuthState] = useState<boolean | null>(null);
-  const [initialLoadDone, setInitialLoadDone] = useState(false);
-
-  useEffect(() => {
-    // Wait for Privy readiness and API client availability
-    if (!ready || !apiClient) {
-        // console.log("[AuthChatListener] Waiting for Privy ready and API client...");
-        return;
-    }
-
-    const isInitialCheck = prevAuthState === null;
-    const authChanged = !isInitialCheck && authenticated !== prevAuthState;
-
-    // console.log(`[AuthChatListener] Status: ready=${ready}, authenticated=${authenticated}, prevAuth=${prevAuthState}, initialLoadDone=${initialLoadDone}, apiClient=${!!apiClient}`);
-
-    if (isInitialCheck) {
-        // console.log("[AuthChatListener] Initial check. Setting prevAuthState.");
-        setPrevAuthState(authenticated);
-    }
-
-    // Load data on initial authentication or if auth changes to authenticated
-    if (authenticated && (!initialLoadDone || authChanged)) {
-        console.log("[AuthChatListener] User authenticated. Triggering load/sync...");
-        // Use the action from the hook
-        actions.loadSessionsFromServer();
-        // We could add sync logic here if needed: actions.synchronizePendingData();
-        setInitialLoadDone(true); // Mark initial load attempt as done
-    } else if (authChanged && !authenticated) {
-        // User logged out
-        console.log(`[AuthChatListener] Auth state changed: ${prevAuthState} -> ${authenticated}. Clearing local state.`);
-        // Use the synchronous store method for clearing state on logout
-        clearState();
-        setInitialLoadDone(false); // Reset initial load flag
-    } else if (!authenticated && !isInitialCheck && initialLoadDone) {
-         // Edge case: Logged out state detected after initial load was marked done
-         console.log("[AuthChatListener] State inconsistency detected (logged out but initialLoadDone=true). Clearing data.");
-         clearState();
-         setInitialLoadDone(false); // Reset flag
-    }
-
-    // Update prevAuthState if auth state changed
-    if (authChanged) {
-        setPrevAuthState(authenticated);
-    }
-
-  }, [ready, authenticated, prevAuthState, initialLoadDone, apiClient, actions, clearState]); // Add actions and clearState to dependencies
-
-  return null; // Component doesn't render anything
-}

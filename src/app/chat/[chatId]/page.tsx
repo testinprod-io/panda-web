@@ -51,7 +51,7 @@ export default function ChatPage() {
       if (store.currentSession()?.id !== chatId) {
         const sessionIndex = store.sessions.findIndex(s => s.id === chatId);
         if (sessionIndex !== -1) {
-          store._selectSessionIndex(sessionIndex);
+          store.setCurrentSessionIndex(sessionIndex);
         }
       }
       setIsValidSession(true); setSessionDataForValidation(currentSession); 

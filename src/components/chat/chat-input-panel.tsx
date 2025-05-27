@@ -27,6 +27,7 @@ import styles from "@/components/chat/chat.module.scss";
 import { UUID } from "crypto";
 import CloseIcon from '@mui/icons-material/Close';
 import { useApiClient } from "@/providers/api-client-provider";
+import { useChatActions } from "@/hooks/use-chat-actions";
 // Helper component for the generic file icon
 const GenericFileIcon = () => (
   <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -209,7 +210,7 @@ interface ChatInputPanelProps {
   modelConfig?: ModelConfig;
   isLoading: boolean;
   hitBottom: boolean;
-  onSubmit: (input: string, files: SubmittedFile[], enableSearch: boolean) => Promise<void>;
+  onSubmit: (sessionId: UUID | undefined, input: string, files: SubmittedFile[], enableSearch: boolean) => Promise<void>;
   scrollToBottom: () => void;
   setShowPromptModal: () => void;
   setShowShortcutKeyModal: () => void;
@@ -220,7 +221,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   ref
 ) => {
   const {
-    sessionId,
+    sessionId: propSessionId,
     modelConfig,
     isLoading,
     hitBottom,
@@ -229,11 +230,17 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   } = props;
 
   const chatStore = useChatStore();
+  const chatActions = useChatActions();
+
+  const [activeSessionId, setActiveSessionId] = useState<UUID | undefined>(propSessionId);
+  const provisionalSessionIdRef = useRef<UUID | null>(null);
+  const isProvisionalSessionCommittedRef = useRef<boolean>(false);
 
   const { authenticated, getAccessToken } = usePrivy();
   const apiClient = useApiClient();
   const config = useAppConfig();
   const router = useRouter();
+  const { newSession } = useChatActions();
   const isMobileScreen = useMobileScreen();
   const { submitKey, shouldSubmit } = useSubmitHandler();
   const { showSnackbar } = useSnackbar();
@@ -252,8 +259,22 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   }, [attachedFiles]);
 
   useEffect(() => {
-    if (sessionId) {
-      const initialState = loadSessionState(sessionId);
+    if (propSessionId !== activeSessionId) {
+      if (provisionalSessionIdRef.current && !isProvisionalSessionCommittedRef.current && provisionalSessionIdRef.current !== propSessionId) {
+        console.log(`[ChatInputPanel] propSessionId changed. Cleaning up uncommitted provisional session: ${provisionalSessionIdRef.current}`);
+        chatActions.deleteSession(provisionalSessionIdRef.current).catch(err => {
+          console.error("Error deleting uncommitted provisional session:", err);
+        });
+        provisionalSessionIdRef.current = null;
+      }
+      isProvisionalSessionCommittedRef.current = false;
+      setActiveSessionId(propSessionId);
+    }
+  }, [propSessionId]);
+
+  useEffect(() => {
+    if (activeSessionId) {
+      const initialState = loadSessionState(activeSessionId);
       setUserInput(initialState.userInput);
       setEnableSearch(initialState.enableSearch);
 
@@ -273,20 +294,28 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
       );
       setAttachedFiles(restoredAttachedFiles);
     } else {
-      // Reset state if there's no session ID (e.g., new chat)
+      // Reset state if there's no active session ID
       setUserInput("");
       setAttachedFiles([]);
       setEnableSearch(false);
+      if (provisionalSessionIdRef.current && !isProvisionalSessionCommittedRef.current) {
+        console.log(`[ChatInputPanel] Active session ID became null. Cleaning up uncommitted provisional session: ${provisionalSessionIdRef.current}`);
+        chatActions.deleteSession(provisionalSessionIdRef.current).catch(err => {
+            console.error("Error deleting uncommitted provisional session on activeSessionId becoming null:", err);
+        });
+      }
+      provisionalSessionIdRef.current = null;
+      isProvisionalSessionCommittedRef.current = false;
     }
-  }, [sessionId]);
+  }, [activeSessionId]);
 
   useEffect(() => {
     console.log('[EFFECT:attachedFiles changed]', JSON.stringify(attachedFiles.map(f => ({ clientId: f.clientId, name: f.name, status: f.uploadStatus, fileId: f.fileId, progress: f.uploadProgress, type: f.type, size: f.size })), null, 2));
   }, [attachedFiles]);
 
-  const debouncedSaveInput = useDebouncedCallback((currentSessionId?: UUID, currentInput?: string, currentAttachedFiles?: AttachedClientFile[], currentEnableSearch?: boolean) => {
-    if (currentSessionId) {
-      const key = UNFINISHED_INPUT(currentSessionId.toString());
+  const debouncedSaveInput = useDebouncedCallback((currentActiveSessionId?: UUID, currentInput?: string, currentAttachedFiles?: AttachedClientFile[], currentEnableSearch?: boolean) => {
+    if (currentActiveSessionId) {
+      const key = UNFINISHED_INPUT(currentActiveSessionId.toString());
       const filesToPersist: SubmittedFile[] = (currentAttachedFiles || [])
         .filter(f => f.uploadStatus === 'success' && f.fileId)
         .map(f => ({
@@ -316,8 +345,8 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
 
   useEffect(() => {
     // Debounce saving the entire session state
-    debouncedSaveInput(sessionId, userInput, attachedFiles, enableSearch);
-  }, [userInput, attachedFiles, enableSearch, sessionId, debouncedSaveInput]);
+    debouncedSaveInput(activeSessionId, userInput, attachedFiles, enableSearch);
+  }, [userInput, attachedFiles, enableSearch, activeSessionId, debouncedSaveInput]);
 
   const stopGeneration = () => {
     ChatControllerPool.stopAll();
@@ -350,13 +379,38 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   };
 
   const executeFileUploads = useCallback(async (candidateFiles: File[]) => {
+    let currentSessionIdToUse = activeSessionId;
+
+    if (!currentSessionIdToUse) {
+      if (provisionalSessionIdRef.current && !isProvisionalSessionCommittedRef.current) {
+        console.log(`[executeFileUploads] Cleaning up previous uncommitted provisional session: ${provisionalSessionIdRef.current}`);
+        await chatActions.deleteSession(provisionalSessionIdRef.current).catch(err => {
+          console.error("Error deleting previous uncommitted provisional session:", err);
+        });
+        provisionalSessionIdRef.current = null;
+      }
+
+      console.log("[executeFileUploads] No active session. Creating a provisional one.");
+      const session = await chatActions.newSession(modelConfig);
+      if (session) {
+        currentSessionIdToUse = session.id;
+        provisionalSessionIdRef.current = session.id;
+        isProvisionalSessionCommittedRef.current = false;
+        setActiveSessionId(session.id);
+        console.log(`[executeFileUploads] New provisional session created: ${session.id}`);
+      } else {
+        showSnackbar("Failed to create a session for file upload.", 'error');
+        return;
+      }
+    }
+    
     if (!modelConfig || !isVisionModel(modelConfig)) {
       showSnackbar("Cannot upload files with the current model.", 'warning');
       return;
     }
 
-    if (!sessionId) {
-      showSnackbar("Cannot attach files to a new chat. Please send a message first to establish the session.", 'error');
+    if (!currentSessionIdToUse) {
+      showSnackbar("Cannot attach files, session ID is missing.", 'error');
       return;
     }
     
@@ -409,9 +463,9 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
 
     for (const clientFile of newClientFiles) {
       setAttachedFiles(prev => prev.map(f => f.clientId === clientFile.clientId ? { ...f, uploadStatus: 'uploading' as const } : f));
-      
+
       const uploadPromise = apiClient.app.uploadFile(
-        sessionId!,
+        currentSessionIdToUse!,
         clientFile.originalFile,
         (progress) => {
           console.log(`[Upload Progress] ClientID: ${clientFile.clientId}, Progress: ${progress}%`);
@@ -424,7 +478,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
       );
 
       uploadPromise.then(uploadResponse => {
-        activeUploadsRef.current.set(clientFile.clientId, uploadResponse.abort); // Store abort right away
+        activeUploadsRef.current.set(clientFile.clientId, uploadResponse.abort);
         console.log(`[Upload Success] ClientID: ${clientFile.clientId}, Response:`, JSON.stringify(uploadResponse, null, 2));
 
         if (!uploadResponse || !uploadResponse.fileResponse || !uploadResponse.fileResponse.file_id) {
@@ -437,7 +491,6 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
           )
         );
       }).catch(error => {
-        // Ensure abort controller is removed if it was set before error
         activeUploadsRef.current.delete(clientFile.clientId);
         console.error(`[Chat] File upload failed for ${clientFile.name}:`, error);
         let errorMessage = `Upload failed for ${clientFile.name}`;
@@ -457,14 +510,12 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
           )
         );
         showSnackbar(errorMessage, 'error');
-        // If the error indicates an abort, we might not want to show a generic snackbar
-        // or handle it differently, e.g. if (error.message === "Upload aborted by user") {}
       });
     }
-  }, [apiClient, attachedFiles, modelConfig, showSnackbar, sessionId, getAccessToken]);
+  }, [apiClient, attachedFiles, modelConfig, showSnackbar, activeSessionId, getAccessToken]);
 
   const doSubmit = () => {
-    console.log('[doSubmit] Called. isLoading:', isLoading, 'isUploadingFiles:', isUploadingFiles);
+    console.log('[doSubmit] Called. isLoading:', isLoading, 'isUploadingFiles:', isUploadingFiles, 'activeSessionId:', activeSessionId);
     console.log('[doSubmit] userInput:', `"${userInput}"`);
     console.log('[doSubmit] attachedFiles at start of doSubmit:', JSON.stringify(attachedFiles.map(f => ({ clientId: f.clientId, name: f.name, status: f.uploadStatus, fileId: f.fileId, type: f.type, size: f.size })), null, 2));
 
@@ -479,21 +530,33 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
       return;
     }
 
+    if (activeSessionId && provisionalSessionIdRef.current === activeSessionId) {
+      isProvisionalSessionCommittedRef.current = true;
+      console.log(`[doSubmit] Provisional session ${activeSessionId} committed.`);
+      provisionalSessionIdRef.current = null;
+    } else if (provisionalSessionIdRef.current && !isProvisionalSessionCommittedRef.current && provisionalSessionIdRef.current !== activeSessionId) {
+      console.log(`[doSubmit] Cleaning up uncommitted provisional session ${provisionalSessionIdRef.current} as it's not the one being submitted.`);
+      chatActions.deleteSession(provisionalSessionIdRef.current).catch(err => {
+        console.error("Error deleting uncommitted provisional session during submit:", err);
+      });
+      provisionalSessionIdRef.current = null;
+      isProvisionalSessionCommittedRef.current = false;
+    }
+
     const filesForSubmission: SubmittedFile[] = successfullyUploadedFiles
       .map(({ previewUrl, fileId, type, name, size }) => ({ url: previewUrl, fileId: fileId!, type, name, size }));
 
     console.log(`[doSubmit] filesForSubmission (to be sent):`, JSON.stringify(filesForSubmission, null, 2));
 
-    onSubmit(userInput, filesForSubmission, enableSearch); 
+    onSubmit(activeSessionId, userInput, filesForSubmission, enableSearch); 
     
-    const currentSessionIdForClear = sessionId;
+    const currentSessionIdForClear = activeSessionId;
     setUserInput("");
     setAttachedFiles([]); 
-    setEnableSearch(false); // Reset enableSearch state
+    setEnableSearch(false);
 
     if (currentSessionIdForClear) {
-        debouncedSaveInput.cancel(); // Cancel any pending save
-        // Clear the saved state from localStorage for this session
+        debouncedSaveInput.cancel();
         localStorage.removeItem(UNFINISHED_INPUT(currentSessionIdForClear.toString()));
     }
     
@@ -519,10 +582,11 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   const handlePaste = useCallback(
     async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
       if (!modelConfig || !isVisionModel(modelConfig)) return;
-      if (!sessionId) {
-        showSnackbar("Cannot paste files into a new chat. Please send a message first.", 'warning');
-        return;
+      if (!activeSessionId && !provisionalSessionIdRef.current) {
+        console.log("[handlePaste] No active session, will attempt to create provisional in executeFileUploads.");
+      } else if (!activeSessionId && provisionalSessionIdRef.current){
       }
+
       const items = event.clipboardData?.items;
       if (!items) return;
 
@@ -541,14 +605,10 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
         await executeFileUploads(candidateFiles);
       }
     },
-    [modelConfig, attachedFiles, showSnackbar, sessionId, executeFileUploads],
+    [modelConfig, showSnackbar, activeSessionId, executeFileUploads],
   );
 
   const uploadFile = useCallback(async () => {
-    if (!sessionId) {
-      showSnackbar("Cannot upload files to a new chat. Please send a message first.", 'warning');
-      return;
-    }
     const fileInput = document.createElement("input");
     fileInput.type = "file";
     fileInput.multiple = true;
@@ -559,21 +619,22 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
       await executeFileUploads(Array.from(files));
     };
     fileInput.click();
-  }, [attachedFiles, showSnackbar, sessionId, executeFileUploads]);
+  }, [showSnackbar, activeSessionId, executeFileUploads, chatActions.newSession]);
 
   const handleRemoveFile = useCallback(async (file: AttachedClientFile) => {
     const abortUpload = activeUploadsRef.current.get(file.clientId);
     if (abortUpload) {
-      abortUpload(); // Call the abort function
+      abortUpload();
       activeUploadsRef.current.delete(file.clientId);
     }
     
-    if (sessionId && file.fileId) {
-      apiClient.app.deleteFile(sessionId, file.fileId);
+    if (activeSessionId && file.fileId) {
+      apiClient.app.deleteFile(activeSessionId, file.fileId);
     }
 
     setAttachedFiles((prev) => prev.filter((f) => f.clientId !== file.clientId));
-  }, [attachedFiles, sessionId, apiClient]);
+  }, [activeSessionId, apiClient]);
+
   console.log("model config: ", modelConfig?.name);
   return (
     <div className={styles["chat-input-panel"]} ref={ref}>
@@ -717,7 +778,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
             className={styles["chat-input-send-new"]}
             variant="contained"
             onClick={isLoading ? stopGeneration : doSubmit}
-            disabled={!authenticated|| isUploadingFiles } // || !isLoading }
+            disabled={!authenticated|| isUploadingFiles }
             aria-label={isLoading ? Locale.Chat.InputActions.Stop : Locale.Chat.Send}
           >
             {isLoading ? <StopRoundedIcon /> : <ArrowUpwardRoundedIcon />}

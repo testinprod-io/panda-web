@@ -135,6 +135,13 @@ export default function ChatHeader({
     router.push(`/`);
   };
 
+  console.log("activeSessionModelName:", activeSessionModelName);
+  console.log("activeSessionModelDisplayName:", activeSessionModelDisplayName);
+  console.log("globalModelIdentifier:", globalModelIdentifier);
+  console.log("globalModelName:", globalModelName);
+  console.log("globalModelDisplayName:", globalModelDisplayName);
+  console.log("DEFAULT_MODELS[0].config.displayName:", DEFAULT_MODELS[0].config.displayName);
+
   const displayModelName =
     activeSessionModelDisplayName ||
     activeSessionModelName ||

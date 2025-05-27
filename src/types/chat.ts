@@ -92,9 +92,6 @@ export type EncryptedMessage = {
   isError?: boolean;   // Transient state, not persisted encrypted
 };
 
-// Export BOT_HELLO_ENCRYPTED
-export declare const BOT_HELLO_ENCRYPTED: EncryptedMessage;
-
 /**
 * Creates a new chat message in its ENCRYPTED form suitable for storing.
 * Requires the caller to provide already encrypted content.

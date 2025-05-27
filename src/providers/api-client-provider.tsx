@@ -18,42 +18,39 @@ const ApiClientContext = createContext<ClientApi | null>(null);
 
 export const ApiClientProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { apiProvider } = useAppConfig();
-  const { ready: privyReady, authenticated: privyAuthenticated, getAccessToken } = usePrivy();
+  const { ready: privyReady, getAccessToken } = usePrivy();
 
-  // Use the real getAccessToken if Privy is ready and authenticated, otherwise use the default
-  // Ensure getAccessToken from Privy matches the expected type GetAccessTokenFn
-  const effectiveGetAccessToken = useMemo(() => {
-      if (privyReady && getAccessToken) {
-        // Explicitly cast or ensure the function signature matches
-        return getAccessToken as GetAccessTokenFn;
-      }
-      return defaultGetAccessToken;
-  }, [privyReady, getAccessToken]);
+  // // Use the real getAccessToken if Privy is ready and authenticated, otherwise use the default
+  // // Ensure getAccessToken from Privy matches the expected type GetAccessTokenFn
+  // const effectiveGetAccessToken = useMemo(() => {
+  //     if (privyReady && getAccessToken) {
+  //       // Explicitly cast or ensure the function signature matches
+  //       return getAccessToken as GetAccessTokenFn;
+  //     }
+
+  //     return defaultGetAccessToken;
+  // }, [privyReady, getAccessToken]);
 
 
   const apiClient = useMemo(() => {
-    // Only create the client if Privy is ready, otherwise, Panda might fail immediately
-    // if it tries to get a token.
-    if (!privyReady) {
-        // Return a temporary client or null, depending on how consumers handle it.
-        // Using OpenAI as a safe default if Privy isn't ready.
-        console.warn('[ApiClientProvider] Privy not ready, using default OpenAI client temporarily.');
+    if (!privyReady || !getAccessToken) {
+      // return null;
+        // // Return a temporary client or null, depending on how consumers handle it.
+        // // Using OpenAI as a safe default if Privy isn't ready.
+        // console.warn('[ApiClientProvider] Privy not ready, using default OpenAI client temporarily.');
         return getClientApi(ServiceProvider.Panda, defaultGetAccessToken); // Provide default token getter
     }
 
     try {
         // Pass the effective (potentially default) token getter function
-        return getClientApi(apiProvider, effectiveGetAccessToken);
+        return getClientApi(apiProvider, getAccessToken);
     } catch (error) {
         console.error("[ApiClientProvider] Error creating API client:", error);
-        // Fallback to a default client in case of errors during instantiation
-        // (e.g., missing getAccessToken for Panda)
-         console.warn('[ApiClientProvider] Falling back to default OpenAI client due to error.');
-        return getClientApi(ServiceProvider.Panda, defaultGetAccessToken); // Provide default token getter
+        throw error;
     }
 
   // Depend on apiProvider, privyReady, and the effectiveGetAccessToken function itself
-  }, [apiProvider, privyReady, effectiveGetAccessToken]);
+  }, [apiProvider, privyReady, getAccessToken]);
 
   return (
     <ApiClientContext.Provider value={apiClient}>

@@ -16,7 +16,7 @@ import {
     SummaryCreateRequest,
 } from '@/client/types';
 import { UUID } from "crypto";
-import { ClientApi, MultimodalContent, RequestMessage } from '@/client/api';
+import { RequestMessage } from '@/client/api';
 import { DEFAULT_TOPIC } from '@/store/chat';
 import { getMessageTextContent, trimTopic } from "@/utils/utils";
 import { ModelType } from "@/store/config";
@@ -59,21 +59,15 @@ export function useChatActions() {
             });
             console.log(`[ChatActions] Mapped ${fetchedAppSessions.length} sessions from server. Has more: ${pagination.has_more}, Limit: ${effectiveLimit}`);
             
-            if (fetchedAppSessions.length > 0 || !options?.cursor) { // Also run if initial load and fetched zero to potentially clear/reorder
+            if (fetchedAppSessions.length > 0 || !options?.cursor) { 
                 const sessionMap = new Map<UUID, ChatSession>();
 
-                // Add current sessions from store to map
                 store.sessions.forEach(s => sessionMap.set(s.id, s));
-
-                // Add/update with fetched sessions (fetched take precedence)
-                fetchedAppSessions.forEach(s => sessionMap.set(s.id, s));
+                fetchedAppSessions.forEach(s => sessionMap.set(s.id, s)); // Fetched take precedence
 
                 const finalSessionsArray = Array.from(sessionMap.values());
-
-                // Sort by lastUpdate descending to keep newest first
-                finalSessionsArray.sort((a, b) => b.lastUpdate - a.lastUpdate);
+                finalSessionsArray.sort((a, b) => b.lastUpdate - a.lastUpdate); // Newest first
                 
-                // Preserve current session index if possible
                 const currentSession = store.currentSession();
                 let newCurrentIndex = -1;
                 if (currentSession) {
@@ -98,10 +92,10 @@ export function useChatActions() {
         }
     }, [apiClient, store]);
 
-    const newSession = useCallback(async (modelConfig?: ModelConfig) => {
+    const newSession = useCallback(async (modelConfig?: ModelConfig): Promise<ChatSession | undefined> => {
         if (!apiClient) {
-            console.warn("[ChatActions] API client not available, cannot create session on server.");
-            throw new Error("API client not available");
+            console.warn("[ChatActions] API client not available, cannot create new session on server.");
+            return undefined;
         }
 
         console.log("[ChatActions] Creating new session...");
@@ -112,16 +106,15 @@ export function useChatActions() {
             const newConversation = await ChatApiService.createConversation(apiClient, createRequest);
             const session = mapConversationToSession(newConversation);
 
-            // Update the existing session in the store with server data
             session.syncState = SessionSyncState.SYNCED;
             session.modelConfig = { ...appConfig.modelConfig, ...modelConfig };
             store.addSession(session);
             
-            console.log("[ChatActions] Server session created successfully:", newConversation.conversation_id);
+            console.log(`[ChatActions] New session ${session.id} created and added to store.`);
             return session;
         } catch (error) {
             console.error("[ChatActions] Failed to create server session:", error);
-            // Optionally show error to user
+            return undefined;
         }
     }, [apiClient, store, appConfig.modelConfig]);
 
@@ -138,9 +131,6 @@ export function useChatActions() {
         }
 
         console.log(`[ChatActions] Loading messages for conversation ${id}`);
-        // Update store state to loading
-        // store._setMessagesLoadState(id, MessagesLoadState.LOADING);
-
         // Revert to simpler params construction - service layer handles null cursor
         const loadParams: GetConversationMessagesParams = {
              limit: params?.limit ?? 20,
@@ -156,17 +146,12 @@ export function useChatActions() {
             const pagination = response.pagination;
             console.log(`[ChatActions] Received ${serverApiMessages.length} messages for ${id}. Has more: ${pagination.has_more}`);
 
-            // Call store's internal method to merge messages and update state
-            // store._onServerMessagesLoaded(id, serverApiMessages, pagination.has_more, pagination.next_cursor);
             const chatMessages = mapApiMessagesToChatMessages(serverApiMessages);
             return Promise.resolve({ messages: chatMessages, pagination });
 
         } catch (error: any) {
             console.error(`[ChatActions] Failed loading messages for ${id}:`, error);
-            // Update store state to error
-            // store._setMessagesLoadState(id, MessagesLoadState.ERROR);
             return Promise.reject(error);
-            // Optionally show error to user
         }
     }, [apiClient, store]);
 
@@ -177,8 +162,6 @@ export function useChatActions() {
 
         if (indexToSelect === -1) {
             console.warn(`[ChatActions] Session with ID ${sessionId} not found in store. Cannot select.`);
-            // Attempt to see if it's in localSessions of ChatList if ChatList passes it?
-            // For now, if not in global store, we can't set global index correctly.
             return;
         }
 
@@ -186,18 +169,9 @@ export function useChatActions() {
             console.warn(`[ChatActions] Invalid session index derived: ${indexToSelect} for ID ${sessionId}`);
             return;
         }
-        // const targetSession = sessions[indexToSelect]; // Not strictly needed anymore for this function
 
-        // Update index in store
         store.setCurrentSessionIndex(indexToSelect);
-
-        // Trigger message loading if needed (logic can remain if currentSession is derived from index)
-        // const currentSession = store.currentSession(); // This will be the newly selected one
-        // if (currentSession && currentSession.messagesLoadState === 'none') {
-        //     console.log(`[ChatActions] Session ${currentSession.id} selected, triggering message load.`);
-        //     loadMessagesForSession(currentSession.id);
-        // }
-    }, [store]); // Removed loadMessagesForSession from deps for now, as it's commented out
+    }, [store]);
 
     const deleteSession = useCallback(async (sessionId: UUID) => {
         if (!apiClient) {
@@ -214,11 +188,9 @@ export function useChatActions() {
         }
 
         const sessionToDelete = sessions[indexToDelete];
-        // const id = sessionToDelete.id; // This is just sessionId
 
         console.log(`[ChatActions] Deleting session ${indexToDelete} (ID: ${sessionId})`);
 
-        // Remove from store immediately using the found index
         store.removeSession(indexToDelete);
 
         if (store.currentSessionIndex === indexToDelete) {
@@ -228,12 +200,11 @@ export function useChatActions() {
         // Attempt server deletion if applicable
         if (apiClient && sessionToDelete.syncState !== 'pending_create' && sessionToDelete.syncState !== 'local') {
             try {
-                await ChatApiService.deleteConversation(apiClient, sessionId); // Use sessionId directly
+                await ChatApiService.deleteConversation(apiClient, sessionId); 
                 console.log(`[ChatActions] Server session ${sessionId} deleted.`);
             } catch (error) {
                 console.error(`[ChatActions] Failed to delete server session ${sessionId}:`, error);
-                // How to handle? Maybe notify user? Re-add local session?
-                // For now, just log error. The session is already removed locally.
+                // Session is already removed locally, logging error for now.
             }
         } else {
            console.log(`[ChatActions] Session ${sessionId} was local-only or pending creation, no server deletion needed.`);
@@ -243,8 +214,6 @@ export function useChatActions() {
     const saveMessageToServer = useCallback(async (conversationId: UUID, message: ChatMessage) => {
         if (!apiClient) {
             console.warn("[ChatActions] API client not available, cannot save message.");
-            // Update local state to error immediately if API isn't available?
-            // store._onMessageSyncError(conversationId, message.id);
             return;
         }
 
@@ -257,18 +226,11 @@ export function useChatActions() {
         // Don't re-save synced messages
         if (message.syncState === MessageSyncState.SYNCED) return;
 
-        const content = getMessageTextContent(message); // Use util to get text
+        const content = getMessageTextContent(message);
         if (!content) {
             console.warn("[saveMessageToServer Action] Message content is empty, skipping save.", message);
-            // If it was pending_create, mark as error?
-            // store._onMessageSyncError(conversationId, localMessageId);
             return;
         }
-
-        // Use existing ID if available (for retries), otherwise generate new one for server?
-        // The original store logic generated a new UUID here. Let's stick with that.
-        // If retries need the same ID, that logic needs adjustment.
-        // const messageIdForServer = crypto.randomUUID() as UUID;
 
         console.log(`[ChatActions] Saving message ${localMessageId} to conversation ${conversationId}`);
         const createRequest: MessageCreateRequest = {
@@ -284,23 +246,10 @@ export function useChatActions() {
             const savedMessage = await ChatApiService.createMessage(apiClient, conversationId, createRequest);
             console.log(`[ChatActions] Message ${localMessageId} saved successfully (Server ID: ${savedMessage.message_id} TS: ${savedMessage.timestamp} ${savedMessage.sender_type})`);
             message.syncState = MessageSyncState.SYNCED;
-            // Update store state on success
-            // store._onMessageSyncSuccess(conversationId, localMessageId, savedMessage);
         } catch (error: any) {
             console.error(`[ChatActions] Failed saving message ${localMessageId}:`, error);
-            // Update store state on error
-            // store._onMessageSyncError(conversationId, localMessageId);
-            // Optionally show error to user
         }
     }, [apiClient, store]);
-
-    const removeMessages = useCallback(async (messageIds: string[]) => {
-        if (!apiClient) {
-            console.warn("[ChatActions] API client not available, cannot remove messages.");
-            return;
-        }
-        // TODO: Implement
-    }, [apiClient]);
 
     // --- Title Generation Action --- 
     const generateSessionTitle = useCallback(async (sessionId: UUID, userMessageContent: string, assistantMessageContent: string) => {
@@ -323,8 +272,7 @@ export function useChatActions() {
             return;
         }
 
-        // Determine Model for Title Generation (using compressModel or summarize logic)
-        // Adapt logic from original store's getSummarizeModelConfig
+        // Model for Title Generation (adapts original store's getSummarizeModelConfig)
         const modelConfig = session.modelConfig;
         let titleModel = modelConfig.name;
 
@@ -335,7 +283,7 @@ export function useChatActions() {
             max_tokens: 100,
         };
 
-        // Construct Prompt (similar to original store logic)
+        // Prompt construction (adapts original store logic)
         const prompt = `**Prompt**\n\nYou are a chat‑title generator.\n\nInput\nUser: ${userMessageContent}\nAssistant: ${assistantMessageContent}\n\nTask\n1. If the messages revolve around a specific topic, produce a short, informative title (3–6 words, Title Case, no trailing punctuation).\n2. If they are too vague or empty to summarize meaningfully, output exactly:\n   ${DEFAULT_TOPIC}\n\nRules\n- Output **only** the title text (or "${DEFAULT_TOPIC}")—no extra words or quotation marks.\n- Keep the title neutral and descriptive; do not include the words "user" or "assistant".\n`;
 
         try {
@@ -392,7 +340,7 @@ export function useChatActions() {
     const loadSummariesForSession = useCallback(async (sessionId: UUID): Promise<{ summaries: ApiSummary[], lastSummarizedMessageId: UUID | null }> => {
         if (!apiClient) {
             console.warn("[ChatActions] API client not available, cannot load summaries.");
-            return { summaries: [], lastSummarizedMessageId: null }; // Return empty/default
+            return { summaries: [], lastSummarizedMessageId: null };
         }
 
         console.log(`[ChatActions] Loading summaries for session ${sessionId}...`);
@@ -411,13 +359,12 @@ export function useChatActions() {
             if (sortedSummaries.length > 0) {
                 lastId = sortedSummaries[0].end_message_id;
             }
-            // Removed direct store update here
             return { summaries: sortedSummaries, lastSummarizedMessageId: lastId };
         } catch (error) {
             console.error(`[ChatActions] Failed to load summaries for session ${sessionId}:`, error);
-            return { summaries: [], lastSummarizedMessageId: null }; // Return empty/default on error
+            return { summaries: [], lastSummarizedMessageId: null };
         }
-    }, [apiClient]); // Removed store from dependencies as it's no longer directly updating it
+    }, [apiClient]);
 
     const summarizeAndStoreMessages = useCallback(async (sessionId: UUID, messagesToSummarize: ChatMessage[]): Promise<ApiSummary | undefined> => {
         if (!apiClient || !apiClient.llm || !apiClient.app) {
@@ -442,12 +389,6 @@ export function useChatActions() {
 
         try {
             const apiMessages: RequestMessage[] = messagesToSummarize
-                // .filter(msg => msg.role === "user" || msg.role === "system") 
-                // .map(msg => ({
-                //     role: msg.role as "user" | "system", // Ensure role is correctly typed for API
-                //     content: msg.content,
-                // }));
-                
             
             const summaryText = await ChatApiService.callLlmSummarize(apiClient,  apiMessages, modelConfig);
 
@@ -467,15 +408,15 @@ export function useChatActions() {
                 content: EncryptionService.encrypt(summaryText),
             };
             const appSummaryResponse = await apiClient.app.createSummary(sessionId, summaryCreateRequest);
-            const newSummary = appSummaryResponse.data; // This is of type ApiSummary
+            const newSummary = appSummaryResponse.data; 
             newSummary.content = EncryptionService.decrypt(newSummary.content);
             
             console.log(`[ChatActions] Summary stored on server. Summary ID: ${newSummary.summary_id}`);
-            return newSummary; // Return the newly created summary
+            return newSummary;
 
         } catch (error) {
             console.error(`[ChatActions] Failed to summarize and store messages for session ${sessionId}:`, error);
-            return undefined; // Indicate failure
+            return undefined;
         } finally {
             // No longer manages isSummarizing flag for the global store here
             console.log(`[ChatActions] summarizeAndStoreMessages: Process finished for session ${sessionId}.`);
@@ -487,7 +428,7 @@ export function useChatActions() {
         newSession,
         selectSession,
         loadMessagesForSession,
-        loadSummariesForSession, // Modified
+        loadSummariesForSession,
         summarizeAndStoreMessages, 
         deleteSession,
         saveMessageToServer,

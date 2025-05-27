@@ -29,7 +29,6 @@ import { ActionButton } from "@/components/ui/action-button"; // Import ChatActi
 import { useDecryptionManager } from "@/hooks/use-decryption-manager"; // <-- Import the hook
 import { useChatSessionManager } from "@/hooks/use-chat-session-manager";
 import { UUID } from "crypto";
-import { useChatActions } from "@/hooks/use-chat-actions";
 
 // ChatComponentProps is now simpler as it gets most things from the store or direct sessionID
 export interface ChatComponentProps {
@@ -283,7 +282,7 @@ export function ChatComponent(props: ChatComponentProps) {
         onTouchStart={() => setAutoScroll(false)}
         // style={{ scrollBehavior: "smooth" }}
       >
-        {displayedMessages.length !== 0 && isLoadingMessages && hasMoreMessages && (
+        {displayedMessages.length > 10 && isLoadingMessages && hasMoreMessages && (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
             <CircularProgress size={24} color="inherit" />
           </div>

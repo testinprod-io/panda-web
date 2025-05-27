@@ -8,16 +8,16 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from '@/theme';
 import { SnackbarProvider } from '@/providers/snackbar-provider';
-import { AuthChatListener } from '@/store/chat';
+import { AuthChatListener } from '@/providers/auth-chat-listener';
 import { ApiClientProvider } from '@/providers/api-client-provider';
 import { EncryptionProvider } from '@/providers/encryption-provider';
-
+import { optimism } from "viem/chains";
 // NEW COMPONENT: Wraps content that depends on Privy authentication state
 function AuthenticatedContentWrapper({ children }: { children: React.ReactNode }) {
   const { authenticated } = usePrivy();
 
   return (
-    <ApiClientProvider>
+    <>
       {authenticated ? (
         <EncryptionProvider>
           <AuthChatListener />
@@ -31,7 +31,7 @@ function AuthenticatedContentWrapper({ children }: { children: React.ReactNode }
           {children}
         </SnackbarProvider>
       )}
-    </ApiClientProvider>
+    </>
   );
 }
 
@@ -62,14 +62,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 accentColor: '#676FFF',
                 // logo: 'your-logo-url', // Optional
               },
+              defaultChain: optimism,
               loginMethods: ['email', 'google', 'github', 'wallet'],
               embeddedWallets: { createOnLogin: 'users-without-wallets' }, // Optional
             }}
           >
             {/* Use the new wrapper component here */}
-            <AuthenticatedContentWrapper>
-              {children}
-            </AuthenticatedContentWrapper>
+            <ApiClientProvider>
+              <AuthenticatedContentWrapper>
+                {children}
+              </AuthenticatedContentWrapper>
+            </ApiClientProvider>
           </PrivyProvider>
         ) : (
           // Render children without Privy/Api/Encryption context if ID is missing,

@@ -4,7 +4,6 @@ import {
   ConversationUpdateRequest,
   GetConversationMessagesParams,
   GetConversationsParams,
-  HealthCheckResponse,
   Message,
   MessageCreateRequest,
   PaginatedConversationsResponse,
@@ -151,11 +150,6 @@ export class ApiClient {
         console.error("Network or fetch error:", error);
         throw new ApiError(0, 'Network error or unable to reach API', error);
     }
-  }
-
-  // --- Health Check --- 
-  async healthCheck(): Promise<HealthCheckResponse> {
-    return this.request<HealthCheckResponse>('GET', '/health', undefined, undefined, false);
   }
 
   // --- Conversations --- 

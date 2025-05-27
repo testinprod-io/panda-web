@@ -15,6 +15,7 @@ import type { UUID } from "crypto"; // Keep as type import
 import Locale from "@/locales";
 import { useSnackbar } from "@/providers/snackbar-provider";
 import styles from "@/components/chat/chat.module.scss";
+import { usePrivy } from "@privy-io/react-auth";
 
 const localStorage = safeLocalStorage();
 
@@ -25,6 +26,20 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
   const params = useParams();
   const router = useRouter();
   const appConfig = useAppConfig();
+
+  // Get Privy status
+  // const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
+
+  // Conditionally call hooks and render
+  // if (!privyReady || !privyAuthenticated) {
+  //   // Optionally, render a loading spinner or a message
+  //   // For now, return null to prevent rendering the chat UI
+  //   // You might want to show a loading spinner or a message here.
+  //   return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Hellloo</Box>;
+  //   // return null; 
+  // }
+
+  // These hooks are now called conditionally
   const { newSession } = useChatActions();
   const { showSnackbar } = useSnackbar();
 
@@ -73,15 +88,32 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
 
   const handleLayoutSubmit = useCallback(
     async (
+      sessionId: UUID | undefined,
       input: string,
       files: { url: string; fileId: string; type: string; name: string }[],
     ) => {
       if ((!input || !input.trim()) && files.length === 0) return;
       setInternalIsSubmitting(true);
+      console.log(`[handleLayoutSubmit] sessionId: ${sessionId}`);
       try {
         if (currentChatId && onSendMessageHandlerFromStore) {
+          console.log(`[handleLayoutSubmit] currentChatId: ${currentChatId}`);
           await onSendMessageHandlerFromStore(input, files);
           localStorage.removeItem(UNFINISHED_INPUT(currentChatId));
+        } else if (sessionId) {
+          const session = useChatStore.getState().sessions.find((s) => s.id === sessionId);
+          if (session) {
+            console.log(`[handleLayoutSubmit] sessionId: ${sessionId}`);
+            const newUserMessage = { input: input.trim(), files };
+            localStorage.setItem(
+              session.id,
+              JSON.stringify(newUserMessage)
+            );
+            localStorage.removeItem(UNFINISHED_INPUT(session.id));
+            router.replace(`/chat/${session.id}`);
+          } else { 
+            showSnackbar("Failed to start new chat", "error");
+          }
         } else {
           const createdSession = await newSession();
           if (createdSession) {
@@ -152,7 +184,7 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
                 : "translateX(0)",
               transition: theme.transitions.create("transform", {
                 easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.enteringScreen,
+                duration: 10000,//theme.transitions.duration.enteringScreen,
               }),
               zIndex: theme.zIndex.drawer + 1,
               boxShadow: theme.shadows[3],
@@ -193,7 +225,7 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              paddingTop: { xs: "60px", sm: "100px", md: "140px" },
+              // paddingTop: { xs: "60px", sm: "100px", md: "140px" },
               flexShrink: 0,
             }),
             ...(!isNewChatPage && {}),

@@ -32,6 +32,8 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight"; // For expand/c
 import styles from "./chat.module.scss";
 import { UUID } from "crypto";
 import { useApiClient } from "@/providers/api-client-provider";
+import { AttestationService } from "@/services/attestation-service";
+import { useWallets } from "@privy-io/react-auth";
 
 const Markdown = dynamic(async () => (await import("../ui/markdown")).Markdown, {
   loading: () => <LoadingAnimation />,
@@ -123,10 +125,14 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
 
   const { role, streaming, isError, isReasoning, fileIds, content, reasoning } =
     message;
+  const { wallets } = useWallets();
 
   const handleResend = useCallback(
-    () => onResend(messageId),
-    [onResend, messageId]
+    async () => { 
+      await AttestationService.getAttestation(wallets, sessionId); 
+      // onResend(messageId); 
+    },
+    [onResend, messageId, wallets]
   );
   const handleUserStop = useCallback(
     () => onUserStop(messageId),
