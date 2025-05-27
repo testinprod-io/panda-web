@@ -1,12 +1,9 @@
 import { ModelConfig, ModelProvider, ServiceProvider } from "@/types/constant";
 import { ModelType } from "@/store";
-import { ChatMessage } from "@/types";
+import { ChatMessage, Role } from "@/types";
 import { PandaApi, GetAccessTokenFn } from "@/client/platforms/panda";
 import { ApiClient } from "@/client/client";
 import { SummaryResponse } from "@/client/platforms/panda";
-
-export const ROLES = ["system", "user"] as const;
-export type MessageRole = (typeof ROLES)[number];
 
 export type ChatModel = ModelType;
 
@@ -22,7 +19,7 @@ export interface MultimodalContent {
 }
 
 export interface RequestMessage {
-  role: MessageRole;
+  role: Role;
   content: string;
   attachments?: MultimodalContent[];
 }

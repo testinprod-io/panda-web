@@ -1,11 +1,12 @@
 .sidebar {
   background-color: #131A28;
-  width: 378x;
+  width: 378px;
   height: 100%; // Assuming full height
   display: flex;
+  flex-shrink: 0;
   flex-direction: column;
   box-sizing: border-box;
-  transition: visibility 0.5s ease, width 0.5s ease, padding 0.5s ease; // Ensure padding is part of the transition
+  transition: width 0.5s ease, padding 0.5s ease; // Removed visibility from transition
   overflow-x: hidden; // Prevent horizontal scrollbar for the entire sidebar
   overflow-y: auto; // Make sidebar scrollable
 

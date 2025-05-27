@@ -38,9 +38,10 @@ export default function Sidebar({
       // Apply inline style for width animation ONLY if NOT in overlay mode
       // In overlay mode, visibility is handled by the transform in ChatLayoutContent
       style={!isOverlayMode ? {
+        width: isSidebarCollapsed ? 0 : "378px",
         // width: isSidebarCollapsed ? 0 : "378px",
         // In desktop mode, also manage visibility with width for a clean collapse
-        visibility: isSidebarCollapsed ? "hidden" : "visible", 
+        // visibility: isSidebarCollapsed ? "hidden" : "visible", 
       } : {
         // In overlay mode, do NOT set visibility here.
         // The transform: translateX(-100%) from ChatLayoutContent will handle hiding.
@@ -48,7 +49,12 @@ export default function Sidebar({
       }}
       // sx prop from layout.tsx applies for overlay mode styling (transform, fixed width, etc.)
       // or can be used for additional desktop styling if ever passed from there.
-      sx={sx} 
+      sx={{
+        // ...(!isOverlayMode && { // Apply flexShrink: 0 only when not in overlay mode (i.e., desktop)
+        //   flexShrink: 0,
+        // }),
+        ...sx, // Spread the existing sx prop, which is primarily for mobile/overlay styles
+      }}
     >
       {/* ADDED - Inner wrapper for padding and content layout */}
       <Box className={styles.sidebarInnerWrapper}>

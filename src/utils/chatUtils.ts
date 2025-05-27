@@ -12,7 +12,7 @@ import { ModelConfig } from '@/types/constant';
 import { ModelType, useAppConfig } from "@/store/config";
 import { collectModelsWithDefaultModel } from "./model";
 import { estimateTokenLength } from "./token";
-import { ChatMessage, MessageRole } from "@/types/chat";
+import { ChatMessage } from "@/types/chat";
 import { getMessageTextContent, trimTopic } from "@/utils/utils";
 
 export { trimTopic } from "@/utils/utils";

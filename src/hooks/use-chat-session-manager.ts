@@ -4,6 +4,7 @@ import {
   ChatMessage,
   createMessage,
   MessageSyncState,
+  Role,
 } from "@/types/chat"; // Adjust path as needed
 import { useChatActions } from "./use-chat-actions";
 import { useApiClient } from "@/providers/api-client-provider";
@@ -519,7 +520,7 @@ export function useChatSessionManager(
 
       // Add user message to store
       const userMessage = createMessage({
-        role: "user",
+        role: Role.USER,
         content: messageContent, // Use the potentially multimodal content
         attachments: attachments,
         syncState: MessageSyncState.PENDING_CREATE,
@@ -600,7 +601,7 @@ export function useChatSessionManager(
           // Fallback: create a new message and save it (similar to old behavior on find fail)
           const fallbackBotMessage = createMessage({
             id: botMessageId,
-            role: "system",
+            role: Role.ASSISTANT,
             content: finalContent, // Reasoning accumulated during streaming will be lost here
             date: date,
             streaming: false,
@@ -641,7 +642,7 @@ export function useChatSessionManager(
       const chronoSortedSummaries = [...localSummaries].reverse(); 
       chronoSortedSummaries.forEach(summary => {
         messagesForApi.push({
-          role: "system",
+          role: Role.SYSTEM,
           content: `Summary of previous conversation context (from ${summary.start_message_id} to ${summary.end_message_id}):\n${summary.content}`
         });
       });
@@ -671,7 +672,7 @@ export function useChatSessionManager(
       recentMessagesToInclude.forEach(msg => {
         // newUserMessage is already filtered out implicitly as it's not in currentDisplayedMessagesSnapshot
         messagesForApi.push({
-          role: (msg.role === "user" ? "user" : "system") as "user" | "system",
+          role: msg.role,
           content: msg.content,
           attachments: msg.attachments,
         });
@@ -679,7 +680,7 @@ export function useChatSessionManager(
       
       // Add the new user message itself
       messagesForApi.push({
-        role: (newUserMessage.role === "user" ? "user" : "system") as "user" | "system",
+        role: newUserMessage.role,
         content: newUserMessage.content,
         attachments: newUserMessage.attachments,
       });
@@ -688,7 +689,7 @@ export function useChatSessionManager(
       // ... (Make sure the callbacks for onReasoningStart etc. are still correctly wired)
       let reasoningStartTimeForThisQuery: number | null = null;
       const botMessage = createMessage({
-        role: "system", content: "", reasoning: "", isReasoning: false, 
+        role: Role.ASSISTANT, content: "", reasoning: "", isReasoning: false, 
         streaming: true, model: modelConfig.name, syncState: MessageSyncState.PENDING_CREATE,
       });
       const localBotMessageId = botMessage.id;

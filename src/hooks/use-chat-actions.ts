@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useChatStore } from '@/store/chat';
-import { ChatApiService, mapApiMessagesToChatMessages, mapApiMessageToChatMessage, mapConversationToSession, mapRoleToSenderType} from '@/services/ChatApiService';
+import { ChatApiService, mapApiMessagesToChatMessages, mapApiMessageToChatMessage, mapConversationToSession } from '@/services/ChatApiService';
 import { useApiClient } from '@/providers/api-client-provider';
 import { ChatMessage, MessageSyncState } from '@/types/chat';
 import { MessagesLoadState, SessionSyncState, ChatSession } from '@/types/session';
@@ -235,7 +235,7 @@ export function useChatActions() {
         console.log(`[ChatActions] Saving message ${localMessageId} to conversation ${conversationId}`);
         const createRequest: MessageCreateRequest = {
             message_id: message.id,
-            sender_type: mapRoleToSenderType(message.role),
+            sender_type: message.role,
             content: content,
             reasoning_content: message.reasoning,
             reasoning_time: message.reasoningTime ? message.reasoningTime.toString() : undefined,

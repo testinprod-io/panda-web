@@ -506,16 +506,7 @@ export default function ChatHeader({
               size="small"
               className={styles.loginButtonNew}
             >
-              Log in
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={handleOpenLoginPopup}
-              size="small"
-              className={styles.signUpButtonNew}
-              style={{ marginLeft: "8px" }}
-            >
-              Sign up
+              Log in/Sign up
             </Button>
           </>
         )}

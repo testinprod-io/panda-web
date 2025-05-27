@@ -13,11 +13,10 @@ import {
   PaginatedConversationsResponse,
   PaginatedMessagesResponse,
   HTTPValidationError,
-  SenderTypeEnum,
   GetConversationsParams,
 } from "@/client/types";
 import { UUID } from "crypto";
-import { ChatMessage, createMessage, MessageRole } from "@/types/chat";
+import { ChatMessage, createMessage, Role } from "@/types/chat";
 import { ChatSession, createNewSession } from "@/types/session";
 import { ModelType } from "@/store/config";
 import { ModelConfig } from "@/types/constant";
@@ -140,22 +139,16 @@ export function mapApiMessagesToChatMessages(messages: ApiMessage[]): ChatMessag
 export function mapApiMessageToChatMessage(message: ApiMessage): ChatMessage {
   // Decrypt the message first
   const decryptedMsg = decryptMessageData(message);
-  
-  const role: MessageRole = decryptedMsg.sender_type === SenderTypeEnum.USER ? "user" : "system";
 
   return createMessage({
     id: decryptedMsg.message_id,
-    role: role,
+    role: decryptedMsg.sender_type,
     content: decryptedMsg.content,
     fileIds: decryptedMsg.file_ids,
     date: new Date(decryptedMsg.timestamp),
     reasoning: decryptedMsg.reasoning_content,
     reasoningTime: decryptedMsg.reasoning_time ? parseInt(decryptedMsg.reasoning_time) : undefined,
   });
-}
-
-export function mapRoleToSenderType(role: MessageRole): SenderTypeEnum {
-    return role === "user" ? SenderTypeEnum.USER : SenderTypeEnum.SYSTEM;
 }
 
 export const ChatApiService = {
@@ -403,7 +396,7 @@ export const ChatApiService = {
         targetEndpoint: config.endpoint, // Pass the endpoint
       };
       api.llm.chat({
-        messages: [createMessage({ role: "user", content: prompt }) as unknown as RequestMessage],
+        messages: [createMessage({ role: Role.USER, content: prompt }) as unknown as RequestMessage],
         config: llmTitleConfig,
         onFinish: (title, date, responseRes) => {
           if (responseRes?.status === 200) {

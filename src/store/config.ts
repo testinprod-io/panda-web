@@ -119,7 +119,7 @@ export const ModalConfigValidator = {
 };
 
 export const useAppConfig = createPersistStore(
-  { ...DEFAULT_CONFIG },
+  DEFAULT_CONFIG ,
   (set, get) => ({
     reset() {
       // When resetting, ensure it uses the potentially updated DEFAULT_CONFIG from constants
@@ -156,8 +156,8 @@ export const useAppConfig = createPersistStore(
         // selectedModelDetail.name is the ModelType
         // appConfig.modelConfig needs fields like 'model', 'providerName', and the ones from ModelConfig (app/constant)
 
-        set((state) => ({
-          apiProvider: ServiceProvider.Panda, // Global API provider set to Panda
+        set(state => ({
+          ...state,
           modelConfig: {
             ...selectedModelDetail.config, // Spread fields from selected model's config (temp, top_p, name, displayName etc.)
             model: selectedModelDetail.name as ModelType, // Explicitly set the 'model' field for appConfig.modelConfig
@@ -209,6 +209,18 @@ export const useAppConfig = createPersistStore(
     name: StoreKey.Config,
     version: 1.1, // Incremented version due to significant model changes
     storage: createJSONStorage(() => indexedDBStorage), // Use indexedDBStorage directly
+
+    onRehydrateStorage: (state) => {
+      console.log("[ConfigStore] Hydration finished.");
+      return (hydratedState, error) => {
+          if (error) {
+              console.error("[ConfigStore] Error during rehydration:", error);
+          } else {
+               console.log("[ConfigStore] Rehydration successful.");
+          }
+      }
+    },
   },
+  
 );
 

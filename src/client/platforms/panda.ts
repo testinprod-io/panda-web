@@ -1,6 +1,6 @@
 import { PandaPath, DEFAULT_PANDA_MODEL_NAME } from "@/types/constant";
 import { ChatOptions, LLMApi, LLMModel, LLMUsage, MultimodalContent, LLMConfig } from "@/client/api";
-import { RequestMessage } from "@/types";
+import { RequestMessage, Role } from "@/types";
 
 // Type for the Privy getAccessToken function
 export type GetAccessTokenFn = () => Promise<string | null>;
@@ -19,7 +19,7 @@ export interface PandaListModelResponse {
 
 export interface RequestPayload {
   messages: {
-    role: "system" | "user";
+    role: Role;
     content: string | MultimodalContent[];
   }[];
   stream?: boolean;

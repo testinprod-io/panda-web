@@ -467,6 +467,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
       const uploadPromise = apiClient.app.uploadFile(
         currentSessionIdToUse!,
         clientFile.originalFile,
+        clientFile.name,
         (progress) => {
           console.log(`[Upload Progress] ClientID: ${clientFile.clientId}, Progress: ${progress}%`);
           setAttachedFiles(prev =>

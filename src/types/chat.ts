@@ -4,16 +4,19 @@ import { nanoid } from 'nanoid';
 import { MultimodalContent } from "@/client/api";
 import { UUID } from "crypto";
 
+export enum Role {
+  USER = 'user',
+  SYSTEM = 'system',
+  ASSISTANT = 'assistant',
+}
+
 export interface Message {
-  role: 'user' | 'system';
+  role: Role;
   text: string;
 }
 
-export const ROLES = ["system", "user"] as const;
-export type MessageRole = (typeof ROLES)[number];
-
 export interface RequestMessage {
-  role: MessageRole;
+  role: Role;
   content: string | MultimodalContent[];
 }
 
@@ -81,7 +84,7 @@ export type ChatMessage = Omit<RequestMessage, 'content'> & { // Omit original c
  */
 export type EncryptedMessage = {
   id: string;
-  role: MessageRole;
+  role: Role;
   /** Encrypted representation of string | MultimodalContent[] */
   content: string;
   date: Date;
@@ -104,7 +107,7 @@ export function createEncryptedMessage(override: Partial<EncryptedMessage> & { c
 
   return {
     id: override.id ?? nanoid(),
-    role: override.role ?? "user",
+    role: override.role ?? Role.USER,
     date: date,
     syncState: override.syncState ?? MessageSyncState.PENDING_CREATE,
     content: override.content, // Mandatory
@@ -123,7 +126,7 @@ export function createMessage(override: Partial<ChatMessage>): ChatMessage { // 
  return {
    id: crypto.randomUUID() as UUID,
    date: new Date(),
-   role: "user",
+   role: Role.USER, 
    content: "", // Default to empty string, will be overridden
    fileIds: [],
    streaming: false,

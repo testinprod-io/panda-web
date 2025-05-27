@@ -216,6 +216,7 @@ export class ApiClient {
   async uploadFile(
     conversationId: UUID,
     file: File,
+    fileName: string,
     onUploadProgress?: (progress: number) => void
   ): Promise<UploadFileResponse> {
     const formData = new FormData();

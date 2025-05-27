@@ -1,10 +1,10 @@
 import React from 'react';
 import clsx from 'clsx';
-import { MessageRole } from '@/types'; // Assuming MessageRole is defined here
+import { Role } from '@/types'; // Assuming MessageRole is defined here
 import styles from './chat.module.scss'; // Reuse existing chat styles if applicable
 
 interface ChatMessageCellSkeletonProps {
-  role: MessageRole;
+  role: Role;
 }
 
 /**
@@ -14,7 +14,7 @@ interface ChatMessageCellSkeletonProps {
 export const ChatMessageCellSkeleton: React.FC<ChatMessageCellSkeletonProps> = ({ role }) => {
   // console.log('[ChatMessageCellSkeleton] Rendering skeleton for role:', role);
   
-  const isUser = role === 'user';
+  const isUser = role === Role.USER;
 
   return (
     <div

@@ -1,9 +1,5 @@
 import { UUID } from 'crypto';
-
-export enum SenderTypeEnum {
-  USER = 'user',
-  SYSTEM = 'system',
-}
+import { Role } from '@/types';
 
 export interface Conversation {
   title: string | null;
@@ -13,7 +9,7 @@ export interface Conversation {
 }
 
 export interface Message {
-  sender_type: SenderTypeEnum;
+  sender_type: Role;
   content: string;
   message_id: UUID;
   conversation_id: UUID;
@@ -24,7 +20,7 @@ export interface Message {
 }
 
 export interface InitialMessageContent {
-    sender_type: SenderTypeEnum;
+    sender_type: Role;
     message_id: UUID;
     content: string;
 }
@@ -54,7 +50,7 @@ export interface ConversationUpdateRequest {
 }
 
 export interface MessageCreateRequest {
-  sender_type: SenderTypeEnum;
+  sender_type: Role;
   message_id: UUID;
   content: string;
   file_ids: string[];

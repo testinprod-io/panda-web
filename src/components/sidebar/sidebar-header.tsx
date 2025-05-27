@@ -52,11 +52,11 @@ export default function SidebarHeader({ onCollapseSidebar }: SidebarHeaderProps)
         <img src="/icons/logo.png" alt="Panda AI Logo" className={styles.sidebarHeaderLogoImage} />
         <Box className={styles.sidebarHeaderLogoTextContainer}>
           <Typography component="span" className={styles.logoTextBold} sx={{ fontFamily: montserrat.style.fontFamily, fontWeight: 600 }}>
-            Panda&nbsp;
+            PANDA
           </Typography>
-          <Typography component="span" className={styles.logoTextNormal} sx={{ fontFamily: montserrat.style.fontFamily, fontWeight: 500 }}>
+          {/* <Typography component="span" className={styles.logoTextNormal} sx={{ fontFamily: montserrat.style.fontFamily, fontWeight: 500 }}>
             AI
-          </Typography>
+          </Typography> */}
         </Box>
       </Box>
     </Box>

@@ -188,8 +188,8 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
               right: 0,
               bottom: 0,
               backgroundColor: "rgba(0, 0, 0, 0.5)",
-              opacity: !effectiveIsSidebarCollapsed ? 1 : 0,
-              visibility: !effectiveIsSidebarCollapsed ? 'visible' : 'hidden',
+              opacity: !isSidebarCollapsed ? 1 : 0,
+              visibility: !isSidebarCollapsed ? 'visible' : 'hidden',
               transition: theme.transitions.create(["opacity", "visibility"], { // Apply transition to opacity and visibility
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.standard,
@@ -199,7 +199,7 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
           />
         )}
         <Sidebar
-          isSidebarCollapsed={effectiveIsSidebarCollapsed} // Use effective state
+          isSidebarCollapsed={isSidebarCollapsed} // Use effective state
           onCollapseSidebar={handleCollapseSidebar}
           {...(isMobile && {
             sx: {
