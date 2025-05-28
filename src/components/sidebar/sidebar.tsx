@@ -7,6 +7,8 @@ import { useAuthStatus } from "@/hooks/use-auth-status";
 import styles from "./sidebar.module.scss";
 import clsx from "clsx"; // For conditional class names
 import { SxProps, Theme } from "@mui/material/styles"; // Import SxProps and Theme
+import AccessPanel from "@/components/sidebar/access-panel";
+import ProjectPanel from "@/components/sidebar/project-panel";
 
 interface SidebarProps {
   isSidebarCollapsed: boolean;
@@ -61,6 +63,8 @@ export default function Sidebar({
         {/* Content visibility will be handled by the sidebar sliding off-screen in overlay mode */}
         {/* If further fine-tuning of content opacity during overlay slide is needed, we can revisit */}
         <SidebarHeader onCollapseSidebar={onCollapseSidebar} />
+        <ProjectPanel onNewChat={() => {}} />
+        <AccessPanel />
 
         <Box
           className={styles.sidebarContent}

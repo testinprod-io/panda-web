@@ -207,19 +207,19 @@ export const useAppConfig = createPersistStore(
   }),
   {
     name: StoreKey.Config,
-    version: 1.1, // Incremented version due to significant model changes
-    storage: createJSONStorage(() => indexedDBStorage), // Use indexedDBStorage directly
+    version: 1.2, // Incremented version due to significant model changes
+  //   storage: createJSONStorage(() => indexedDBStorage), // Use indexedDBStorage directly
 
-    onRehydrateStorage: (state) => {
-      console.log("[ConfigStore] Hydration finished.");
-      return (hydratedState, error) => {
-          if (error) {
-              console.error("[ConfigStore] Error during rehydration:", error);
-          } else {
-               console.log("[ConfigStore] Rehydration successful.");
-          }
-      }
-    },
+  //   onRehydrateStorage: (state) => {
+  //     console.log("[ConfigStore] Hydration finished.");
+  //     return (hydratedState, error) => {
+  //         if (error) {
+  //             console.error("[ConfigStore] Error during rehydration:", error);
+  //         } else {
+  //              console.log("[ConfigStore] Rehydration successful.");
+  //         }
+  //     }
+  //   },
   },
   
 );

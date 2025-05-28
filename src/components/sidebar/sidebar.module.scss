@@ -1,5 +1,5 @@
 .sidebar {
-  background-color: #131A28;
+  background-color: #FFFFFF;
   width: 378px;
   height: 100%; // Assuming full height
   display: flex;
@@ -9,7 +9,7 @@
   transition: width 0.5s ease, padding 0.5s ease; // Removed visibility from transition
   overflow-x: hidden; // Prevent horizontal scrollbar for the entire sidebar
   overflow-y: auto; // Make sidebar scrollable
-
+  border-right: 1px solid #CACACA;
   // --- Custom Scrollbar Styles --- 
 
   // --- WebKit (Chrome, Safari, Edge) ---
@@ -71,7 +71,7 @@
   flex-direction: column;
   flex-grow: 1; // Allow it to grow within the potentially fixed-height sidebar
   padding: 17px 31px; // Original sidebar padding
-  gap: 72px; // Original gap between header and content
+  // gap: 72px; // Original gap between header and content
   min-height: min-content; // Important for scroll to work correctly with flex children
   box-sizing: border-box;
 }
@@ -130,7 +130,7 @@
   // For the image provided, they appear as one line with different weights
   // If they should be stacked, add flex-direction: column;
   // justifyContent: 'center'; // from Figma, might not be needed depending on flex setup
-  color: white;
+  color: #1E1E1E;
   font-family: 'Montserrat', sans-serif; // Specify fallback
   font-size: 20px; // Figma style
   letter-spacing: 0.80px; // Figma style
