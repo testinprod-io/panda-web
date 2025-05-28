@@ -1,167 +1,250 @@
+// Base Sidebar Variables
+$sidebar-expanded-width: 378px;
+$sidebar-collapsed-width: 125px; // Your recent value
+$nav-menu-collapsed-width: 77px; // Your recent value for .collapsedNavMenu
+
+// Animation
+$sidebar-transition-duration: 0.4s;
+$sidebar-transition-timing: ease-in-out;
+
 .sidebar {
-  background-color: #FFFFFF;
-  width: 378px;
-  height: 100%; // Assuming full height
+  background-color: #ffffff;
+  height: 100%;
   display: flex;
-  flex-shrink: 0;
   flex-direction: column;
+  flex-shrink: 0;
   box-sizing: border-box;
-  transition: width 0.5s ease, padding 0.5s ease; // Removed visibility from transition
-  overflow-x: hidden; // Prevent horizontal scrollbar for the entire sidebar
-  overflow-y: auto; // Make sidebar scrollable
-  border-right: 1px solid #CACACA;
-  // --- Custom Scrollbar Styles --- 
+  border-right: 1px solid #cacaca;
+  overflow: hidden; // CRUCIAL for clipping the slidingContainer
+  position: relative; // For any absolute children if ever needed again (like overlay toggle)
+  transition: width $sidebar-transition-duration $sidebar-transition-timing;
 
-  // --- WebKit (Chrome, Safari, Edge) ---
+  // Custom scrollbar styles (can remain if panes need internal scrolling)
   &::-webkit-scrollbar {
-    width: 14px; // Width of the scrollbar
+    width: 14px;
   }
-
   &::-webkit-scrollbar-track {
-    background: transparent; // Make track transparent
+    background: transparent;
     border-radius: 4px;
   }
-
   &::-webkit-scrollbar-thumb {
-    // Default: hidden/transparent thumb
-    background-color: rgba(255, 255, 255, 0); 
-    border-radius: 4px; // Rounded corners for the thumb
-    border: 2px solid transparent; // Creates padding around thumb if track isn't fully transparent
-    background-clip: content-box; // Ensures border doesn't make thumb thicker
-    transition: background-color 0.3s ease-in-out; // Fade transition for thumb color
+    background-color: rgba(255, 255, 255, 0);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+    transition: background-color 0.3s ease-in-out;
   }
-
-  // On hover of the sidebar, make thumb visible
   &:hover::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.25); // Visible thumb color
+    background-color: rgba(255, 255, 255, 0.25);
   }
-
-  // Optional: A slightly more opaque thumb when directly hovering the thumb itself (after sidebar hover revealed it)
-  // &:hover::-webkit-scrollbar-thumb:hover {
-  //   background-color: rgba(255, 255, 255, 0.4);
-  // }
-
-  // --- Firefox ---
-  // Default: hidden/transparent thumb and track
-  scrollbar-width: thin; // Options: auto, thin, none
-  scrollbar-color: transparent transparent; // thumb color and track color
-
-  // On hover of the sidebar, make thumb visible for Firefox
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
   &:hover {
-    scrollbar-color: rgba(255, 255, 255, 0.25) transparent; // Visible thumb, transparent track
-  }
-  // Note: CSS transitions on scrollbar-color are not reliably supported in Firefox for smooth fade.
-}
-
-.sidebarCollapsed {
-  width: 0px !important;   // Target width for collapse animation
-  padding: 0 !important;    // Animate padding to 0
-  overflow: hidden !important;
-
-  // When sidebar is collapsed, its direct children (header & content area) fade out
-  > .sidebarHeaderContainer,
-  > .sidebarContent {
-    opacity: 0;
-    pointer-events: none; // Disable interaction when invisible
+    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
   }
 }
 
-.sidebarInnerWrapper {
+.slidingContainer {
+  display: flex;
+  flex-shrink: 0;
+  width: calc($sidebar-expanded-width + $sidebar-collapsed-width);
+  flex-grow: 1;
+  min-height: 0;
+  transition: transform $sidebar-transition-duration $sidebar-transition-timing;
+  will-change: transform;
+}
+
+.expandedPane, .collapsedPane {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  flex-grow: 1; // Allow it to grow within the potentially fixed-height sidebar
-  padding: 17px 31px; // Original sidebar padding
-  // gap: 72px; // Original gap between header and content
-  min-height: min-content; // Important for scroll to work correctly with flex children
+  box-sizing: border-box;
+  flex-shrink: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.expandedPane {
+  width: $sidebar-expanded-width;
+}
+
+.collapsedPane {
+  width: $sidebar-collapsed-width;
+  align-items: center;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+// Styles for SidebarHeader (used once, above panes)
+.sidebarHeaderContainer {
+  display: flex;
+  flex-direction: column;
+  padding: 17px 31px;
+
+  &.collapsed {
+    padding: 17px 12px;
+  }
+}
+
+// Styles for expanded content area (within .expandedPane)
+.expandedContentArea {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  min-height: 0;
+  padding: 17px 31px;
+}
+
+.sidebarContent { // Contains ChatList
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+// Styles for the new navigation menu (within .collapsedPane)
+.collapsedNavMenu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: $nav-menu-collapsed-width;
   box-sizing: border-box;
 }
 
-.sidebarHeaderContainer { // New wrapper for the header content (icon row + logo row)
+.collapsedNavItem {
   display: flex;
   flex-direction: column;
-  gap: 20px; // Figma: Gap between icon row and logo row
-  align-self: stretch;
-  flex-shrink: 0; // Prevent header from shrinking
-  min-width: 316px; // Prevents content from shrinking: 286px (total) - 2 * 31px (padding)
-  opacity: 1;       // Default visible state
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 8px 0;
+  width: 100%;
+  box-sizing: border-box;
+
+  .navItemIcon {
+    img, svg {
+      width: 24px;
+      height: 24px;
+      color: #1e1e1e;
+    }
+  }
+  .navItemText {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    color: #757575;
+    text-align: center;
+    line-height: 1.2;
+  }
+  &:hover {
+    .navItemIcon img, .navItemIcon svg {
+      color: #007bff;
+    }
+    .navItemText {
+      color: #1e1e1e;
+    }
+  }
 }
 
-.sidebarHeaderIconRow { // Was .sidebarHeader
+// REMOVE OLD/UNUSED STYLES
+// .sidebarCollapsed class (the one applied to .sidebar) is no longer needed for these specific overrides
+// .sidebarInnerWrapper is removed
+// .sidebar.sidebarCollapsed .projectPanelContainer, etc. are removed
+// Specific .sidebar.sidebarCollapsed .sidebarHeaderContainer is removed
+
+// Keep .sidebarHeaderIconRow, .sidebarHeaderLogoRow, .logoTextBold, .logoTextNormal as they are used by SidebarHeader.tsx
+// The styling for these might need slight adjustment if their container's padding changes significantly
+// but SidebarHeader.tsx logic largely controls their appearance based on isSidebarCollapsed.
+
+.sidebarHeaderIconRow { 
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%; // Take full width
-  color: white; // Ensure icons/text in header are white
-  box-sizing: border-box; // Ensure padding/border don't add to width
+  height: 48px;
+  width: 100%;
+  color: white; 
+  box-sizing: border-box; 
   svg {
-    color: #B3B3B3;
+    color: #b3b3b3;
   }
-  // Style for IconButtons within the header if needed
   :global(.MuiIconButton-root) {
-    color: white; // Make all IconButton icons white
-    // Figma implies 48x48 clickable area for icons, MUI IconButton usually handles this.
-    // If specific sizing is needed:
-    // width: 48px;
-    // height: 48px;
-    // padding: 12px; /* (48-24)/2 */
+    color: white;
   }
 }
 
 .sidebarHeaderLogoRow {
   display: flex;
   align-items: center;
-  padding: 12px; // Figma style
-  border-radius: 8px; // Figma style
-  gap: 8px; // Figma style
-  width: 100%; // Ensure it takes the available width within the header container
-  box-sizing: border-box; // Crucial: padding will be inside this width
-  // No background specified in Figma snippet for the row itself, assume transparent or inherited
+  padding: 8px 12px; // This is the padding for the logo row *within* the header container
+  border-radius: 8px; 
+  gap: 8px; 
+  height: 48px;
+  width: 100%; 
+  box-sizing: border-box; 
 }
 
 .sidebarHeaderLogoImage {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px; // Figma style
-  // Ensure your image path is correct and accessible
+  width: 32px;
+  height: 32px;
+  border-radius: 4px; 
 }
 
-.sidebarHeaderLogoTextContainer { // Container for "Panda" and "AI" text
-  display: flex; // Allows Panda and AI to be side-by-side if desired, or use column for stacking like title/subtitle
-  // For the image provided, they appear as one line with different weights
-  // If they should be stacked, add flex-direction: column;
-  // justifyContent: 'center'; // from Figma, might not be needed depending on flex setup
-  color: #1E1E1E;
-  font-family: 'Montserrat', sans-serif; // Specify fallback
-  font-size: 20px; // Figma style
-  letter-spacing: 0.80px; // Figma style
+.sidebarHeaderLogoTextContainer { 
+  display: flex; 
+  color: #1e1e1e;
+  font-family: 'Montserrat', sans-serif; 
+  font-size: 20px; 
+  letter-spacing: 0.80px; 
   font-weight: 600;
-  line-height: 1.2; // Adjust for better visual appearance if needed
+  line-height: 1.2; 
 }
 
 .logoTextBold {
   font-family: 'Montserrat', sans-serif;
-  font-weight: 600; // Figma: Panda
+  font-weight: 600; 
   font-size: 20px;
-  letter-spacing: 0.80;
+  letter-spacing: 0.80px;
 }
 
 .logoTextNormal {
   font-family: 'Montserrat', sans-serif;
-  font-weight: 500; // Figma: AI
+  font-weight: 500; 
   font-size: 20px;
-  letter-spacing: 0.80;
+  letter-spacing: 0.80px;
 }
 
-.sidebarContent {
-  // Styles for the main content area of the sidebar (e.g., the chat list container)
-  flex-grow: 1;
-  min-width: 316px; // Prevents content from shrinking: 286px (total) - 2 * 31px (padding)
-  opacity: 1;       // Default visible state
-  transition: opacity 0.15s ease-out; // Smooth fade for content, faster than sidebar width animation
-  display: flex; // Added to ensure ChatList can grow if it needs to
-  flex-direction: column; // Added for ChatList
-}
+// Styles for ProjectPanel, AccessPanel can remain if they are self-contained
+// or if they relied on .sidebarContent structure which is preserved.
 
-.sidebarFooter {
-  // Styles for the footer will be added here by refactoring sx props
+// .sidebarFooter and .sidebarToggleButton might need adjustment if their positioning
+// was relative to the old .sidebar structure. For now, assuming they are okay or handled elsewhere. 
+
+// Dedicated styles for the sidebar toggle button (used in ChatLayout.tsx)
+.sidebarToggleButton {
+  position: absolute !important; // !important to override MUI if needed, but use with caution
+  top: 50%; 
+  // The 'left' positioning is handled by inline styles in ChatLayout.tsx based on sidebar state
+  transform: translateY(-50%); // Vertically center the button on its 'left' edge
+  z-index: 100; // Ensure it's above sidebar, but below potential full-screen overlays
+  background-color: #FFFFFF !important; 
+  border: 1px solid #E0E0E0 !important; 
+  border-radius: 50% !important; 
+  width: 32px !important; 
+  height: 32px !important; 
+  padding: 4px !important; 
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+
+  // Icon styling within the button
+  svg {
+    font-size: 20px; // Adjust as needed
+    color: #5F6368; // Icon color
+  }
+
+  &:hover {
+    background-color: #F8F9FA !important; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+  }
 } 

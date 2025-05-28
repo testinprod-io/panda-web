@@ -19,7 +19,7 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({ onNewChat }) => {
       >
         <div className={styles.iconContainer}> 
           <div className={styles.iconWrapper} data-size="20">
-            <img src="/icons/new_chat.svg" style={{width: '20px', height: '20px'}} alt="New Chat" className={styles.newChatIcon} />
+            <img src="/icons/new-chat.svg" style={{width: '20px', height: '20px'}} alt="New Chat" className={styles.newChatIcon} />
             {/* <div className={styles.newChatIconOutline} /> */}
           </div>
         </div>

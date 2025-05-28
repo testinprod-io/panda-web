@@ -1,12 +1,12 @@
 "use client";
 
 import { Box, IconButton, Tooltip, Typography } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import SearchIcon from '@mui/icons-material/Search';
+import SearchMuiIcon from '@mui/icons-material/Search';
 import { useRouter } from 'next/navigation';
 import { useChatStore } from '@/store/chat';
 import styles from './sidebar.module.scss';
 import { Montserrat } from 'next/font/google';
+import clsx from 'clsx';
 
 const montserrat = Montserrat({
   subsets: ['latin'],
@@ -14,38 +14,52 @@ const montserrat = Montserrat({
 });
 
 interface SidebarHeaderProps {
-  onCollapseSidebar: () => void;
+  isSidebarCollapsed: boolean;
 }
 
-export default function SidebarHeader({ onCollapseSidebar }: SidebarHeaderProps) {
+export default function SidebarHeader({ isSidebarCollapsed }: SidebarHeaderProps) {
   const router = useRouter();
   const store = useChatStore();
 
-  const handleNewChat = () => {
-    store.setCurrentSessionIndex(-1);
-    router.push(`/`);
+  const handleSearch = () => {
+    console.log("Search icon clicked");
+    // Implement search functionality
+  };
+
+  const handleSettings = () => {
+    console.log("Settings icon clicked");
+    window.location.hash = 'settings';
   };
 
   return (
-    <Box className={styles.sidebarHeaderContainer}>
+    <Box className={clsx(styles.sidebarHeaderContainer, isSidebarCollapsed && styles.collapsed)}>
       <Box className={styles.sidebarHeaderIconRow}>
-        <Tooltip title="Collapse Sidebar">
-          <IconButton onClick={onCollapseSidebar} sx={{ color: 'white' }}>
-            <img src="/icons/sidebar.svg" alt="Collapse Sidebar" style={{ width: '24px', height: '24px', filter: 'invert(81%) sepia(0%) saturate(7189%) hue-rotate(101deg) brightness(89%) contrast(91%)' }} />
-          </IconButton>
-        </Tooltip>
-        <Box>
-          {/* <Tooltip title="Search (placeholder)">
-            <IconButton sx={{ color: 'white' }}>
-              <SearchIcon />
-            </IconButton>
-          </Tooltip> */}
-          <Tooltip title="New Chat">
-            <IconButton onClick={handleNewChat} sx={{ color: 'white' }}>
-              <img src="/icons/new_chat.svg" alt="New Chat" style={{ width: '24px', height: '24px', filter: 'invert(81%) sepia(0%) saturate(7189%) hue-rotate(101deg) brightness(89%) contrast(91%)' }} />
-            </IconButton>
-          </Tooltip>
-        </Box>
+        {!isSidebarCollapsed ? (
+          <>
+            {/* Wrapper for left-aligned icons */}
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              {/* <Tooltip title="Search">
+                <IconButton onClick={handleSearch} sx={{ color: '#757575' }}>
+                  <SearchMuiIcon />
+                </IconButton>
+              </Tooltip> */}
+              {/* Add other left-aligned icons here if needed */}
+            </Box>
+
+            {/* Right-aligned icon(s) */}
+            <Tooltip title="Settings">
+              <IconButton onClick={handleSettings} sx={{ color: '#757575' }}>
+                <img src="/icons/settings.svg" alt="Settings" style={{ width: '24px', height: '24px', filter: 'invert(50%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(90%) contrast(80%)' }} />
+              </IconButton>
+            </Tooltip>
+          </>
+        ) : (
+          // Content for when sidebar IS collapsed (e.g., a centered toggle icon if any)
+          <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+            {/* Example: If you wanted a specific icon for the collapsed header top row */}
+            {/* <IconButton><MenuIcon /></IconButton> */}
+          </Box>
+        )}
       </Box>
 
       <Box className={styles.sidebarHeaderLogoRow}>
@@ -54,9 +68,6 @@ export default function SidebarHeader({ onCollapseSidebar }: SidebarHeaderProps)
           <Typography component="span" className={styles.logoTextBold} sx={{ fontFamily: montserrat.style.fontFamily, fontWeight: 600 }}>
             PANDA
           </Typography>
-          {/* <Typography component="span" className={styles.logoTextNormal} sx={{ fontFamily: montserrat.style.fontFamily, fontWeight: 500 }}>
-            AI
-          </Typography> */}
         </Box>
       </Box>
     </Box>

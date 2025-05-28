@@ -30,7 +30,7 @@ import { useRouter } from "next/navigation";
 
 interface ChatHeaderProps {
   isSidebarCollapsed: boolean;
-  onRevealSidebar: () => void;
+  onToggleSidebar: () => void;
   isMobile?: boolean;
 }
 
@@ -39,7 +39,7 @@ type EncryptionStatus = "SUCCESSFUL" | "FAILED" | "IN_PROGRESS";
 
 export default function ChatHeader({
   isSidebarCollapsed,
-  onRevealSidebar,
+  onToggleSidebar,
   isMobile,
 }: ChatHeaderProps) {
   const { login, logout, user } = usePrivy();
@@ -225,7 +225,7 @@ export default function ChatHeader({
           <>
             <Tooltip title="Reveal Sidebar">
               <IconButton
-                onClick={onRevealSidebar}
+                onClick={onToggleSidebar}
                 className={styles.revealSidebarButton}
               >
                 <img
@@ -241,7 +241,7 @@ export default function ChatHeader({
                 className={styles.newChatButton}
               >
                 <img
-                  src="/icons/new_chat.svg"
+                  src="/icons/new-chat.svg"
                   alt="New Chat"
                   style={{ width: "24px", height: "24px", filter: 'invert(9%) sepia(0%) saturate(0%) hue-rotate(134deg) brightness(94%) contrast(92%)' }}
                 />

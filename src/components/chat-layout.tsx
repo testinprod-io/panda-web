@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Box, easing, Typography, useMediaQuery } from "@mui/material";
+import { Box, easing, Typography, useMediaQuery, IconButton, Tooltip } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import Sidebar from "@/components/sidebar/sidebar";
 import ChatHeader from "@/components/chat-header";
@@ -15,7 +15,10 @@ import type { UUID } from "crypto"; // Keep as type import
 import Locale from "@/locales";
 import { useSnackbar } from "@/providers/snackbar-provider";
 import styles from "@/components/chat/chat.module.scss";
+import sidebarStyles from "@/components/sidebar/sidebar.module.scss";
 import { usePrivy } from "@privy-io/react-auth";
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 const localStorage = safeLocalStorage();
 
@@ -154,8 +157,12 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
     ]
   );
 
-  const handleCollapseSidebar = () => setIsSidebarCollapsed(true);
-  const handleRevealSidebar = () => setIsSidebarCollapsed(false);
+  const handleToggleSidebar = () => setIsSidebarCollapsed(prev => !prev);
+
+  const sidebarExpandedWidth = 378; // px - Matches $sidebar-expanded-width
+  const sidebarCollapsedWidth = 125; // px - Matches $sidebar-collapsed-width
+  const sidebarTransitionDuration = "0.4s"; // Matches $sidebar-transition-duration
+  const sidebarTransitionTiming = "ease-in-out"; // Matches $sidebar-transition-timing
 
   // Determine the effective collapsed state for the sidebar, 
   // especially to prevent flicker when transitioning from desktop (open) to mobile (overlay).
@@ -175,12 +182,30 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
         position: "relative",
       }}
     >
+      {/* Sidebar Toggle Button - Now in ChatLayoutContent */}
+      {!isMobile && (
+        <Tooltip title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"} placement="right">
+          <IconButton 
+            onClick={handleToggleSidebar} 
+            className={sidebarStyles.sidebarToggleButton} // Use styles from sidebar.module.scss
+            aria-label={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            style={{
+              left: isSidebarCollapsed ? `${sidebarCollapsedWidth}px` : `${sidebarExpandedWidth}px`,
+              transition: `left ${sidebarTransitionDuration} ${sidebarTransitionTiming}`,
+              // top: '50vh' and transform will be handled by SCSS
+            }}
+          >
+            {isSidebarCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+          </IconButton>
+        </Tooltip>
+      )}
+
       {/* Logic for overlay and sidebar rendering */}
       <>
         {/* Render overlay if mobile, control visibility/opacity with sx props for animation */}
         {isMobile && (
           <Box
-            onClick={handleCollapseSidebar}
+            onClick={handleToggleSidebar}
             sx={{
               position: "fixed",
               top: 0,
@@ -200,7 +225,7 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
         )}
         <Sidebar
           isSidebarCollapsed={isSidebarCollapsed} // Use effective state
-          onCollapseSidebar={handleCollapseSidebar}
+          onToggleSidebar={handleToggleSidebar} // Pass the new toggle handler
           {...(isMobile && {
             sx: {
               position: "fixed",
@@ -236,7 +261,7 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
       >
         <ChatHeader
           isSidebarCollapsed={effectiveIsSidebarCollapsed} // Use effective state
-          onRevealSidebar={handleRevealSidebar}
+          onToggleSidebar={handleToggleSidebar} // Pass the new toggle handler
           isMobile={isMobile}
         />
         <Box
