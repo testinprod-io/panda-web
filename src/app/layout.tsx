@@ -24,10 +24,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <React.Suspense fallback={<div></div>}>
-          <SettingsModalHandler />
-        </React.Suspense>
         <Providers>
+          <React.Suspense fallback={<div></div>}>
+            <SettingsModalHandler />
+          </React.Suspense>
           <ChatLayoutContent>{children}</ChatLayoutContent>
         </Providers>
       </body>
