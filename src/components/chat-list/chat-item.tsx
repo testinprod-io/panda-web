@@ -53,26 +53,26 @@ export function ChatItem({
   const listItemRef = useRef<HTMLDivElement | null>(null);
 
   const { isLocked } = useEncryption();
-  const [actualDecryptedTopic, setActualDecryptedTopic] = useState(session.topic || Locale.Store.DefaultTopic);
-  const [displayedTitle, setDisplayedTitle] = useState(actualDecryptedTopic);
+  // const [actualDecryptedTopic, setActualDecryptedTopic] = useState(session.topic || Locale.Store.DefaultTopic);
+  const [displayedTitle, setDisplayedTitle] = useState(session.visibleTopic);
   const [isAnimating, setIsAnimating] = useState(false);
   const animationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    const topicToProcess = session.topic || Locale.Store.DefaultTopic;
+    const topic = session.topic || Locale.Store.DefaultTopic;
     if (isLocked) {
-      setActualDecryptedTopic(topicToProcess);
+      session.visibleTopic = topic;
     } else {
-      setActualDecryptedTopic(EncryptionService.decryptChatMessageContent(topicToProcess));
+      session.visibleTopic = EncryptionService.decryptChatMessageContent(topic);
     }
   }, [isLocked, session.topic]);
 
   // Update editValue when actualDecryptedTopic changes and not editing
   useEffect(() => {
     if (!isEditing) {
-      setEditValue(actualDecryptedTopic);
+      setEditValue(session.visibleTopic);
     }
-  }, [actualDecryptedTopic, isEditing]);
+  }, [session.visibleTopic, isEditing]);
 
   // Scroll into view when selected
   useEffect(() => {
@@ -107,14 +107,14 @@ export function ChatItem({
       handleSaveEdit();
     } else if (e.key === 'Escape') {
       setIsEditing(false);
-      setEditValue(actualDecryptedTopic); // Revert to actual decrypted topic
+      setEditValue(session.visibleTopic); // Revert to actual decrypted topic
     }
   };
 
   const handleSaveEdit = () => {
     if (
       editValue.trim() !== '' &&
-      editValue !== actualDecryptedTopic && // Compare with actual decrypted topic
+      editValue !== session.visibleTopic && // Compare with actual decrypted topic
       onRename
     ) {
       onRename(editValue.trim());
@@ -169,7 +169,7 @@ export function ChatItem({
 
   const handleEdit = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
-    setEditValue(actualDecryptedTopic); // Start editing with the actual decrypted topic
+    setEditValue(session.visibleTopic); // Start editing with the actual decrypted topic
     setIsEditing(true);
     handleMenuClose();
   };
@@ -177,7 +177,7 @@ export function ChatItem({
   const handleCancelEdit = (event?: React.MouseEvent<HTMLElement>) => {
     event?.stopPropagation();
     setIsEditing(false);
-    setEditValue(actualDecryptedTopic); // Revert to original decrypted topic
+    setEditValue(session.visibleTopic); // Revert to original decrypted topic
     handleMenuClose(); 
   };
 
@@ -198,7 +198,7 @@ export function ChatItem({
 
     if (isLocked || rawTopic === Locale.Store.DefaultTopic || !session.topic) {
       // If locked, or it's the default topic, or no session topic, just display the actual (possibly raw) topic
-      setDisplayedTitle(actualDecryptedTopic);
+      setDisplayedTitle(session.topic);
       setIsAnimating(false);
       return;
     }
@@ -210,13 +210,13 @@ export function ChatItem({
     setDisplayedTitle(animationStartDisplay);
 
     let revealedCount = 0;
-    const targetLength = actualDecryptedTopic.length;
+    const targetLength = session.visibleTopic.length;
     const startDisplayLength = animationStartDisplay.length;
 
     animationIntervalRef.current = setInterval(() => {
       revealedCount++;
       const newTitle =
-        actualDecryptedTopic.substring(0, revealedCount) +
+        session.visibleTopic.substring(0, revealedCount) +
         animationStartDisplay.substring(revealedCount);
 
       setDisplayedTitle(newTitle);
@@ -226,7 +226,7 @@ export function ChatItem({
           clearInterval(animationIntervalRef.current);
           animationIntervalRef.current = null;
         }
-        setDisplayedTitle(actualDecryptedTopic); // Ensure final state is perfect
+        setDisplayedTitle(session.visibleTopic); // Ensure final state is perfect
         setIsAnimating(false);
       }
     }, DECRYPTION_INTERVAL_MS);
@@ -237,7 +237,7 @@ export function ChatItem({
         animationIntervalRef.current = null;
       }
     };
-  }, [session.topic, actualDecryptedTopic, isLocked]); // Rerun if underlying topic, its decrypted version, or lock state changes
+  }, [session.topic, session.visibleTopic, isLocked]); // Rerun if underlying topic, its decrypted version, or lock state changes
 
   const handleItemClick = () => {
     if (isAnimating) {
@@ -245,7 +245,7 @@ export function ChatItem({
         clearInterval(animationIntervalRef.current);
         animationIntervalRef.current = null;
       }
-      setDisplayedTitle(actualDecryptedTopic);
+      setDisplayedTitle(session.visibleTopic);
       setIsAnimating(false);
     }
     onClick?.();
@@ -391,7 +391,7 @@ export function ChatItem({
                     />
                 </Box>
             ) : (
-                <span className={styles['chat-item-title']} title={actualDecryptedTopic}>
+                <span className={styles['chat-item-title']} title={session.visibleTopic}>
                     {displayedTitle}
                 </span>
             )}

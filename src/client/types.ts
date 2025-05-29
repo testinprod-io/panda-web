@@ -17,6 +17,7 @@ export interface Message {
   timestamp: string; // ISO Date string
   reasoning_content?: string;
   reasoning_time?: string;
+  custom_data?: Record<string, any>;
 }
 
 export interface InitialMessageContent {
@@ -56,6 +57,7 @@ export interface MessageCreateRequest {
   file_ids: string[];
   reasoning_content?: string;
   reasoning_time?: string;
+  custom_data?: Record<string, any>;
 }
 
 // Response Schemas

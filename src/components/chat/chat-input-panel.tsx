@@ -29,6 +29,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import { useApiClient } from "@/providers/api-client-provider";
 import { useChatActions } from "@/hooks/use-chat-actions";
 // Helper component for the generic file icon
+import { SessionState, SubmittedFile } from "@/types/session";
+
 const GenericFileIcon = () => (
   <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect width="32" height="32" rx="5.33333" fill="none"/>
@@ -53,20 +55,6 @@ interface AttachedClientFile {
   fileId?: UUID;
   uploadProgress?: number;
   abortUpload?: () => void;
-}
-
-interface SubmittedFile {
-  url: string;
-  fileId: string;
-  type: string;
-  name: string;
-  size: number;
-}
-
-interface SessionState {
-  userInput: string;
-  persistedAttachedFiles: SubmittedFile[];
-  enableSearch: boolean;
 }
 
 const localStorage = safeLocalStorage();
@@ -210,7 +198,7 @@ interface ChatInputPanelProps {
   modelConfig?: ModelConfig;
   isLoading: boolean;
   hitBottom: boolean;
-  onSubmit: (sessionId: UUID | undefined, input: string, files: SubmittedFile[], enableSearch: boolean) => Promise<void>;
+  onSubmit: (sessionId: UUID | undefined, SessionState: SessionState) => Promise<void>;
   scrollToBottom: () => void;
   setShowPromptModal: () => void;
   setShowShortcutKeyModal: () => void;
@@ -549,7 +537,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
 
     console.log(`[doSubmit] filesForSubmission (to be sent):`, JSON.stringify(filesForSubmission, null, 2));
 
-    onSubmit(activeSessionId, userInput, filesForSubmission, enableSearch); 
+    onSubmit(activeSessionId, { userInput, persistedAttachedFiles: filesForSubmission, enableSearch }); 
     
     const currentSessionIdForClear = activeSessionId;
     setUserInput("");
@@ -636,7 +624,6 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
     setAttachedFiles((prev) => prev.filter((f) => f.clientId !== file.clientId));
   }, [activeSessionId, apiClient]);
 
-  console.log("model config: ", modelConfig?.name);
   return (
     <div className={styles["chat-input-panel"]} ref={ref}>
       {attachedFiles.length > 0 && (

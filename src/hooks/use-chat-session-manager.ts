@@ -13,7 +13,7 @@ import { MultimodalContent, RequestMessage } from "@/client/api"; // Import Mult
 import { ModelConfig } from '@/types/constant';
 import { ChatControllerPool } from "@/client/controller";
 import { useChatStore } from '@/store/chat'; // Corrected import
-import { ChatSession } from '@/types/session'; // Added import for ChatSession
+import { ChatSession, SessionState } from '@/types/session'; // Added import for ChatSession
 import { Summary } from "@/client/types"; // Import Summary type
 import { useEncryption } from "@/providers/encryption-provider";
 import { EncryptionService } from "@/services/EncryptionService";
@@ -30,8 +30,7 @@ interface ChatSessionManagerResult {
     updates: Partial<ChatMessage>
   ) => void;
   sendNewUserMessage: (
-    input: string,
-    files?: {url: string, fileId: string, type: string, name: string}[],
+    sessionState: SessionState,
     callbacks?: {
       onReasoningStart?: (messageId: UUID) => void;
       onReasoningChunk?: (messageId: UUID, reasoningChunk: string) => void;
@@ -111,8 +110,8 @@ export function useChatSessionManager(
           // Avoid re-decrypting if content is not a string (already an object like MultimodalContent or already processed)
           // or if it doesn't look like it needs decryption (e.g., simple heuristic or flag).
           // For this example, we'll proceed if it's a string.
-          const originalContent = msg.content;
-          const originalReasoning = msg.reasoning;
+          const originalContent = msg.visibleContent;
+          const originalReasoning = msg.visibleReasoning;
           let contentChanged = false;
 
           let newContent = originalContent;
@@ -136,7 +135,7 @@ export function useChatSessionManager(
 
           if (contentChanged) {
             console.log(`[useChatSessionManager] Decrypted message ID: ${msg.id}`);
-            return { ...msg, content: newContent, reasoning: newReasoning };
+            return { ...msg, visibleContent: newContent, visibleReasoning: newReasoning };
           }
           return msg;
         })
@@ -159,6 +158,7 @@ export function useChatSessionManager(
       // For now, we'll assume messages are fetched encrypted or this useEffect handles the toggle.
       setDisplayedMessages(prevMessages => 
         prevMessages.map(msg => {
+          return { ...msg, visibleContent: msg.content, visibleReasoning: msg.reasoning };
           // This is a simplified placeholder logic. Ideally, you'd revert to actual encrypted strings
           // or have a clear way to distinguish between pre-decryption and post-decryption states.
           // For this example, if it was decrypted, it might be complex to re-encrypt without original. 
@@ -168,7 +168,6 @@ export function useChatSessionManager(
           // This part requires careful state management of original encrypted values if true reversion is needed.
           // For simplicity, this example doesn't revert already decrypted messages back to encrypted on lock.
           // It primarily focuses on decrypting when unlocked.
-          return msg; // No change on lock in this simplified version; assumes messages are fetched encrypted.
         })
       );
     }
@@ -260,6 +259,7 @@ export function useChatSessionManager(
   // Effect to generate session title after the first user message and bot response
   useEffect(() => {
     if (!sessionId || !generateSessionTitle) {
+      console.log(`[useChatSessionManager] Session ID is: ${sessionId}. Skipping session title generation.`);
       return;
     }
 
@@ -276,16 +276,16 @@ export function useChatSessionManager(
     };
 
     const nonErrorMessages = displayedMessages.filter(
-      (m) => !m.isError && (m.role === "user" || m.role === "system") && !m.streaming
+      (m) => !m.isError && (m.role === Role.USER || m.role === Role.ASSISTANT) && !m.streaming
     );
-
+    console.log(`[useChatSessionManager] Non-error messages:`, nonErrorMessages);
     if (
       nonErrorMessages.length === 2 &&
-      nonErrorMessages[0].role === "user" &&
-      nonErrorMessages[1].role === "system"
+      nonErrorMessages[0].role === Role.USER &&
+      nonErrorMessages[1].role === Role.ASSISTANT
     ) {
-      const userMessageText = getTextFromMessage(nonErrorMessages[0].content).trim();
-      const assistantMessageText = getTextFromMessage(nonErrorMessages[1].content).trim();
+      const userMessageText = getTextFromMessage(nonErrorMessages[0].visibleContent).trim();
+      const assistantMessageText = getTextFromMessage(nonErrorMessages[1].visibleContent).trim();
 
       if (
         userMessageText.length > 0 &&
@@ -460,8 +460,7 @@ export function useChatSessionManager(
 
   const sendNewUserMessage = useCallback(
     async (
-      input: string,
-      files?: {url: string, fileId: string, type: string, name: string}[],
+      sessionState: SessionState,
       callbacks?: {
         onReasoningStart?: (messageId: UUID) => void;
         onReasoningChunk?: (messageId: UUID, reasoningChunk: string) => void;
@@ -484,7 +483,8 @@ export function useChatSessionManager(
         return;
       }
 
-      let messageContent = input;
+      let messageContent = sessionState.userInput;
+      const files = sessionState.persistedAttachedFiles;
       let attachments: MultimodalContent[] = [];
       let fileIds: string[] = [];
       
@@ -521,10 +521,12 @@ export function useChatSessionManager(
       // Add user message to store
       const userMessage = createMessage({
         role: Role.USER,
-        content: messageContent, // Use the potentially multimodal content
+        content: EncryptionService.encrypt(messageContent), // Use the potentially multimodal content
+        visibleContent: messageContent,
         attachments: attachments,
         syncState: MessageSyncState.PENDING_CREATE,
         fileIds: fileIds,
+        useSearch: sessionState.enableSearch,
       });
       if (!userMessage) {
         const error = new Error(
@@ -558,6 +560,7 @@ export function useChatSessionManager(
         const updatedMessages = prevMessages.map((msg) => {
           if (msg.id === botMessageId) {
             msg.streaming = false;
+            msg.content = EncryptionService.encrypt(finalContent);
             messageToSave = msg;
             // This is the message that should have been updated by onReasoningChunk, etc.
             // const completeReasoning = msg.reasoning || "";
@@ -602,7 +605,8 @@ export function useChatSessionManager(
           const fallbackBotMessage = createMessage({
             id: botMessageId,
             role: Role.ASSISTANT,
-            content: finalContent, // Reasoning accumulated during streaming will be lost here
+            content: EncryptionService.encrypt(finalContent), // Reasoning accumulated during streaming will be lost here
+            visibleContent: finalContent,
             date: date,
             streaming: false,
             syncState: MessageSyncState.PENDING_CREATE,
@@ -673,7 +677,7 @@ export function useChatSessionManager(
         // newUserMessage is already filtered out implicitly as it's not in currentDisplayedMessagesSnapshot
         messagesForApi.push({
           role: msg.role,
-          content: msg.content,
+          content: msg.visibleContent,
           attachments: msg.attachments,
         });
       });
@@ -681,7 +685,7 @@ export function useChatSessionManager(
       // Add the new user message itself
       messagesForApi.push({
         role: newUserMessage.role,
-        content: newUserMessage.content,
+        content: newUserMessage.visibleContent,
         attachments: newUserMessage.attachments,
       });
       
@@ -697,13 +701,13 @@ export function useChatSessionManager(
 
       ChatApiService.callLlmChat(apiClient, {
         messages: messagesForApi,
-        config: { ...modelConfig, stream: true, reasoning: modelConfig.reasoning },
+        config: { ...modelConfig, stream: true, reasoning: modelConfig.reasoning, useSearch: newUserMessage.useSearch },
         onReasoningStart: () => {
           reasoningStartTimeForThisQuery = Date.now();
           setDisplayedMessages((prev) =>
             prev.map((msg) =>
               msg.id === localBotMessageId
-                ? { ...msg, isReasoning: true, reasoning: msg.reasoning || "" } 
+                ? { ...msg, isReasoning: true, visibleReasoning: msg.reasoning || "" } 
                 : msg
             )
           );
@@ -713,7 +717,7 @@ export function useChatSessionManager(
           setDisplayedMessages((prev) =>
             prev.map((msg) =>
               msg.id === localBotMessageId
-                ? { ...msg, reasoning: (msg.reasoning || "") + chunk, streaming: true, isReasoning: true }
+                ? { ...msg, streaming: true, isReasoning: true, visibleReasoning: msg.reasoning || "" }
                 : msg
             )
           );
@@ -727,7 +731,7 @@ export function useChatSessionManager(
           }
           setDisplayedMessages((prev) =>
             prev.map((msg) =>
-              msg.id === localBotMessageId ? { ...msg, isReasoning: false, reasoningTime: duration } : msg
+              msg.id === localBotMessageId ? { ...msg, isReasoning: false, reasoningTime: duration, visibleReasoning: msg.reasoning || "", content: EncryptionService.encrypt(msg.content || "") } : msg
             )
           );
           callbacks?.onReasoningEnd?.(localBotMessageId);
@@ -736,7 +740,7 @@ export function useChatSessionManager(
           setDisplayedMessages((prev) =>
             prev.map((msg) =>
               msg.id === localBotMessageId
-                ? { ...msg, content: (msg.content || "") + chunk, streaming: true, isReasoning: false } 
+                ? { ...msg, visibleContent: (msg.visibleContent || "") + chunk, streaming: true, isReasoning: false } 
                 : msg
             )
           );

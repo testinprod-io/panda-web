@@ -37,6 +37,7 @@ export interface ChatStat {
 export interface ChatSession {
   id: UUID;
   topic: string;
+  visibleTopic: string;
   memoryPrompt: string;
   // messages: ChatMessage[];
   stat: ChatStat;
@@ -62,6 +63,21 @@ export interface ChatSession {
   isSummarizing: boolean;
 }
 
+export interface SubmittedFile {
+  url: string;
+  fileId: string;
+  type: string;
+  name: string;
+  size: number;
+}
+
+
+export interface SessionState {
+  userInput: string;
+  persistedAttachedFiles: SubmittedFile[];
+  enableSearch: boolean;
+}
+
 /**
  * Creates an empty chat session with default values
  * @returns A new empty chat session
@@ -70,7 +86,8 @@ export function createNewSession(id: UUID): ChatSession {
   const now = Date.now();
   return {
     id: id,
-    topic: DEFAULT_TOPIC,
+    topic: "",
+    visibleTopic: "",
     memoryPrompt: "",
     // messages: [],
     stat: { tokenCount: 0, wordCount: 0, charCount: 0 },

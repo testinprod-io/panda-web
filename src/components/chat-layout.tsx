@@ -9,6 +9,7 @@ import ChatHeader from "@/components/chat-header";
 import { ChatInputPanel } from "@/components/chat/chat-input-panel";
 import { useChatStore, useAppConfig } from "@/store";
 import { UNFINISHED_INPUT } from "@/types/constant";
+import { SessionState, SubmittedFile } from "@/types/session";
 import { safeLocalStorage } from "@/utils/utils";
 import { useChatActions } from "@/hooks/use-chat-actions";
 import type { UUID } from "crypto"; // Keep as type import
@@ -42,18 +43,21 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
   const prevIsMobile = usePrevious(isMobile); // Track previous isMobile state
 
   // Get Privy status
-  // const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
+  const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
 
-  // Conditionally call hooks and render
-  // if (!privyReady || !privyAuthenticated) {
-  //   // Optionally, render a loading spinner or a message
-  //   // For now, return null to prevent rendering the chat UI
-  //   // You might want to show a loading spinner or a message here.
-  //   return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Hellloo</Box>;
-  //   // return null;
-  // }
+  // If Privy is not ready, show a loading message.
+  if (!privyReady) {
+    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Typography>Loading authentication...</Typography></Box>;
+  }
 
-  // These hooks are now called conditionally
+  // If the user is not authenticated, show a login message.
+  // This ensures that components like Sidebar (which use useEncryption)
+  // are only rendered after EncryptionProvider is available via AuthenticatedContentWrapper.
+  if (!privyAuthenticated) {
+    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Typography>Please log in to access the chat.</Typography></Box>;
+  }
+
+  // These hooks are now called only when authenticated and ready
   const { newSession } = useChatActions();
   const { showSnackbar } = useSnackbar();
 
@@ -103,22 +107,21 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
   const handleLayoutSubmit = useCallback(
     async (
       sessionId: UUID | undefined,
-      input: string,
-      files: { url: string; fileId: string; type: string; name: string }[],
+      sessionState: SessionState
     ) => {
-      if ((!input || !input.trim()) && files.length === 0) return;
+      if ((!sessionState.userInput || !sessionState.userInput.trim()) && sessionState.persistedAttachedFiles.length === 0) return;
       setInternalIsSubmitting(true);
       console.log(`[handleLayoutSubmit] sessionId: ${sessionId}`);
       try {
         if (currentChatId && onSendMessageHandlerFromStore) {
           console.log(`[handleLayoutSubmit] currentChatId: ${currentChatId}`);
-          await onSendMessageHandlerFromStore(input, files);
+          await onSendMessageHandlerFromStore(sessionState);
           localStorage.removeItem(UNFINISHED_INPUT(currentChatId));
         } else if (sessionId) {
           const session = useChatStore.getState().sessions.find((s) => s.id === sessionId);
           if (session) {
             console.log(`[handleLayoutSubmit] sessionId: ${sessionId}`);
-            const newUserMessage = { input: input.trim(), files };
+            const newUserMessage = { sessionState };
             localStorage.setItem(
               session.id,
               JSON.stringify(newUserMessage)
@@ -131,7 +134,7 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
         } else {
           const createdSession = await newSession();
           if (createdSession) {
-            const newUserMessage = { input: input.trim(), files };
+            const newUserMessage = { sessionState };
             localStorage.setItem(
               createdSession.id,
               JSON.stringify(newUserMessage)
@@ -190,7 +193,7 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
             className={sidebarStyles.sidebarToggleButton} // Use styles from sidebar.module.scss
             aria-label={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
             style={{
-              left: isSidebarCollapsed ? `${sidebarCollapsedWidth}px` : `${sidebarExpandedWidth}px`,
+              left: isSidebarCollapsed ? `${sidebarCollapsedWidth-20}px` : `${sidebarExpandedWidth-20}px`,
               transition: `left ${sidebarTransitionDuration} ${sidebarTransitionTiming}`,
               // top: '50vh' and transform will be handled by SCSS
             }}

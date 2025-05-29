@@ -29,6 +29,7 @@ import { ActionButton } from "@/components/ui/action-button"; // Import ChatActi
 import { useDecryptionManager } from "@/hooks/use-decryption-manager"; // <-- Import the hook
 import { useChatSessionManager } from "@/hooks/use-chat-session-manager";
 import { UUID } from "crypto";
+import { SessionState } from "@/types/session";
 
 // ChatComponentProps is now simpler as it gets most things from the store or direct sessionID
 export interface ChatComponentProps {
@@ -90,10 +91,10 @@ export function ChatComponent(props: ChatComponentProps) {
   }, [internalHitBottom, setHitBottom]);
 
   const doSubmit = useCallback(
-    async (input: string, files: {url: string, fileId: string, type: string, name: string}[]) => {
+    async (sessionState: SessionState) => {
       setIsChatComponentBusy(true);
         await new Promise<void>((resolve, reject) => {
-          sendNewUserMessage(input, files, {
+          sendNewUserMessage(sessionState, {
             onReasoningStart: () => {},
             onReasoningChunk: (chunk: string) => {},
             onReasoningEnd: () => {},
@@ -142,10 +143,10 @@ export function ChatComponent(props: ChatComponentProps) {
       const storedDataString = localStorage.getItem(sessionId);
       if (storedDataString) {
         try {
-          const parsedData = JSON.parse(storedDataString);
-          if (parsedData) {
+          const { sessionState } = JSON.parse(storedDataString) as { sessionState: SessionState };
+          if (sessionState) {
             // doSubmit will set isChatComponentBusy
-            doSubmit(parsedData.input, parsedData.files);
+            doSubmit(sessionState);
             localStorage.removeItem(sessionId);
             initialMessageProcessedRef.current = sessionId;
           }
@@ -203,7 +204,7 @@ export function ChatComponent(props: ChatComponentProps) {
       setIsChatComponentBusy(true);
       try {
         await new Promise<void>((resolve, reject) => {
-          sendNewUserMessage(newText, [], {
+          sendNewUserMessage({ userInput: newText, persistedAttachedFiles: [], enableSearch: false }, {
             onReasoningStart: () => {},
             onReasoningChunk: (chunk: string) => {},
             onReasoningEnd: () => {},

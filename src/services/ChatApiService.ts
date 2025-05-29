@@ -127,7 +127,8 @@ export function mapConversationToSession(conversation: Conversation): ChatSessio
   const decryptedConvo = decryptConversationData(conversation);
   
   const session = createNewSession(decryptedConvo.conversation_id);
-  session.topic = decryptedConvo.title || DEFAULT_TOPIC;
+  session.topic = conversation.title || DEFAULT_TOPIC;
+  session.visibleTopic = decryptedConvo.title || DEFAULT_TOPIC;
   session.lastUpdate = new Date(decryptedConvo.updated_at).getTime();
   return session;
 }
@@ -141,13 +142,15 @@ export function mapApiMessageToChatMessage(message: ApiMessage): ChatMessage {
   const decryptedMsg = decryptMessageData(message);
 
   return createMessage({
-    id: decryptedMsg.message_id,
-    role: decryptedMsg.sender_type,
-    content: decryptedMsg.content,
-    fileIds: decryptedMsg.file_ids,
-    date: new Date(decryptedMsg.timestamp),
-    reasoning: decryptedMsg.reasoning_content,
-    reasoningTime: decryptedMsg.reasoning_time ? parseInt(decryptedMsg.reasoning_time) : undefined,
+    id: message.message_id,
+    role: message.sender_type,
+    content: message.content,
+    visibleContent: message.content,
+    fileIds: message.file_ids,
+    date: new Date(message.timestamp),
+    reasoning: message.reasoning_content,
+    reasoningTime: message.reasoning_time ? parseInt(message.reasoning_time) : undefined,
+    useSearch: message.custom_data?.useSearch ?? false,
   });
 }
 
@@ -186,12 +189,12 @@ export const ChatApiService = {
       // Encrypt the conversation data before sending to server
       const encryptedRequest = { 
         ...createRequest,
-        title: createRequest.title ? EncryptionService.encrypt(createRequest.title) : createRequest.title
+        title: createRequest.title
       };
       
       const newConversation = await api.app.createConversation(encryptedRequest);
       console.log("[ChatApiService] Conversation created:", newConversation.conversation_id);
-      
+      return newConversation;
       // Decrypt the returned data
       const decryptedConversation = decryptConversationData(newConversation);
       
@@ -212,12 +215,12 @@ export const ChatApiService = {
       // Encrypt the update data
       const encryptedRequest = { 
         ...updateRequest,
-        title: updateRequest.title ? EncryptionService.encrypt(updateRequest.title) : updateRequest.title
+        title: updateRequest.title
       };
       
       const updatedConversation = await api.app.updateConversation(id, encryptedRequest);
       console.log(`[ChatApiService] Conversation ${id} updated.`);
-      
+      return updatedConversation;
       // Decrypt the returned data
       const decryptedConversation = decryptConversationData(updatedConversation);
       
@@ -282,15 +285,14 @@ export const ChatApiService = {
     console.log(`[ChatApiService] Creating message for conversation ${id}:`, createRequest.message_id);
     try {
       // Encrypt the message content before sending to server
-      const encryptedRequest = encryptMessageData(createRequest) as MessageCreateRequest;
-      
-      const savedMessage = await api.app.createMessage(id, encryptedRequest);
+      // const encryptedRequest = encryptMessageData(createRequest) as MessageCreateRequest;
+      const savedMessage = await api.app.createMessage(id, createRequest);
       console.log(`[ChatApiService] Message ${savedMessage.message_id} created successfully.`);
       
       // Decrypt the returned message
-      const decryptedMessage = decryptMessageData(savedMessage);
+      // const decryptedMessage = decryptMessageData(savedMessage);
       
-      return decryptedMessage;
+      return savedMessage;
     } catch (error) {
       console.error(`[ChatApiService] Failed to create message ${createRequest.message_id}:`, error);
       throw error;
@@ -305,7 +307,7 @@ export const ChatApiService = {
     api: ClientApi,
     args: {
       messages: RequestMessage[];
-      config: ModelConfig & { stream?: boolean };
+      config: ModelConfig & { stream?: boolean, useSearch?: boolean };
       onReasoningStart?: (messageId?: string) => void;
       onReasoningChunk?: (messageId: string | undefined, chunk: string) => void;
       onReasoningEnd?: (messageId?: string) => void;
@@ -327,6 +329,7 @@ export const ChatApiService = {
         frequency_penalty: args.config.frequency_penalty,
         reasoning: args.config.reasoning ?? false,
         targetEndpoint: args.config.endpoint, // Pass the endpoint from ModelConfig
+        useSearch: args.config.useSearch ?? false,
       };
 
       await api.llm.chat({

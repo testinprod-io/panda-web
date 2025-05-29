@@ -169,6 +169,7 @@ export const EncryptionService = {
     }
     if (!text) return text;
 
+    console.log(`inmemoryIv: ${inMemoryIv} inmemoryKey: ${inMemoryKey}`);
     try {
       const encrypted = CryptoJS.AES.encrypt(text, inMemoryKey!, {
         iv: inMemoryIv!,
@@ -194,7 +195,7 @@ export const EncryptionService = {
         // console.log("[EncryptionService] decrypt called but text does not look like base64. Returning as is.");
         return encryptedText;
     }
-
+    console.log(`inmemoryIv: ${inMemoryIv} inmemoryKey: ${inMemoryKey}`);
     try {
       const decrypted = CryptoJS.AES.decrypt(encryptedText, inMemoryKey!, {
         iv: inMemoryIv!,

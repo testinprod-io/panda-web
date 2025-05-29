@@ -135,12 +135,12 @@ export default function ChatHeader({
     router.push(`/`);
   };
 
-  console.log("activeSessionModelName:", activeSessionModelName);
-  console.log("activeSessionModelDisplayName:", activeSessionModelDisplayName);
-  console.log("globalModelIdentifier:", globalModelIdentifier);
-  console.log("globalModelName:", globalModelName);
-  console.log("globalModelDisplayName:", globalModelDisplayName);
-  console.log("DEFAULT_MODELS[0].config.displayName:", DEFAULT_MODELS[0].config.displayName);
+  // console.log("activeSessionModelName:", activeSessionModelName);
+  // console.log("activeSessionModelDisplayName:", activeSessionModelDisplayName);
+  // console.log("globalModelIdentifier:", globalModelIdentifier);
+  // console.log("globalModelName:", globalModelName);
+  // console.log("globalModelDisplayName:", globalModelDisplayName);
+  // console.log("DEFAULT_MODELS[0].config.displayName:", DEFAULT_MODELS[0].config.displayName);
 
   const displayModelName =
     activeSessionModelDisplayName ||
@@ -221,7 +221,7 @@ export default function ChatHeader({
   return (
     <Box className={styles.chatHeader}>
       <Box className={styles.headerLeft}>
-        {isReady && isAuthenticated && (isSidebarCollapsed || isMobile) && (
+        {isReady && isAuthenticated && (isSidebarCollapsed && isMobile) && (
           <>
             <Tooltip title="Reveal Sidebar">
               <IconButton

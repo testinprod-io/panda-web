@@ -123,7 +123,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     onEditSubmit,
   } = props;
 
-  const { role, streaming, isError, isReasoning, fileIds, content, reasoning } =
+  const { role, streaming, isError, isReasoning, fileIds, visibleContent: content, visibleReasoning: reasoning } =
     message;
   const { wallets } = useWallets();
 
@@ -332,7 +332,6 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
   }
 
   const showReasoning = !isUser && (reasoning || isReasoning);
-  console.log(`MEssagen status: ${isEditing} ${isReasoning} ${streaming}`)
   return (
     <div
       className={clsx(

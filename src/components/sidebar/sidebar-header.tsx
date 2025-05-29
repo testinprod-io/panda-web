@@ -34,7 +34,7 @@ export default function SidebarHeader({ isSidebarCollapsed }: SidebarHeaderProps
   return (
     <Box className={clsx(styles.sidebarHeaderContainer, isSidebarCollapsed && styles.collapsed)}>
       <Box className={styles.sidebarHeaderIconRow}>
-        {!isSidebarCollapsed ? (
+        {(!isSidebarCollapsed && (
           <>
             {/* Wrapper for left-aligned icons */}
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -53,18 +53,31 @@ export default function SidebarHeader({ isSidebarCollapsed }: SidebarHeaderProps
               </IconButton>
             </Tooltip>
           </>
-        ) : (
-          // Content for when sidebar IS collapsed (e.g., a centered toggle icon if any)
-          <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-            {/* Example: If you wanted a specific icon for the collapsed header top row */}
-            {/* <IconButton><MenuIcon /></IconButton> */}
-          </Box>
-        )}
+        ))}
       </Box>
 
-      <Box className={styles.sidebarHeaderLogoRow}>
+      <Box
+        className={styles.sidebarHeaderLogoRow}
+        sx={{
+          transition: 'all 0.3s ease-in-out',
+          flexDirection: isSidebarCollapsed ? 'column' : 'row',
+          alignItems: 'center',
+          // justifyContent: isSidebarCollapsed ? 'center' : undefined,
+          gap: isSidebarCollapsed ? '6px' : undefined,
+          width: isSidebarCollapsed ? 'fit-content' : undefined,
+          paddingLeft: isSidebarCollapsed ? '18px' : '8px',
+          marginRight: isSidebarCollapsed ? undefined : undefined,
+        }}
+      >
         <img src="/icons/logo.png" alt="Panda AI Logo" className={styles.sidebarHeaderLogoImage} />
-        <Box className={styles.sidebarHeaderLogoTextContainer}>
+        <Box
+          className={styles.sidebarHeaderLogoTextContainer}
+          sx={{
+            transition: 'none',
+            margin: isSidebarCollapsed ? '0' : undefined,
+            textAlign: isSidebarCollapsed ? 'center' : undefined,
+          }}
+        >
           <Typography component="span" className={styles.logoTextBold} sx={{ fontFamily: montserrat.style.fontFamily, fontWeight: 600 }}>
             PANDA
           </Typography>

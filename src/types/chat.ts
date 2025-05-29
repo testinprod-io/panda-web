@@ -65,6 +65,7 @@ export enum MessageSyncState {
  */
 export type ChatMessage = Omit<RequestMessage, 'content'> & { // Omit original content
   content: string; // Allow MultimodalContent[]
+  visibleContent: string;
   attachments?: MultimodalContent[];
   fileIds: string[];  
   date: Date;
@@ -74,8 +75,10 @@ export type ChatMessage = Omit<RequestMessage, 'content'> & { // Omit original c
   model?: ModelType;
   syncState: MessageSyncState;
   reasoning?: string; // Add reasoning field
+  visibleReasoning?: string;
   reasoningTime?: number; // Add reasoning duration field
   isReasoning?: boolean; // To track if the message is currently in reasoning phase
+  useSearch: boolean; // To track if the message is using search
 };
 
 /**
@@ -127,13 +130,16 @@ export function createMessage(override: Partial<ChatMessage>): ChatMessage { // 
    id: crypto.randomUUID() as UUID,
    date: new Date(),
    role: Role.USER, 
-   content: "", // Default to empty string, will be overridden
    fileIds: [],
    streaming: false,
    isError: false,
    syncState: MessageSyncState.PENDING_CREATE,
-   reasoning: "", // Initialize reasoning
    isReasoning: false, // Initialize isReasoning
+   content: override.content ?? "",
+   visibleContent: override.content ?? "",
+   reasoning: override.reasoning ?? "",
+   visibleReasoning: override.reasoning ?? "",
+   useSearch: override.useSearch ?? false,
    ...override, // Use override directly
  };
 }

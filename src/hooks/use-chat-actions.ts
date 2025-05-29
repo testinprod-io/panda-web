@@ -100,7 +100,7 @@ export function useChatActions() {
 
         console.log("[ChatActions] Creating new session...");
         
-        const createRequest: ConversationCreateRequest = { title: DEFAULT_TOPIC };
+        const createRequest: ConversationCreateRequest = { title: EncryptionService.encrypt(DEFAULT_TOPIC) };
 
         try {
             const newConversation = await ChatApiService.createConversation(apiClient, createRequest);
@@ -226,20 +226,23 @@ export function useChatActions() {
         // Don't re-save synced messages
         if (message.syncState === MessageSyncState.SYNCED) return;
 
-        const content = getMessageTextContent(message);
-        if (!content) {
-            console.warn("[saveMessageToServer Action] Message content is empty, skipping save.", message);
-            return;
-        }
+        // const content = getMessageTextContent(message);
+        // if (!content) {
+        //     console.warn("[saveMessageToServer Action] Message content is empty, skipping save.", message);
+        //     return;
+        // }
 
         console.log(`[ChatActions] Saving message ${localMessageId} to conversation ${conversationId}`);
         const createRequest: MessageCreateRequest = {
             message_id: message.id,
             sender_type: message.role,
-            content: content,
+            content: message.content,
             reasoning_content: message.reasoning,
             reasoning_time: message.reasoningTime ? message.reasoningTime.toString() : undefined,
             file_ids: message.fileIds,
+            custom_data: {
+                useSearch: message.useSearch,
+            },
         };
 
         try {
@@ -267,7 +270,7 @@ export function useChatActions() {
 
         console.log(`[Title Generation Action] Starting for session: ${sessionId}`);
         
-        if (session.topic !== DEFAULT_TOPIC) {
+        if (session.visibleTopic !== DEFAULT_TOPIC) {
             console.log(`[Title Generation Action] Session already has a title, skipping.`);
             return;
         }
@@ -289,18 +292,20 @@ export function useChatActions() {
         try {
             console.log(`[Title Generation Action] Calling LLM with config:`, titleGenConfig);
             const generatedTitle = await ChatApiService.callLlmGenerateTitle(apiClient, prompt, titleGenConfig);
+            const encryptedTitle = EncryptionService.encrypt(generatedTitle);
             console.log(`[Title Generation Action] LLM generated title: "${generatedTitle}"`);
 
             // Update local state only if the title is new and not the default
             if (generatedTitle !== DEFAULT_TOPIC && generatedTitle !== session.topic) {
                 store.updateTargetSession({ id: sessionId }, (sess) => {
-                    sess.topic = generatedTitle; // Update local topic
+                    sess.topic = encryptedTitle; // Update local topic
+                    sess.visibleTopic = generatedTitle;
                     console.log(`[Title Generation Action] Updated local topic to: "${generatedTitle}"`);
                 });
 
                 // Update server state if conversation exists
                 console.log(`[Title Generation Action] Attempting to update server title for ConvID: ${session.id}`);
-                const updateReq: ConversationUpdateRequest = { title: generatedTitle };
+                const updateReq: ConversationUpdateRequest = { title: encryptedTitle };
                 updateConversation(session.id, updateReq);
             } else {
                  console.log(`[Title Generation Action] Generated title is default or unchanged, not updating.`);
@@ -330,6 +335,7 @@ export function useChatActions() {
             console.log(`[ChatActions] Server title updated successfully to: "${updatedConv.title}"`);
             store.updateTargetSession({ id: id }, (sess) => {
                 sess.topic = updatedConv.title || sess.topic;
+                sess.visibleTopic = EncryptionService.decrypt(updatedConv.title || sess.topic);
                 sess.lastUpdate = new Date(updatedConv.updated_at).getTime();
             });
         } catch (error) {

@@ -10,6 +10,7 @@ import Locale from "@/locales";
 import { ChatItem } from "./chat-item";
 import { ChatListSkeleton } from "./chat-list-skeleton";
 import styles from "./chat-list.module.scss";
+import { EncryptionService } from "@/services/EncryptionService";
 
 // Constants for calculating paging skeleton height, mirroring ChatListSkeleton.tsx logic
 const PAGING_SK_HEADER_HEIGHT = 14;
@@ -304,12 +305,12 @@ export function ChatList(props: ChatListProps) {
       setLocalSessions(prevSessions =>
         prevSessions.map(s =>
           s.id === session.id
-            ? { ...s, topic: trimmedName, lastUpdate: optimisticUpdateTime }
+            ? { ...s, visibleTopic: trimmedName, topic: EncryptionService.encrypt(trimmedName), lastUpdate: optimisticUpdateTime }
             : s
         )
       );
       // Then, call the actual update operation
-      updateConversation(session.id, { title: trimmedName });
+      updateConversation(session.id, { title: EncryptionService.encrypt(trimmedName) });
     } else {
       console.error("[ChatList] Cannot rename session - missing identifier or empty name");
     }

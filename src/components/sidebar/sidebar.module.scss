@@ -15,9 +15,10 @@ $sidebar-transition-timing: ease-in-out;
   flex-shrink: 0;
   box-sizing: border-box;
   border-right: 1px solid #cacaca;
-  overflow: hidden; // CRUCIAL for clipping the slidingContainer
+  overflow-x: hidden; // CRUCIAL for clipping the slidingContainer
   position: relative; // For any absolute children if ever needed again (like overlay toggle)
   transition: width $sidebar-transition-duration $sidebar-transition-timing;
+  overflow-y: hidden;
 
   // Custom scrollbar styles (can remain if panes need internal scrolling)
   &::-webkit-scrollbar {
@@ -46,7 +47,7 @@ $sidebar-transition-timing: ease-in-out;
 
 .slidingContainer {
   display: flex;
-  flex-shrink: 0;
+  // flex-shrink: 0;
   width: calc($sidebar-expanded-width + $sidebar-collapsed-width);
   flex-grow: 1;
   min-height: 0;
@@ -54,25 +55,30 @@ $sidebar-transition-timing: ease-in-out;
   will-change: transform;
 }
 
-.expandedPane, .collapsedPane {
-  height: 100%;
+// Common styles for panes (excluding height and specific overflow-y)
+.paneBase {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  flex-shrink: 0;
-  overflow-y: auto;
+  // flex-shrink: 0;
   overflow-x: hidden;
 }
 
 .expandedPane {
+  @extend .paneBase; // Inherit common styles
   width: $sidebar-expanded-width;
+  overflow-y: auto;
+  height: 100%; // Specific to expandedPane
 }
 
 .collapsedPane {
+  @extend .paneBase; // Inherit common styles
   width: $sidebar-collapsed-width;
   align-items: center;
   padding-top: 20px;
   padding-bottom: 20px;
+  flex-shrink: 0;
+  overflow-y: hidden; // Specific to collapsedPane
 }
 
 // Styles for SidebarHeader (used once, above panes)
@@ -133,7 +139,7 @@ $sidebar-transition-timing: ease-in-out;
   }
   .navItemText {
     font-family: 'Inter', sans-serif;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 400;
     color: #757575;
     text-align: center;

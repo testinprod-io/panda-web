@@ -126,6 +126,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     // EncryptionService.clearKey();
     setIsLocked(true);
     setHasError(false); // Clear any errors when manually locking
+    EncryptionService.clearKey();
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
       inactivityTimerRef.current = null;
@@ -243,6 +244,14 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
       }
     };
   }, [resetInactivityTimer, isLocked]); // Rerun effect if lock state changes
+
+  // Effect to lock app when Privy user logs out
+  useEffect(() => {
+    if (!user && !isLocked) {
+      console.log("[EncryptionProvider] Privy user logged out. Locking app.");
+      lockApp();
+    }
+  }, [user, isLocked, lockApp]);
 
   const contextValue: EncryptionContextType = {
     isLocked,
