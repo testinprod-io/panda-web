@@ -1,7 +1,6 @@
 "use client";
 
-import { Box, IconButton, Tooltip, Typography } from '@mui/material';
-import SearchMuiIcon from '@mui/icons-material/Search';
+import React from "react";
 import { useRouter } from 'next/navigation';
 import { useChatStore } from '@/store/chat';
 import styles from './sidebar.module.scss';
@@ -32,57 +31,75 @@ export default function SidebarHeader({ isSidebarCollapsed }: SidebarHeaderProps
   };
 
   return (
-    <Box className={clsx(styles.sidebarHeaderContainer, isSidebarCollapsed && styles.collapsed)}>
-      <Box className={styles.sidebarHeaderIconRow}>
+    <div className={clsx(
+      styles.sidebarHeaderContainer,
+      "flex flex-col pt-4",
+      isSidebarCollapsed && styles.collapsed
+    )}>
+      <div className={clsx(
+        styles.sidebarHeaderIconRow,
+        "flex items-center justify-end w-full px-2 mb-2 min-h-[40px]"
+      )}>
         {(!isSidebarCollapsed && (
           <>
             {/* Wrapper for left-aligned icons */}
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <div className="flex items-center">
               {/* <Tooltip title="Search">
                 <IconButton onClick={handleSearch} sx={{ color: '#757575' }}>
                   <SearchMuiIcon />
                 </IconButton>
               </Tooltip> */}
               {/* Add other left-aligned icons here if needed */}
-            </Box>
+            </div>
 
             {/* Right-aligned icon(s) */}
-            <Tooltip title="Settings">
-              <IconButton onClick={handleSettings} sx={{ color: '#757575' }}>
-                <img src="/icons/settings.svg" alt="Settings" style={{ width: '24px', height: '24px', filter: 'invert(50%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(90%) contrast(80%)' }} />
-              </IconButton>
-            </Tooltip>
+            <div className="ml-auto">
+              <button title="Settings" onClick={handleSettings} className="p-2 rounded-full text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400">
+                <img src="/icons/settings.svg" alt="Settings" className="w-6 h-6 filter invert-[0.5] sepia-[0] saturate-[0] hue-rotate-[0deg] brightness-[0.9] contrast-[0.8]" />
+              </button>
+            </div>
           </>
         ))}
-      </Box>
+        {isSidebarCollapsed && (
+          <div className="flex flex-col items-center justify-center w-full">
+            <button title="Settings" onClick={handleSettings} className={clsx("p-2 rounded-full text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 mb-2")}>
+              <img src="/icons/settings.svg" alt="Settings" className="w-6 h-6 filter invert-[0.5] sepia-[0] saturate-[0] hue-rotate-[0deg] brightness-[0.9] contrast-[0.8]" />
+            </button>
+          </div>
+        )}
+      </div>
 
-      <Box
-        className={styles.sidebarHeaderLogoRow}
-        sx={{
-          transition: 'all 0.3s ease-in-out',
-          flexDirection: isSidebarCollapsed ? 'column' : 'row',
-          alignItems: 'center',
-          // justifyContent: isSidebarCollapsed ? 'center' : undefined,
-          gap: isSidebarCollapsed ? '6px' : undefined,
-          width: isSidebarCollapsed ? 'fit-content' : undefined,
-          paddingLeft: isSidebarCollapsed ? '18px' : '8px',
-          marginRight: isSidebarCollapsed ? undefined : undefined,
-        }}
+      <div
+        className={clsx(
+          styles.sidebarHeaderLogoRow,
+          "flex items-center transition-all duration-300 ease-in-out",
+          isSidebarCollapsed ? "flex-col justify-center gap-1.5 w-fit px-[18px]" : "flex-row items-center gap-2 px-2"
+        )}
       >
-        <img src="/icons/logo.png" alt="Panda AI Logo" className={styles.sidebarHeaderLogoImage} />
-        <Box
-          className={styles.sidebarHeaderLogoTextContainer}
-          sx={{
-            transition: 'none',
-            margin: isSidebarCollapsed ? '0' : undefined,
-            textAlign: isSidebarCollapsed ? 'center' : undefined,
-          }}
+        <img src="/icons/logo.png" alt="Panda AI Logo" 
+          className={clsx(
+            styles.sidebarHeaderLogoImage,
+            isSidebarCollapsed ? "w-10 h-10" : "w-8 h-8"
+          )}
+        />
+        <div
+          className={clsx(
+            styles.sidebarHeaderLogoTextContainer,
+            "transition-none",
+            isSidebarCollapsed ? "text-center" : ""
+          )}
         >
-          <Typography component="span" className={styles.logoTextBold} sx={{ fontFamily: montserrat.style.fontFamily, fontWeight: 600 }}>
+          <span 
+            className={clsx(
+              styles.logoTextBold,
+              "text-lg text-gray-800"
+            )}
+            style={{ fontFamily: montserrat.style.fontFamily, fontWeight: 600 }}
+          >
             PANDA
-          </Typography>
-        </Box>
-      </Box>
-    </Box>
+          </span>
+        </div>
+      </div>
+    </div>
   );
 } 
