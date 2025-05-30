@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import styles from "./chat-list-skeleton.module.scss";
+import clsx from "clsx";
 
 interface ChatListSkeletonProps {
   targetHeight: number;
@@ -60,21 +60,24 @@ export function ChatListSkeleton({ targetHeight }: ChatListSkeletonProps) {
         lines.push(
           <div 
             key={j} 
-            className={styles.skeletonLine} 
+            className="h-[14px] bg-gray-300 rounded animate-pulse"
             style={{ width: `${lineWidthPercentage}%` }}
           />
         );
       }
       items.push(
-        <div key={i} className={styles.skeletonItem}>
+        <div key={i} className="h-[48px] rounded-lg mb-2.5 p-2.5 flex flex-col justify-center gap-2 bg-gray-100 animate-pulse">
           {lines}
         </div>
       );
     }
 
     skeletonGroups.push(
-      <div key={groupKey++} className={styles.skeletonGroup}>
-        <div className={styles.skeletonHeader} style={{ width: `${headerWidth}px` }} />
+      <div key={groupKey++} className="mb-7 px-2">
+        <div 
+          className="h-[14px] bg-gray-200 rounded mb-[18px] animate-pulse"
+          style={{ width: `${headerWidth}px` }}
+        />
         {items}
       </div>
     );
@@ -84,5 +87,5 @@ export function ChatListSkeleton({ targetHeight }: ChatListSkeletonProps) {
     if (groupKey > 50) break; 
   }
 
-  return <div className={styles.skeletonWrapper}>{skeletonGroups}</div>;
+  return <div className="w-full overflow-hidden">{skeletonGroups}</div>;
 } 

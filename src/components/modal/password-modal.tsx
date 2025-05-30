@@ -1,14 +1,7 @@
 'use client'
 
 import React, { useState, useCallback, useEffect } from 'react';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
+import clsx from "clsx";
 
 const MIN_PASSWORD_LENGTH = 10;
 const MAX_PASSWORD_LENGTH = 20;
@@ -164,171 +157,91 @@ export function PasswordModal({
   // For 'unlock' mode, we just show the error (which is usually '*Incorrect password').
   const displayedError = modalType === 'create' ? (currentConfig.getDynamicError(password) || error) : error;
 
+  if (!open) return null;
 
   return (
-    <Dialog 
-      open={open} 
-      disableEscapeKeyDown 
-      onClose={onClose}
-      BackdropProps={{
-        style: {
-          backgroundColor: 'rgba(0, 0, 0, 0.6)', 
-          backdropFilter: 'blur(5px)', 
-          WebkitBackdropFilter: 'blur(5px)', 
-        }
-      }}
-      PaperProps={{ 
-        style: {
-          backgroundColor: '#FFFFFF', 
-          borderRadius: '8px',
-          paddingTop: '40px',
-          paddingBottom: '40px',
-          paddingLeft: '86px',
-          paddingRight: '86px',
-        }
-      }}
+    <div 
+      className={clsx(
+        "fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300",
+        open ? "opacity-100 visible bg-black bg-opacity-60 backdrop-blur-sm" : "opacity-0 invisible"
+      )}
+      onClick={onClose}
     >
-      <Box sx={{ width: '372px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', marginBottom: '24px' }}>
-          <Box sx={{
-            width: '48px !important',
-            height: '48px',
-            borderRadius: '50%',
-            backgroundColor: currentConfig.iconBackgroundColor,
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'center',
-            margin: '0 auto'
-          }}>
+      <div 
+        className={clsx(
+          "bg-white rounded-lg shadow-xl flex flex-col items-center",
+          "p-10 md:px-[86px] md:py-[40px] w-[372px] box-border"
+        )}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog" 
+        aria-modal="true" 
+        aria-labelledby={`password-modal-title-${modalType}`}
+        aria-describedby={`password-modal-description-${modalType}`}
+      >
+        <div className="w-full flex flex-col items-center gap-6 mb-6">
+          <div 
+            className={clsx("w-12 h-12 rounded-full flex items-center justify-center p-1")}
+            style={{ backgroundColor: currentConfig.iconBackgroundColor }}
+          >
             <img 
               src={currentConfig.iconSrc} 
               alt={currentConfig.iconAlt}
-              style={{ 
-                width: '24px', 
-                height: '30px',
-                marginTop: '6px',
-                filter: currentConfig.iconFilter
-              }} 
+              className="w-6 h-[30px] mt-[2px]"
+              style={{ filter: currentConfig.iconFilter}} 
             />
-          </Box>
-          <DialogTitle sx={{ textAlign: 'center', padding: 0 }}>
-            <Typography variant="h5" component="div" sx={{ 
-              color: '#131A28',
-              fontSize: '24px',
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: '600',
-              wordWrap: 'break-word'
-            }}>
-              {currentConfig.title}
-            </Typography>
-          </DialogTitle>
-          <DialogContent sx={{ textAlign: 'center', padding: 0 }}>
-            <Typography variant="body1" sx={{ 
-              color: '#131A28',
-              fontSize: '16px',
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: '400',
-              wordWrap: 'break-word'
-            }}>
-              {currentConfig.description}
-            </Typography>
-          </DialogContent>
-        </Box>
+          </div>
+          <h2 id={`password-modal-title-${modalType}`} className="text-center text-2xl font-semibold text-gray-800 font-inter break-words">
+            {currentConfig.title}
+          </h2>
+          <p id={`password-modal-description-${modalType}`} className="text-center text-base text-gray-800 font-inter break-words">
+            {currentConfig.description}
+          </p>
+        </div>
         
-        <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-2">
           {displayedError && (
-            <Typography 
-              variant="caption"
-              sx={{
-                fontFamily: 'Inter, sans-serif',
-                fontSize: '16px', 
-                fontWeight: '400',
-                color: '#F33D4F', 
-                textAlign: 'left',
-                width: '100%',
-              }}
-            >
+            <p className="font-inter text-base font-normal text-red-500 text-left w-full">
               {displayedError}
-            </Typography>
+            </p>
           )}
-          <TextField
+
+          <input
             autoFocus
             required
-            margin="none"
             id={`${modalType}-password`}
             type="password"
-            fullWidth
-            variant="outlined" 
             value={password}
             onChange={handlePasswordChange}
-            error={!!displayedError}
             placeholder={currentConfig.textFieldPlaceholder}
-            sx={{ 
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '8px',
-                backgroundColor: 'white',
-                height: '56px',
-                fontFamily: 'Inter, sans-serif',
-                '& fieldset': {
-                  borderColor: '#CACACA',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#A0A0A0',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#007AFF', 
-                },
-                '&.Mui-error fieldset': {
-                  borderColor: '#F33D4F',
-                }
-              },
-              '& .MuiInputBase-input': {
-                width: '100% !important',
-                padding: '0 14px',
-                height: '100%',
-                color: '#131A28',
-                fontSize: '16px',
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: '400',
-                '&::placeholder': {
-                  opacity: 1,
-                }
-              }
-            }}
+            className={clsx(
+              "w-full h-14 px-3.5 py-0 rounded-lg border bg-white text-base font-inter text-gray-800 placeholder-gray-400",
+              "focus:outline-none focus:ring-1",
+              displayedError 
+                ? "border-red-500 focus:border-red-500 focus:ring-red-500" 
+                : "border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:ring-blue-500"
+            )}
+            aria-invalid={!!displayedError}
+            aria-describedby={displayedError ? `password-error-${modalType}` : undefined}
           />
-          <DialogActions sx={{ padding: 0, width: '100%' }}>
-            <Button 
+          {displayedError && <p id={`password-error-${modalType}`} className="sr-only">{displayedError}</p>}
+
+          <div className="w-full pt-2">
+            <button 
               type="submit" 
-              variant="contained" 
               disabled={isSubmitButtonDisabled}
-              fullWidth 
-              sx={{
-                height: '48px',
-                background: !isSubmitButtonDisabled ? '#131A28' : '#F3F3F3',
-                color: !isSubmitButtonDisabled ? '#C1FF83' : '#CACACA',
-                borderRadius: '24px',
-                padding: '0 10px',
-                textTransform: 'none', 
-                fontSize: '16px',
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: '600',
-                boxShadow: 'none',
-                '&:hover': {
-                  background: !isSubmitButtonDisabled ? '#131A28' : '#F3F3F3',
-                  boxShadow: 'none',
-                },
-                '&.Mui-disabled': {
-                  background: '#F3F3F3',
-                  color: '#CACACA',
-                },
-                marginTop: '8px',
-              }}
+              className={clsx(
+                "w-full h-12 rounded-3xl px-2.5 text-base font-inter font-semibold shadow-none transition-colors duration-150",
+                "focus:outline-none focus:ring-2 focus:ring-offset-2",
+                !isSubmitButtonDisabled 
+                  ? "bg-gray-800 text-lime-300 hover:bg-gray-700 focus:ring-gray-500" 
+                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
+              )}
             >
               {currentConfig.submitButtonText}
-            </Button>
-          </DialogActions>
-        </Box>
-      </Box>
-    </Dialog>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 } 
