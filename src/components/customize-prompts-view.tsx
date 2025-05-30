@@ -1,21 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Chip,
-  IconButton,
-  Divider,
-  CircularProgress,
-  Alert,
-} from '@mui/material';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import styles from './customize-prompts-view.module.scss'; // We'll create this SCSS file next
-import { ApiClient, CustomizedPromptsData, CustomizedPromptsResponse } from '../client/client';
+// MUI components and icons are removed or replaced
+// import styles from \'./customize-prompts-view.module.scss\'; // SCSS import removed
+import { CustomizedPromptsData, CustomizedPromptsResponse } from '../client/client'; // ApiClient removed from here as it's from useApiClient
 import { useApiClient } from '@/providers/api-client-provider';
+
+// Placeholder for icons - replace with actual SVGs or a library
+const IconPlaceholder = ({ name, className }: { name: string, className?: string }) => {
+  // Using a simpler span construction to avoid issues with backticks in edit_file
+  const baseClass = "text-sm";
+  const finalClassName = className ? `${baseClass} ${className}` : baseClass;
+  return <span className={finalClassName}>[{name}]</span>;
+};
+const AddCircleOutlineIcon = () => <IconPlaceholder name="+" />;
+
 interface Trait {
   id: string;
   label: string;
@@ -36,8 +35,7 @@ const initialTraits: Trait[] = [
 ];
 
 interface CustomizePromptsViewProps {
-  // apiClient: ApiClient;
-  onCloseRequest: () => void; // Renamed from onNavigateBack
+  onCloseRequest: () => void;
 }
 
 const EMPTY_PROMPTS_DATA: CustomizedPromptsResponse = {
@@ -46,6 +44,11 @@ const EMPTY_PROMPTS_DATA: CustomizedPromptsResponse = {
   created_at: '',
   updated_at: '',
 };
+
+// clsx helper (can be moved to utils if available globally)
+function clsx(...classes: (string | boolean | undefined | null)[]) {
+  return classes.filter(Boolean).join(' ');
+}
 
 export default function CustomizePromptsView({ onCloseRequest }: CustomizePromptsViewProps) {
   const [name, setName] = useState('');
@@ -82,7 +85,6 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
         setIsUpdateMode(true);
       } catch (apiError: any) {
         if (apiError instanceof Error && 'status' in apiError && (apiError as any).status === 404) {
-          // No prompts found, treat as new entry
           setName('');
           setJob('');
           setTraitsText('');
@@ -92,7 +94,7 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
           setIsUpdateMode(false);
         } else {
           setError(apiError.message || 'Failed to load customized prompts.');
-          setInitialData(EMPTY_PROMPTS_DATA); // Set to empty on error to allow creating new
+          setInitialData(EMPTY_PROMPTS_DATA);
           setIsUpdateMode(false);
         }
       } finally {
@@ -128,20 +130,11 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
   };
   
   const isFormDirty = () => {
-    console.log("isFormDirty", name, job, traitsText, extraParams);
-    if (!initialData)       return name.trim() !== '' || 
-    job.trim() !== '' || 
-    traitsText.trim() !== '' || 
-    extraParams.trim() !== '';
-; // Not loaded yet or error during initial load for comparison
+    if (!initialData) return name.trim() !== '' || job.trim() !== '' || traitsText.trim() !== '' || extraParams.trim() !== '';
 
-    if (!isUpdateMode) { // Creating new: dirty if any relevant field has input
-      return name.trim() !== '' || 
-             job.trim() !== '' || 
-             traitsText.trim() !== '' || 
-             extraParams.trim() !== '';
+    if (!isUpdateMode) {
+      return name.trim() !== '' || job.trim() !== '' || traitsText.trim() !== '' || extraParams.trim() !== '';
     }
-    // Updating existing: dirty if different from initial
     return name !== (initialData.personal_info?.name || '') ||
            job !== (initialData.personal_info?.job || '') ||
            traitsText !== (initialData.prompts?.traits || '') ||
@@ -151,21 +144,13 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
   const handleSave = async () => {
     setIsSaving(true);
     setError(null);
-
-    const payload: CustomizedPromptsData = {
-      personal_info: {},
-      prompts: {},
-    };
-
+    const payload: CustomizedPromptsData = { personal_info: {}, prompts: {} };
     if (name.trim()) payload.personal_info!.name = name.trim();
     if (job.trim()) payload.personal_info!.job = job.trim();
     if (traitsText.trim()) payload.prompts!.traits = traitsText.trim();
     if (extraParams.trim()) payload.prompts!.extra_params = extraParams.trim();
-    
-    // Remove empty objects
     if (Object.keys(payload.personal_info!).length === 0) delete payload.personal_info;
     if (Object.keys(payload.prompts!).length === 0) delete payload.prompts;
-
 
     try {
       let responseData: CustomizedPromptsResponse;
@@ -179,16 +164,10 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
       const newTraitsText = responseData.prompts?.traits || '';
       setTraitsText(newTraitsText);
       setExtraParams(responseData.prompts?.extra_params || '');
-      
       const loadedTextTraits = newTraitsText.split(',').map(s => s.trim()).filter(Boolean);
-      setTraits(initialTraits.map(trait => ({
-        ...trait,
-        selected: loadedTextTraits.includes(trait.label)
-      })));
-      
+      setTraits(initialTraits.map(trait => ({ ...trait, selected: loadedTextTraits.includes(trait.label) })));
       setInitialData(responseData);
       setIsUpdateMode(true);
-      // onNavigateBack(); // Optionally navigate back
     } catch (apiError: any) {
       setError(apiError.message || 'Failed to save customized prompts.');
     } finally {
@@ -197,71 +176,77 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
   };
 
   const handleCancel = () => {
-    onCloseRequest(); // Use the new prop name
+    onCloseRequest();
   };
 
   if (isLoading) {
     return (
-      <Box className={styles.viewContainer} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
-        <CircularProgress />
-      </Box>
+      <div className=\"flex flex-col flex-grow min-h-0 overflow-hidden bg-white items-center justify-center p-4 min-h-[300px]\"> {/* Replaces viewContainer and CircularProgress wrapper */}
+        {/* Basic CSS Spinner as CircularProgress replacement */}
+        <div className=\"animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500\"></div>
+      </div>
     );
   }
   
   const canSave = !isSaving && isFormDirty();
 
   return (
-    <Box className={styles.viewContainer}>
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      <Box className={styles.header}>
-        <Typography variant="h5" className={styles.title}>
+    <div className=\"flex flex-col flex-grow min-h-0 overflow-hidden bg-white p-4\"> {/* Replaces viewContainer */}
+      {error && (
+        <div className=\"mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md\" role=\"alert\"> {/* Replaces Alert */}
+          {error}
+        </div>
+      )}
+      <div className=\"pt-8 pb-[18px] px-0 md:px-4 gap-2\"> {/* Replaces header styles */}
+        <h1 className=\"px-4 py-0 text-xl md:text-2xl font-semibold text-gray-800 leading-8\"> {/* Replaces title Typography h5 */}
           Customize Panda AI
-        </Typography>
-        <Typography className={styles.subtitle}>
+        </h1>
+        <p className=\"px-4 pb-[6px] pt-0 text-base font-medium text-gray-600 leading-8\"> {/* Replaces subtitle Typography */}
           Introduce yourself to get better, more personalized responses
-        </Typography>
-      </Box>
+        </p>
+      </div>
       
-      <Divider className={styles.divider} />
+      <hr className=\"border-gray-300\" /> {/* Replaces Divider */}
 
-      <Box className={styles.formArea}>
-        <Box className={styles.formSection}>
-          <Typography className={styles.label}>What should Panda AI call you?</Typography>
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Nickname"
+      <div className=\"flex-grow overflow-y-auto p-4 md:px-4 space-y-5\"> {/* Replaces formArea */}
+        <div className=\"flex flex-col gap-2 rounded-md\"> {/* Replaces formSection, adjusted gap */}
+          <label className=\"text-sm font-medium text-gray-700\">What should Panda AI call you?</label> {/* Replaces label Typography */}
+          <input
+            type=\"text\"
+            fullWidth // This prop is not standard HTML, width is handled by Tailwind full-width class below
+            variant=\"outlined\" // Not standard HTML, styling done by Tailwind
+            placeholder=\"Nickname\"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className={styles.textField}
+            className=\"w-full p-2.5 text-base text-gray-800 bg-white border border-gray-300 rounded-md placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed\" // Replaces textField styles
             disabled={isSaving}
           />
-        </Box>
+        </div>
 
-        <Box className={styles.formSection}>
-          <Typography className={styles.label}>What do you do?</Typography>
-          <TextField
+        <div className=\"flex flex-col gap-2 rounded-md\"> {/* Replaces formSection */}
+          <label className=\"text-sm font-medium text-gray-700\">What do you do?</label>
+          <input
+            type=\"text\"
             fullWidth
-            variant="outlined"
-            placeholder="Product Manager"
+            variant=\"outlined\"
+            placeholder=\"Product Manager\"
             value={job}
             onChange={(e) => setJob(e.target.value)}
-            className={styles.textField}
+            className=\"w-full p-2.5 text-base text-gray-800 bg-white border border-gray-300 rounded-md placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed\"
             disabled={isSaving}
           />
-        </Box>
+        </div>
 
-        <Box className={styles.formSection}>
-          <Typography className={styles.label}>What traits should Panda AI have?</Typography>
-          <TextField
+        <div className=\"flex flex-col gap-2 rounded-md\"> {/* Replaces formSection */}
+          <label className=\"text-sm font-medium text-gray-700\">What traits should Panda AI have?</label>
+          <textarea
             fullWidth
-            multiline
             rows={4}
-            variant="outlined"
-            placeholder="Describe or select traits by clicking below"
+            variant=\"outlined\"
+            placeholder=\"Describe or select traits by clicking below\"
             value={traitsText}
             onChange={(e) => setTraitsText(e.target.value)}
-            className={styles.textArea}
+            className=\"w-full p-2.5 text-base text-gray-800 bg-white border border-gray-300 rounded-md placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 min-h-[100px] disabled:bg-gray-100 disabled:cursor-not-allowed\" // Replaces textArea styles, added min-h for height
             disabled={isSaving}
             onBlur={() => {
               const currentTextTraits = traitsText.split(',').map(s => s.trim()).filter(Boolean);
@@ -271,55 +256,69 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
               })));
             }}
           />
-          <Box className={styles.traitsContainer}>
+          <div className=\"flex flex-wrap gap-2 mt-2\"> {/* Replaces traitsContainer */}
             {traits.map((trait) => (
-              <Chip
+              <button // Using button for Chip for better accessibility and click handling
                 key={trait.id}
-                icon={<AddCircleOutlineIcon />}
-                label={trait.label}
                 onClick={() => !isSaving && handleTraitToggle(trait.id)}
-                className={clsx(styles.traitChip, trait.selected && styles.selectedTrait)}
-                variant={trait.selected ? 'filled' : 'outlined'}
-                clickable={!isSaving}
+                className={clsx(
+                  "inline-flex items-center px-2 py-1 rounded-full text-sm font-medium border focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed", // Base chip styles
+                  trait.selected 
+                    ? "bg-blue-100 border-blue-500 text-blue-700 hover:bg-blue-200 focus:ring-blue-500" // Selected styles
+                    : "bg-white border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 focus:ring-gray-400" // Default styles
+                )}
                 disabled={isSaving}
-              />
+              >
+                <AddCircleOutlineIcon /> {/* Corrected usage */}
+                <span className="ml-1.5">{trait.label}</span>
+              </button>
             ))}
-          </Box>
-        </Box>
+          </div>
+        </div>
 
-        <Box className={styles.formSection}>
-          <Typography className={styles.label}>Anything else Panda AI should know about you?</Typography>
-          <TextField
+        <div className=\"flex flex-col gap-2 rounded-md\"> {/* Replaces formSection */}
+          <label className=\"text-sm font-medium text-gray-700\">Anything else Panda AI should know about you?</label>
+          <textarea
             fullWidth
-            multiline
             rows={4}
-            variant="outlined"
-            placeholder="Interests, values, or preferences to keep in mind"
+            variant=\"outlined\"
+            placeholder=\"Interests, values, or preferences to keep in mind\"
             value={extraParams}
             onChange={(e) => setExtraParams(e.target.value)}
-            className={styles.textArea}
+            className=\"w-full p-2.5 text-base text-gray-800 bg-white border border-gray-300 rounded-md placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 min-h-[100px] disabled:bg-gray-100 disabled:cursor-not-allowed\"
             disabled={isSaving}
           />
-        </Box>
-      </Box>
+        </div>
+      </div>
 
-      <Box className={styles.actionsFooter}>
-        <Button variant="outlined" disableRipple={true} onClick={handleCancel} className={styles.cancelButton} disabled={isSaving}>
+      <div className=\"flex justify-end items-center gap-4 pt-6 mt-auto\"> {/* Replaces actionsFooter */}
+        <button 
+          onClick={handleCancel} 
+          className=\"px-4 py-2 text-sm font-medium text-gray-800 bg-white border border-gray-300 rounded-full hover:bg-gray-50 hover:border-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed\" // Replaces cancelButton
+          disabled={isSaving}
+        >
           Cancel
-        </Button>
-        <Button 
-          variant="contained" 
-          disableRipple={true} 
+        </button>
+        <button 
           onClick={handleSave} 
-          className={styles.saveButton} 
+          className={clsx(
+            \"px-4 py-2 text-sm font-medium rounded-full text-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed\", // Base save button
+            !canSave || isSaving 
+              ? \"bg-gray-300 text-gray-500 border border-gray-300 cursor-not-allowed\" // Disabled styles
+              : \"bg-gray-800 hover:bg-gray-900 focus:ring-gray-700 border border-gray-800\" // Enabled styles
+          )}
           disabled={!canSave || isSaving}
         >
-          {isSaving ? <CircularProgress size={24} color="inherit" /> : 'Save'}
-        </Button>
-      </Box>
-    </Box>
+          {isSaving 
+            ? <IconPlaceholder name=\"Saving...\" className=\"animate-spin\" /> 
+            : 'Save'}
+        </button>
+      </div>
+    </div>
   );
 }
+
+// clsx helper is already defined above
 
 // clsx helper (can be moved to utils if available globally)
 function clsx(...classes: (string | boolean | undefined | null)[]) {
