@@ -433,7 +433,7 @@ export const useChatStore = createPersistStore(
     name: StoreKey.Chat,
     version: 1.1, // Incremented version due to new state fields
 
-    storage: createJSONStorage(() => indexedDBStorage), // Use indexedDBStorage directly
+    storage: createJSONStorage(() => indexedDBStorage), // NEW
 
     onRehydrateStorage: (state) => {
       console.log("[ChatStore] Hydration finished.");

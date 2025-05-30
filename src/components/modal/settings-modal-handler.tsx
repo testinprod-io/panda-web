@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import SettingsModal from './settings-modal';
 
-export type SettingsPage = 'general' | 'prompts';
+export type SettingsPage = 'general';
 
 export default function SettingsModalHandler() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,11 +28,7 @@ export default function SettingsModalHandler() {
     const checkHash = () => {
       const hash = window.location.hash;
       console.log('[SettingsModalHandler] checkHash triggered. Current hash:', hash, 'Pathname:', pathname, 'SearchParams:', searchParams.toString());
-      if (hash === '#settings/prompts') {
-        console.log('[SettingsModalHandler] Hash is #settings/prompts, setting modal to OPEN, page to PROMPTS.');
-        setIsModalOpen(true);
-        setCurrentPage('prompts');
-      } else if (hash === '#settings') {
+      if (hash === '#settings') {
         console.log('[SettingsModalHandler] Hash is #settings, setting modal to OPEN, page to GENERAL.');
         setIsModalOpen(true);
         setCurrentPage('general');

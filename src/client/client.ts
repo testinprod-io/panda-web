@@ -17,6 +17,16 @@ import {
 } from './types';
 import { UUID } from 'crypto';
 
+export interface CustomizedPromptsData {
+  personal_info?: { [key: string]: string };
+  prompts?: { [key: string]: string };
+}
+
+export interface CustomizedPromptsResponse extends CustomizedPromptsData {
+  created_at: string;
+  updated_at: string;
+}
+
 export class ApiError extends Error {
   status: number;
   body: any;
@@ -319,5 +329,22 @@ export class ApiClient {
 
   async deleteSummary(conversationId: UUID, summaryId: UUID): Promise<void> {
     await this.request<void>('DELETE', `/conversations/${conversationId}/summaries/${summaryId}`);
+  }
+
+  // --- Customized Prompts ---
+  async getCustomizedPrompts(): Promise<CustomizedPromptsResponse> {
+    return this.request<CustomizedPromptsResponse>('GET', '/me/customized-prompts');
+  }
+
+  async createCustomizedPrompts(data: CustomizedPromptsData): Promise<CustomizedPromptsResponse> {
+    return this.request<CustomizedPromptsResponse>('POST', '/me/customized-prompts', undefined, data);
+  }
+
+  async updateCustomizedPrompts(data: CustomizedPromptsData): Promise<CustomizedPromptsResponse> {
+    return this.request<CustomizedPromptsResponse>('PUT', '/me/customized-prompts', undefined, data);
+  }
+
+  async deleteCustomizedPrompts(): Promise<void> {
+    await this.request<void>('DELETE', '/me/customized-prompts');
   }
 } 

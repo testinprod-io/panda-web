@@ -3,9 +3,12 @@
 .viewContainer {
   display: flex;
   flex-direction: column;
-  width: 100%;
-  height: 100%; // Take full height of its container in the modal
-  padding: 0; // Padding will be handled by modal's rightPanel or specific sections
+  flex-grow: 1; // Fill available vertical space in the parent modal
+  min-height: 0; // Crucial for nested flex scrolling
+  overflow: hidden; // Prevent this container from scrolling; formArea will scroll
+  background-color: var(--mui-palette-background-paper); // Or your desired background
+  // Assuming it's a direct child of a flex container (the modal box)
+  // width: 100%; // Should already be handled by the parent modal's width setting
 }
 
 .header {
@@ -27,6 +30,11 @@
     font-weight: 500; // Figma specifies 500 for this
     line-height: 32px;
   }
+  flex-grow: 1;
+  overflow-y: auto; // Allow form content to scroll if it overflows
+  // min-height: 0; // Already implicitly handled by overflow-y: auto in flex children usually
+
+  padding: 18px 16px 8px 16px;
 }
 
 .divider {

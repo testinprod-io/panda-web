@@ -4,7 +4,7 @@ import { ChatApiService, mapApiMessagesToChatMessages, mapApiMessageToChatMessag
 import { useApiClient } from '@/providers/api-client-provider';
 import { ChatMessage, MessageSyncState } from '@/types/chat';
 import { MessagesLoadState, SessionSyncState, ChatSession } from '@/types/session';
-import { ModelConfig } from '@/types/constant';
+import { ModelConfig, ModelType } from '@/types/constant';
 import { useAppConfig } from '@/store/config';
 import {
     ConversationCreateRequest,
@@ -19,7 +19,7 @@ import { UUID } from "crypto";
 import { RequestMessage } from '@/client/api';
 import { DEFAULT_TOPIC } from '@/store/chat';
 import { getMessageTextContent, trimTopic } from "@/utils/utils";
-import { ModelType } from "@/store/config";
+// import { ModelType } from "@/store/config";
 import { EncryptionService } from '@/services/EncryptionService';
 
 export function useChatActions() {

@@ -18,8 +18,8 @@ import {
 import { UUID } from "crypto";
 import { ChatMessage, createMessage, Role } from "@/types/chat";
 import { ChatSession, createNewSession } from "@/types/session";
-import { ModelType } from "@/store/config";
-import { ModelConfig } from "@/types/constant";
+// import { ModelType } from "@/store/config";
+import { ModelConfig, ModelType } from "@/types/constant";
 import Locale from "@/locales";
 import { DEFAULT_TOPIC } from "@/store/chat"; // Assuming these are exported from store
 import { trimTopic, getMessageTextContent } from "@/utils/utils"; // Import from utils

@@ -18,7 +18,7 @@ import {
 } from "../artifacts";
 import { useChatStore } from "@/store";
 
-import { useAppConfig } from "@/store/config";
+// import { useAppConfig } from "@/store/config";
 import clsx from "clsx";
 import { HTMLAttributes, ClassAttributes, ComponentProps } from 'react';
 
@@ -152,7 +152,7 @@ const PreCode = React.forwardRef<HTMLPreElement, React.HTMLAttributes<HTMLPreEle
     const { height } = useWindowSize();
     const chatStore = useChatStore();
     const session = chatStore.currentSession();
-    const config = useAppConfig();
+    // const config = useAppConfig();
     const enableArtifacts = false; // Hardcoded based on original logic
 
     // Fullscreen state and ref
@@ -284,7 +284,7 @@ PreCode.displayName = "PreCode";
 function CustomCode(props: React.HTMLAttributes<HTMLElement> & { children?: React.ReactNode }) {
   const chatStore = useChatStore();
   const session = chatStore.currentSession();
-  const config = useAppConfig();
+  // const config = useAppConfig();
   const enableCodeFold = false;
     // session.mask?.enableCodeFold !== false && config.enableCodeFold;
 

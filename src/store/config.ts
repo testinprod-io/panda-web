@@ -10,16 +10,17 @@ import {
   DEFAULT_PANDA_MODEL_NAME, // Used for default model selection
   AppModelDefinition,
   ModelConfig,
+  ModelType,
 } from "@/types/constant";
 import { createPersistStore } from "@/utils/store";
 import { useChatStore } from "./chat";
-import { indexedDBStorage } from "@/utils/indexedDB-storage";
+// import { indexedDBStorage } from "@/utils/indexedDB-storage"; // OLD IMPORT
+import { indexedDBStorage } from "@/utils/indexedDB-storage"; // NEW IMPORT
 import { createJSONStorage } from "zustand/middleware";
 
 // Re-export ServiceProvider if it's defined in constant.ts
 export { ServiceProvider } from "@/types/constant";
 
-export type ModelType = AppModelDefinition["name"];
 
 export enum SubmitKey {
   Enter = "Enter",
@@ -146,59 +147,73 @@ export const useAppConfig = createPersistStore(
     },
 
     setApiProvider(modelName: ModelType) {
+      console.log("[AppConfigStore] setApiProvider called with:", { modelName });
       const models = get().models; // These are AppModelDefinition[]
       const selectedModelDetail = models.find(
         (m) => m.name === modelName,
       );
 
       if (selectedModelDetail) {
+        console.log("[AppConfigStore] setApiProvider - model found:", { selectedModelDetail });
         // selectedModelDetail.config is ModelConfig from app/constant.ts (name, displayName, temp, etc.)
         // selectedModelDetail.name is the ModelType
         // appConfig.modelConfig needs fields like 'model', 'providerName', and the ones from ModelConfig (app/constant)
-
-        set(state => ({
-          ...state,
-          modelConfig: {
-            ...selectedModelDetail.config, // Spread fields from selected model's config (temp, top_p, name, displayName etc.)
-            model: selectedModelDetail.name as ModelType, // Explicitly set the 'model' field for appConfig.modelConfig
-            providerName: ServiceProvider.Panda,      // Explicitly set top-level 'providerName' for appConfig.modelConfig
-          },
-        }));
+        set(state => {
+          console.log("[AppConfigStore] setApiProvider - setting new state with modelConfig:", { modelConfig: selectedModelDetail.config, modelName: selectedModelDetail.name });
+          return {
+            ...state,
+            modelConfig: {
+              ...selectedModelDetail.config, // Spread fields from selected model's config (temp, top_p, name, displayName etc.)
+              model: selectedModelDetail.name as ModelType, // Explicitly set the 'model' field for appConfig.modelConfig
+              providerName: ServiceProvider.Panda,      // Explicitly set top-level 'providerName' for appConfig.modelConfig
+            },
+          };
+        });
         
         // Update the current chat session to use the selected model's specific config
         // selectedModelDetail.config is (ModelConfig from app/constant.ts)
+        console.log("[AppConfigStore] setApiProvider - updating current chat session model with:", selectedModelDetail.config);
         useChatStore.getState().updateCurrentSessionModel(selectedModelDetail.config);
       } else {
-        console.warn(`Model ${modelName} with provider Panda not found. Cannot set API provider.`);
+        console.warn(`[AppConfigStore] setApiProvider - Model ${modelName} with provider Panda not found. Cannot set API provider.`);
       }
     },
 
     mergeModels(newModels: LLMModel[]) { 
+      console.log("[AppConfigStore] mergeModels called with:", { newModels });
       const oldModels = get().models; 
+      console.log("[AppConfigStore] mergeModels - old models:", { oldModels });
       const modelMap: Record<string, AppModelDefinition> = {}; 
 
       for (const model of oldModels) {
         model.available = false; 
         modelMap[`${model.name}@${model.provider.id}`] = model;
       }
+      console.log("[AppConfigStore] mergeModels - initial modelMap (all set to unavailable):", { modelMap: { ...modelMap } });
 
       for (const newModel of newModels) {
         // Assuming newModels from API will also have provider.id = 'panda'
         const key = `${newModel.name}@${newModel.provider.id}`;
         if (modelMap[key]) {
+          console.log(`[AppConfigStore] mergeModels - updating existing model: ${key}`, { newModelData: newModel });
           modelMap[key].available = newModel.available; 
           if (newModel.displayName) modelMap[key].displayName = newModel.displayName;
         } else {
           // If API returns a Panda model not in our predefined list, how to handle?
           // For now, we only update availability of predefined models.
-          // console.warn(`New model ${newModel.name} from Panda API not in predefined app/constant.ts models. Display/config might be basic.`);
+          console.warn(`[AppConfigStore] mergeModels - New model ${newModel.name} from Panda API not in predefined app/constant.ts models. It will be ignored for now.`, { newModel });
           // To truly support dynamic models from Panda backend not in constants, we'd need a default AppModelDefinition structure here.
         }
       }
+      console.log("[AppConfigStore] mergeModels - final modelMap before setting state:", { modelMap: { ...modelMap } });
 
-      set(() => ({
-        models: Object.values(modelMap),
-      }));
+      set(() => {
+        const updatedModels = Object.values(modelMap);
+        console.log("[AppConfigStore] mergeModels - setting new models state:", { updatedModels });
+        return {
+          models: updatedModels,
+        };
+      });
     },
 
     allModels() { 
@@ -208,18 +223,21 @@ export const useAppConfig = createPersistStore(
   {
     name: StoreKey.Config,
     version: 1.2, // Incremented version due to significant model changes
-  //   storage: createJSONStorage(() => indexedDBStorage), // Use indexedDBStorage directly
+    storage: createJSONStorage(() => indexedDBStorage), // NEW: Pass the function directly
 
-  //   onRehydrateStorage: (state) => {
-  //     console.log("[ConfigStore] Hydration finished.");
-  //     return (hydratedState, error) => {
-  //         if (error) {
-  //             console.error("[ConfigStore] Error during rehydration:", error);
-  //         } else {
-  //              console.log("[ConfigStore] Rehydration successful.");
-  //         }
-  //     }
-  //   },
+    // onRehydrateStorage: (state: any) => {
+    //   console.log("[AppConfigStore] onRehydrateStorage called with persisted state:", state);
+    //   // console.log("[ConfigStore] Hydration finished."); // Original log, can be kept or removed
+    //   return (hydratedState: any, error: any) => {
+    //       if (error) {
+    //           // console.error("[ConfigStore] Error during rehydration:", error); // Original log
+    //           console.error("[AppConfigStore] onRehydrateStorage - error during rehydration:", { error, hydratedState });
+    //       } else {
+    //           //  console.log("[ConfigStore] Rehydration successful."); // Original log
+    //            console.log("[AppConfigStore] onRehydrateStorage - rehydration successful. Hydrated state:", hydratedState);
+    //       }
+    //   }
+    // },
   },
   
 );

@@ -1,4 +1,4 @@
-import { SubmitKey } from "../store/config";
+// import { SubmitKey } from "../store/config";
 import type { PartialLocaleType } from "./index";
 // import { getClientConfig } from "../config/client";
 const isApp = false;// !!getClientConfig()?.isApp;
@@ -75,9 +75,9 @@ const ko: PartialLocaleType = {
     Typing: "입력 중…",
     Input: (submitKey: string) => {
       var inputHints = `${submitKey} 전송`;
-      if (submitKey === String(SubmitKey.Enter)) {
-        inputHints += "，Shift + Enter 줄 바꿈";
-      }
+      // if (submitKey === String(SubmitKey.Enter)) {
+      //   inputHints += "，Shift + Enter 줄 바꿈";
+      // }
       return inputHints + "，/ 자동 완성，: 명령어 입력";
     },
     Send: "전송",

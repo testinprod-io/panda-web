@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -9,10 +9,13 @@ import {
   Chip,
   IconButton,
   Divider,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import styles from './customize-prompts-view.module.scss'; // We'll create this SCSS file next
-
+import { ApiClient, CustomizedPromptsData, CustomizedPromptsResponse } from '../client/client';
+import { useApiClient } from '@/providers/api-client-provider';
 interface Trait {
   id: string;
   label: string;
@@ -33,37 +36,183 @@ const initialTraits: Trait[] = [
 ];
 
 interface CustomizePromptsViewProps {
-  onNavigateBack: () => void; // For a potential back button inside this view
+  // apiClient: ApiClient;
+  onCloseRequest: () => void; // Renamed from onNavigateBack
 }
 
-export default function CustomizePromptsView({ onNavigateBack }: CustomizePromptsViewProps) {
-  const [nickname, setNickname] = useState('');
-  const [whatYouDo, setWhatYouDo] = useState('');
-  const [selectedTraitsText, setSelectedTraitsText] = useState('');
-  const [anythingElse, setAnythingElse] = useState('');
-  const [traits, setTraits] = useState<Trait[]>(initialTraits);
+const EMPTY_PROMPTS_DATA: CustomizedPromptsResponse = {
+  personal_info: { name: '', job: '' },
+  prompts: { traits: '', extra_params: '' },
+  created_at: '',
+  updated_at: '',
+};
+
+export default function CustomizePromptsView({ onCloseRequest }: CustomizePromptsViewProps) {
+  const [name, setName] = useState('');
+  const [job, setJob] = useState('');
+  const [traitsText, setTraitsText] = useState('');
+  const [extraParams, setExtraParams] = useState('');
+  const [traits, setTraits] = useState<Trait[]>(initialTraits.map(t => ({ ...t, selected: false })));
+  const apiClient = useApiClient();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isUpdateMode, setIsUpdateMode] = useState(false);
+  const [initialData, setInitialData] = useState<CustomizedPromptsResponse | null>(null);
+
+  useEffect(() => {
+    const fetchPrompts = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await apiClient.app.getCustomizedPrompts();
+        setName(data.personal_info?.name || '');
+        setJob(data.personal_info?.job || '');
+        const currentTraitsText = data.prompts?.traits || '';
+        setTraitsText(currentTraitsText);
+        setExtraParams(data.prompts?.extra_params || '');
+        
+        const loadedTextTraits = currentTraitsText.split(',').map(s => s.trim()).filter(Boolean);
+        setTraits(initialTraits.map(trait => ({
+          ...trait,
+          selected: loadedTextTraits.includes(trait.label)
+        })));
+
+        setInitialData(data);
+        setIsUpdateMode(true);
+      } catch (apiError: any) {
+        if (apiError instanceof Error && 'status' in apiError && (apiError as any).status === 404) {
+          // No prompts found, treat as new entry
+          setName('');
+          setJob('');
+          setTraitsText('');
+          setExtraParams('');
+          setTraits(initialTraits.map(t => ({ ...t, selected: false })));
+          setInitialData(EMPTY_PROMPTS_DATA);
+          setIsUpdateMode(false);
+        } else {
+          setError(apiError.message || 'Failed to load customized prompts.');
+          setInitialData(EMPTY_PROMPTS_DATA); // Set to empty on error to allow creating new
+          setIsUpdateMode(false);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPrompts();
+  }, [apiClient]);
 
   const handleTraitToggle = (traitId: string) => {
-    setTraits((prevTraits) =>
-      prevTraits.map((trait) =>
-        trait.id === traitId ? { ...trait, selected: !trait.selected } : trait
+    const traitToToggle = traits.find(t => t.id === traitId);
+    if (!traitToToggle) return;
+
+    const currentTextTraits = traitsText.split(',').map(s => s.trim()).filter(Boolean);
+    let newTextTraitsArray: string[];
+    let newSelectedState: boolean;
+
+    if (currentTextTraits.includes(traitToToggle.label)) {
+      newTextTraitsArray = currentTextTraits.filter(t => t !== traitToToggle.label);
+      newSelectedState = false;
+    } else {
+      newTextTraitsArray = [...currentTextTraits, traitToToggle.label];
+      newSelectedState = true;
+    }
+    setTraitsText(newTextTraitsArray.join(', '));
+
+    setTraits(prevTraits =>
+      prevTraits.map(trait =>
+        trait.id === traitId ? { ...trait, selected: newSelectedState } : trait
       )
     );
   };
+  
+  const isFormDirty = () => {
+    console.log("isFormDirty", name, job, traitsText, extraParams);
+    if (!initialData)       return name.trim() !== '' || 
+    job.trim() !== '' || 
+    traitsText.trim() !== '' || 
+    extraParams.trim() !== '';
+; // Not loaded yet or error during initial load for comparison
 
-  const handleSave = () => {
-    console.log('Save clicked', { nickname, whatYouDo, selectedTraitsText, traits: traits.filter(t => t.selected), anythingElse });
-    // Add save logic here
-    // onNavigateBack(); // Optionally navigate back after save
+    if (!isUpdateMode) { // Creating new: dirty if any relevant field has input
+      return name.trim() !== '' || 
+             job.trim() !== '' || 
+             traitsText.trim() !== '' || 
+             extraParams.trim() !== '';
+    }
+    // Updating existing: dirty if different from initial
+    return name !== (initialData.personal_info?.name || '') ||
+           job !== (initialData.personal_info?.job || '') ||
+           traitsText !== (initialData.prompts?.traits || '') ||
+           extraParams !== (initialData.prompts?.extra_params || '');
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setError(null);
+
+    const payload: CustomizedPromptsData = {
+      personal_info: {},
+      prompts: {},
+    };
+
+    if (name.trim()) payload.personal_info!.name = name.trim();
+    if (job.trim()) payload.personal_info!.job = job.trim();
+    if (traitsText.trim()) payload.prompts!.traits = traitsText.trim();
+    if (extraParams.trim()) payload.prompts!.extra_params = extraParams.trim();
+    
+    // Remove empty objects
+    if (Object.keys(payload.personal_info!).length === 0) delete payload.personal_info;
+    if (Object.keys(payload.prompts!).length === 0) delete payload.prompts;
+
+
+    try {
+      let responseData: CustomizedPromptsResponse;
+      if (isUpdateMode) {
+        responseData = await apiClient.app.updateCustomizedPrompts(payload);
+      } else {
+        responseData = await apiClient.app.createCustomizedPrompts(payload);
+      }
+      setName(responseData.personal_info?.name || '');
+      setJob(responseData.personal_info?.job || '');
+      const newTraitsText = responseData.prompts?.traits || '';
+      setTraitsText(newTraitsText);
+      setExtraParams(responseData.prompts?.extra_params || '');
+      
+      const loadedTextTraits = newTraitsText.split(',').map(s => s.trim()).filter(Boolean);
+      setTraits(initialTraits.map(trait => ({
+        ...trait,
+        selected: loadedTextTraits.includes(trait.label)
+      })));
+      
+      setInitialData(responseData);
+      setIsUpdateMode(true);
+      // onNavigateBack(); // Optionally navigate back
+    } catch (apiError: any) {
+      setError(apiError.message || 'Failed to save customized prompts.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
-    console.log('Cancel clicked');
-    onNavigateBack(); // Navigate back to the main settings view
+    onCloseRequest(); // Use the new prop name
   };
+
+  if (isLoading) {
+    return (
+      <Box className={styles.viewContainer} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+  
+  const canSave = !isSaving && isFormDirty();
 
   return (
     <Box className={styles.viewContainer}>
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       <Box className={styles.header}>
         <Typography variant="h5" className={styles.title}>
           Customize Panda AI
@@ -82,9 +231,10 @@ export default function CustomizePromptsView({ onNavigateBack }: CustomizePrompt
             fullWidth
             variant="outlined"
             placeholder="Nickname"
-            value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             className={styles.textField}
+            disabled={isSaving}
           />
         </Box>
 
@@ -94,9 +244,10 @@ export default function CustomizePromptsView({ onNavigateBack }: CustomizePrompt
             fullWidth
             variant="outlined"
             placeholder="Product Manager"
-            value={whatYouDo}
-            onChange={(e) => setWhatYouDo(e.target.value)}
+            value={job}
+            onChange={(e) => setJob(e.target.value)}
             className={styles.textField}
+            disabled={isSaving}
           />
         </Box>
 
@@ -107,10 +258,18 @@ export default function CustomizePromptsView({ onNavigateBack }: CustomizePrompt
             multiline
             rows={4}
             variant="outlined"
-            placeholder="Describe or select traits"
-            value={selectedTraitsText}
-            onChange={(e) => setSelectedTraitsText(e.target.value)}
+            placeholder="Describe or select traits by clicking below"
+            value={traitsText}
+            onChange={(e) => setTraitsText(e.target.value)}
             className={styles.textArea}
+            disabled={isSaving}
+            onBlur={() => {
+              const currentTextTraits = traitsText.split(',').map(s => s.trim()).filter(Boolean);
+              setTraits(prevTraits => prevTraits.map(trait => ({
+                ...trait,
+                selected: currentTextTraits.includes(trait.label)
+              })));
+            }}
           />
           <Box className={styles.traitsContainer}>
             {traits.map((trait) => (
@@ -118,10 +277,11 @@ export default function CustomizePromptsView({ onNavigateBack }: CustomizePrompt
                 key={trait.id}
                 icon={<AddCircleOutlineIcon />}
                 label={trait.label}
-                onClick={() => handleTraitToggle(trait.id)}
+                onClick={() => !isSaving && handleTraitToggle(trait.id)}
                 className={clsx(styles.traitChip, trait.selected && styles.selectedTrait)}
                 variant={trait.selected ? 'filled' : 'outlined'}
-                clickable
+                clickable={!isSaving}
+                disabled={isSaving}
               />
             ))}
           </Box>
@@ -135,19 +295,26 @@ export default function CustomizePromptsView({ onNavigateBack }: CustomizePrompt
             rows={4}
             variant="outlined"
             placeholder="Interests, values, or preferences to keep in mind"
-            value={anythingElse}
-            onChange={(e) => setAnythingElse(e.target.value)}
+            value={extraParams}
+            onChange={(e) => setExtraParams(e.target.value)}
             className={styles.textArea}
+            disabled={isSaving}
           />
         </Box>
       </Box>
 
       <Box className={styles.actionsFooter}>
-        <Button variant="outlined" disableRipple={true} onClick={handleCancel} className={styles.cancelButton}>
+        <Button variant="outlined" disableRipple={true} onClick={handleCancel} className={styles.cancelButton} disabled={isSaving}>
           Cancel
         </Button>
-        <Button variant="contained" disableRipple={true} onClick={handleSave} className={styles.saveButton} disabled>
-          Save
+        <Button 
+          variant="contained" 
+          disableRipple={true} 
+          onClick={handleSave} 
+          className={styles.saveButton} 
+          disabled={!canSave || isSaving}
+        >
+          {isSaving ? <CircularProgress size={24} color="inherit" /> : 'Save'}
         </Button>
       </Box>
     </Box>

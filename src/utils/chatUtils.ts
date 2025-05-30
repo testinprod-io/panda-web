@@ -8,8 +8,8 @@ import {
   DEFAULT_PANDA_MODEL_NAME,
 } from "@/types/constant";
 import Locale, { getLang } from "@/locales";
-import { ModelConfig } from '@/types/constant';
-import { ModelType, useAppConfig } from "@/store/config";
+import { ModelConfig, ModelType } from '@/types/constant';
+// import { ModelType, useAppConfig } from "@/store/config";
 import { collectModelsWithDefaultModel } from "./model";
 import { estimateTokenLength } from "./token";
 import { ChatMessage } from "@/types/chat";

@@ -48,6 +48,7 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
   const [activeNavSection, setActiveNavSection] =
     useState<ActiveSettingSection>("general");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [isPromptsModalOpen, setIsPromptsModalOpen] = useState(false); // New state for prompts modal
 
   const router = useRouter();
   const pathname = usePathname();
@@ -121,7 +122,7 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
           variant="text"
           endIcon={<ChevronRightIcon />}
           className={styles.actionButtonText}
-          onClick={() => navigateTo('#settings/prompts')} // Navigate to prompts page
+          onClick={() => setIsPromptsModalOpen(true)} // Open the new modal
         >
           On
         </Button>
@@ -179,8 +180,6 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
 
   const renderContent = () => {
     switch (currentPage) {
-      case 'prompts':
-        return <CustomizePromptsView onNavigateBack={() => navigateTo('#settings')} />;
       case 'general':
       default: // Default to general settings if currentPage is null or unexpected
         return (
@@ -211,23 +210,13 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
       >
         <Box className={styles.modalContent}>
           <Box className={styles.header}>
-            {currentPage === 'prompts' && (
-              <IconButton
-                aria-label="back to general settings"
-                onClick={() => navigateTo('#settings')}
-                className={styles.backButton}
-              >
-                <ArrowBackIcon />
-              </IconButton>
-            )}
             <Typography
               id="settings-modal-title"
               variant="h6"
               component="h2"
               className={styles.title}
-              sx={{ marginLeft: currentPage === 'prompts' ? 1 : 0}} // Adjust title position if back button is present
             >
-              {currentPage === 'prompts' ? 'General' : 'Settings'} {/* Title changes based on view, or could be static */}
+              Settings {/* Title is always Settings now */}
             </Typography>
             <IconButton
               aria-label="close settings"
@@ -241,54 +230,75 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
           <Divider className={styles.divider} />
 
           {/* Main area for general settings with left nav and right panel */}
-          {currentPage === 'general' && (
-            <Box className={styles.mainArea}>
-              <Box className={styles.leftNav}>
-                <List component="nav">
-                  <ListItemButton
-                    selected={activeNavSection === "general"}
-                    onClick={() => setActiveNavSection("general")}
-                    className={clsx(styles.navItem, activeNavSection === "general" && styles.navItemActive)}
-                  >
-                    <ListItemIcon className={styles.navItemIcon}>
-                      <SettingsIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText primary="General" />
-                  </ListItemButton>
-                  <ListItemButton
-                    selected={activeNavSection === "faq"}
-                    onClick={() => setActiveNavSection("faq")}
-                    // disabled // FAQ section not implemented yet
-                    className={clsx(styles.navItem, activeNavSection === "faq" && styles.navItemActive)}
-                  >
-                    <ListItemIcon className={styles.navItemIcon}>
-                      <HelpOutlineIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText primary="Help & FAQ" />
-                  </ListItemButton>
-                </List>
-              </Box>
-              <Box className={styles.rightPanel}>
-                {/* Render general settings items directly for now, FAQ would be another case here based on activeNavSection */}
-                {activeNavSection === 'general' && renderContent()} 
-                {activeNavSection === 'faq' && (
-                   <Box>
-                      <Typography variant="h6">Help & FAQ</Typography>
-                      <Typography>This is where help and FAQ content will go.</Typography>
-                  </Box>
-                )}
-              </Box>
+          <Box className={styles.mainArea}>
+            <Box className={styles.leftNav}>
+              <List component="nav">
+                <ListItemButton
+                  selected={activeNavSection === "general"}
+                  onClick={() => setActiveNavSection("general")}
+                  className={clsx(styles.navItem, activeNavSection === "general" && styles.navItemActive)}
+                >
+                  <ListItemIcon className={styles.navItemIcon}>
+                    <SettingsIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText primary="General" />
+                </ListItemButton>
+                <ListItemButton
+                  selected={activeNavSection === "faq"}
+                  onClick={() => setActiveNavSection("faq")}
+                  // disabled // FAQ section not implemented yet
+                  className={clsx(styles.navItem, activeNavSection === "faq" && styles.navItemActive)}
+                >
+                  <ListItemIcon className={styles.navItemIcon}>
+                    <HelpOutlineIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText primary="Help & FAQ" />
+                </ListItemButton>
+              </List>
             </Box>
-          )}
-
-          {/* Main area for prompts view (takes full width after header) */}
-          {currentPage === 'prompts' && (
-              <Box className={styles.promptsViewFullArea}>
-                  {renderContent()}
-              </Box>
-          )}
+            <Box className={styles.rightPanel}>
+              {/* Render general settings items directly for now, FAQ would be another case here based on activeNavSection */}
+              {activeNavSection === 'general' && renderContent()} 
+              {activeNavSection === 'faq' && (
+                 <Box>
+                    <Typography variant="h6">Help & FAQ</Typography>
+                    <Typography>This is where help and FAQ content will go.</Typography>
+                </Box>
+              )}
+            </Box>
+          </Box>
         </Box>
       </Modal>
+
+      {/* New Modal for CustomizePromptsView */}
+      <Modal
+        open={isPromptsModalOpen}
+        onClose={() => setIsPromptsModalOpen(false)} // Close on backdrop click
+        aria-labelledby="customize-prompts-modal-title"
+        className={styles.modalBackdrop} // Can reuse or define a new one if different styling is needed
+      >
+        <Box sx={{ 
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 'clamp(300px, 80vw, 650px)', // Responsive width: min 300px, 80% of viewport, max 650px
+          bgcolor: 'background.paper',
+          boxShadow: 24,
+          p: 0, 
+          borderRadius: '8px', 
+          outline: 'none',
+          maxHeight: '90vh', // Ensure it doesn't exceed viewport height
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden' // The CustomizePromptsView will handle its own scrolling
+        }}>
+          {/* We can add a header to this modal if needed, or rely on CustomizePromptsView's header */}
+          {/* For simplicity, directly rendering CustomizePromptsView */}
+          <CustomizePromptsView onCloseRequest={() => setIsPromptsModalOpen(false)} />
+        </Box>
+      </Modal>
+
       {/* Confirmation Dialog for Deleting Chats */}
       <Dialog
         open={deleteConfirmOpen}

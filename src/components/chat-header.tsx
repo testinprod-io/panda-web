@@ -21,8 +21,8 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useAuthStatus } from "@/hooks/use-auth-status";
 import { useAppConfig, useChatStore } from "@/store";
 import { ServiceProvider } from "@/types/constant";
-import { ModelType } from "@/store/config";
-import { ModelConfig, DEFAULT_MODELS } from "@/types/constant";
+// import { ModelType } from "@/store/config";
+import { ModelConfig, DEFAULT_MODELS, ModelType } from "@/types/constant";
 import LoginSignupPopup from "./login-signup-popup";
 import styles from "./chat-header.module.scss";
 import clsx from "clsx";
@@ -135,13 +135,6 @@ export default function ChatHeader({
     router.push(`/`);
   };
 
-  // console.log("activeSessionModelName:", activeSessionModelName);
-  // console.log("activeSessionModelDisplayName:", activeSessionModelDisplayName);
-  // console.log("globalModelIdentifier:", globalModelIdentifier);
-  // console.log("globalModelName:", globalModelName);
-  // console.log("globalModelDisplayName:", globalModelDisplayName);
-  // console.log("DEFAULT_MODELS[0].config.displayName:", DEFAULT_MODELS[0].config.displayName);
-
   const displayModelName =
     activeSessionModelDisplayName ||
     activeSessionModelName ||
@@ -200,11 +193,6 @@ export default function ChatHeader({
   };
 
   const currentStatusInfo = getEncryptionStatusInfo();
-
-  console.log("activeSessionModelName:", activeSessionModelName);
-  console.log("activeSessionModelDisplayName:", activeSessionModelDisplayName);
-  console.log("globalModelIdentifier:", globalModelIdentifier);
-  console.log("displayModelName used in UI:", displayModelName);
 
   const handleOpenSettings = () => {
     // Attempt to blur the currently focused element (likely the clicked menu item)

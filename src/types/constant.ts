@@ -196,6 +196,8 @@ export interface AppModelDefinition {
   isVisionModel: boolean;
   config: ModelConfig;
 }
+export type ModelType = AppModelDefinition["name"];
+
 
 export const DEFAULT_MODELS: AppModelDefinition[] = [
   ...PandaModels.map((name) => {
@@ -257,4 +259,4 @@ export const DEFAULT_MODELS: AppModelDefinition[] = [
 export const CHAT_PAGE_SIZE = 15;
 export const MAX_RENDER_MSG_COUNT = 45;
 
-export type ModelType = "ig1/r1-1776-AWQ" | "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16";
+// export type ModelType = "ig1/r1-1776-AWQ" | "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16";
