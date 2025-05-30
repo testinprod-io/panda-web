@@ -1,8 +1,8 @@
 "use client";
 
 import React from 'react';
-import { Box, Button, Typography, Modal } from '@mui/material';
-import styles from './login-signup-popup.module.scss';
+// import { Box, Button, Typography, Modal } from '@mui/material'; // Removed MUI imports
+// import styles from './login-signup-popup.module.scss'; // Removed SCSS import
 
 interface LoginSignupPopupProps {
   open: boolean;
@@ -12,47 +12,49 @@ interface LoginSignupPopupProps {
 }
 
 const LoginSignupPopup: React.FC<LoginSignupPopupProps> = ({ open, onClose, onLogin, onSignup }) => {
+  if (!open) {
+    return null;
+  }
+
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      aria-labelledby="login-signup-popup-title"
-      aria-describedby="login-signup-popup-description"
-      className={styles.modalBackdrop} // For potential backdrop styling
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" // Replaces Modal backdrop and styles.modalBackdrop
+      onClick={onClose} // Handle closing when clicking on backdrop
     >
-      <Box className={styles.popupContainer}>
-        <Box className={styles.contentWrapper}>
-          <Typography variant="h1" className={styles.title}>
+      <div 
+        className="bg-white rounded-lg border border-gray-300 p-8 flex flex-col justify-center items-center gap-6 w-[376px] max-w-[90vw] shadow-lg outline-none" // Replaces styles.popupContainer
+        onClick={(e) => e.stopPropagation()} // Prevent click inside popup from closing it
+      >
+        <div className="w-[202px] flex flex-col justify-center items-center gap-4"> {/* Replaces styles.contentWrapper */}
+          <h1 className="self-stretch text-center text-gray-800 text-2xl font-semibold"> {/* Replaces styles.title and Typography h1 */}
             Welcome 👋
-          </Typography>
-          <Typography variant="body1" className={styles.description}>
+          </h1>
+          <p className="self-stretch text-center text-gray-800 text-base font-normal leading-normal"> {/* Replaces styles.description and Typography body1 */}
             Log in or sign up to access exclusive features and enjoy secure, private conversations.
-          </Typography>
-        </Box>
-        <Box className={styles.buttonContainer}>
-          <Button
-            variant="contained"
+          </p>
+        </div>
+        <div className="w-[312px] flex flex-col gap-2"> {/* Replaces styles.buttonContainer */}
+          <button
             onClick={() => {
               onLogin();
-              onClose(); // Close popup after initiating login
+              onClose(); 
             }}
-            className={styles.loginButton}
+            className="h-12 bg-gray-800 rounded-3xl text-white text-base font-normal hover:bg-gray-700" // Replaces styles.loginButton and Button variant="contained"
           >
             Log in
-          </Button>
-          <Button
-            variant="outlined"
+          </button>
+          <button
             onClick={() => {
-              onSignup(); // Assuming onSignup might be different, or also calls login
-              onClose(); // Close popup after initiating signup
+              onSignup();
+              onClose();
             }}
-            className={styles.signupButton}
+            className="h-12 bg-white rounded-3xl border border-gray-400 text-gray-800 text-base font-normal hover:bg-gray-100 hover:border-gray-500" // Replaces styles.signupButton and Button variant="outlined"
           >
             Sign up
-          </Button>
-        </Box>
-      </Box>
-    </Modal>
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 
