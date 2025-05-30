@@ -2,24 +2,19 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Box, easing, Typography, useMediaQuery, IconButton, Tooltip } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
 import Sidebar from "@/components/sidebar/sidebar";
 import ChatHeader from "@/components/chat-header";
 import { ChatInputPanel } from "@/components/chat/chat-input-panel";
 import { useChatStore, useAppConfig } from "@/store";
 import { UNFINISHED_INPUT } from "@/types/constant";
-import { SessionState, SubmittedFile } from "@/types/session";
+import { SessionState } from "@/types/session";
 import { safeLocalStorage } from "@/utils/utils";
 import { useChatActions } from "@/hooks/use-chat-actions";
-import type { UUID } from "crypto"; // Keep as type import
+import type { UUID } from "crypto";
 import Locale from "@/locales";
 import { useSnackbar } from "@/providers/snackbar-provider";
-import styles from "@/components/chat/chat.module.scss";
-import sidebarStyles from "@/components/sidebar/sidebar.module.scss";
 import { usePrivy } from "@privy-io/react-auth";
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import clsx from "clsx";
 
 const localStorage = safeLocalStorage();
 
@@ -32,54 +27,59 @@ function usePrevious<T>(value: T): T | undefined {
   return ref.current; // This will return the value from the PREVIOUS render cycle
 }
 
+// Custom hook to simulate useMediaQuery with Tailwind breakpoints (approximate)
+const useTailwindMediaQuery = (breakpoint: 'sm' | 'md' | 'lg' | 'xl') => {
+  const [matches, setMatches] = useState(false);
+  useEffect(() => {
+    const OBFUSCATED_MEDIA_QUERIES = {
+      sm: '(min-width: 640px)',
+      md: '(min-width: 768px)',
+      lg: '(min-width: 1024px)',
+      xl: '(min-width: 1280px)',
+    };
+    // For isMobile (down("md")), we check if it does NOT match md 
+    const query = breakpoint === "md" ? '(max-width: 767px)' : OBFUSCATED_MEDIA_QUERIES[breakpoint];
+    const mediaQueryList = window.matchMedia(query);
+    const listener = () => setMatches(mediaQueryList.matches);
+    listener(); // Initial check
+    mediaQueryList.addEventListener('change', listener);
+    return () => mediaQueryList.removeEventListener('change', listener);
+  }, [breakpoint]);
+  return matches;
+};
+
+// Icon Placeholders
+const IconPlaceholder = ({ name, className }: { name: string, className?: string }) => <span className={clsx("inline-block text-xs p-0.5 border rounded", className)}>[{name}]</span>;
+const ChevronLeftIconPlaceholder = () => <IconPlaceholder name="<" />;
+const ChevronRightIconPlaceholder = () => <IconPlaceholder name=">" />;
+
 export default function ChatLayoutContent({ children }: { children: React.ReactNode }) {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isMobile = useTailwindMediaQuery('md');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(isMobile ? true : false);
   const params = useParams();
   const router = useRouter();
   const appConfig = useAppConfig();
-
-  const prevIsMobile = usePrevious(isMobile); // Track previous isMobile state
-
-  // Get Privy status
+  const prevIsMobile = usePrevious(isMobile);
   const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
 
-  // If Privy is not ready, show a loading message.
   if (!privyReady) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Typography>Loading authentication...</Typography></Box>;
+    return <div className="flex justify-center items-center h-screen"><p className="text-lg text-gray-700">Loading authentication...</p></div>;
   }
 
-  // If the user is not authenticated, show a login message.
-  // This ensures that components like Sidebar (which use useEncryption)
-  // are only rendered after EncryptionProvider is available via AuthenticatedContentWrapper.
   if (!privyAuthenticated) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Typography>Please log in to access the chat.</Typography></Box>;
+    return <div className="flex justify-center items-center h-screen"><p className="text-lg text-gray-700">Please log in to access the chat.</p></div>;
   }
 
-  // These hooks are now called only when authenticated and ready
   const { newSession } = useChatActions();
   const { showSnackbar } = useSnackbar();
 
-  const onSendMessageHandlerFromStore = useChatStore(
-    (state) => state.onSendMessageHandler
-  );
+  const onSendMessageHandlerFromStore = useChatStore((state) => state.onSendMessageHandler);
   const hitBottomFromStore = useChatStore((state) => state.hitBottom);
-  const scrollToBottomHandlerFromStore = useChatStore(
-    (state) => state.scrollToBottomHandler
-  );
-  const showPromptModalHandlerFromStore = useChatStore(
-    (state) => state.showPromptModalHandler
-  );
-  const showShortcutKeyModalHandlerFromStore = useChatStore(
-    (state) => state.showShortcutKeyModalHandler
-  );
-  const isChatComponentBusyFromStore = useChatStore(
-    (state) => state.isChatComponentBusy
-  );
-  const clearChatInteractionHandlers = useChatStore(
-    (state) => state.clearChatInteractionHandlers
-  );
+  const scrollToBottomHandlerFromStore = useChatStore((state) => state.scrollToBottomHandler);
+  const showPromptModalHandlerFromStore = useChatStore((state) => state.showPromptModalHandler);
+  const showShortcutKeyModalHandlerFromStore = useChatStore((state) => state.showShortcutKeyModalHandler);
+  const isChatComponentBusyFromStore = useChatStore((state) => state.isChatComponentBusy);
+  const clearChatInteractionHandlers = useChatStore((state) => state.clearChatInteractionHandlers);
 
   const [internalIsSubmitting, setInternalIsSubmitting] = useState(false);
 
@@ -96,13 +96,11 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
 
   const modelConfig = React.useMemo(() => {
     if (currentChatId) {
-      const session = useChatStore
-        .getState()
-        .sessions.find((s) => s.id === currentChatId);
+      const session = useChatStore.getState().sessions.find((s) => s.id === currentChatId);
       return session?.modelConfig || appConfig.modelConfig;
     }
     return appConfig.modelConfig;
-  }, [currentChatId, appConfig.modelConfig, useChatStore]);
+  }, [currentChatId, appConfig.modelConfig]);
 
   const handleLayoutSubmit = useCallback(
     async (
@@ -151,153 +149,95 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
         setInternalIsSubmitting(false);
       }
     },
-    [
-      currentChatId,
-      onSendMessageHandlerFromStore,
-      newSession,
-      router,
-      showSnackbar,
-    ]
+    [currentChatId, onSendMessageHandlerFromStore, newSession, router, showSnackbar]
   );
 
   const handleToggleSidebar = () => setIsSidebarCollapsed(prev => !prev);
-
-  const sidebarExpandedWidth = 378; // px - Matches $sidebar-expanded-width
-  const sidebarCollapsedWidth = 125; // px - Matches $sidebar-collapsed-width
-  const sidebarTransitionDuration = "0.4s"; // Matches $sidebar-transition-duration
-  const sidebarTransitionTiming = "ease-in-out"; // Matches $sidebar-transition-timing
-
-  // Determine the effective collapsed state for the sidebar, 
-  // especially to prevent flicker when transitioning from desktop (open) to mobile (overlay).
+  const sidebarExpandedWidth = 378;
+  const sidebarCollapsedWidth = 125;
+  const sidebarTransitionDuration = "duration-300";
+  const sidebarTransitionTiming = "ease-in-out";
   let effectiveIsSidebarCollapsed = isSidebarCollapsed;
   if (isMobile && prevIsMobile === false && !isSidebarCollapsed) {
-    // Transitioning from desktop (prevIsMobile was false) to mobile (isMobile is true)
-    // AND the sidebar was open on desktop (isSidebarCollapsed was false at the start of this render).
-    // Force collapse for this specific transition render to avoid flicker.
     effectiveIsSidebarCollapsed = true;
   }
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        height: "100vh",
-        position: "relative",
-      }}
-    >
-      {/* Sidebar Toggle Button - Now in ChatLayoutContent */}
+    <div className="flex h-screen relative bg-white overflow-hidden">
+      {/* Sidebar Toggle Button - for Desktop */}
       {!isMobile && (
-        <Tooltip title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"} placement="right">
-          <IconButton 
-            onClick={handleToggleSidebar} 
-            className={sidebarStyles.sidebarToggleButton} // Use styles from sidebar.module.scss
-            aria-label={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-            style={{
-              left: isSidebarCollapsed ? `${sidebarCollapsedWidth-20}px` : `${sidebarExpandedWidth-20}px`,
-              transition: `left ${sidebarTransitionDuration} ${sidebarTransitionTiming}`,
-              // top: '50vh' and transform will be handled by SCSS
-            }}
-          >
-            {isSidebarCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-          </IconButton>
-        </Tooltip>
-      )}
-
-      {/* Logic for overlay and sidebar rendering */}
-      <>
-        {/* Render overlay if mobile, control visibility/opacity with sx props for animation */}
-        {isMobile && (
-          <Box
-            onClick={handleToggleSidebar}
-            sx={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.5)",
-              opacity: !isSidebarCollapsed ? 1 : 0,
-              visibility: !isSidebarCollapsed ? 'visible' : 'hidden',
-              transition: theme.transitions.create(["opacity", "visibility"], { // Apply transition to opacity and visibility
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.standard,
-              }),
-              zIndex: theme.zIndex.drawer,
-            }}
-          />
-        )}
-        <Sidebar
-          isSidebarCollapsed={isSidebarCollapsed} // Use effective state
-          onToggleSidebar={handleToggleSidebar} // Pass the new toggle handler
-          {...(isMobile && {
-            sx: {
-              position: "fixed",
-              top: 0,
-              left: '-378px',
-              height: "100vh",
-              width: '378px',
-              transform: isSidebarCollapsed // Use state for transform
-                ? "translateX(0)"      // Stays at -378px (hidden)
-                : "translateX(100%)",  // Moves to 0px (visible)
-              transition: theme.transitions.create("transform", { // Apply transition to transform property
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.standard, // Use standard duration for both enter and exit
-              }),
-              zIndex: theme.zIndex.drawer + 1,
-              boxShadow: theme.shadows[3],
-            },
-          })}
-        />
-      </>
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          ...(isNewChatPage && {
-            background:
-              "linear-gradient(177deg, white 0%, #FEFEFE 27%, #F6FFFC 75%, #DAF7EF 100%)",
-          }),
-        }}
-      >
-        <ChatHeader
-          isSidebarCollapsed={effectiveIsSidebarCollapsed} // Use effective state
-          onToggleSidebar={handleToggleSidebar} // Pass the new toggle handler
-          isMobile={isMobile}
-        />
-        <Box
-          className={
-            !isNewChatPage ? styles["chat-layout-main-content"] : undefined
-          }
-          sx={{
-            width: "100%",
-            ...(isNewChatPage && {
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              // paddingTop: { xs: "60px", sm: "100px", md: "140px" },
-              flexShrink: 0,
-            }),
-            ...(!isNewChatPage && {}),
+        <button 
+          title={effectiveIsSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"} 
+          onClick={handleToggleSidebar} 
+          aria-label={effectiveIsSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          className={clsx(
+            "fixed top-1/2 -translate-y-1/2 z-30 p-1.5 rounded-full bg-white border border-gray-300 shadow-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400",
+            sidebarTransitionDuration, sidebarTransitionTiming, "transition-[left]"
+          )}
+          style={{
+            left: effectiveIsSidebarCollapsed ? `${sidebarCollapsedWidth - 16}px` : `${sidebarExpandedWidth - 16}px`,
           }}
         >
-          {children}
-        </Box>
-        <Box
-          className={styles["chat-layout-input-panel-wrapper"]}
-          sx={{
-            width: "100%",
-            display: "flex",
-            justifyContent: "center",
-            ...(isNewChatPage && {
-              marginTop: { xs: "24px", md: "48px" },
-            }),
-            ...(!isNewChatPage && {
-               flexShrink: 0,
-            }),
-          }}
+          {effectiveIsSidebarCollapsed ? <ChevronRightIconPlaceholder /> : <ChevronLeftIconPlaceholder />}
+        </button>
+      )}
+
+      {/* Sidebar Component Area - Wrapped in a div for layout styling */}
+      <div
+        className={clsx(
+            "z-20 h-full transition-all transform", 
+            sidebarTransitionDuration, 
+            sidebarTransitionTiming,
+            isMobile ? "fixed bg-white border-r border-gray-200 shadow-xl" : "relative bg-gray-50 border-r border-gray-200",
+            isMobile 
+                ? (effectiveIsSidebarCollapsed ? "-translate-x-full" : "translate-x-0") 
+                : (effectiveIsSidebarCollapsed ? `w-[${sidebarCollapsedWidth}px]` : `w-[${sidebarExpandedWidth}px]`),
+            isMobile && effectiveIsSidebarCollapsed && "w-[280px]" // Ensure mobile hidden sidebar has a width for transition from an open state
+        )}
+      >
+        <Sidebar 
+          isSidebarCollapsed={effectiveIsSidebarCollapsed} 
+          onToggleSidebar={handleToggleSidebar} 
+        />
+      </div>
+
+      {/* Mobile Overlay for Sidebar */}
+      {isMobile && !effectiveIsSidebarCollapsed && (
+        <div 
+          onClick={handleToggleSidebar} 
+          className="fixed inset-0 bg-black bg-opacity-50 z-10 md:hidden transition-opacity duration-300 ease-in-out"
+        />
+      )}
+
+      {/* Main Content Area */}
+      <main 
+        className={clsx(
+            "flex-grow h-full flex flex-col transition-all overflow-hidden",
+            sidebarTransitionDuration, 
+            sidebarTransitionTiming,
+            !isMobile && (effectiveIsSidebarCollapsed ? `ml-[${sidebarCollapsedWidth}px]` : `ml-[${sidebarExpandedWidth}px]`)
+        )}
+      >
+        <ChatHeader 
+          isSidebarCollapsed={effectiveIsSidebarCollapsed} 
+          onToggleSidebar={handleToggleSidebar} 
+          isMobile={isMobile} 
+        />
+        
+        <div 
+          className={clsx(
+            "flex-grow w-full overflow-y-auto min-h-0",
+            isNewChatPage && "flex flex-col items-center bg-gradient-to-b from-white via-gray-50 to-emerald-100 pt-10 md:pt-20"
+          )}
+        >
+          {children} 
+        </div>
+
+        <div 
+          className={clsx(
+            "w-full flex justify-center shrink-0 bg-transparent",
+            isNewChatPage ? "mt-auto pt-2 pb-4 md:pt-6 md:pb-8" : "py-2 md:py-4"
+          )}
         >
           <ChatInputPanel
             sessionId={currentChatId}
@@ -315,33 +255,20 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
             }
             setShowShortcutKeyModal={
               showShortcutKeyModalHandlerFromStore ||
-              (() =>
-                console.warn("ShowShortcutKeyModal handler not set in store"))
+              (() => console.warn("ShowShortcutKeyModal handler not set in store"))
             }
           />
-        </Box>
-        
-           <Typography
-            sx={{
-              minWidth: { xs: "auto", md: "460px" },
-              textAlign: "center",
-              color: "#646464",
-              fontSize: "14px",
-              fontFamily: "Inter", 
-              fontWeight: "400",
-              lineHeight: "32px",
-              wordWrap: "break-word",
-              marginTop: "8px",
-              marginBottom: "16px",
-              paddingLeft: "16px",
-              paddingRight: "16px",
-              boxSizing: "border-box",
-            }}
-          >
-            By messaging Panda AI, you agree to our Terms and have read our
-            Privacy Policy.
-          </Typography>
-      </Box>
-    </Box>
+        </div>
+
+        <p 
+          className={clsx(
+            "text-center text-xs text-gray-500 font-inter py-3 px-4 shrink-0",
+            "md:text-sm md:leading-8"
+          )}
+        >
+          By messaging Panda AI, you agree to our Terms and have read our Privacy Policy.
+        </p>
+      </main>
+    </div>
   );
 }
