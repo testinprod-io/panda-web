@@ -1,33 +1,33 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import clsx from "clsx";
-import { ListItemText, IconButton, Menu, MenuItem, TextField, Box, ListItemButton, ListItemIcon } from '@mui/material';
+// MUI Imports Removed
+// import { ListItemText, IconButton, Menu, MenuItem, TextField, Box, ListItemButton, ListItemIcon } from '@mui/material';
 
-import styles from "./chat-list.module.scss";
-import type { ChatSession } from "@/types/session"; // Adjusted path
-
-import MoreVertIcon from '@mui/icons-material/MoreVert';
+// import styles from "./chat-list.module.scss";
+import type { ChatSession } from "@/types/session";
 import Locale from '@/locales';
-import { useEncryption } from "@/providers/encryption-provider"; // Added
-import { EncryptionService } from "@/services/EncryptionService"; // Added
+import { useEncryption } from "@/providers/encryption-provider";
+import { EncryptionService } from "@/services/EncryptionService";
 
-// New Icons based on Figma
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';         // For Rename
-import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined'; // For Delete
+// Icon Placeholders
+const IconPlaceholder = ({ name, className }: { name: string, className?: string }) => <span className={clsx("inline-block text-xs p-0.5 border rounded", className)}>[{name}]</span>;
+const MoreVertIconPlaceholder = () => <IconPlaceholder name="..." className="w-6 h-6" />;
+const EditOutlinedIconPlaceholder = () => <IconPlaceholder name="Edit" className="w-4 h-4" />;
+const DeleteOutlineOutlinedIconPlaceholder = () => <IconPlaceholder name="Del" className="w-4 h-4" />;
 
 interface ChatItemProps {
   onClick?: () => void;
   onDelete?: () => void;
   onRename?: (newTitle: string) => void;
-  onShare?: () => void; // Placeholder for Share action
-  onArchive?: () => void; // Placeholder for Archive action
-  session: ChatSession; // Pass the whole session object
+  onShare?: () => void;
+  onArchive?: () => void;
+  session: ChatSession;
   selected: boolean;
   index: number;
   narrow?: boolean;
 }
 
-// Animation configuration
-const DECRYPTION_INTERVAL_MS = 50; // Speed of letter reveal (milliseconds)
+const DECRYPTION_INTERVAL_MS = 50;
 
 export function ChatItem({
   session,
@@ -35,367 +35,215 @@ export function ChatItem({
   onClick,
   onDelete,
   onRename,
-  onShare,   // Destructure new prop
-  onArchive, // Destructure new prop
+  onShare,
+  onArchive,
   narrow,
 }: ChatItemProps) {
-  const itemRef = useRef<HTMLDivElement | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const [showMenu, setShowMenu] = useState(false);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(""); // Initialized with actualDecryptedTopic later
+  const listItemRef = useRef<HTMLButtonElement | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState("");
   const editInputRef = useRef<HTMLInputElement>(null);
   const [isHovered, setIsHovered] = useState(false);
-  const listItemRef = useRef<HTMLDivElement | null>(null);
 
   const { isLocked } = useEncryption();
-  // const [actualDecryptedTopic, setActualDecryptedTopic] = useState(session.topic || Locale.Store.DefaultTopic);
   const [displayedTitle, setDisplayedTitle] = useState(session.visibleTopic);
   const [isAnimating, setIsAnimating] = useState(false);
   const animationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const topic = session.topic || Locale.Store.DefaultTopic;
-    if (isLocked) {
-      session.visibleTopic = topic;
-    } else {
-      session.visibleTopic = EncryptionService.decryptChatMessageContent(topic);
+    let initialDisplay = topic;
+    if (!isLocked && session.topic) {
+      try {
+        initialDisplay = EncryptionService.decryptChatMessageContent(topic);
+      } catch (e) { console.error("[ChatItem] Decryption failed for initial display"); initialDisplay = topic; /* Show raw on error */ }
     }
-  }, [isLocked, session.topic]);
+    session.visibleTopic = initialDisplay; // Update visibleTopic directly for consistency
+    setDisplayedTitle(initialDisplay);
+    if (!isEditing) setEditValue(initialDisplay);
+  }, [isLocked, session, session.topic, isEditing]); // session.topic to re-evaluate if topic itself changes
 
-  // Update editValue when actualDecryptedTopic changes and not editing
   useEffect(() => {
-    if (!isEditing) {
-      setEditValue(session.visibleTopic);
-    }
-  }, [session.visibleTopic, isEditing]);
-
-  // Scroll into view when selected
-  useEffect(() => {
-    if (selected && itemRef.current) {
-      itemRef.current?.scrollIntoView({
-        block: "center",
-        behavior: "smooth",
-      });
+    if (selected && listItemRef.current) {
+      listItemRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
     }
   }, [selected]);
 
-  // Calculate menu position
+  // Decryption Animation Effect (modified to use session.visibleTopic as definitive target)
   useEffect(() => {
-    if (showMenu && menuRef.current) {
-      const rect = menuRef.current.getBoundingClientRect();
-      setMenuPosition({
-        top: rect.bottom + window.scrollY,
-        left: Math.min(
-          rect.left + window.scrollX,
-          window.innerWidth - 150 // 150 = approximate dropdown width + padding
-        ),
-      });
-    }
-  }, [showMenu]);
-  
-  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEditValue(e.target.value);
-  };
-
-  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleSaveEdit();
-    } else if (e.key === 'Escape') {
-      setIsEditing(false);
-      setEditValue(session.visibleTopic); // Revert to actual decrypted topic
-    }
-  };
-
-  const handleSaveEdit = () => {
-    if (
-      editValue.trim() !== '' &&
-      editValue !== session.visibleTopic && // Compare with actual decrypted topic
-      onRename
-    ) {
-      onRename(editValue.trim());
-    }
-    setIsEditing(false);
-  };
-
-  const handleClickOutside = useCallback(
-    (e: MouseEvent) => {
-      if (showMenu && menuRef.current && !menuRef.current.contains(e.target as Node) && dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setShowMenu(false);
-      }
-      if (isEditing && inputRef.current && !inputRef.current.contains(e.target as Node)) {
-        // Check if the click is outside the edit input specifically
-        if (editInputRef.current && !editInputRef.current.contains(e.target as Node)) {
-            handleSaveEdit();
-        }
-      }
-    },
-    [showMenu, isEditing, handleSaveEdit] 
-  );
-
-  useEffect(() => {
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [handleClickOutside]);
-
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
-    event.stopPropagation();
-    setAnchorEl(event.currentTarget);
-    setIsHovered(false); 
-  };
-
-  const handleMenuClose = (event?: React.MouseEvent<HTMLElement> | {}, reason?: "backdropClick" | "escapeKeyDown") => {
-    if (event && typeof event === 'object' && 'stopPropagation' in event && typeof event.stopPropagation === 'function') {
-        (event as React.MouseEvent<HTMLElement>).stopPropagation();
-    }
-    const menuWasPreviouslyOpen = Boolean(anchorEl);
-    setAnchorEl(null); 
-
-    if (menuWasPreviouslyOpen) {
-        setTimeout(() => {
-          if (listItemRef.current) {
-            const isCurrentlyHoveredOverItem = listItemRef.current.matches(':hover');
-            setIsHovered(isCurrentlyHoveredOverItem);
-          }
-        }, 0);
-    }
-  };
-
-  const handleEdit = (event: React.MouseEvent<HTMLElement>) => {
-    event.stopPropagation();
-    setEditValue(session.visibleTopic); // Start editing with the actual decrypted topic
-    setIsEditing(true);
-    handleMenuClose();
-  };
-
-  const handleCancelEdit = (event?: React.MouseEvent<HTMLElement>) => {
-    event?.stopPropagation();
-    setIsEditing(false);
-    setEditValue(session.visibleTopic); // Revert to original decrypted topic
-    handleMenuClose(); 
-  };
-
-  useEffect(() => {
-    if (isEditing) {
-      editInputRef.current?.focus();
-    }
-  }, [isEditing]);
-
-  // Decryption Animation Effect
-  useEffect(() => {
-    if (animationIntervalRef.current) {
-      clearInterval(animationIntervalRef.current);
-      animationIntervalRef.current = null;
-    }
-
+    if (animationIntervalRef.current) clearInterval(animationIntervalRef.current);
     const rawTopic = session.topic || Locale.Store.DefaultTopic;
+    const targetDecryptedTopic = session.visibleTopic; // This should be the already decrypted or raw topic
 
-    if (isLocked || rawTopic === Locale.Store.DefaultTopic || !session.topic) {
-      // If locked, or it's the default topic, or no session topic, just display the actual (possibly raw) topic
-      setDisplayedTitle(session.topic);
+    if (isLocked || rawTopic === Locale.Store.DefaultTopic || !session.topic || rawTopic === targetDecryptedTopic || displayedTitle === targetDecryptedTopic) {
+      setDisplayedTitle(targetDecryptedTopic);
       setIsAnimating(false);
       return;
     }
-
-    // App is unlocked and it's not a default topic, proceed with animation
     setIsAnimating(true);
-    // Start animation from the raw (potentially encrypted) topic
-    const animationStartDisplay = rawTopic; 
-    setDisplayedTitle(animationStartDisplay);
-
+    let currentDisplay = rawTopic;
+    setDisplayedTitle(currentDisplay);
     let revealedCount = 0;
-    const targetLength = session.visibleTopic.length;
-    const startDisplayLength = animationStartDisplay.length;
 
     animationIntervalRef.current = setInterval(() => {
       revealedCount++;
-      const newTitle =
-        session.visibleTopic.substring(0, revealedCount) +
-        animationStartDisplay.substring(revealedCount);
-
-      setDisplayedTitle(newTitle);
-
-      if (revealedCount >= targetLength && revealedCount >= startDisplayLength) {
-        if (animationIntervalRef.current) {
-          clearInterval(animationIntervalRef.current);
-          animationIntervalRef.current = null;
-        }
-        setDisplayedTitle(session.visibleTopic); // Ensure final state is perfect
+      if (revealedCount > targetDecryptedTopic.length && revealedCount > currentDisplay.length) {
+         // Safety break or if target is shorter than raw for some reason
+         if (animationIntervalRef.current) clearInterval(animationIntervalRef.current);
+         setDisplayedTitle(targetDecryptedTopic);
+         setIsAnimating(false);
+         return;
+      }
+      currentDisplay = targetDecryptedTopic.substring(0, revealedCount) + currentDisplay.substring(revealedCount);
+      setDisplayedTitle(currentDisplay);
+      if (currentDisplay === targetDecryptedTopic) {
+        if (animationIntervalRef.current) clearInterval(animationIntervalRef.current);
         setIsAnimating(false);
       }
     }, DECRYPTION_INTERVAL_MS);
-
-    return () => {
-      if (animationIntervalRef.current) {
-        clearInterval(animationIntervalRef.current);
-        animationIntervalRef.current = null;
-      }
-    };
-  }, [session.topic, session.visibleTopic, isLocked]); // Rerun if underlying topic, its decrypted version, or lock state changes
-
+    return () => { if (animationIntervalRef.current) clearInterval(animationIntervalRef.current); };
+  }, [session.topic, session.visibleTopic, isLocked, displayedTitle]); // displayedTitle added to dependencies to stop animation if manually set
+  
   const handleItemClick = () => {
     if (isAnimating) {
-      if (animationIntervalRef.current) {
-        clearInterval(animationIntervalRef.current);
-        animationIntervalRef.current = null;
-      }
+      if (animationIntervalRef.current) { clearInterval(animationIntervalRef.current); animationIntervalRef.current = null; }
       setDisplayedTitle(session.visibleTopic);
       setIsAnimating(false);
     }
-    onClick?.();
+    if (!isEditing) onClick?.();
   };
 
-  const open = Boolean(anchorEl);
+  const handleMenuToggle = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
+    setAnchorEl(anchorEl ? null : event.currentTarget);
+  };
+  const closeMenu = () => setAnchorEl(null);
+  const handleEdit = (event: React.MouseEvent<HTMLElement>) => { event.stopPropagation(); setIsEditing(true); setEditValue(session.visibleTopic); closeMenu(); };
+  const handleDelete = (event: React.MouseEvent<HTMLElement>) => { event.stopPropagation(); onDelete?.(); closeMenu(); };
+  const handleSaveEdit = () => { if (editValue.trim() !== "" && editValue !== session.visibleTopic && onRename) { onRename(editValue.trim()); } setIsEditing(false); };
 
-  const handleShare = (event: React.MouseEvent<HTMLElement>) => {
-    event.stopPropagation();
-    onShare?.();
-    handleMenuClose();
-    console.log("Share action triggered for session:", session.id);
-  };
+  useEffect(() => { if (isEditing && editInputRef.current) { editInputRef.current.focus(); editInputRef.current.select(); } }, [isEditing]);
+  const menuOpen = Boolean(anchorEl);
 
-  const handleArchive = (event: React.MouseEvent<HTMLElement>) => {
-    event.stopPropagation();
-    onArchive?.();
-    handleMenuClose();
-    console.log("Archive action triggered for session:", session.id);
-  };
-  
-  const handleDeleteClick = (event: React.MouseEvent<HTMLElement>) => {
-    event.stopPropagation();
-    onDelete?.();
-    handleMenuClose();
-  };
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const targetNode = event.target as Node;
+      // Close menu if click is outside the menu button and the menu itself
+      if (anchorEl && !anchorEl.contains(targetNode) && 
+          (!listItemRef.current || !listItemRef.current.querySelector("[data-menu-paper]")?.contains(targetNode))) {
+        closeMenu();
+      }
+      // Save edit if click is outside the input and not on the menu trigger
+      if (isEditing && editInputRef.current && !editInputRef.current.contains(targetNode)) {
+        const menuButton = listItemRef.current?.querySelector("[aria-label='actions']");
+        if (!menuButton || (menuButton && !menuButton.contains(targetNode))) {
+            handleSaveEdit();
+        }
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [anchorEl, isEditing, handleSaveEdit]); // Re-added handleSaveEdit to deps
 
   return (
-    <ListItemButton
+    <button
       ref={listItemRef} 
       onClick={handleItemClick} 
-      className={styles['chat-item']} 
-      disableTouchRipple={true} 
+      className={clsx(
+        "flex items-center mx-auto w-[316px] h-12 rounded-lg cursor-pointer relative user-select-none p-0 overflow-hidden transition-colors duration-200 ease-in-out text-left",
+        !selected && "hover:bg-gray-100",
+        selected && "bg-gray-200"
+      )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      sx={{ 
-          padding: 0, 
-          minHeight: '48px', 
-          alignItems: 'stretch', 
-          '&:hover': {
-            backgroundColor: 'transparent',
-          },
-      }}
+      aria-current={selected ? "page" : undefined}
     >
-        <Box className={clsx(styles['chat-item-highlight'], selected && styles['chat-item-selected-highlight'])} 
-             sx={{ 
-                 display: 'flex', 
-                 alignItems: 'center', 
-                 width: '100%', 
-                 paddingRight: ((isHovered || open) && !isEditing) ? '50px' : '12px',
-             }}>
-            <Box sx={{ 
-                position: 'absolute', 
-                right: 12, 
-                top: '50%', 
-                transform: 'translateY(-50%)', 
-                zIndex: 1, 
-                display: ((isHovered || open) && !isEditing) ? 'flex' : 'none',
-                alignItems: 'center',
-            }}>
+        <div className={clsx(
+            "flex items-center w-full h-full px-3 py-2 box-border",
+            {"pr-12": !isEditing }
+        )}>
+            <div className={clsx(
+                "absolute right-1 top-1/2 -translate-y-1/2 z-10 flex items-center",
+                (isHovered || menuOpen) && !isEditing ? "opacity-100" : "opacity-0 group-focus-within:opacity-100",
+                isEditing && "opacity-0"
+            )}>
                 {!isEditing && (
                   <>
-                    <IconButton edge="end" aria-label="actions" onClick={handleMenuClick} size="small">
-                      <img src="/icons/more.svg" alt="More" style={{ width: '24px', height: '24px' }} />
-                    </IconButton>
-                    <Menu
-                      anchorEl={anchorEl}
-                      open={open} 
-                      onClose={handleMenuClose}
-                      onClick={(e) => e.stopPropagation()} 
-                      PaperProps={{
-                        className: styles.chatActionMenuPaper, 
-                      }}
-                      MenuListProps={{
-                        sx: { 
-                          paddingTop: 0, 
-                          paddingBottom: 0,
-                          display: 'flex',       
-                          flexDirection: 'column', 
-                          gap: '10px',           
-                        }
-                      }}
+                    <button 
+                      aria-label="actions" 
+                      onClick={handleMenuToggle} 
+                      className="p-1.5 rounded-full hover:bg-gray-200 text-gray-500 data-[state=open]:bg-gray-200"
+                      data-state={menuOpen ? "open" : "closed"}
                     >
-                      <MenuItem onClick={handleEdit} className={styles.chatActionMenuItem}>
-                        <ListItemIcon className={styles.chatActionMenuItemIcon}>
-                          <EditOutlinedIcon fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText primary="Rename" className={styles.chatActionMenuItemText} />
-                      </MenuItem>
-                      <MenuItem onClick={handleDeleteClick} className={clsx(styles.chatActionMenuItem, styles.deleteAction)}>
-                        <ListItemIcon className={clsx(styles.chatActionMenuItemIcon, styles.deleteActionIcon)}>
-                          <DeleteOutlineOutlinedIcon fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText primary="Delete" className={clsx(styles.chatActionMenuItemText, styles.deleteActionText)} />
-                      </MenuItem>
-                    </Menu>
+                      <MoreVertIconPlaceholder />
+                    </button>
+                    {menuOpen && anchorEl && (
+                        <div 
+                            data-menu-paper
+                            className={clsx(
+                                "absolute right-0 mt-1 w-40 origin-top-right bg-white rounded-xl shadow-lg border border-gray-200 focus:outline-none z-20",
+                                "p-2 flex flex-col gap-1.5"
+                            )}
+                            style={{ top: anchorEl.offsetTop + anchorEl.offsetHeight + 4, left: anchorEl.offsetLeft - 160 + anchorEl.offsetWidth }}
+                            role="menu" aria-orientation="vertical" aria-labelledby="actions-button"
+                        >
+                            <button
+                                onClick={handleEdit}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 rounded-md hover:bg-gray-100 focus:bg-gray-100 focus:outline-none text-left"
+                                role="menuitem"
+                            >
+                                <EditOutlinedIconPlaceholder />
+                                <span className="flex-grow text-gray-800 font-inter text-base">Rename</span>
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 rounded-md hover:bg-red-50 focus:bg-red-50 focus:outline-none text-left"
+                                role="menuitem"
+                            >
+                                <DeleteOutlineOutlinedIconPlaceholder />
+                                <span className="flex-grow font-inter text-base">Delete</span>
+                            </button>
+                        </div>
+                    )}
                   </>
                 )}
-            </Box>
+            </div>
 
+            {/* Title or Edit Input */}
             {isEditing ? (
-                <Box component="form" onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }} sx={{ width: '100%', flexGrow: 1 }}>
-                    <TextField 
-                      className={styles["chat-item-title-input"]}
+                <form 
+                    className="flex-grow w-full" 
+                    onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }}
+                >
+                    <input 
+                      type="text"
                       value={editValue}
-                      onChange={handleEditChange}
-                      onKeyDown={handleEditKeyDown}
-                      onBlur={handleSaveEdit} // Save on blur
-                      onClick={(e) => e.stopPropagation()}
-                      inputRef={editInputRef}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Escape') { setIsEditing(false); setEditValue(session.visibleTopic); } else if (e.key === 'Enter') { e.preventDefault(); handleSaveEdit(); } }}
+                      onBlur={handleSaveEdit} 
+                      onClick={(e) => e.stopPropagation()} // Prevent item click while editing
+                      ref={editInputRef}
                       autoFocus
-                      variant="standard"
-                      InputProps={{ 
-                          disableUnderline: true, 
-                      }} 
-                      sx={{
-                        backgroundColor: 'transparent',
-                        width: '100%',
-                        margin: 0,
-                        padding: 0,
-                        '& .MuiInputBase-root': {
-                           backgroundColor: 'transparent !important',
-                           marginTop: '0',
-                           padding: '0', 
-                           height: 'auto', 
-                           lineHeight: 'inherit',
-                           border: 'none',
-                           boxShadow: 'none',
-                           color: 'white',
-                        },
-                        '& .MuiInputBase-input': {
-                          backgroundColor: 'transparent !important',
-                          padding: '0', 
-                          fontSize: 'inherit', 
-                          color: 'white',
-                          fontFamily: 'inherit',
-                          fontWeight: 'inherit', 
-                          lineHeight: 'inherit', 
-                          height: 'auto', 
-                          border: 'none',
-                        },
-                      }}
+                      className={clsx(
+                        "w-full bg-transparent p-0 text-base font-normal font-inter leading-normal", // Base from .chat-item-title-input and TextField
+                        "text-gray-800 dark:text-white", // Assuming a dark mode variant might be needed eventually
+                        "focus:outline-none focus:ring-0 border-none shadow-none" // Remove default input chrome
+                      )}
+                      aria-label="Edit chat title"
                     />
-                </Box>
+                </form>
             ) : (
-                <span className={styles['chat-item-title']} title={session.visibleTopic}>
+                <span 
+                    className={clsx(
+                        "flex-grow min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-gray-800 font-inter text-base font-normal"
+                    )}
+                    title={session.visibleTopic}
+                >
                     {displayedTitle}
                 </span>
             )}
-        </Box> 
-    </ListItemButton>
+        </div> 
+    </button>
   );
 } 

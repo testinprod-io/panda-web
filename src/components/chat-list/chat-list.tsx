@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import clsx from "clsx";
 
 import { useChatStore } from "@/store/chat";
 import { useChatActions } from "@/hooks/use-chat-actions";
@@ -9,7 +10,6 @@ import type { ChatSession } from "@/types/session";
 import Locale from "@/locales"; 
 import { ChatItem } from "./chat-item";
 import { ChatListSkeleton } from "./chat-list-skeleton";
-import styles from "./chat-list.module.scss";
 import { EncryptionService } from "@/services/EncryptionService";
 
 // Constants for calculating paging skeleton height, mirroring ChatListSkeleton.tsx logic
@@ -335,23 +335,22 @@ export function ChatList(props: ChatListProps) {
     return 0;
   });
 
-  if (isInitialLoading && sessionsFromStore.length === 0) { // Use sessionsFromStore
+  if (isInitialLoading && sessionsFromStore.length === 0) {
     return <ChatListSkeleton targetHeight={skeletonContainerHeight} />;
   }
 
   return (
-    <div className={styles["chat-list"]} ref={listContainerRef}>
+    <div className="list-none p-0 m-0 overflow-y-auto flex-grow min-h-0 flex flex-col overflow-x-hidden w-full" ref={listContainerRef}>
       {sortedGroupNames.map(groupName => (
-        <div key={groupName} className={styles["chat-date-group"]}>
-          <div className={styles["chat-date-header"]}>{groupName}</div>
+        <div key={groupName} className="flex flex-col mt-[23px] first:mt-0">
+          <div className="text-gray-500 text-base font-inter font-normal pb-1.5 px-2 md:px-4">{groupName}</div>
           {groupedSessions[groupName]
-            // Sort sessions within each group by lastActivity date, most recent first
             .sort((a, b) => b.lastUpdate - a.lastUpdate)
             .map((item, i) => (
               <ChatItem
                 session={item}
                 key={item.id}
-                index={i} // Index within its own group, might not be globally unique for selection logic if needed
+                index={i}
                 selected={item.id === store.currentSession()?.id}
                 onClick={() => handleSelectItem(item)}
                 onDelete={() => handleDeleteItem(item)}
@@ -361,10 +360,10 @@ export function ChatList(props: ChatListProps) {
             ))}
         </div>
       ))}
-      {hasMore && <div ref={observerRef} style={{ height: "1px", marginTop: "-1px" }} />} {/* Make observer target very small and unobtrusive */}
+      {hasMore && <div ref={observerRef} className="h-px mt-[-1px]" />}
       {isPagingLoading && <ChatListSkeleton targetHeight={PAGING_SKELETON_TARGET_HEIGHT} />}
-      {!isInitialLoading && sessionsFromStore.length === 0 && !hasMore && ( // Use sessionsFromStore
-        <div className={styles["chat-date-header"]}>{"No conversations found"}</div>
+      {!isInitialLoading && sessionsFromStore.length === 0 && !hasMore && (
+        <div className="text-gray-500 text-base font-inter font-normal pb-1.5 px-2 md:px-4 mt-4 text-center">{"No conversations found"}</div>
       )}
     </div>
   );
