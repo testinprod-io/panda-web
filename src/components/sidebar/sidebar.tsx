@@ -1,133 +1,123 @@
 "use client"; // Make it a client component
 
-import { Box, IconButton, Tooltip } from "@mui/material"; // Added IconButton and Tooltip
+import React from "react"; // Removed unused MUI imports and SxProps/Theme
 import { ChatList } from "@/components/chat-list/chat-list";
 import SidebarHeader from "@/components/sidebar/sidebar-header";
 import { useAuthStatus } from "@/hooks/use-auth-status";
-import styles from "./sidebar.module.scss";
-import clsx from "clsx"; // For conditional class names
-import { SxProps, Theme } from "@mui/material/styles"; // Import SxProps and Theme
+import styles from "./sidebar.module.scss"; // Will be removed incrementally
+import clsx from "clsx";
 import AccessPanel from "@/components/sidebar/access-panel";
 import ProjectPanel from "@/components/sidebar/project-panel";
-import { useRouter } from "next/navigation"; // For navigation actions
+import { useRouter } from "next/navigation";
 import { useEncryption } from "@/providers/encryption-provider";
 import { usePrivy } from "@privy-io/react-auth";
-// Icons for the new nav menu and toggle button
-// import SearchIcon from '@mui/icons-material/Search'; // Already in SidebarHeader
+
+// Icon Placeholders (if any were directly used by Sidebar for Tooltip, not the case here)
 
 interface SidebarProps {
   isSidebarCollapsed: boolean;
-  onToggleSidebar: () => void; // Kept, though toggle button might move or be part of header now
-  sx?: SxProps<Theme>; // Add sx prop
+  onToggleSidebar: () => void;
+  className?: string; // Added className to accept classes from ChatLayoutContent for positioning
+  // sx prop is removed as styling will be handled by Tailwind classes via className or internal logic
 }
 
 export default function Sidebar({
   isSidebarCollapsed,
-  onToggleSidebar, // Kept, though toggle button might move or be part of header now
-  sx, // Destructure sx
+  onToggleSidebar,
+  className, // Consumed from ChatLayoutContent
 }: SidebarProps) {
   const { isReady, isAuthenticated } = useAuthStatus();
   const router = useRouter();
   const { lockApp } = useEncryption();
   const { logout } = usePrivy();
 
-  // Don't render the sidebar if not authenticated or Privy is not ready
   if (!isReady || !isAuthenticated) {
     return null;
   }
 
-  const isOverlayMode = Boolean(sx); // If sx is passed from layout.tsx, we are in overlay/mobile mode
-  const collapsedPaneWidth = "125px"; // Matches $sidebar-collapsed-width
-  const expandedPaneWidth = "378px"; // Matches $sidebar-expanded-width
+  // isOverlayMode was determined by sx prop, now can be inferred if mobile via isSidebarCollapsed and className logic from parent
+  // Or, ChatLayoutContent could pass an explicit isMobile prop if needed here.
+  // For now, assuming `className` from parent handles fixed/relative positioning correctly.
 
-  const handleNewChat = () => {
-    // Logic for new chat, potentially from useChatStore or similar
-    console.log("New Chat clicked");
-    router.push(`/`);
-  };
+  const collapsedPaneWidthPx = 125; 
+  const expandedPaneWidthPx = 378;
+  const collapsedPaneWidthTw = `w-[${collapsedPaneWidthPx}px]`; // e.g. w-[125px]
+  const expandedPaneWidthTw = `w-[${expandedPaneWidthPx}px]`;   // e.g. w-[378px]
+  
+  const sidebarTransition = "transition-all duration-300 ease-in-out"; // Approximates $sidebar-transition-duration and timing
 
-  // const handleSearch = () => { // Now handled within SidebarHeader
-  //   console.log("Search clicked");
-  // };
-
-  const handleSettings = () => { // Partially handled by SidebarHeader, direct nav here for main settings page
-    console.log("Settings clicked from collapsed nav");
-    window.location.hash = 'settings';
-  };
-
-  const handleLogout = () => {
-    console.log("Logout clicked");
-    logout();
-    lockApp();
-  };
-
-  const handleLockServiceClick = () => {
-    console.log("Lock Service clicked");
-    lockApp();
-  };
+  const handleNewChat = () => { router.push(`/`); };
+  const handleSettings = () => { window.location.hash = 'settings'; };
+  const handleLogout = () => { logout(); lockApp(); };
+  const handleLockServiceClick = () => { lockApp(); };
 
   const navItems = [
-    // { id: "search", icon: <SearchIcon />, text: "Search", action: handleSearch },
-    { id: "newChat", icon: <img src="/icons/new-chat.svg" alt="New Chat" style={{ width: '24px', height: '24px', filter: 'invert(0%) sepia(3%) saturate(4%) hue-rotate(324deg) brightness(100%) contrast(100%)'  }} />, text: "New chat", action: handleNewChat },
-    // { id: "archive", icon: <ArchiveIcon />, text: "Archive", action: handleArchive },
-    { id: "settings", icon: <img src="/icons/settings.svg" alt="Settings" style={{ width: '24px', height: '24px', filter: 'invert(0%) sepia(3%) saturate(4%) hue-rotate(324deg) brightness(100%) contrast(100%)' }} />, text: "Settings", action: handleSettings },
-    { id: "logout", icon: <img src="/icons/logout.svg" alt="Log out" style={{ width: '24px', height: '24px', filter: 'invert(0%) sepia(3%) saturate(4%) hue-rotate(324deg) brightness(100%) contrast(100%)' }} />, text: "Log out", action: handleLogout },
+    { id: "newChat", iconSrc: "/icons/new-chat.svg", alt: "New Chat", text: "New chat", action: handleNewChat },
+    { id: "settings", iconSrc: "/icons/settings.svg", alt: "Settings", text: "Settings", action: handleSettings },
+    { id: "logout", iconSrc: "/icons/logout.svg", alt: "Log out", text: "Log out", action: handleLogout },
   ];
 
   return (
-    <Box
+    <aside
       className={clsx(
-        styles.sidebar,
-        isOverlayMode && styles.sidebarOverlay
+        "h-full flex flex-col flex-shrink-0 box-border overflow-x-hidden overflow-y-hidden bg-white border-r border-gray-300",
+        className 
       )}
-      style={!isOverlayMode ? {
-        width: isSidebarCollapsed ? collapsedPaneWidth : expandedPaneWidth,
-        // overflowY: isSidebarCollapsed ? 'hidden' : 'auto', // Control overflow here
-      } : {}}
-      sx={isOverlayMode ? sx : { 
-        width: isSidebarCollapsed ? collapsedPaneWidth : expandedPaneWidth,
-        display: 'flex', // Added for header + sliding container layout
-        flexDirection: 'column' // Added for header + sliding container layout
-      }}
     >
-      {/* SidebarHeader is now a single instance, outside the sliding panes */}
       <SidebarHeader isSidebarCollapsed={isSidebarCollapsed} />
 
-      <Box // This is the slidingContainer
-        className={styles.slidingContainer}
-        style={{
-          transform: isSidebarCollapsed
-            ? `translateX(-${expandedPaneWidth})`
-            : "translateX(0px)",
-        }}
+      <div // Sliding Container
+        className={clsx(
+          `flex flex-grow min-h-0 transform w-[${expandedPaneWidthPx + collapsedPaneWidthPx}px]`, // width: calc(expanded + collapsed)
+          sidebarTransition,
+          isSidebarCollapsed ? `-translate-x-[${expandedPaneWidthPx}px]` : "translate-x-0"
+        )}
       >
-        {/* Expanded Pane (Content Only) */}
-        <Box className={styles.expandedPane} style={{ width: expandedPaneWidth }}>
-          {/* SidebarHeader removed from here */}
-          <Box className={styles.expandedContentArea} sx={{ flexGrow: 1, minHeight: 0 }}>
+        {/* Expanded Pane */}
+        <div className={clsx(
+          "flex flex-col box-border overflow-x-hidden overflow-y-auto h-full shrink-0", // paneBase + specific overflow + shrink
+          expandedPaneWidthTw
+          )}
+        >
+          <div className="flex-grow flex flex-col gap-5 w-full min-h-0 px-4 md:px-6 lg:px-8 py-4 md:py-5"> {/* Adjusted padding to be more Tailwind-idiomatic */}
             <ProjectPanel onNewChat={handleNewChat} />
             <AccessPanel onLockServiceClick={handleLockServiceClick} />
-            <Box className={styles.sidebarContent}>
+            <div className="flex-grow flex flex-col w-full min-h-0"> {/* sidebarContent (for ChatList) */}
               <ChatList />
-            </Box>
-          </Box>
-        </Box>
+            </div>
+          </div>
+        </div>
 
-        {/* Collapsed Pane (Content Only) */}
-        <Box className={styles.collapsedPane} style={{ width: collapsedPaneWidth }}>
-          {/* SidebarHeader removed from here */}
-          <Box className={styles.collapsedNavMenu}>
+        {/* Collapsed Pane */}
+        <div className={clsx(
+          "flex flex-col box-border items-center pt-5 pb-5 shrink-0 overflow-y-hidden h-full", // paneBase + specific styles + shrink
+          collapsedPaneWidthTw
+          )}
+        >
+          <div className={clsx(
+            "flex flex-col items-center gap-5 w-[77px] box-border" // nav-menu-collapsed-width = 77px
+          )}>
             {navItems.map((item) => (
-              <Tooltip title={item.text} placement="right" key={item.id}>
-                <Box className={styles.collapsedNavItem} onClick={item.action}>
-                  <Box className={styles.navItemText}>{item.text}</Box>
-                  <Box className={styles.navItemIcon}>{item.icon}</Box>
-                </Box>
-              </Tooltip>
+              <button 
+                key={item.id}
+                onClick={item.action}
+                title={item.text}
+                className={clsx(
+                  "flex flex-col items-center gap-1 cursor-pointer py-2 w-full box-border group focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded-md" // Added focus rings and rounded for nav items
+                )}
+                aria-label={item.text}
+              >
+                <div className="w-6 h-6 text-gray-700 group-hover:text-blue-600 transition-colors duration-150">
+                  <img src={item.iconSrc} alt={item.alt} className="w-full h-full object-contain" />
+                </div>
+                <span className="font-inter text-xs font-normal text-gray-600 group-hover:text-gray-800 text-center leading-tight transition-colors duration-150">
+                  {item.text}
+                </span>
+              </button>
             ))}
-          </Box>
-        </Box>
-      </Box>
-    </Box>
+          </div>
+        </div>
+      </div>
+    </aside>
   );
 }
