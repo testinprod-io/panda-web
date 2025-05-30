@@ -59,6 +59,12 @@ export enum MessageSyncState {
   ERROR = 'error',
 }
 
+export interface CustomizedPromptsData {
+  personal_info?: { [key: string]: string };
+  prompts?: { [key: string]: string };
+  enabled: boolean;
+}
+
 /**
  * Represents a chat message with additional metadata
  * Content is assumed to be decrypted for temporary in-memory use (e.g., LLM calls)

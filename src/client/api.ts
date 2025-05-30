@@ -1,6 +1,5 @@
-import { ModelConfig, ModelProvider, ServiceProvider } from "@/types/constant";
-import { ModelType } from "@/store";
-import { ChatMessage, Role } from "@/types";
+import { ModelConfig, ModelProvider, ServiceProvider, ModelType } from "@/types/constant";
+import { ChatMessage, Role, CustomizedPromptsData } from "@/types";
 import { PandaApi, GetAccessTokenFn } from "@/client/platforms/panda";
 import { ApiClient } from "@/client/client";
 import { SummaryResponse } from "@/client/platforms/panda";
@@ -35,6 +34,7 @@ export interface LLMConfig {
   reasoning?: boolean;
   useSearch?: boolean;
   targetEndpoint?: string;
+  customizedPrompts?: CustomizedPromptsData;
 }
 
 export interface ChatOptions {

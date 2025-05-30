@@ -11,11 +11,15 @@ import {
   Divider,
   CircularProgress,
   Alert,
+  Switch,
 } from '@mui/material';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import styles from './customize-prompts-view.module.scss'; // We'll create this SCSS file next
-import { ApiClient, CustomizedPromptsData, CustomizedPromptsResponse } from '../client/client';
+import { ApiClient, CustomizedPromptsResponse } from '../client/client';
 import { useApiClient } from '@/providers/api-client-provider';
+import { CustomizedPromptsData } from '@/types';
+import { useAppConfig } from '@/store/config';
+
 interface Trait {
   id: string;
   label: string;
@@ -45,6 +49,7 @@ const EMPTY_PROMPTS_DATA: CustomizedPromptsResponse = {
   prompts: { traits: '', extra_params: '' },
   created_at: '',
   updated_at: '',
+  enabled: true,
 };
 
 export default function CustomizePromptsView({ onCloseRequest }: CustomizePromptsViewProps) {
@@ -59,6 +64,8 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
   const [error, setError] = useState<string | null>(null);
   const [isUpdateMode, setIsUpdateMode] = useState(false);
   const [initialData, setInitialData] = useState<CustomizedPromptsResponse | null>(null);
+  const [enableForNewChats, setEnableForNewChats] = useState(true);
+  const { customizedPrompts, setCustomizedPrompts } = useAppConfig();
 
   useEffect(() => {
     const fetchPrompts = async () => {
@@ -71,6 +78,7 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
         const currentTraitsText = data.prompts?.traits || '';
         setTraitsText(currentTraitsText);
         setExtraParams(data.prompts?.extra_params || '');
+        setEnableForNewChats(data.enabled);
         
         const loadedTextTraits = currentTraitsText.split(',').map(s => s.trim()).filter(Boolean);
         setTraits(initialTraits.map(trait => ({
@@ -103,6 +111,12 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
     fetchPrompts();
   }, [apiClient]);
 
+  useEffect(() => {
+    if (initialData) {
+      setCustomizedPrompts(initialData);
+    }
+  }, [initialData]);
+
   const handleTraitToggle = (traitId: string) => {
     const traitToToggle = traits.find(t => t.id === traitId);
     if (!traitToToggle) return;
@@ -133,19 +147,20 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
     job.trim() !== '' || 
     traitsText.trim() !== '' || 
     extraParams.trim() !== '';
-; // Not loaded yet or error during initial load for comparison
 
     if (!isUpdateMode) { // Creating new: dirty if any relevant field has input
       return name.trim() !== '' || 
              job.trim() !== '' || 
              traitsText.trim() !== '' || 
-             extraParams.trim() !== '';
+             extraParams.trim() !== '' ||
+             enableForNewChats !== initialData?.enabled;
     }
     // Updating existing: dirty if different from initial
     return name !== (initialData.personal_info?.name || '') ||
            job !== (initialData.personal_info?.job || '') ||
            traitsText !== (initialData.prompts?.traits || '') ||
-           extraParams !== (initialData.prompts?.extra_params || '');
+           extraParams !== (initialData.prompts?.extra_params || '') ||
+           enableForNewChats !== initialData.enabled;
   };
 
   const handleSave = async () => {
@@ -155,6 +170,7 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
     const payload: CustomizedPromptsData = {
       personal_info: {},
       prompts: {},
+      enabled: enableForNewChats,
     };
 
     if (name.trim()) payload.personal_info!.name = name.trim();
@@ -179,7 +195,8 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
       const newTraitsText = responseData.prompts?.traits || '';
       setTraitsText(newTraitsText);
       setExtraParams(responseData.prompts?.extra_params || '');
-      
+      setEnableForNewChats(responseData.enabled);
+
       const loadedTextTraits = newTraitsText.split(',').map(s => s.trim()).filter(Boolean);
       setTraits(initialTraits.map(trait => ({
         ...trait,
@@ -203,7 +220,7 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
   if (isLoading) {
     return (
       <Box className={styles.viewContainer} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
-        <CircularProgress />
+        <CircularProgress size={24} color="inherit" />
       </Box>
     );
   }
@@ -304,6 +321,16 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
       </Box>
 
       <Box className={styles.actionsFooter}>
+        <Box sx={{ display: 'flex', alignItems: 'center', marginRight: 'auto' }}>
+          <Switch
+            checked={enableForNewChats}
+            onChange={(e) => setEnableForNewChats(e.target.checked)}
+            disabled={isSaving}
+            className={styles.blackAndWhiteSwitch}
+          />
+          <Typography sx={{ fontSize: '14px', color: '#555' }}>Enable for new chats</Typography>
+        </Box>
+        
         <Button variant="outlined" disableRipple={true} onClick={handleCancel} className={styles.cancelButton} disabled={isSaving}>
           Cancel
         </Button>

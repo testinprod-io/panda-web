@@ -18,6 +18,7 @@ import {
 import { UUID } from "crypto";
 import { ChatMessage, createMessage, Role } from "@/types/chat";
 import { ChatSession, createNewSession } from "@/types/session";
+import { CustomizedPromptsData } from "@/types";
 // import { ModelType } from "@/store/config";
 import { ModelConfig, ModelType } from "@/types/constant";
 import Locale from "@/locales";
@@ -307,7 +308,7 @@ export const ChatApiService = {
     api: ClientApi,
     args: {
       messages: RequestMessage[];
-      config: ModelConfig & { stream?: boolean, useSearch?: boolean };
+      config: ModelConfig & { stream?: boolean, useSearch?: boolean, customizedPrompts?: CustomizedPromptsData };
       onReasoningStart?: (messageId?: string) => void;
       onReasoningChunk?: (messageId: string | undefined, chunk: string) => void;
       onReasoningEnd?: (messageId?: string) => void;
@@ -330,6 +331,7 @@ export const ChatApiService = {
         reasoning: args.config.reasoning ?? false,
         targetEndpoint: args.config.endpoint, // Pass the endpoint from ModelConfig
         useSearch: args.config.useSearch ?? false,
+        customizedPrompts: args.config.customizedPrompts,
       };
 
       await api.llm.chat({

@@ -282,11 +282,11 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: 'clamp(300px, 80vw, 650px)', // Responsive width: min 300px, 80% of viewport, max 650px
+          width: 'clamp(300px, 80vw, 750px)', // Responsive width: min 300px, 80% of viewport, max 650px
           bgcolor: 'background.paper',
           boxShadow: 24,
           p: 0, 
-          borderRadius: '8px', 
+          borderRadius: '16px', 
           outline: 'none',
           maxHeight: '90vh', // Ensure it doesn't exceed viewport height
           display: 'flex',

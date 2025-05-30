@@ -17,6 +17,7 @@ import { ChatSession, SessionState } from '@/types/session'; // Added import for
 import { FileInfo, Summary } from "@/client/types"; // Import Summary type
 import { useEncryption } from "@/providers/encryption-provider";
 import { EncryptionService } from "@/services/EncryptionService";
+import { useAppConfig } from "@/store";
 
 interface ChatSessionManagerResult {
   displayedMessages: ChatMessage[];
@@ -82,7 +83,8 @@ export function useChatSessionManager(
     summarizeAndStoreMessages: actionSummarize
   } = useChatActions();
   const apiClient = useApiClient();
-
+  const appConfig = useAppConfig();
+  
   const [displayedMessages, setDisplayedMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMoreServerMessages, setHasMoreServerMessages] = useState(true);
@@ -701,7 +703,7 @@ export function useChatSessionManager(
 
       ChatApiService.callLlmChat(apiClient, {
         messages: messagesForApi,
-        config: { ...modelConfig, stream: true, reasoning: modelConfig.reasoning, useSearch: newUserMessage.useSearch },
+        config: { ...modelConfig, stream: true, reasoning: modelConfig.reasoning, useSearch: newUserMessage.useSearch, customizedPrompts: appConfig.customizedPrompts },
         onReasoningStart: () => {
           reasoningStartTimeForThisQuery = Date.now();
           setDisplayedMessages((prev) =>

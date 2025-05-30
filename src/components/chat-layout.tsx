@@ -162,7 +162,7 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
 
   const handleToggleSidebar = () => setIsSidebarCollapsed(prev => !prev);
 
-  const sidebarExpandedWidth = 378; // px - Matches $sidebar-expanded-width
+  const sidebarExpandedWidth = 300; // px - Matches $sidebar-expanded-width
   const sidebarCollapsedWidth = 125; // px - Matches $sidebar-collapsed-width
   const sidebarTransitionDuration = "0.4s"; // Matches $sidebar-transition-duration
   const sidebarTransitionTiming = "ease-in-out"; // Matches $sidebar-transition-timing
@@ -233,9 +233,9 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
             sx: {
               position: "fixed",
               top: 0,
-              left: '-378px',
+              left: `-${sidebarExpandedWidth}px`,
               height: "100vh",
-              width: '378px',
+              width: `${sidebarExpandedWidth}px`,
               transform: isSidebarCollapsed // Use state for transform
                 ? "translateX(0)"      // Stays at -378px (hidden)
                 : "translateX(100%)",  // Moves to 0px (visible)

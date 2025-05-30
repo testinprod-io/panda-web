@@ -13,14 +13,10 @@ import {
   FileResponse,
   Summary,
   SummaryCreateRequest,
-  SummaryResponse
+  SummaryResponse,
 } from './types';
 import { UUID } from 'crypto';
-
-export interface CustomizedPromptsData {
-  personal_info?: { [key: string]: string };
-  prompts?: { [key: string]: string };
-}
+import { CustomizedPromptsData } from '@/types';
 
 export interface CustomizedPromptsResponse extends CustomizedPromptsData {
   created_at: string;

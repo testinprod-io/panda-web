@@ -434,12 +434,15 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
+      
+      const encryptedFile = await EncryptionService.encryptFile(file);
+      const encryptedFileName = EncryptionService.encrypt(file.name);
       return {
         clientId,
-        originalFile: file,
+        originalFile: encryptedFile,
         previewUrl,
         type: file.type,
-        name: file.name,
+        name: encryptedFileName,
         size: file.size,
         uploadStatus: 'pending' as const,
         uploadProgress: 0,
@@ -453,11 +456,11 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
     for (const clientFile of newClientFiles) {
       setAttachedFiles(prev => prev.map(f => f.clientId === clientFile.clientId ? { ...f, uploadStatus: 'uploading' as const } : f));
 
-      const encryptedFile = await EncryptionService.encryptFile(clientFile.originalFile);
-
+      // const encryptedFile = await EncryptionService.encryptFile(clientFile.originalFile);
+      // const encryptedFileName = EncryptionService.encrypt(clientFile.name);
       const uploadPromise = apiClient.app.uploadFile(
         currentSessionIdToUse!,
-        encryptedFile,
+        clientFile.originalFile,
         clientFile.name,
         clientFile.size,
         (progress) => {

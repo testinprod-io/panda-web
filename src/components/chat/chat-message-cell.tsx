@@ -209,6 +209,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
           if (EncryptionService.isKeySet()) {
             try {
               fileToProcess = await EncryptionService.decryptFile(fileToProcess);
+              fileName = EncryptionService.decrypt(fileName);
             } catch (decryptionError) {
               console.error("Error decrypting file:", file.file_id, decryptionError);
               newLoadedFiles.push({
@@ -499,7 +500,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                 );
               }
               console.log(`[chat-message-cell] file:`, file);
-              if (file.type === "image") {
+              if (file.type.startsWith("image")) {
                 return (
                   <a 
                     key={`${file.id}-anchor`}
@@ -526,7 +527,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                   </a>
                 );
               }
-              if (file.type === "pdf") {
+              if (file.type.startsWith("application/pdf") || file.type.startsWith("pdf")) {
                 return (
                   <a 
                     key={`${file.id}-anchor`}

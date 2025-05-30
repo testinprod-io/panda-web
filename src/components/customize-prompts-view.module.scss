@@ -6,13 +6,15 @@
   flex-grow: 1; // Fill available vertical space in the parent modal
   min-height: 0; // Crucial for nested flex scrolling
   overflow: hidden; // Prevent this container from scrolling; formArea will scroll
-  background-color: var(--mui-palette-background-paper); // Or your desired background
+  background-color: white; 
+  padding: 32px 24px;
+  border-radius: 16px;
   // Assuming it's a direct child of a flex container (the modal box)
   // width: 100%; // Should already be handled by the parent modal's width setting
 }
 
 .header {
-  padding: 32px 0 18px 0; // Matches modal content padding, specific to this view
+  // padding: 32px 0 18px 0; // Matches modal content padding, specific to this view
   gap: 8px;
   .title {
     padding: 6px 16px 0px 16px;
@@ -34,7 +36,7 @@
   overflow-y: auto; // Allow form content to scroll if it overflows
   // min-height: 0; // Already implicitly handled by overflow-y: auto in flex children usually
 
-  padding: 18px 16px 8px 16px;
+  // padding: 18px 16px 8px 16px;
 }
 
 .divider {
@@ -56,42 +58,64 @@
   border-radius: 8px !important; 
   flex-direction: column !important;
   gap: 20px !important; // Gap between label and input within a section (was 20px, adjusted for better density)
+}
 
-  .textField,
-  .textArea {
-    .MuiOutlinedInput-root {
-      background-color: white !important; // Ensure background is white as per Figma
-      font-family: "Inter", sans-serif !important;
-      .MuiOutlinedInput-input {
-        padding: 10px 16px !important; // Adjusted padding for text fields
-        font-size: 15px !important;
-        color: #131a28 !important; // For typed text
-        &::placeholder {
-          color: #cacaca !important; // Placeholder color
-          opacity: 1 !important;
-        }
-      }
-      .MuiOutlinedInput-notchedOutline {
-        border: 1px solid #cacaca !important;
-        border-radius: 8px !important;
-      }
-      &:hover .MuiOutlinedInput-notchedOutline {
-        border-color: #a0a0a0 !important;
-      }
-      &.Mui-focused .MuiOutlinedInput-notchedOutline {
-        border-radius: 8px !important;
-        border-color: #1976d2 !important; // Or your app's primary color
-        border-width: 1px !important; // Keep consistent border width on focus
-      }
+.textField {
+  & :global(.MuiOutlinedInput-root) {
+    border-radius: 8px !important;
+    background-color: white !important;
+    height: 48px !important;
+    font-family: "Inter", sans-serif !important;
+
+    &:hover fieldset {
+      border-color: #a0a0a0 !important;
+    }
+
+    &:global(.Mui-focused fieldset) {
+      border-color: black !important;
+    }
+
+    &:global(.Mui-error fieldset) {
+      border-color: #F33D4F !important;
     }
   }
 
-  .textArea {
-    .MuiOutlinedInput-input {
-        height: 100px !important; // Approximate height from Figma (160px total - padding)
+  & :global(.MuiInputBase-input) {
+    width: 100% !important;
+    padding: 0 14px !important;
+    height: 100% !important;
+    color: #131a28 !important;
+    font-size: 16px !important;
+    font-family: "Inter", sans-serif !important;
+    font-weight: 400 !important;
+    &::placeholder {
+      opacity: 1 !important;
     }
   }
 }
+
+.textArea {
+  & :global(.MuiOutlinedInput-root) {
+    // height: 100px !important; // Approximate height from Figma (160px total - padding)
+    border-radius: 8px !important;
+    background-color: white !important;
+    // height: 48px !important;
+    font-family: "Inter", sans-serif !important;
+
+    &:hover fieldset {
+      border-color: #a0a0a0 !important;
+    }
+
+    &:global(.Mui-focused fieldset) {
+      border-color: black !important;
+    }
+
+    &:global(.Mui-error fieldset) {
+      border-color: #F33D4F !important;
+    }
+  }
+}
+
 
 .traitsContainer {
   display: flex;
@@ -137,20 +161,53 @@
   }
 }
 
+.blackAndWhiteSwitch {
+  & :global(.MuiSwitch-switchBase) {
+    // Styles for the switch when it's NOT checked
+    & :global(.MuiSwitch-thumb) {
+      background-color: black !important; // Thumb color when off
+    }
+
+    // Styles for the switch when it IS checked
+    &.Mui-checked {
+      color: white !important; // This can influence ripple and other elements if not overridden
+
+      & :global(.MuiSwitch-thumb) {
+        background-color: white !important; // Thumb color when on
+      }
+    }
+  }
+
+  // Styles for the track
+  & :global(.MuiSwitch-track) {
+    background-color: #ccc !important; // Track color when off (light grey)
+    opacity: 1 !important;
+  }
+
+  // Styles for the track when the switch is checked
+  // .Mui-checked is on MuiSwitch-switchBase, and .MuiSwitch-track is a sibling
+  & :global(.MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track) {
+    background-color: black !important; // Track color when on
+    opacity: 1 !important;
+  }
+}
 
 .actionsFooter {
   display: flex;
-  justify-content: flex-end;
+  // justify-content: flex-end;
   align-items: center;
   gap: 16px;
-  padding-top: 24px; // Space above the action buttons
+  padding: 12px 16px 8px 16px;
   margin-top: auto; // Push to the bottom if formArea doesn't fill space
 }
 
 .cancelButton {
   font-family: "Inter", sans-serif !important;
+  
   font-size: 15px !important;
   font-weight: 500 !important;
+  line-height: 32px !important;
+
   color: #131a28 !important;
   border-color: #cacaca !important;
   border-radius: 48px !important;
@@ -166,6 +223,8 @@
   font-family: "Inter", sans-serif !important;
   font-size: 15px !important;
   font-weight: 500 !important;
+  line-height: 32px !important;
+
   border-radius: 48px !important;
   padding: 4px 16px !important;
   text-transform: none !important;

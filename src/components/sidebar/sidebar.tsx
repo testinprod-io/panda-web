@@ -38,7 +38,7 @@ export default function Sidebar({
 
   const isOverlayMode = Boolean(sx); // If sx is passed from layout.tsx, we are in overlay/mobile mode
   const collapsedPaneWidth = "125px"; // Matches $sidebar-collapsed-width
-  const expandedPaneWidth = "378px"; // Matches $sidebar-expanded-width
+  const expandedPaneWidth = "300px"; // Matches $sidebar-expanded-width
 
   const handleNewChat = () => {
     // Logic for new chat, potentially from useChatStore or similar

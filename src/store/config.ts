@@ -17,6 +17,7 @@ import { useChatStore } from "./chat";
 // import { indexedDBStorage } from "@/utils/indexedDB-storage"; // OLD IMPORT
 import { indexedDBStorage } from "@/utils/indexedDB-storage"; // NEW IMPORT
 import { createJSONStorage } from "zustand/middleware";
+import { CustomizedPromptsData } from "@/types";
 
 // Re-export ServiceProvider if it's defined in constant.ts
 export { ServiceProvider } from "@/types/constant";
@@ -78,6 +79,12 @@ export const DEFAULT_CONFIG = {
     // stream and reasoning are part of DetailedModelConfig now
     // Other fields like sendMemory, historyMessageCount, compressMessageLengthThreshold, enableInjectSystemPrompts, template are also in DetailedModelConfig
   },
+
+  customizedPrompts: {
+    enabled: false,
+    personal_info: { name: '', job: '' },
+    prompts: { traits: '', extra_params: '' },
+  } as CustomizedPromptsData,
 };
 
 export type ChatConfig = typeof DEFAULT_CONFIG;
@@ -177,6 +184,12 @@ export const useAppConfig = createPersistStore(
       } else {
         console.warn(`[AppConfigStore] setApiProvider - Model ${modelName} with provider Panda not found. Cannot set API provider.`);
       }
+    },
+
+    setCustomizedPrompts(data: CustomizedPromptsData) {
+      set(() => ({
+        customizedPrompts: data,
+      }));
     },
 
     mergeModels(newModels: LLMModel[]) { 
