@@ -38,10 +38,17 @@ import ReloadIcon from '@mui/icons-material/Replay'; // Replaced ReloadButtonIco
 import LoopIcon from '@mui/icons-material/Loop';
 import { LoadingAnimation } from "./loading-animation";
 
+// Icon Placeholders
+const IconPlaceholder = ({ name, className }: { name: string, className?: string }) => <span className={clsx("inline-block text-xs p-0.5 border rounded", className)}>[{name}]</span>;
+const CloseIconPlaceholder = () => <IconPlaceholder name="X" className="w-5 h-5" />;
+const FullscreenIconPlaceholder = () => <IconPlaceholder name="FS" className="w-5 h-5" />;
+const FullscreenExitIconPlaceholder = () => <IconPlaceholder name="FSE" className="w-5 h-5" />;
+const ReloadIconPlaceholder = () => <IconPlaceholder name="Rel" className="w-5 h-5" />;
+const LoopIconPlaceholder = () => <IconPlaceholder name="Loop" className="w-5 h-5" />;
+
 export function Mermaid(props: { code: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [hasError, setHasError] = useState(false);
-  // State for image dialog
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
@@ -57,13 +64,12 @@ export function Mermaid(props: { code: string }) {
           console.error("[Mermaid] ", e.message);
         });
     }
-    // Cleanup blob URL on unmount or code change
     return () => {
       if (imageUrl && imageUrl.startsWith('blob:')) {
         URL.revokeObjectURL(imageUrl);
       }
     };
-  }, [props.code, ref, imageUrl]); // Added imageUrl dependency for cleanup
+  }, [props.code, ref, imageUrl]);
 
   function viewSvgInNewWindow() {
     const svg = ref.current?.querySelector("svg");
@@ -72,7 +78,6 @@ export function Mermaid(props: { code: string }) {
     const blob = new Blob([text], { type: "image/svg+xml" });
     const newImageUrl = URL.createObjectURL(blob);
     
-    // Revoke previous blob URL if it exists
     if (imageUrl && imageUrl.startsWith('blob:')) {
       URL.revokeObjectURL(imageUrl);
     }
@@ -83,11 +88,6 @@ export function Mermaid(props: { code: string }) {
 
   const closeImageModal = () => {
     setImageModalOpen(false);
-    // Optionally revoke URL on close, or keep it until next view/unmount
-    // if (imageUrl && imageUrl.startsWith('blob:')) {
-    //   URL.revokeObjectURL(imageUrl);
-    //   setImageUrl(null);
-    // }
   };
 
   if (hasError) {
@@ -97,43 +97,41 @@ export function Mermaid(props: { code: string }) {
   return (
     <>
       <div
-        className={clsx("no-dark", "mermaid")}
-        style={{
-          cursor: "pointer",
-          overflow: "auto",
-        }}
+        className={clsx("no-dark mermaid cursor-pointer overflow-auto p-2 border border-gray-200 rounded")}
         ref={ref}
-        onClick={() => viewSvgInNewWindow()}
+        onClick={viewSvgInNewWindow}
+        title="View diagram in modal"
       >
         {props.code}
       </div>
-      {/* Image Dialog */}
-      <Dialog open={imageModalOpen} onClose={closeImageModal} maxWidth="lg" fullWidth>
-        <DialogTitle sx={{ m: 0, p: 2 }}>
-          {Locale.Export.Image.Modal} {/* Assuming this locale exists */}
-          <MuiIconButton
-            aria-label="close"
-            onClick={closeImageModal}
-            sx={{
-              position: 'absolute',
-              right: 8,
-              top: 8,
-              color: (theme) => theme.palette.grey[500],
-            }}
+      {imageModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4" onClick={closeImageModal}>
+          <div 
+            className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden" 
+            onClick={(e) => e.stopPropagation()}
           >
-            <CloseIcon />
-          </MuiIconButton>
-        </DialogTitle>
-        <DialogContent dividers style={{ display: 'flex', justifyContent: 'center' }}>
-          {imageUrl && (
-            <img 
-              src={imageUrl} 
-              alt="Mermaid Diagram Preview" 
-              style={{ maxWidth: '100%', maxHeight: '80vh' }} 
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+            <div className="flex justify-between items-center p-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-800">{Locale.Export.Image.Modal || "Diagram Preview"}</h2>
+              <button 
+                onClick={closeImageModal} 
+                aria-label="close" 
+                className="p-1 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400"
+              >
+                <CloseIconPlaceholder />
+              </button>
+            </div>
+            <div className="p-4 overflow-auto flex justify-center items-center flex-grow">
+              {imageUrl && (
+                <img 
+                  src={imageUrl} 
+                  alt="Mermaid Diagram Preview" 
+                  className="max-w-full max-h-full object-contain"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -152,12 +150,10 @@ const PreCode = React.forwardRef<HTMLPreElement, React.HTMLAttributes<HTMLPreEle
     const { height } = useWindowSize();
     const chatStore = useChatStore();
     const session = chatStore.currentSession();
-    // const config = useAppConfig();
-    const enableArtifacts = false; // Hardcoded based on original logic
+    const enableArtifacts = false;
 
-    // Fullscreen state and ref
     const [isFullScreen, setIsFullScreen] = useState(false);
-    const fullScreenRef = useRef<HTMLDivElement>(null); // Ref for the element to make fullscreen
+    const fullScreenRef = useRef<HTMLDivElement>(null);
 
     const renderArtifacts = useDebouncedCallback(() => {
       if (!ref.current) return;
@@ -178,7 +174,6 @@ const PreCode = React.forwardRef<HTMLPreElement, React.HTMLAttributes<HTMLPreEle
       }
     }, 600);
 
-    //Wrap the paragraph for plain-text
     useEffect(() => {
       if (ref.current) {
         const codeElements = ref.current.querySelectorAll(
@@ -205,7 +200,6 @@ const PreCode = React.forwardRef<HTMLPreElement, React.HTMLAttributes<HTMLPreEle
       }
     }, [ref, renderArtifacts]);
 
-    // Fullscreen toggle function
     const toggleFullScreen = useCallback(() => {
       if (!fullScreenRef.current) return;
       if (!document.fullscreenElement) {
@@ -217,7 +211,6 @@ const PreCode = React.forwardRef<HTMLPreElement, React.HTMLAttributes<HTMLPreEle
       }
     }, []);
 
-    // Effect to listen for fullscreen changes
     useEffect(() => {
       const handleScreenChange = () => {
         setIsFullScreen(!!document.fullscreenElement);
@@ -230,9 +223,9 @@ const PreCode = React.forwardRef<HTMLPreElement, React.HTMLAttributes<HTMLPreEle
 
     return (
       <>
-        <pre ref={ref} className={className} {...props}>
+        <pre ref={ref} className={clsx(className, "relative group")} {...props}>
           <button
-            className="copy-code-button"
+            className="absolute top-2 right-2 p-1.5 bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-200"
             onClick={() => {
               if (ref.current) {
                 copyToClipboard(
@@ -240,32 +233,34 @@ const PreCode = React.forwardRef<HTMLPreElement, React.HTMLAttributes<HTMLPreEle
                 );
               }
             }}
-          />
+            title="Copy code"
+          >
+            Copy
+          </button>
           {children}
         </pre>
         {mermaidCode && <Mermaid code={mermaidCode} />}
         {htmlCode && enableArtifacts && (
-          <div ref={fullScreenRef} className={clsx("no-dark html", { "fullscreen-active": isFullScreen })} style={{ position: 'relative', background: 'white' }}>
-            <ArtifactsShareButton
-              style={{ position: "absolute", right: 20, top: 10, zIndex: 1 }}
-              getCode={() => htmlCode}
-            />
-            <MuiIconButton
-              style={{ position: "absolute", right: 70, top: 8, zIndex: 1 }}
-              size="small"
-              aria-label="Reload Preview"
-              onClick={() => previewRef.current?.reload()}
-            >
-              <ReloadIcon fontSize="inherit" />
-            </MuiIconButton>
-            <MuiIconButton
-              style={{ position: "absolute", right: 120, top: 8, zIndex: 1 }}
-              size="small"
-              aria-label={isFullScreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-              onClick={toggleFullScreen}
-            >
-              {isFullScreen ? <FullscreenExitIcon fontSize="inherit" /> : <FullscreenIcon fontSize="inherit" />}
-            </MuiIconButton>
+          <div ref={fullScreenRef} className={clsx("no-dark html relative bg-white border border-gray-200 rounded my-2", isFullScreen && "fixed inset-0 z-50 overflow-auto p-4")}>
+            <div className="absolute top-2 right-2 z-10 flex gap-2">
+              <ArtifactsShareButton getCode={() => htmlCode} />
+              <button
+                className="p-1.5 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 text-gray-700"
+                aria-label="Reload Preview"
+                onClick={() => previewRef.current?.reload()}
+                title="Reload Preview"
+              >
+                <ReloadIconPlaceholder />
+              </button>
+              <button
+                className="p-1.5 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 text-gray-700"
+                aria-label={isFullScreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                onClick={toggleFullScreen}
+                title={isFullScreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+              >
+                {isFullScreen ? <FullscreenExitIconPlaceholder /> : <FullscreenIconPlaceholder />}
+              </button>
+            </div>
             <HTMLPreview
               ref={previewRef}
               code={htmlCode}
@@ -283,10 +278,7 @@ PreCode.displayName = "PreCode";
 
 function CustomCode(props: React.HTMLAttributes<HTMLElement> & { children?: React.ReactNode }) {
   const chatStore = useChatStore();
-  const session = chatStore.currentSession();
-  // const config = useAppConfig();
   const enableCodeFold = false;
-    // session.mask?.enableCodeFold !== false && config.enableCodeFold;
 
   const ref = useRef<HTMLPreElement>(null);
   const [collapsed, setCollapsed] = useState(true);
@@ -296,42 +288,46 @@ function CustomCode(props: React.HTMLAttributes<HTMLElement> & { children?: Reac
     if (ref.current) {
       const codeHeight = ref.current.scrollHeight;
       setShowToggle(codeHeight > 400);
-      ref.current.scrollTop = ref.current.scrollHeight;
     }
   }, [props.children]);
 
   const toggleCollapsed = () => {
-    setCollapsed((collapsed) => !collapsed);
+    setCollapsed((currentCollapsed) => !currentCollapsed);
   };
+
   const renderShowMoreButton = () => {
     if (showToggle && enableCodeFold && collapsed) {
       return (
         <div
-          className={clsx("show-hide-button", {
-            collapsed,
-            expanded: !collapsed,
-          })}
+          className={clsx(
+            "text-center py-1",
+          )}
         >
-          <button onClick={toggleCollapsed}>{Locale.NewChat.More}</button>
+          <button 
+            onClick={toggleCollapsed}
+            className="text-blue-600 hover:text-blue-800 text-sm font-medium focus:outline-none"
+          >
+            {Locale.NewChat.More}
+          </button>
         </div>
       );
     }
     return null;
   };
+
   return (
     <>
       <code
-        className={clsx(props?.className)}
+        className={clsx(props?.className, "block whitespace-pre")}
         ref={ref}
         style={{
           maxHeight: enableCodeFold && collapsed ? "400px" : "none",
-          overflowY: "hidden",
+          overflowY: enableCodeFold && collapsed ? "hidden" : "auto",
         }}
         {...props}
       >
         {props.children}
       </code>
-
       {renderShowMoreButton()}
     </>
   );
@@ -356,8 +352,6 @@ function escapeBrackets(text: string) {
 }
 
 function tryWrapHtmlCode(text: string) {
-  // try add wrap html code (fixed: html codeblock include 2 newline)
-  // ignore embed codeblock
   if (text.includes("```")) {
     return text;
   }
@@ -442,13 +436,14 @@ export function Markdown(
 
   return (
     <div
-      className="markdown-body"
+      className={clsx(
+        "markdown-body",
+        "font-medium break-words"
+      )}
       style={{
-        fontSize: `${props.fontSize ?? 16}px`,
-        fontFamily: props.fontFamily || "inherit",
-        fontWeight: "500",
-        wordWrap: "break-word",
-        color: props.fontColor || "inherit",
+        fontSize: props.fontSize ? `${props.fontSize}px` : undefined,
+        fontFamily: props.fontFamily || undefined,
+        color: props.fontColor || undefined,
       }}
       ref={mdRef}
       onContextMenu={props.onContextMenu}
@@ -456,7 +451,9 @@ export function Markdown(
       dir="auto"
     >
       {props.loading ? (
-        <LoadingAnimation />
+        <div className="flex justify-center items-center p-4">
+          <LoadingAnimation />
+        </div>
       ) : (
         <MarkdownContent content={props.content} />
       )}
