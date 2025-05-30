@@ -9,27 +9,38 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { useDebouncedCallback } from "use-debounce"; // Added import
+import { useDebouncedCallback } from "use-debounce";
 
-import { useAppConfig, useChatStore } from "@/store"; // Adjust path
-
+import { useAppConfig, useChatStore } from "@/store";
 import { ChatControllerPool } from "@/client/controller";
+import Locale from "@/locales";
+import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom";
+import { useSnackbar } from "@/providers/snackbar-provider";
+import { ChatMessageCell } from "@/components/chat/chat-message-cell";
 
-import Locale from "@/locales"; // Adjust path
-import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom"; // Adjust path
-import { useSnackbar } from "@/providers/snackbar-provider"; // Added Snackbar hook
+// MUI Icon replaced
+// import ArrowDownwardRoundedIcon from "@mui/icons-material/ArrowDownwardRounded";
+const ArrowDownwardRoundedIcon = () => <span className="text-sm">&darr;</span>; // Simple arrow placeholder
 
-import { ChatMessageCell } from "@/components/chat/chat-message-cell"; // Import the new cell component
+// MUI CircularProgress replaced
+// import CircularProgress from "@mui/material/CircularProgress";
+const CircularProgress = ({ size = 24, color = "inherit" }: { size?: number, color?: string }) => (
+  <div 
+    style={{ width: size, height: size }}
+    className={clsx(
+        "animate-spin rounded-full border-2 border-t-transparent",
+        color === "inherit" ? "border-current" : `border-${color}-500` // Example color mapping
+    )}
+  ></div>
+);
 
-import ArrowDownwardRoundedIcon from "@mui/icons-material/ArrowDownwardRounded";
-import CircularProgress from "@mui/material/CircularProgress"; // Assuming MUI is used
-
-import styles from "./chat.module.scss";
-import { ActionButton } from "@/components/ui/action-button"; // Import ChatAction
-import { useDecryptionManager } from "@/hooks/use-decryption-manager"; // <-- Import the hook
+// import styles from "./chat.module.scss"; // SCSS removed
+import { ActionButton } from "@/components/ui/action-button";
+import { useDecryptionManager } from "@/hooks/use-decryption-manager";
 import { useChatSessionManager } from "@/hooks/use-chat-session-manager";
 import { UUID } from "crypto";
 import { SessionState } from "@/types/session";
+import clsx from 'clsx'; // Added clsx import if not already present globally through other means
 
 // ChatComponentProps is now simpler as it gets most things from the store or direct sessionID
 export interface ChatComponentProps {
@@ -37,9 +48,7 @@ export interface ChatComponentProps {
 }
 
 export function ChatComponent(props: ChatComponentProps) {
-  const { 
-    sessionId  } = props;
-
+  const { sessionId } = props;
   const chatStore = useChatStore();
   // Destructure setters and states from the store
   const {
@@ -275,16 +284,15 @@ export function ChatComponent(props: ChatComponentProps) {
   );
 
   return (
-    <div className={styles["chat-body-container"]}>
+    <div className="flex flex-col h-full overflow-hidden">
       <div
-        className={styles["chat-body"]}
+        className="flex-grow overflow-y-auto overflow-x-hidden pt-5 pb-32 relative min-h-0"
         ref={scrollRef}
         onScroll={onChatBodyScroll}
         onTouchStart={() => setAutoScroll(false)}
-        // style={{ scrollBehavior: "smooth" }}
       >
         {displayedMessages.length > 10 && isLoadingMessages && hasMoreMessages && (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
+          <div className="flex justify-center py-5">
             <CircularProgress size={24} color="inherit" />
           </div>
         )}
@@ -310,14 +318,14 @@ export function ChatComponent(props: ChatComponentProps) {
       </div>
       {!internalHitBottom && (
         <div
-          className={styles["scroll-to-bottom-chatview-wrapper"]}
+          className="absolute left-1/2 -translate-x-1/2 z-10"
           style={{ bottom: '20px' }}
         >
           <ActionButton
             onClick={internalScrollToBottom}
             text={null}
             icon={<ArrowDownwardRoundedIcon />}
-            className={styles["scroll-to-bottom-chatview"]}
+            className="p-2 rounded-full bg-white shadow-md hover:bg-gray-100"
           />
         </div>
       )}

@@ -1,40 +1,49 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
 import { ChatMessage, RequestMessage } from "@/types";
-import { copyToClipboard } from "@/utils/utils"; // Adjust path
-import Locale from "@/locales"; // Adjust path
+import { copyToClipboard } from "@/utils/utils";
+import Locale from "@/locales";
 import { MultimodalContent } from "@/client/api";
 import { EncryptionService } from "@/services/EncryptionService";
 
 import { ActionButton } from "@/components/ui/action-button";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
-// import { GenericFileIcon } from "@/components/common/GenericFileIcon";
-import CloseIcon from "@mui/icons-material/Close";
-const GenericFileIcon = () => (
-  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="32" height="32" rx="5.33333" fill="none"/>
-    <path d="M21.3333 24H10.6666C9.92778 24 9.33325 23.4055 9.33325 22.6667V9.33333C9.33325 8.5945 9.92778 8 10.6666 8H16L22.6666 12.6667V22.6667C22.6666 23.4055 22.0721 24 21.3333 24Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M22.6666 12.6667H17.3333C16.5944 12.6667 16 12.0722 16 11.3333V8" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-// MUI Imports
-import { TextField, Button, Box, IconButton, Typography, CircularProgress } from "@mui/material"; // IconButton not used
-import ReplayRoundedIcon from "@mui/icons-material/ReplayRounded";
-import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
-import ModeEditRoundedIcon from "@mui/icons-material/ModeEditRounded";
 
-import SendIcon from "@mui/icons-material/Send";
-import CancelIcon from "@mui/icons-material/Cancel";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore"; // For expand/collapse
-import ChevronRightIcon from "@mui/icons-material/ChevronRight"; // For expand/collapse
-
-import styles from "./chat.module.scss";
 import { UUID } from "crypto";
 import { useApiClient } from "@/providers/api-client-provider";
 import { AttestationService } from "@/services/attestation-service";
 import { useWallets } from "@privy-io/react-auth";
+
+// Icon Placeholders
+const IconPlaceholder = ({ name, className }: { name: string, className?: string }) => <span className={clsx("inline-block text-xs p-1 border rounded", className)}>[{name}]</span>;
+const CloseIconPlaceholder = () => <IconPlaceholder name="X" />;
+const ReplayRoundedIconPlaceholder = () => <IconPlaceholder name="Replay" />;
+const ContentCopyRoundedIconPlaceholder = () => <IconPlaceholder name="Copy" />;
+const ModeEditRoundedIconPlaceholder = () => <IconPlaceholder name="Edit" />;
+const SendIconPlaceholder = () => <IconPlaceholder name="Send" />;
+const CancelIconPlaceholder = () => <IconPlaceholder name="Cancel" />;
+const ExpandMoreIconPlaceholder = () => <IconPlaceholder name="V" />;
+const ChevronRightIconPlaceholder = () => <IconPlaceholder name=">" />;
+
+const CircularProgressPlaceholder = ({ size = 24, color = "inherit" }: { size?: string | number, color?: string }) => (
+    <div 
+      style={{ width: size, height: size }}
+      className={clsx(
+          "animate-spin rounded-full border-2 border-t-transparent",
+          color === "inherit" ? "border-current" : `border-${color}-500`
+      )}
+    ></div>
+  );
+
+const GenericFileIconPlaceholder = () => (
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-gray-600">
+      <rect width="32" height="32" rx="5.33333" fill="currentColor" opacity="0.1"/>
+      <path d="M21.3333 24H10.6666C9.92778 24 9.33325 23.4055 9.33325 22.6667V9.33333C9.33325 8.5945 9.92778 8 10.6666 8H16L22.6666 12.6667V22.6667C22.6666 23.4055 22.0721 24 21.3333 24Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M22.6666 12.6667H17.3333C16.5944 12.6667 16 12.0722 16 11.3333V8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
 
 const Markdown = dynamic(async () => (await import("../ui/markdown")).Markdown, {
   loading: () => <LoadingAnimation />,
@@ -88,12 +97,7 @@ function getFileUrls(
 function getImageUrls(
   content: string | MultimodalContent[] | null | undefined
 ): string[] {
-  if (
-    content === null ||
-    content === undefined ||
-    typeof content === "string" ||
-    !Array.isArray(content)
-  ) {
+  if (content === null || content === undefined || typeof content === "string" || !Array.isArray(content)) {
     return [];
   }
   return content
@@ -131,10 +135,11 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
   const handleResend = useCallback(
     async () => { 
       await AttestationService.getAttestation(wallets, sessionId); 
-      // onResend(messageId); 
+      // onResend(messageId); // Original onResend call commented
     },
-    [onResend, messageId, wallets]
+    [onResend, messageId, wallets, sessionId]
   );
+
   const handleUserStop = useCallback(
     () => onUserStop(messageId),
     [onUserStop, messageId]
@@ -146,9 +151,6 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
   const [loadedFiles, setLoadedFiles] = useState<LoadedFile[]>([]);
 
   const isUser = role === "user";
-
-  const currentImageUrls = getImageUrls(content);
-  
   const apiClient = useApiClient();
 
   useEffect(() => {
@@ -156,9 +158,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
       setLoadedFiles([]);
       return;
     }
-
     const fetchFiles = async () => {
-      // Initialize files with loading state
       setLoadedFiles(
         files.map((file) => ({
           id: file.file_id as UUID,
@@ -169,177 +169,102 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
           originalType: "",
         }))
       );
-      console.log(`[chat-message-cell] files:`, files);
       const newLoadedFiles: LoadedFile[] = [];
-
       for (const file of files) {
         try {
           const response = await apiClient.app.getFile(sessionId, file.file_id as UUID);
-          if (!response) {
-            throw new Error("File response is undefined");
-          }
-
+          if (!response) throw new Error("File response is undefined");
           const contentType = response.headers.get("Content-Type") || "application/octet-stream";
           const contentDisposition = response.headers.get("Content-Disposition");
-          let fileName = file.file_name; // Default filename
-
+          let fileName = file.file_name;
           if (contentDisposition) {
-            const match = contentDisposition.match(/filename="?([^"]+)"?/i);
-            if (match && match[1]) {
-              fileName = match[1];
-            }
+            const match = contentDisposition.match(/filename=\"?([^\"]+)\"?/i);
+            if (match && match[1]) fileName = match[1];
           }
-          
           const reader = response.body?.getReader();
-          if (!reader) {
-            throw new Error("ReadableStream not available");
-          }
-
+          if (!reader) throw new Error("ReadableStream not available");
           const chunks: Uint8Array[] = [];
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            if (value) {
-              chunks.push(value);
-            }
+            if (value) chunks.push(value);
           }
-          const blob = new Blob(chunks, { type: contentType });
+          let blob = new Blob(chunks, { type: contentType });
           let fileToProcess = new File([blob], fileName, { type: contentType });
-
           if (EncryptionService.isKeySet()) {
             try {
               fileToProcess = await EncryptionService.decryptFile(fileToProcess);
+              blob = new Blob([fileToProcess], { type: fileToProcess.type || contentType });
             } catch (decryptionError) {
               console.error("Error decrypting file:", file.file_id, decryptionError);
-              newLoadedFiles.push({
-                id: file.file_id as UUID,
-                name: fileName,
-                type: "other", // Or a specific error type
-                url: "",
-                isLoading: false,
-                error: "Decryption failed",
-                originalType: contentType,
-              });
-              continue; // Skip to the next file
+              newLoadedFiles.push({ id: file.file_id as UUID, name: fileName, type: "other", url: "", isLoading: false, error: "Decryption failed", originalType: contentType });
+              continue;
             }
           }
-
-          const url = URL.createObjectURL(fileToProcess);
-
-          const fileType = file.file_type as "image" | "pdf" | "other";
-
-          newLoadedFiles.push({
-            id: file.file_id as UUID,
-            name: fileName,
-            type: fileType,
-            url: url,
-            isLoading: false,
-            originalType: contentType,
-          });
+          const url = URL.createObjectURL(blob);
+          newLoadedFiles.push({ id: file.file_id as UUID, name: fileName, type: file.file_type as "image" | "pdf" | "other", url: url, isLoading: false, originalType: contentType });
         } catch (error) {
           console.error("Error fetching file:", file.file_id, error);
-          newLoadedFiles.push({
-            id: file.file_id as UUID,
-            name: "Error loading file",
-            type: "other",
-            url: "",
-            isLoading: false,
-            error: (error as Error).message || "Unknown error",
-            originalType: "",
-          });
+          newLoadedFiles.push({ id: file.file_id as UUID, name: "Error loading file", type: "other", url: "", isLoading: false, error: (error as Error).message || "Unknown error", originalType: "" });
         }
       }
       setLoadedFiles(newLoadedFiles);
     };
-
     fetchFiles();
-
-    // Cleanup function to revoke object URLs
     return () => {
-      loadedFiles.forEach((file) => {
-        if (file.url && file.url.startsWith("blob:")) {
-          URL.revokeObjectURL(file.url);
-        }
+      setLoadedFiles(currentLoadedFiles => {
+        currentLoadedFiles.forEach((file) => { if (file.url && file.url.startsWith("blob:")) URL.revokeObjectURL(file.url); });
+        return []; 
       });
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps 
-  }, [files, sessionId, apiClient]); // Ensure apiClient is stable or memoized if it comes from context
+  }, [files, sessionId, apiClient]);
 
-  // Ref to store the previous value of message.isReasoning
   const prevIsReasoningRef = React.useRef(message.isReasoning);
-
   useEffect(() => {
-    if (isEditing) {
-      setEditedText(content as string);
-    }
+    if (isEditing) setEditedText(getTextContent(content));
   }, [content, isEditing]);
 
   useEffect(() => {
-    // On initial mount or if reasoning starts
-    if (message.isReasoning && !prevIsReasoningRef.current) {
-      setIsReasoningCollapsed(false);
-    }
-    // If reasoning finishes
-    else if (!message.isReasoning && prevIsReasoningRef.current) {
-      setIsReasoningCollapsed(true);
-    }
-
-    // Update the ref with the current value for the next render
+    if (message.isReasoning && !prevIsReasoningRef.current) setIsReasoningCollapsed(false);
+    else if (!message.isReasoning && prevIsReasoningRef.current) setIsReasoningCollapsed(true);
     prevIsReasoningRef.current = message.isReasoning;
-  }, [message.isReasoning]); // Only re-run when message.isReasoning changes
+  }, [message.isReasoning]);
 
-  const handleEditClick = useCallback(() => {
-    setEditedText(content as string);
-    setIsEditing(true);
-  }, [content]);
-
-  const handleCancelClick = useCallback(() => {
-    setIsEditing(false);
-  }, []);
-
+  const handleEditClick = useCallback(() => { setEditedText(getTextContent(content)); setIsEditing(true); }, [content]);
+  const handleCancelClick = useCallback(() => { setIsEditing(false); }, []);
   const handleSendClick = useCallback(() => {
-    if (typeof content !== 'string') { return; }
-    if (editedText.trim() === content.trim()) {
-      setIsEditing(false);
-      return;
-    }
+    const currentTextContent = getTextContent(content);
+    if (editedText.trim() === currentTextContent.trim()) { setIsEditing(false); return; }
     onEditSubmit(messageId, editedText);
     setIsEditing(false);
   }, [messageId, editedText, content, onEditSubmit]);
-
-  const toggleReasoningCollapse = useCallback(() => {
-    setIsReasoningCollapsed((prev) => !prev);
-  }, []);
-
+  const toggleReasoningCollapse = useCallback(() => setIsReasoningCollapsed((prev) => !prev), []);
+  
   if (isError) {
     return (
-      <div className={clsx(styles["chat-message"])}>
-        <div className={styles["chat-message-container"]}>
-          <div className={styles["chat-message-actions"]}>
-            <div className={styles["chat-input-actions"]}>
-              <ActionButton
-                text={null}
-                icon={<img src="/icons/refresh.svg" alt="Resend message" />}
-                onClick={handleResend}
-                disabled={isChatLoading}
-              />
-            </div>
+      <div className={clsx(
+        "w-[70%] mx-auto my-2.5 flex flex-row",
+        "max-lg:w-[80%] max-md:w-[95%]"
+      )}>
+        <div className="w-full flex flex-col items-start gap-1.5 md:gap-2.5">
+          <div className="flex items-center h-8">
+            <button
+              onClick={handleResend}
+              title="Resend message"
+              disabled={isChatLoading}
+              className="p-1.5 rounded-md hover:bg-gray-100 text-gray-600 disabled:opacity-50"
+              aria-label="Resend message"
+            >
+              <ReplayRoundedIconPlaceholder />
+            </button>
           </div>
-          <div
-            className={clsx(
-              styles["chat-message-item"],
-              styles["chat-message-error-bubble"]
-            )}
+          <div 
+            className="bg-red-50 border border-red-400 text-red-600 px-4 py-3 rounded-lg shadow-md text-sm md:text-base font-medium leading-normal max-w-full"
           >
-            <div className={styles["chat-message-error-content-inner"]}>
-              <span style={{ fontWeight: 500 }}>
-                Something went wrong. <br />
-                If this issue persists please contact us at
-              </span>
-              <span style={{ fontWeight: 700, color: "#F33D4F" }}>
-                {" "}
-                help.panda.com.
-              </span>
+            <div>
+              <span className="font-semibold">Something went wrong.</span> <br />
+              If this issue persists please contact us at
+              <span className="font-bold text-red-700"> help.panda.com.</span>
             </div>
           </div>
         </div>
@@ -348,338 +273,214 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
   }
 
   const showReasoning = !isUser && (reasoning || isReasoning);
+
   return (
     <div
       className={clsx(
-        styles["chat-message"],
-        isUser && styles["chat-message-user"],
-        !isUser && styles["chat-message-system"],
-        (streaming || isReasoning) && styles["chat-message-streaming"]
+        "w-[70%] mx-auto my-2.5 flex flex-row",
+        "max-lg:w-[80%] max-md:w-[95%]",
+        isUser ? "flex-row-reverse" : "",
+        (streaming || isReasoning) && "opacity-90"
       )}
     >
-      <Box
-        className={styles["chat-message-container"]}
-        sx={
-          isUser
-            ? {
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-end",
-                gap: "10px",
-              }
-            : {
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                gap: "10px",
-              }
-        }
+      <div 
+        className={clsx(
+            "w-full flex flex-col gap-1.5 md:gap-2.5",
+            isUser ? "items-end" : "items-start"
+        )}
       >
-        <div className={styles["chat-message-header"]}>
+        <div className={clsx(
+            "flex items-center gap-2 md:gap-4",
+            isUser ? "flex-row-reverse" : "flex-row"
+        )}>
           {!isUser && (
-            <div className={styles["chat-message-avatar"]}>
+            <div className="w-8 h-8 shrink-0">
               <img
                 src="/icons/panda.svg"
-                alt="Panda"
-                style={{ width: "32px", height: "32px" }}
+                alt="Panda Avatar"
+                className="w-full h-full rounded-full object-cover"
               />
             </div>
           )}
-
           {showActions && !isEditing && (
-            <Box
-              className={styles["chat-message-actions"]}
-              sx={
-                isUser
-                  ? {
-                      display: "flex",
-                      justifyContent: "flex-end",
-                      alignItems: "center",
-                      gap: "4px",
-                    }
-                  : {}
-              }
-            >
+            <div className={clsx(
+                "flex items-center h-8 gap-1",
+                isUser ? "justify-end" : "justify-start"
+            )}>
               {!(streaming || isReasoning) && (
                 <>
                   {!isUser && (
                     <>
                       <button
-                        onClick={() =>
-                          copyToClipboard(
-                            content +
-                              (reasoning
-                                ? `\n\n[Reasoning]:\n${reasoning}`
-                                : "")
-                          )
-                        }
-                        // disabled={isChatLoading}
-                        className={styles["user-action-button"]}
+                        onClick={() => copyToClipboard(getTextContent(content) + (reasoning ? `\n\n[Reasoning]:\n${getReasoningText(reasoning)}` : ""))}
+                        title="Copy message and reasoning"
+                        className="p-1.5 rounded-md hover:bg-gray-100 text-gray-600 disabled:opacity-50"
                         aria-label="Copy message content and reasoning"
+                        disabled={isChatLoading}
                       >
-                        <img
-                          src="/icons/copy.svg"
-                          alt="Copy message content and reasoning"
-                        />
+                        <ContentCopyRoundedIconPlaceholder />
                       </button>
                       <button
                         onClick={handleResend}
+                        title="Resend message" 
                         disabled={isChatLoading}
-                        className={styles["user-action-button"]}
+                        className="p-1.5 rounded-md hover:bg-gray-100 text-gray-600 disabled:opacity-50"
                         aria-label="Resend message"
                       >
-                        <img src="/icons/refresh.svg" alt="Resend message" />
-                        {/* <ReplayRoundedIcon /> */}
+                        <ReplayRoundedIconPlaceholder />
                       </button>
                     </>
                   )}
                   {isUser && (
                     <>
-                      {/* <button
-                      onClick={handleEditClick}
-                      disabled={isChatLoading}
-                      className={styles['user-action-button']}
-                      aria-label="Edit message"
-                    >
-                      <ModeEditRoundedIcon />
-                    </button> */}
                       <button
-                        onClick={() => copyToClipboard(content as string)}
-                        // disabled={isChatLoading}
-                        className={styles["user-action-button"]}
+                        onClick={() => copyToClipboard(getTextContent(content))}
+                        title="Copy message"
+                        disabled={isChatLoading}
+                        className="p-1.5 rounded-md hover:bg-gray-100 text-gray-600 disabled:opacity-50"
                         aria-label="Copy message"
                       >
-                        <img src="/icons/copy.svg" alt="Copy message" />
+                        <ContentCopyRoundedIconPlaceholder />
                       </button>
                     </>
                   )}
                 </>
               )}
-            </Box>
+            </div>
           )}
         </div>
-        
+        {/* File attachments */}
         {loadedFiles.length > 0 && (
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "10px",
-              alignItems: isUser ? "flex-end" : "flex-start",
-              width: "100%",
-              maxWidth: "460px",
-            }}
-          >
-            {loadedFiles.map((file) => {
-              if (file.isLoading) {
-                return (
-                  <Box key={file.id} className={styles["chat-message-item-loading"]} display="flex" alignItems="center" justifyContent="center" style={{
-                    borderRadius: "8px",
-                    outline: "1px #CACACA solid",
-                    backgroundColor: "#F0F0F0",
-                    objectFit: "cover",
-                    width: "160px",
-                    height: "160px",
-                  }} >
-                     {/* <Box display="flex" alignItems="center" sx={{ ml: 1 }}> */}
-                      <CircularProgress size={24} color="inherit"/>
-                  {/* </Box> */}
-                    {/* <Typography variant="caption">Loading {file.name}...</Typography> */}
-                  </Box>
-                );
-              }
-              if (file.error) {
-                return (
-                  <Box key={file.id} className={styles["chat-message-file-item-error"]}>
-                    <GenericFileIcon /> {/* Or a specific error icon */}
-                    <Typography variant="caption" color="error">
-                      Error: {file.name} ({file.error})
-                    </Typography>
-                  </Box>
-                );
-              }
-              console.log(`[chat-message-cell] file:`, file);
-              if (file.type === "image") {
-                return (
-                  <a 
-                    key={`${file.id}-anchor`}
-                    href={file.url} 
-                    download={file.name} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    style={{ textDecoration: 'none' }} // Optional: remove underline from link
-                  >
-                    <Image
-                      key={file.id}
-                      className={styles["chat-message-item-image-outside"]}
-                      src={file.url}
-                      alt={file.name || `attached image ${file.id}`}
-                      width={160} // Adjust as needed
-                      height={160} // Adjust as needed
-                      style={{
-                        borderRadius: "8px",
-                        outline: "1px #CACACA solid",
-                        objectFit: "cover",
-                        display: "block", // Ensure image behaves like a block for the anchor
-                      }}
-                    />
-                  </a>
-                );
-              }
-              if (file.type === "pdf") {
-                return (
-                  <a 
-                    key={`${file.id}-anchor`}
-                    href={file.url} 
-                    download={file.name} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    style={{ textDecoration: 'none', display: 'block' }} // Optional: remove underline and make it block
-                  >
-                    <Box
-                      key={file.id}
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        padding: "8px",
-                        borderRadius: "8px",
-                        backgroundColor: "#f0f0f0", // Light background for the PDF item
-                        border: "1px solid #e0e0e0",
-                        maxWidth: "100%",
-                        cursor: "pointer", // Indicate it's clickable
-                      }}
-                    >
-                      <GenericFileIcon />
-                      <Box sx={{ overflow: "hidden" }}>
-                        <Typography 
-                          variant="body2" 
-                          sx={{ 
-                            whiteSpace: "nowrap", 
-                            overflow: "hidden", 
-                            textOverflow: "ellipsis",
-                            fontWeight: 500,
-                          }}
-                        >
-                          {file.name}
-                        </Typography>
-                        <Typography variant="caption" color="textSecondary">
-                          PDF Document {file.originalType ? `(${file.originalType})` : ""}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </a>
-                );
-              }
-              // Fallback for 'other' file types
-              return (
-                <a 
-                  key={`${file.id}-anchor`}
-                  href={file.url} 
-                  download={file.name}
-                  style={{ textDecoration: 'none', display: 'block' }} // Optional: remove underline and make it block
-                >
-                  <Box
-                    key={file.id}
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      padding: "8px",
-                      borderRadius: "8px",
-                      backgroundColor: "#f0f0f0",
-                      border: "1px solid #e0e0e0",
-                      cursor: "pointer", // Indicate it's clickable
-                    }}
-                  >
-                    <GenericFileIcon />
-                    <Box sx={{ overflow: "hidden" }}>
-                      <Typography 
-                        variant="body2"
-                        sx={{ 
-                          whiteSpace: "nowrap", 
-                          overflow: "hidden", 
-                          textOverflow: "ellipsis",
-                          fontWeight: 500,
-                        }}
+            <div className={clsx(
+                "flex flex-col gap-2.5 mt-2",
+                isUser ? "items-end" : "items-start", 
+                "w-full max-w-xs sm:max-w-sm md:max-w-md"
+            )}>
+                {loadedFiles.map((file) => {
+                  if (file.isLoading) {
+                    return (
+                      <div 
+                        key={file.id} 
+                        className="flex items-center justify-center w-40 h-40 bg-gray-100 border border-gray-300 rounded-lg text-gray-500"
                       >
-                        {file.name}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        {file.originalType || "File"}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </a>
-              );
-            })}
-          </Box>
+                         <CircularProgressPlaceholder size={24} />
+                      </div>
+                    );
+                  }
+                  if (file.error) {
+                    return (
+                      <div key={file.id} className="flex items-center gap-2 p-2 bg-red-50 border border-red-300 rounded-lg text-red-700 text-xs">
+                        <GenericFileIconPlaceholder /> 
+                        <span>Error: {file.name} ({file.error})</span>
+                      </div>
+                    );
+                  }
+                  if (file.type === "image") {
+                    return (
+                      <a 
+                        key={`${file.id}-anchor`}
+                        href={file.url} 
+                        download={file.name} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="block"
+                      >
+                        <Image
+                          key={file.id}
+                          src={file.url}
+                          alt={file.name || `attached image ${file.id}`}
+                          width={160} 
+                          height={160} 
+                          className="rounded-lg border border-gray-300 object-cover block"
+                        />
+                      </a>
+                    );
+                  }
+                  // Fallback for PDF and other file types
+                  return (
+                    <a 
+                      key={`${file.id}-anchor`}
+                      href={file.url} 
+                      download={file.name} 
+                      target={file.type === "pdf" ? "_blank" : undefined}
+                      rel={file.type === "pdf" ? "noopener noreferrer" : undefined}
+                      className="block text-decoration-none"
+                    >
+                      <div
+                        key={file.id}
+                        className="flex items-center gap-2 p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 cursor-pointer max-w-full"
+                      >
+                        <GenericFileIconPlaceholder />
+                        <div className="overflow-hidden flex-grow">
+                          <p className="text-sm font-medium text-gray-800 whitespace-nowrap overflow-hidden text-ellipsis">
+                            {file.name}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {file.type === "pdf" ? "PDF Document" : (file.originalType || "File")}
+                          </p>
+                        </div>
+                      </div>
+                    </a>
+                  );
+                })}
+            </div>
         )}
-
-        <Box className={styles["chat-message-item"]}>
+        <div 
+            className={clsx(
+                "box-border max-w-full rounded-[2rem] px-5 py-3 md:px-6 md:py-4 text-sm md:text-base break-words border relative transition-all duration-300 ease-in-out overflow-x-auto",
+                isUser 
+                    ? "bg-gray-100 text-gray-800 border-gray-200"
+                    : "bg-white text-gray-800 border-gray-200 shadow-sm",
+                !isUser && role === "system" && "p-0 pl-12 rounded-none bg-transparent border-none shadow-none"
+            )}
+            style={{ fontSize: `${fontSize}px`, fontFamily: fontFamily }} 
+        >
+          {/* Reasoning Display */}
           {showReasoning && (
-            <Box
-              className={styles["chat-message-reasoning-container"]}
-              sx={{ mb: 1, p: 1, borderRadius: 1 }}
-            >
-              <Box
-                display="flex"
-                alignItems="center"
+            <div className="mb-2 p-2 border border-gray-200 rounded-md bg-gray-50/50">
+              <div
+                className="flex items-center cursor-pointer group"
                 onClick={toggleReasoningCollapse}
-                sx={{ cursor: "pointer" }}
               >
-                <IconButton size="small" sx={{ mr: 0.5 }}>
-                  {isReasoningCollapsed ? (
-                    <ChevronRightIcon fontSize="inherit" />
-                  ) : (
-                    <ExpandMoreIcon fontSize="inherit" />
-                  )}
-                </IconButton>
-                <Typography
-                  variant="caption"
-                  sx={{ fontWeight: "medium", color: "text.secondary" }}
+                <button 
+                  className="p-0.5 mr-1 rounded-full hover:bg-gray-200 text-gray-500" 
+                  aria-label={isReasoningCollapsed ? "Expand reasoning" : "Collapse reasoning"}
                 >
+                  {isReasoningCollapsed ? 
+                    <ChevronRightIconPlaceholder /> : 
+                    <ExpandMoreIconPlaceholder />
+                  }
+                </button>
+                <span className="text-xs font-medium text-gray-600 group-hover:text-gray-800">
                   {isReasoning
                     ? "Thinking..."
                     : message.reasoningTime && message.reasoningTime > 0
-                    ? `Thought for ${(message.reasoningTime / 1000).toFixed(
-                        1
-                      )} seconds`
+                    ? `Thought for ${(message.reasoningTime / 1000).toFixed(1)} seconds`
                     : "Processing complete"}
-                </Typography>
+                </span>
                 {isReasoning && !reasoning && (
-                  <Box sx={{ ml: 1 }}>
+                  <div className="ml-2">
                     <LoadingAnimation />
-                  </Box>
+                  </div>
                 )}
-              </Box>
+              </div>
               {!isReasoningCollapsed && reasoning && (
-                <Box
-                  sx={{
-                    mt: 1,
-                    pl: 2.5,
-                    borderLeft: `2px solid rgba(0,0,0,0.1)`,
-                    ml: 1.2,
-                    color: "text.disabled",
-                  }}
-                >
+                <div className="mt-1.5 pl-3 ml-1 border-l-2 border-gray-200 text-gray-500 text-xs">
                   <Markdown
                     content={reasoning}
                     fontSize={fontSize * 0.85}
                     fontFamily={fontFamily}
                     parentRef={scrollRef as React.RefObject<HTMLDivElement>}
                   />
-                </Box>
+                </div>
               )}
-            </Box>
+            </div>
           )}
 
+          {/* Editing UI & Markdown Content */}
           {isEditing ? (
-            <Box sx={{ width: "100%" }}>
-              <TextField
-                fullWidth
-                multiline
-                variant="outlined"
+            <div className="w-full">
+              <textarea
                 value={editedText}
                 onChange={(e) => setEditedText(e.target.value)}
                 onKeyDown={(e) => {
@@ -691,44 +492,32 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                     handleCancelClick();
                   }
                 }}
-                sx={{ marginBottom: 1 }}
+                className="w-full p-2 border border-gray-300 rounded-md resize-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
+                rows={3}
               />
-              <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
-                <Button
-                  variant="outlined"
-                  size="small"
+              <div className="flex justify-end gap-2 mt-2">
+                <button
                   onClick={handleCancelClick}
-                  startIcon={<CancelIcon />}
+                  className="px-3 py-1.5 text-xs md:text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center gap-1"
                 >
-                  {Locale.UI.Cancel}
-                </Button>
-                <Button
-                  variant="contained"
-                  size="small"
+                  <CancelIconPlaceholder /> {Locale.UI.Cancel}
+                </button>
+                <button
                   onClick={handleSendClick}
                   disabled={editedText.trim() === "" || isChatLoading}
-                  startIcon={<SendIcon />}
+                  className="px-3 py-1.5 text-xs md:text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300 flex items-center gap-1"
                 >
-                  {Locale.UI.Confirm}
-                </Button>
-              </Box>
-            </Box>
+                  <SendIconPlaceholder /> {Locale.UI.Confirm}
+                </button>
+              </div>
+            </div>
           ) : (
             <>
-              {(content ||
-                currentImageUrls.length > 0 ||
-                (streaming && !isUser && !showReasoning)) && (
+              {(getTextContent(content) || getImageUrls(content).length > 0 || (streaming && !isUser && !showReasoning)) && (
                 <Markdown
-                  key={`${messageId}-${streaming ? "streaming" : "done"}-${
-                    isReasoning ? "reasoning" : "content"
-                  }`}
-                  content={content as string}
-                  loading={
-                    streaming &&
-                    !isUser &&
-                    content.length === 0 &&
-                    !isReasoning
-                  }
+                  key={`${messageId}-${streaming ? "streaming" : "done"}-${isReasoning ? "reasoning" : "content"}`}
+                  content={getTextContent(content) || (streaming ? " " : "")}
+                  loading={streaming && !isUser && getTextContent(content).length === 0 && !isReasoning}
                   fontSize={fontSize}
                   fontFamily={fontFamily}
                   parentRef={scrollRef as React.RefObject<HTMLDivElement>}
@@ -737,8 +526,14 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
               )}
             </>
           )}
-        </Box>
-      </Box>
+        </div>
+        {!isEditing && message.timestamp && (
+            <div className={clsx("text-xs opacity-60 whitespace-nowrap pt-0.5 w-full box-border",
+                isUser ? "text-right pr-1" : "text-left pl-12 md:pl-16")}>
+                {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </div>
+        )}
+      </div>
     </div>
   );
 });

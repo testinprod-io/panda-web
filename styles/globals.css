@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-// Reset and base styles
+/* Reset and base styles */
 * {
   margin: 0;
   padding: 0;
@@ -19,7 +19,7 @@ body {
   color: $text-primary;
 }
 
-// Utility classes
+/* Utility classes */
 .container {
   max-width: $container-max-width;
   margin: 0 auto;
@@ -30,4 +30,4 @@ body {
   @include truncate;
 }
 
-// Add more global styles as needed 
+/* Add more global styles as needed */

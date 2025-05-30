@@ -18,25 +18,34 @@ import { useSnackbar } from "@/providers/snackbar-provider";
 import { ChatControllerPool } from "@/client/controller";
 
 import { ActionButton } from "@/components/ui/action-button";
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 
-import ArrowUpwardRoundedIcon from '@mui/icons-material/ArrowUpwardRounded';
-import StopRoundedIcon from '@mui/icons-material/StopRounded';
-import Button from '@mui/material/Button';
-import styles from "@/components/chat/chat.module.scss";
+// MUI Imports & SCSS removed/commented
+// import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+// import ArrowUpwardRoundedIcon from '@mui/icons-material/ArrowUpwardRounded';
+// import StopRoundedIcon from '@mui/icons-material/StopRounded';
+// import Button from '@mui/material/Button';
+// import styles from "@/components/chat/chat.module.scss";
+// import CloseIcon from '@mui/icons-material/Close';
+
 import { UUID } from "crypto";
-import CloseIcon from '@mui/icons-material/Close';
 import { useApiClient } from "@/providers/api-client-provider";
 import { useChatActions } from "@/hooks/use-chat-actions";
-// Helper component for the generic file icon
 import { SessionState, SubmittedFile } from "@/types/session";
 import { EncryptionService } from "@/services/EncryptionService";
 
+// Icon Placeholders
+const IconPlaceholder = ({ name, className }: { name: string, className?: string }) => <span className={clsx("inline-block text-xs p-1 border rounded", className)}>[{name}]</span>;
+const DeleteOutlineIconPlaceholder = () => <IconPlaceholder name="Del" />;
+const ArrowUpwardRoundedIconPlaceholder = () => <IconPlaceholder name="^" />;
+const StopRoundedIconPlaceholder = () => <IconPlaceholder name="Stop" />;
+const CloseIconPlaceholder = () => <IconPlaceholder name="X" />;
+
+// Existing GenericFileIcon (ensure its styles are self-contained or Tailwind-based)
 const GenericFileIcon = () => (
-  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="32" height="32" rx="5.33333" fill="none"/>
-    <path d="M21.3333 24H10.6666C9.92778 24 9.33325 23.4055 9.33325 22.6667V9.33333C9.33325 8.5945 9.92778 8 10.6666 8H16L22.6666 12.6667V22.6667C22.6666 23.4055 22.0721 24 21.3333 24Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M22.6666 12.6667H17.3333C16.5944 12.6667 16 12.0722 16 11.3333V8" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white">
+    <rect width="32" height="32" rx="5.33333" fill="currentColor" opacity="0.1"/>
+    <path d="M21.3333 24H10.6666C9.92778 24 9.33325 23.4055 9.33325 22.6667V9.33333C9.33325 8.5945 9.92778 8 10.6666 8H16L22.6666 12.6667V22.6667C22.6666 23.4055 22.0721 24 21.3333 24Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M22.6666 12.6667H17.3333C16.5944 12.6667 16 12.0722 16 11.3333V8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
@@ -259,7 +268,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
       isProvisionalSessionCommittedRef.current = false;
       setActiveSessionId(propSessionId);
     }
-  }, [propSessionId]);
+  }, [propSessionId, activeSessionId, chatActions]);
 
   useEffect(() => {
     if (activeSessionId) {
@@ -296,7 +305,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
       provisionalSessionIdRef.current = null;
       isProvisionalSessionCommittedRef.current = false;
     }
-  }, [activeSessionId]);
+  }, [activeSessionId, chatActions]);
 
   useEffect(() => {
     console.log('[EFFECT:attachedFiles changed]', JSON.stringify(attachedFiles.map(f => ({ clientId: f.clientId, name: f.name, status: f.uploadStatus, fileId: f.fileId, progress: f.uploadProgress, type: f.type, size: f.size })), null, 2));
@@ -505,7 +514,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
         showSnackbar(errorMessage, 'error');
       });
     }
-  }, [apiClient, attachedFiles, modelConfig, showSnackbar, activeSessionId, getAccessToken]);
+  }, [apiClient, attachedFiles, modelConfig, showSnackbar, activeSessionId, getAccessToken, chatActions]);
 
   const doSubmit = () => {
     console.log('[doSubmit] Called. isLoading:', isLoading, 'isUploadingFiles:', isUploadingFiles, 'activeSessionId:', activeSessionId);
@@ -628,97 +637,118 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   }, [activeSessionId, apiClient]);
 
   return (
-    <div className={styles["chat-input-panel"]} ref={ref}>
+    <div 
+      className="p-4 bg-white border border-gray-300 rounded-3xl shadow-lg flex flex-col gap-2.5 box-border relative bottom-0 z-10 w-[70%] mx-auto max-lg:w-[80%] max-md:w-[95%]"
+      ref={ref}
+    >
+      {/* Attached files preview */}
       {attachedFiles.length > 0 && (
-        <div className={styles["attach-files-preview"]}>
+        <div className="flex gap-2.5 flex-wrap mb-2.5">
           {attachedFiles.map((file) => {
             const isImage = file.type.startsWith("image/");
             const fileTypeDisplay = file.type.split('/')[1]?.toUpperCase() || 'File';
-            console.log(`[Render SVG] ClientID: ${file.clientId}, Progress: ${file.uploadProgress}`);
+            
+            // Base styling for a file item
+            const fileItemBaseClass = "relative flex items-center justify-center overflow-hidden rounded-lg border";
 
-            return (
-              <div
-                key={file.clientId}
-                className={clsx(
-                  styles["attach-file-item"],
-                  isImage ? styles["attach-file-item-image"] : styles["attach-file-item-doc"]
-                )}
-                style={isImage ? { backgroundImage: `url(${file.previewUrl})` } : {}}
-              >
-                {file.uploadStatus === 'uploading' && (
-                  <div className={styles["file-status-overlay"]}>
-                    <svg viewBox="0 0 36 36" className={styles.circularProgressSvg}>
-                      <path
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                        fill="none"
-                        stroke="rgba(255, 255, 255, 0.325)"
-                        strokeWidth="2.5"
-                      />
-                      <path
-                        strokeDasharray="100"
-                        style={{
-                          strokeDashoffset: 100 * (1 - (file.uploadProgress || 0) / 100),
-                          transform: 'rotate(-90deg)',
-                          transformOrigin: 'center',
-                        }}
-                        stroke="#ffffff"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                        fill="none"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </div>
-                )}
-                {file.uploadStatus === 'error' && (
-                  <div className={styles["file-status-overlay"]}>
-                    Error {/* Simple error text, can be an icon too */}
-                  </div>
-                )}
-                
-                {isImage ? (
-                  <div className={styles["attach-file-mask-image"]}>
-                    <ActionButton
-                      icon={<img src="/icons/delete.svg" width={16} height={16} style={{ filter: "invert(100%) sepia(0%) saturate(7500%) hue-rotate(257deg) brightness(113%) contrast(103%)" }} alt="Delete attached image" />}
-                      onClick={() => handleRemoveFile(file)}
-                      className={styles.deleteImageActionButton}
-                      ariaLabel="Delete attached image"
-                      title="Delete image"
-                    />
-                  </div>
-                ) : (
-                  <>
-                    <div className={styles["doc-file-icon-bg"]}>
-                      <GenericFileIcon />
+            if (isImage) {
+              return (
+                <div
+                  key={file.clientId}
+                  className={clsx(
+                    fileItemBaseClass,
+                    "w-20 h-20 bg-gray-100 border-gray-300 group"
+                  )}
+                  style={{ backgroundImage: `url(${file.previewUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                >
+                  {/* Status Overlay for uploading/error */}
+                  {(file.uploadStatus === 'uploading' || file.uploadStatus === 'error') && (
+                    <div className="absolute inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center text-white p-1">
+                      {file.uploadStatus === 'uploading' ? (
+                        <>
+                          <div 
+                            className="w-6 h-6 animate-spin rounded-full border-2 border-white border-t-transparent"
+                            style={{ strokeDasharray: "100", strokeDashoffset: 100 * (1 - (file.uploadProgress || 0) / 100) }}
+                          ></div>
+                          <span className="text-xs mt-1">{`${Math.round(file.uploadProgress || 0)}%`}</span>
+                        </>
+                      ) : (
+                        <span className="text-xs text-red-400">(Error)</span>
+                      )}
                     </div>
-                    <div className={styles["doc-file-info"]}>
-                      <div className={styles["doc-file-name"]}>{file.name}</div>
-                      <div className={styles["doc-file-type"]}>{fileTypeDisplay}</div>
+                  )}
+                  {/* Delete button on hover - for successfully uploaded or pending images */}
+                  {(file.uploadStatus === 'success' || file.uploadStatus === 'pending') && (
+                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-opacity duration-200 flex justify-end items-start p-1">
+                        <ActionButton
+                        icon={<img src="/icons/delete.svg" width={16} height={16} style={{ filter: "invert(100%) sepia(0%) saturate(7500%) hue-rotate(257deg) brightness(113%) contrast(103%)" }} alt="Delete" />}
+                        onClick={() => handleRemoveFile(file)}
+                        className="w-5 h-5 p-0.5 bg-black bg-opacity-50 hover:bg-opacity-75 rounded-full text-white"
+                        ariaLabel="Delete attached image"
+                        title="Delete image"
+                        />
                     </div>
+                  )}
+                </div>
+              );
+            } else {
+              // Document file item (.attach-file-item-doc)
+              return (
+                <div
+                  key={file.clientId}
+                  className={clsx(
+                    fileItemBaseClass,
+                    "p-3 bg-white border-gray-300 gap-2 items-start w-auto min-w-[200px] max-w-xs h-[80px] justify-start group"
+                  )}
+                >
+                  {/* Status Overlay for uploading/error */}
+                  {(file.uploadStatus === 'uploading' || file.uploadStatus === 'error') && (
+                    <div className="absolute inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center text-white p-1 rounded-lg">
+                       {file.uploadStatus === 'uploading' ? (
+                        <>
+                          <div 
+                            className="w-6 h-6 animate-spin rounded-full border-2 border-white border-t-transparent"
+                            style={{ strokeDasharray: "100", strokeDashoffset: 100 * (1 - (file.uploadProgress || 0) / 100) }}
+                          ></div>
+                           <span className="text-xs mt-1">{`${Math.round(file.uploadProgress || 0)}%`}</span>
+                        </>
+                      ) : (
+                        <span className="text-xs text-red-400">(Error)</span>
+                      )}
+                    </div>
+                  )}
+                  {/* Icon background */}
+                  <div className="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center shrink-0">
+                    <GenericFileIconPlaceholder />
+                  </div>
+                  {/* File Info */}
+                  <div className="flex-grow flex flex-col justify-center gap-0.5 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 whitespace-nowrap overflow-hidden text-ellipsis">{file.name}</p>
+                    <p className="text-xs text-gray-500">{fileTypeDisplay}</p>
+                  </div>
+                  {/* Delete Button for Docs */}
+                  {(file.uploadStatus === 'success' || file.uploadStatus === 'pending') && (
                     <button
-                      className={styles["doc-file-delete-button"]}
-                      onClick={() => handleRemoveFile(file)}
-                      aria-label="Remove file"
+                        onClick={() => handleRemoveFile(file)}
+                        aria-label="Remove file"
+                        className="p-0.5 w-4 h-4 text-gray-500 hover:text-gray-800 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                     >
-                      <CloseIcon sx={{ fontSize: 14 }} />
+                        <CloseIconPlaceholder />
                     </button>
-                  </>
-                )}
-              </div>
-            );
+                  )}
+                </div>
+              );
+            }
           })}
         </div>
       )}
 
-      <div className={styles["chat-input-main-area"]}>
-        <label
-          htmlFor="chat-input"
-          className={styles["chat-input-label"]}
-        >
+      <div className="self-stretch flex items-center gap-2 min-h-[32px]">
+        <label htmlFor="chat-input" className="flex flex-grow items-center">
           <textarea
             id="chat-input"
             ref={inputRef}
-            className={styles["chat-input"]}
+            className="flex-1 w-full min-w-[calc(80vw-12rem)] md:min-w-[calc(60rem-12rem)] border-none bg-transparent outline-none text-base font-inter text-gray-800 resize-none p-0 min-h-[32px] max-h-[200px] leading-8 placeholder-gray-400 disabled:bg-gray-100"
             placeholder={authenticated ? Locale.Chat.Input(submitKey) : "Please login to chat"}
             onInput={(e) => setUserInput(e.currentTarget.value)}
             value={userInput}
@@ -734,46 +764,57 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
         </label>
       </div>
 
-      <div className={styles["chat-input-controls-row"]}>
-        <div className={styles["chat-input-controls-left"]}>
-          <button
-            onClick={uploadFile}
-            disabled={!isVisionModel(modelConfig)}
-            className={styles["chat-input-action-plus-new"]}
+      {/* Controls Row */}
+      <div className="self-stretch flex justify-between items-center">
+        <div className="flex items-center gap-1.5">
+          {/* Plus (Upload) Button */}
+          <button 
+            onClick={uploadFile} 
+            disabled={!isVisionModel(modelConfig)} 
+            className={clsx(
+                "w-8 h-8 p-0 rounded-full border border-gray-300 flex items-center justify-center",
+                "text-gray-500 bg-transparent hover:bg-gray-50 hover:border-gray-400",
+                "disabled:bg-gray-100 disabled:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            )}
             aria-label={Locale.Chat.InputActions.UploadImage}
           >
-            <img 
-              src="/icons/plus.svg" 
-              alt={Locale.Chat.InputActions.UploadImage} 
-              style={{ width: '16px', height: '16px' }} 
-            />
+            <img src="/icons/plus.svg" alt="Upload" className="w-4 h-4" />
           </button>
-          <button
-            onClick={() => setEnableSearch(!enableSearch)}
+          {/* Search Button */}
+          <button 
+            onClick={() => setEnableSearch(!enableSearch)} 
             className={clsx(
-              styles["chat-input-action-search-new"],
-              { [styles.active]: enableSearch }
+                "h-8 px-3 rounded-full border border-gray-300 flex items-center justify-center gap-1.5 text-sm",
+                "bg-transparent cursor-pointer text-gray-600 hover:bg-gray-50 hover:border-gray-400",
+                "disabled:bg-gray-100 disabled:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed",
+                enableSearch && "bg-lime-400 border-lime-500 text-green-900 hover:bg-lime-500",
+                "md:w-auto w-8 md:px-3 px-0"
             )}
-            // disabled={isLoading || isUploadingFiles}
             aria-pressed={enableSearch}
             aria-label={enableSearch ? "Disable web search" : "Enable web search"}
           >
-            <span className={styles['search-button-icon']}>
-              <img src="/icons/search.svg" alt="Search" style={{ width: '16px', height: '16px' }} />
+            <span className="flex items-center">
+              <img src="/icons/search.svg" alt="Search" className="w-4 h-4" />
             </span>
-            <span className={styles['search-button-text']}>Search</span>
+            <span className="hidden md:inline">Search</span>
           </button>
         </div>
-        <div className={styles["chat-input-controls-right"]}>
-          <Button
-            className={styles["chat-input-send-new"]}
-            variant="contained"
+        <div className="flex items-center">
+          {/* Send/Stop Button */}
+          <button 
+            className={clsx(
+                "w-10 h-10 p-0 rounded-full flex items-center justify-center shadow-none",
+                isLoading 
+                    ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                    : "bg-black text-white hover:bg-gray-800",
+                (!authenticated || isUploadingFiles) && "bg-gray-300 text-gray-500 cursor-not-allowed opacity-70"
+            )}
             onClick={isLoading ? stopGeneration : doSubmit}
-            disabled={!authenticated|| isUploadingFiles }
+            disabled={!authenticated || isUploadingFiles}
             aria-label={isLoading ? Locale.Chat.InputActions.Stop : Locale.Chat.Send}
           >
-            {isLoading ? <StopRoundedIcon /> : <ArrowUpwardRoundedIcon />}
-          </Button>
+            {isLoading ? <StopRoundedIconPlaceholder /> : <ArrowUpwardRoundedIconPlaceholder />}
+          </button>
         </div>
       </div>
     </div>
