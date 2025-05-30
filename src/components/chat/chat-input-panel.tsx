@@ -30,6 +30,7 @@ import { useApiClient } from "@/providers/api-client-provider";
 import { useChatActions } from "@/hooks/use-chat-actions";
 // Helper component for the generic file icon
 import { SessionState, SubmittedFile } from "@/types/session";
+import { EncryptionService } from "@/services/EncryptionService";
 
 const GenericFileIcon = () => (
   <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -452,10 +453,13 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
     for (const clientFile of newClientFiles) {
       setAttachedFiles(prev => prev.map(f => f.clientId === clientFile.clientId ? { ...f, uploadStatus: 'uploading' as const } : f));
 
+      const encryptedFile = await EncryptionService.encryptFile(clientFile.originalFile);
+
       const uploadPromise = apiClient.app.uploadFile(
         currentSessionIdToUse!,
-        clientFile.originalFile,
+        encryptedFile,
         clientFile.name,
+        clientFile.size,
         (progress) => {
           console.log(`[Upload Progress] ClientID: ${clientFile.clientId}, Progress: ${progress}%`);
           setAttachedFiles(prev =>

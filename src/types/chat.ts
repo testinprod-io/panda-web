@@ -3,6 +3,7 @@ import { ModelType } from '../store/config';
 import { nanoid } from 'nanoid';
 import { MultimodalContent } from "@/client/api";
 import { UUID } from "crypto";
+import { FileInfo } from '@/client/types';
 
 export enum Role {
   USER = 'user',
@@ -67,7 +68,7 @@ export type ChatMessage = Omit<RequestMessage, 'content'> & { // Omit original c
   content: string; // Allow MultimodalContent[]
   visibleContent: string;
   attachments?: MultimodalContent[];
-  fileIds: string[];  
+  files: FileInfo[];  
   date: Date;
   streaming: boolean;
   isError: boolean;
@@ -130,7 +131,7 @@ export function createMessage(override: Partial<ChatMessage>): ChatMessage { // 
    id: crypto.randomUUID() as UUID,
    date: new Date(),
    role: Role.USER, 
-   fileIds: [],
+   files: [],
    streaming: false,
    isError: false,
    syncState: MessageSyncState.PENDING_CREATE,

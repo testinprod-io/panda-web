@@ -6,6 +6,7 @@ import { ChatMessage, RequestMessage } from "@/types";
 import { copyToClipboard } from "@/utils/utils"; // Adjust path
 import Locale from "@/locales"; // Adjust path
 import { MultimodalContent } from "@/client/api";
+import { EncryptionService } from "@/services/EncryptionService";
 
 import { ActionButton } from "@/components/ui/action-button";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
@@ -58,7 +59,7 @@ interface ChatMessageCellProps {
 interface LoadedFile {
   id: UUID;
   name: string;
-  type: "image" | "pdf" | "other";
+  type: string;
   url: string;
   isLoading: boolean;
   error?: string;
@@ -81,7 +82,7 @@ function getTextContent(
 function getFileUrls(
   message: ChatMessage,
 ): string[] {
-  return message.fileIds
+  return message.files.map((file) => file.file_id);
 }
 
 function getImageUrls(
@@ -123,7 +124,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     onEditSubmit,
   } = props;
 
-  const { role, streaming, isError, isReasoning, fileIds, visibleContent: content, visibleReasoning: reasoning } =
+  const { role, streaming, isError, isReasoning, files, visibleContent: content, visibleReasoning: reasoning } =
     message;
   const { wallets } = useWallets();
 
@@ -151,7 +152,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
   const apiClient = useApiClient();
 
   useEffect(() => {
-    if (!fileIds || fileIds.length === 0) {
+    if (!files || files.length === 0) {
       setLoadedFiles([]);
       return;
     }
@@ -159,28 +160,28 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     const fetchFiles = async () => {
       // Initialize files with loading state
       setLoadedFiles(
-        fileIds.map((id) => ({
-          id: id as UUID,
-          name: "Loading...",
-          type: "other", // Default, will be updated
+        files.map((file) => ({
+          id: file.file_id as UUID,
+          name: file.file_name,
+          type: file.file_type as "image" | "pdf" | "other",
           url: "",
           isLoading: true,
           originalType: "",
         }))
       );
-
+      console.log(`[chat-message-cell] files:`, files);
       const newLoadedFiles: LoadedFile[] = [];
 
-      for (const fileId of fileIds) {
+      for (const file of files) {
         try {
-          const response = await apiClient.app.getFile(sessionId, fileId as UUID);
+          const response = await apiClient.app.getFile(sessionId, file.file_id as UUID);
           if (!response) {
             throw new Error("File response is undefined");
           }
 
           const contentType = response.headers.get("Content-Type") || "application/octet-stream";
           const contentDisposition = response.headers.get("Content-Disposition");
-          let fileName = `file_${fileId}`; // Default filename
+          let fileName = file.file_name; // Default filename
 
           if (contentDisposition) {
             const match = contentDisposition.match(/filename="?([^"]+)"?/i);
@@ -203,17 +204,32 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
             }
           }
           const blob = new Blob(chunks, { type: contentType });
-          const url = URL.createObjectURL(blob);
+          let fileToProcess = new File([blob], fileName, { type: contentType });
 
-          let fileType: "image" | "pdf" | "other" = "other";
-          if (contentType.startsWith("image/")) {
-            fileType = "image";
-          } else if (contentType === "application/pdf") {
-            fileType = "pdf";
+          if (EncryptionService.isKeySet()) {
+            try {
+              fileToProcess = await EncryptionService.decryptFile(fileToProcess);
+            } catch (decryptionError) {
+              console.error("Error decrypting file:", file.file_id, decryptionError);
+              newLoadedFiles.push({
+                id: file.file_id as UUID,
+                name: fileName,
+                type: "other", // Or a specific error type
+                url: "",
+                isLoading: false,
+                error: "Decryption failed",
+                originalType: contentType,
+              });
+              continue; // Skip to the next file
+            }
           }
 
+          const url = URL.createObjectURL(fileToProcess);
+
+          const fileType = file.file_type as "image" | "pdf" | "other";
+
           newLoadedFiles.push({
-            id: fileId as UUID,
+            id: file.file_id as UUID,
             name: fileName,
             type: fileType,
             url: url,
@@ -221,9 +237,9 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
             originalType: contentType,
           });
         } catch (error) {
-          console.error("Error fetching file:", fileId, error);
+          console.error("Error fetching file:", file.file_id, error);
           newLoadedFiles.push({
-            id: fileId as UUID,
+            id: file.file_id as UUID,
             name: "Error loading file",
             type: "other",
             url: "",
@@ -247,7 +263,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
       });
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps 
-  }, [fileIds, sessionId, apiClient]); // Ensure apiClient is stable or memoized if it comes from context
+  }, [files, sessionId, apiClient]); // Ensure apiClient is stable or memoized if it comes from context
 
   // Ref to store the previous value of message.isReasoning
   const prevIsReasoningRef = React.useRef(message.isReasoning);
@@ -482,6 +498,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                   </Box>
                 );
               }
+              console.log(`[chat-message-cell] file:`, file);
               if (file.type === "image") {
                 return (
                   <a 

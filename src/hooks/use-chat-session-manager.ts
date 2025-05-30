@@ -14,7 +14,7 @@ import { ModelConfig } from '@/types/constant';
 import { ChatControllerPool } from "@/client/controller";
 import { useChatStore } from '@/store/chat'; // Corrected import
 import { ChatSession, SessionState } from '@/types/session'; // Added import for ChatSession
-import { Summary } from "@/client/types"; // Import Summary type
+import { FileInfo, Summary } from "@/client/types"; // Import Summary type
 import { useEncryption } from "@/providers/encryption-provider";
 import { EncryptionService } from "@/services/EncryptionService";
 
@@ -484,28 +484,28 @@ export function useChatSessionManager(
       }
 
       let messageContent = sessionState.userInput;
-      const files = sessionState.persistedAttachedFiles;
+      const attachedFiles = sessionState.persistedAttachedFiles;
       let attachments: MultimodalContent[] = [];
-      let fileIds: string[] = [];
+      let files: FileInfo[] = [];
       
-      if (files && files.length > 0) {
-        for (const file of files) {
-          console.log(`[useChatSessionManager] Adding file to message:`, file);
-          console.log(`[useChatSessionManager] File type:`, file.type);
-          if (file.type.startsWith("image/")) {
+      if (attachedFiles && attachedFiles.length > 0) {
+        for (const attachedFile of attachedFiles) {
+          console.log(`[useChatSessionManager] Adding file to message:`, attachedFile);
+          console.log(`[useChatSessionManager] File type:`, attachedFile.type);
+          if (attachedFile.type.startsWith("image/")) {
             // Assuming Panda API format based on user request
             attachments.push({ 
               type: "image_url", 
-              image_url: { url: file.url } // file.url is already the base64 data URI
+              image_url: { url: attachedFile.url } // file.url is already the base64 data URI
             });
-            fileIds.push(file.fileId);
-          } else if (file.type.startsWith("application/pdf")) {
+            files.push({file_id: attachedFile.fileId, file_name: attachedFile.name, file_type: attachedFile.type, file_size: attachedFile.size});
+          } else if (attachedFile.type.startsWith("application/pdf")) {
             // Assuming Panda API format based on user request
             attachments.push({ 
               type: "pdf_url", 
-              pdf_url: { url: file.url } // file.url is already the base64 data URI
+              pdf_url: { url: attachedFile.url } // file.url is already the base64 data URI
             });
-            fileIds.push(file.fileId);
+            files.push({file_id: attachedFile.fileId, file_name: attachedFile.name, file_type: attachedFile.type, file_size: attachedFile.size});
           } else {
             // For other file types, we might send a link or just text representation
             // For now, let's add a text representation as requested for the payload structure
@@ -513,7 +513,7 @@ export function useChatSessionManager(
             // The user payload showed image_url, not a generic file_url. 
             // For now, we will only include image files in the structured content for Panda.
             // Non-image files will be ignored for the multimodal content part.
-            console.warn(`File ${file.name} is not an image and will be ignored for Panda API multimodal content.`);
+            console.warn(`File ${attachedFile.name} is not an image and will be ignored for Panda API multimodal content.`);
           }
         }
       }
@@ -525,7 +525,7 @@ export function useChatSessionManager(
         visibleContent: messageContent,
         attachments: attachments,
         syncState: MessageSyncState.PENDING_CREATE,
-        fileIds: fileIds,
+        files: files,
         useSearch: sessionState.enableSearch,
       });
       if (!userMessage) {

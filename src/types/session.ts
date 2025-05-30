@@ -65,7 +65,7 @@ export interface ChatSession {
 
 export interface SubmittedFile {
   url: string;
-  fileId: string;
+  fileId: UUID;
   type: string;
   name: string;
   size: number;

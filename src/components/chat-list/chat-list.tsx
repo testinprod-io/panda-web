@@ -88,7 +88,6 @@ interface ChatListProps {
 
 export function ChatList(props: ChatListProps) {
   // Local state for sessions and pagination
-  const [localSessions, setLocalSessions] = useState<ChatSession[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [isInitialLoading, setIsInitialLoading] = useState<boolean>(false);
@@ -97,9 +96,10 @@ export function ChatList(props: ChatListProps) {
 
   // Get actions and store state needed for selection/deletion
   const { deleteSession, selectSession, updateConversation, loadSessionsFromServer } = useChatActions();
-  const { currentSessionIndex, setCurrentSessionIndex } = useChatStore(); // For highlighting selected item
-  const store = useChatStore(); // For setCurrentSessionIndex
-  const currentSessionFromStore = store.currentSession(); // Get the full current session object
+  const store = useChatStore(); // Use the store directly
+  const sessionsFromStore = store.sessions;
+  const currentSessionFromStore = store.currentSession();
+  const setCurrentSessionIndex = store.setCurrentSessionIndex;
 
   const router = useRouter();
   
@@ -128,27 +128,15 @@ export function ChatList(props: ChatListProps) {
 
     try {
       // Add random backoff delay, but not for the very first initial load if desired (optional)
-      if (currentCursor !== undefined || localSessions.length > 0) { // Apply delay for pagination or subsequent loads
+      if (currentCursor !== undefined || sessionsFromStore.length > 0) { // Apply delay for pagination or subsequent loads
         const randomDelay = Math.floor(Math.random() * (1500 - 1000 + 1)) + 1000; // Delay between 1000ms and 1500ms
         console.log(`[ChatList] Adding random delay: ${randomDelay}ms`);
         await sleep(randomDelay);
       }
 
+      // loadSessionsFromServer is expected to update the store internally
       const result = await loadSessionsFromServer({ cursor: currentCursor, limit: currentLimit });
       if (result) {
-        setLocalSessions(prevSessions => {
-          const newSessions = result.sessions;
-          if (currentCursor) { // Appending for pagination if cursor was provided
-            const existingIds = new Set(prevSessions.map(s => s.id));
-            const uniqueNewSessions = newSessions.filter(s => !existingIds.has(s.id));
-            if (uniqueNewSessions.length < newSessions.length) {
-                console.warn("[ChatList] Filtered out duplicate sessions received from server.");
-            }
-            return [...prevSessions, ...uniqueNewSessions];
-          } else { // Initial load or refresh, replace
-            return newSessions;
-          }
-        });
         setNextCursor(result.nextCursor);
         setHasMore(result.hasMore);
       }
@@ -161,15 +149,15 @@ export function ChatList(props: ChatListProps) {
         setIsInitialLoading(false);
       }
     }
-  }, [loadSessionsFromServer, hasMore, isPagingLoading, localSessions.length]); 
+  }, [loadSessionsFromServer, hasMore, isPagingLoading, sessionsFromStore, store]); // Added store for sessionsFromStore dependency & stability of store methods
 
   // Initial load
   useEffect(() => {
-    if (localSessions.length === 0 && hasMore && !isInitialLoading) { 
+    if (sessionsFromStore.length === 0 && hasMore && !isInitialLoading) { 
       console.log("[ChatList] Triggering initial load (limit 20 by user change).");
       loadMoreSessions({ limit: 20 });
     }
-  }, [loadMoreSessions, localSessions.length, hasMore, isInitialLoading]);
+  }, [loadMoreSessions, sessionsFromStore.length, hasMore, isInitialLoading]); // Use sessionsFromStore.length
 
   // Infinite scroll observer
   useEffect(() => {
@@ -208,7 +196,7 @@ export function ChatList(props: ChatListProps) {
       }
     };
 
-    const shouldCalculateAndListen = (isInitialLoading && localSessions.length === 0) || isPagingLoading;
+    const shouldCalculateAndListen = (isInitialLoading && sessionsFromStore.length === 0) || isPagingLoading;
 
     if (shouldCalculateAndListen) {
       calculateHeight(); 
@@ -217,55 +205,58 @@ export function ChatList(props: ChatListProps) {
         window.removeEventListener('resize', calculateHeight);
       };
     }
-  }, [isInitialLoading, isPagingLoading, localSessions.length]);
+  }, [isInitialLoading, isPagingLoading, sessionsFromStore.length]); // Use sessionsFromStore.length
 
   // Optimistically add/update current session in the list
   useEffect(() => {
     if (currentSessionFromStore) {
-      const sessionInLocalList = localSessions.find(s => s.id === currentSessionFromStore.id);
+      const sessionInStoreList = sessionsFromStore.find(s => s.id === currentSessionFromStore.id);
 
-      if (!sessionInLocalList) {
+      if (!sessionInStoreList) {
         // Optimistically add if it's a new session to the list (e.g. after creation)
-        setLocalSessions(prevSessions => {
-          // Defensive check to prevent duplicates if it was somehow added concurrently
-          if (prevSessions.some(s => s.id === currentSessionFromStore.id)) {
-            return prevSessions;
-          }
-          // Prepend the new session, removing any potential (older) duplicates of it further down.
-          const filteredPrevSessions = prevSessions.filter(s => s.id !== currentSessionFromStore.id);
-          return [currentSessionFromStore, ...filteredPrevSessions];
-        });
+        // Defensive check to prevent duplicates if it was somehow added concurrently
+        // store.addSession handles prepending and ensuring uniqueness if ID matches.
+        // However, currentSessionFromStore itself might be a new object not yet in store.sessions
+        // Let's assume currentSessionFromStore is the "freshest" if it's not in the list by ID.
+        if (!sessionsFromStore.some(s => s.id === currentSessionFromStore.id)) {
+             store.addSession(currentSessionFromStore);
+        }
+
       } else {
-        // If the session is already in localSessions, ensure we have the latest version from the store.
+        // If the session is already in store.sessions, ensure we have the latest version from the store.
         // This handles updates to the session (e.g., topic change by generateSessionTitle).
         // We update if the object reference itself has changed, implying an update in the store.
-        if (sessionInLocalList !== currentSessionFromStore) {
-          setLocalSessions(prevSessions =>
-            prevSessions.map(s => {
-              if (s.id === currentSessionFromStore.id) {
-                const storeSession = currentSessionFromStore;
-                const localSessionCandidate = s; // This 's' is from prevSessions
+        if (sessionInStoreList !== currentSessionFromStore) { // Object reference check
+          store.updateTargetSession({ id: currentSessionFromStore.id }, session => {
+            // Apply the same merging logic for lastUpdate as before
+            const storeVersion = currentSessionFromStore; // This is the incoming "truth" from store.currentSession()
+            const existingVersionInList = sessionInStoreList; // This is session from store.sessions matching the ID
 
-                // If the local candidate (potentially our optimistic update) has a matching topic
-                // to the store version (confirming it's the same rename context) and its
-                // lastUpdate is newer, prefer the optimistic lastUpdate.
-                // This prevents the store sync from reverting our fresh optimistic timestamp.
-                if (localSessionCandidate.topic === storeSession.topic &&
-                    localSessionCandidate.lastUpdate > storeSession.lastUpdate) {
-                  return { ...storeSession, lastUpdate: localSessionCandidate.lastUpdate };
-                }
-                return storeSession; // Otherwise, take the store's version as is.
-              }
-              return s;
-            })
-          );
+            // If the existing session in the list (which updateTargetSession provides as `session`)
+            // has a matching topic to the currentSessionFromStore (confirming rename context)
+            // and its lastUpdate is newer, prefer the existing lastUpdate (from a potential earlier optimistic update).
+            // This comparison is subtle: currentSessionFromStore *is* the session from the store,
+            // so this logic might be simpler: just update with currentSessionFromStore.
+            // The original logic was to protect optimistic updates to `lastUpdate`.
+
+            // If an optimistic update in ChatList (e.g., rename) updated lastUpdate,
+            // and then the store syncs currentSessionFromStore, we want to keep the newer lastUpdate.
+            // `session` here is the one from `store.sessions` that `updateTargetSession` is about to modify.
+            if (session.topic === storeVersion.topic &&
+                session.lastUpdate > storeVersion.lastUpdate) {
+              // Preserve the newer lastUpdate from the list if topics match
+              Object.assign(session, { ...storeVersion, lastUpdate: session.lastUpdate });
+            } else {
+              // Otherwise, fully update with currentSessionFromStore's data
+              Object.assign(session, storeVersion);
+            }
+          });
         }
       }
     }
-    // localSessions is a dependency because we read from it (find) and map over it.
+    // sessionsFromStore is a dependency because we read from it (find) and map over it.
     // currentSessionFromStore is the primary trigger for this effect.
-    // setLocalSessions is stable and provided by useState.
-  }, [currentSessionFromStore, localSessions]); // setLocalSessions removed as per React guidelines for setters in deps
+  }, [currentSessionFromStore, sessionsFromStore, store]); // Added store for its methods (addSession, updateTargetSession)
 
   const handleSelectItem = (session: ChatSession) => {
     selectSession(session.id);
@@ -276,7 +267,7 @@ export function ChatList(props: ChatListProps) {
     if (window.confirm(Locale.Home.DeleteChat)) {
       const globallyCurrentSession = store.currentSession();
       const wasGloballyCurrent = globallyCurrentSession ? globallyCurrentSession.id === session.id : false;
-      const isLastSessionInList = localSessions.length === 1;
+      const isLastSessionInList = sessionsFromStore.length === 1; // Use sessionsFromStore
 
       if (wasGloballyCurrent || isLastSessionInList) {
         setCurrentSessionIndex(-1); // Set current session to none BEFORE navigating
@@ -284,14 +275,11 @@ export function ChatList(props: ChatListProps) {
 
         // Delay deletion operations if navigation occurred
         setTimeout(() => {
-          deleteSession(session.id);
-          setLocalSessions(prev => prev.filter(s => s.id !== session.id));
-          // setCurrentSessionIndex(-1); // This is already set before push, and covered by the else block or end of function for non-nav cases
+          deleteSession(session.id); // This action should update the store
         }, 1000); // 1-second delay
       } else {
         // If not navigating, delete immediately
-        deleteSession(session.id);
-        setLocalSessions(prev => prev.filter(s => s.id !== session.id));
+        deleteSession(session.id); // This action should update the store
         setCurrentSessionIndex(-1); // Reset index if no navigation happened
       }
     }
@@ -301,14 +289,12 @@ export function ChatList(props: ChatListProps) {
     const trimmedName = newName.trim();
     if (trimmedName && session.id) {
       const optimisticUpdateTime = Date.now();
-      // Optimistically update local state first for immediate re-sorting
-      setLocalSessions(prevSessions =>
-        prevSessions.map(s =>
-          s.id === session.id
-            ? { ...s, visibleTopic: trimmedName, topic: EncryptionService.encrypt(trimmedName), lastUpdate: optimisticUpdateTime }
-            : s
-        )
-      );
+      // Optimistically update store state first for immediate re-sorting
+      store.updateTargetSession({ id: session.id }, s => {
+        s.visibleTopic = trimmedName; // Assuming ChatSession type supports visibleTopic
+        s.topic = EncryptionService.encrypt(trimmedName);
+        s.lastUpdate = optimisticUpdateTime;
+      });
       // Then, call the actual update operation
       updateConversation(session.id, { title: EncryptionService.encrypt(trimmedName) });
     } else {
@@ -316,7 +302,7 @@ export function ChatList(props: ChatListProps) {
     }
   };
 
-  const groupedSessions = localSessions.reduce<GroupedSessions>((acc, session) => {
+  const groupedSessions = sessionsFromStore.reduce<GroupedSessions>((acc, session) => { // Use sessionsFromStore
     // Use `lastUpdate` which is a number (timestamp)
     const dateToGroup = session.lastUpdate; // Default to now if undefined for safety, though lastUpdate should exist
     const groupName = getRelativeDateGroup(dateToGroup);
@@ -349,7 +335,7 @@ export function ChatList(props: ChatListProps) {
     return 0;
   });
 
-  if (isInitialLoading && localSessions.length === 0) {
+  if (isInitialLoading && sessionsFromStore.length === 0) { // Use sessionsFromStore
     return <ChatListSkeleton targetHeight={skeletonContainerHeight} />;
   }
 
@@ -377,7 +363,7 @@ export function ChatList(props: ChatListProps) {
       ))}
       {hasMore && <div ref={observerRef} style={{ height: "1px", marginTop: "-1px" }} />} {/* Make observer target very small and unobtrusive */}
       {isPagingLoading && <ChatListSkeleton targetHeight={PAGING_SKELETON_TARGET_HEIGHT} />}
-      {!isInitialLoading && localSessions.length === 0 && !hasMore && (
+      {!isInitialLoading && sessionsFromStore.length === 0 && !hasMore && ( // Use sessionsFromStore
         <div className={styles["chat-date-header"]}>{"No conversations found"}</div>
       )}
     </div>

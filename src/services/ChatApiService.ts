@@ -146,7 +146,7 @@ export function mapApiMessageToChatMessage(message: ApiMessage): ChatMessage {
     role: message.sender_type,
     content: message.content,
     visibleContent: message.content,
-    fileIds: message.file_ids,
+    files: message.files,
     date: new Date(message.timestamp),
     reasoning: message.reasoning_content,
     reasoningTime: message.reasoning_time ? parseInt(message.reasoning_time) : undefined,

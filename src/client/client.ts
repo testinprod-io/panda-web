@@ -217,10 +217,13 @@ export class ApiClient {
     conversationId: UUID,
     file: File,
     fileName: string,
+    fileSize: number,
     onUploadProgress?: (progress: number) => void
   ): Promise<UploadFileResponse> {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('file_size', fileSize.toString());
+    formData.append('file_name', fileName);
 
     const xhr = new XMLHttpRequest();
     const abort = () => {

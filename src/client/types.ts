@@ -13,7 +13,7 @@ export interface Message {
   content: string;
   message_id: UUID;
   conversation_id: UUID;
-  file_ids: string[];
+  files: FileInfo[];
   timestamp: string; // ISO Date string
   reasoning_content?: string;
   reasoning_time?: string;
@@ -50,11 +50,18 @@ export interface ConversationUpdateRequest {
   title: string;
 }
 
+export interface FileInfo {
+  file_id: UUID;
+  file_name: string;
+  file_size: number;
+  file_type: string;
+}
+
 export interface MessageCreateRequest {
   sender_type: Role;
   message_id: UUID;
   content: string;
-  file_ids: string[];
+  files: FileInfo[];
   reasoning_content?: string;
   reasoning_time?: string;
   custom_data?: Record<string, any>;

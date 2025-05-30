@@ -14,6 +14,17 @@ function isLikelyBase64(str: string): boolean {
   return base64Regex.test(str);
 }
 
+// Helper function to convert WordArray to Uint8Array
+function wordArrayToUint8Array(wordArray: CryptoJS.lib.WordArray): Uint8Array {
+  const len = wordArray.sigBytes;
+  const result = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    const byte = (wordArray.words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
+    result[i] = byte;
+  }
+  return result;
+}
+
 export const EncryptionService = {
   /**
    * Generates a key and IV from a password
@@ -216,6 +227,74 @@ export const EncryptionService = {
       console.error("[EncryptionService] Decryption failed:", error);
       throw error;
     }
+  },
+
+  async encryptFile(file: File): Promise<File> {
+    if (!this.isKeySet()) {
+      throw new Error("Key not set");
+    }
+    
+    const currentInMemoryKey = inMemoryKey!; 
+    const currentInMemoryIv = inMemoryIv!;
+
+    try {
+      const data = await file.arrayBuffer();
+
+      const keyUint8Array = wordArrayToUint8Array(currentInMemoryKey);
+      const ivUint8Array = wordArrayToUint8Array(currentInMemoryIv);
+
+      // Import key for crypto.subtle API
+      const cryptoKey = await crypto.subtle.importKey(
+        "raw", // format
+        keyUint8Array, // keyData as Uint8Array (BufferSource)
+        { name: "AES-GCM", length: currentInMemoryKey.sigBytes * 8 }, // algorithm details, length in bits
+        false, // extractable
+        ["encrypt", "decrypt"] // key usages
+      );
+
+      // Encrypt data
+      const encryptedData = await crypto.subtle.encrypt(
+        {
+          name: "AES-GCM",
+          iv: ivUint8Array, // IV as Uint8Array (BufferSource)
+        },
+        cryptoKey, // the imported CryptoKey
+        data // data to encrypt (ArrayBuffer)
+      );
+
+      const encryptedFile = new File([encryptedData], file.name, { type: file.type });
+      return encryptedFile;
+    } catch (error) {
+      console.error("[EncryptionService] File encryption failed:", error);
+      throw new Error("File encryption failed");
+    }
+  },
+
+  async decryptFile(file: File): Promise<File> {
+    if (!this.isKeySet()) {
+      throw new Error("Key not set");
+    }
+    const data = new Uint8Array(await file.arrayBuffer());
+  
+    const keyUint8Array = wordArrayToUint8Array(inMemoryKey!);
+    const ivUint8Array = wordArrayToUint8Array(inMemoryIv!);
+
+    // Import key for crypto.subtle API
+    const cryptoKey = await crypto.subtle.importKey(
+      "raw", // format
+      keyUint8Array, // keyData as Uint8Array (BufferSource)
+      { name: "AES-GCM", length: inMemoryKey!.sigBytes * 8 }, // algorithm details, length in bits
+      false, // extractable
+      ["encrypt", "decrypt"] // key usages
+    );
+  
+    const decryptedBuffer = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: ivUint8Array },
+      cryptoKey,
+      data
+    );
+  
+    return new File([decryptedBuffer], file.name, { type: file.type });
   },
 
   encryptChatMessageContent(content: string): string {
