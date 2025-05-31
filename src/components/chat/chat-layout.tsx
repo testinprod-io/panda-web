@@ -171,6 +171,7 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
     return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress color="primary" /></Box>;
   }
 
+  console.log(`isChatComponentBusyFromStore || internalIsSubmitting: ${isChatComponentBusyFromStore} || ${internalIsSubmitting}`);
   return (
     <Box
       sx={{
@@ -300,7 +301,7 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
             sessionId={currentChatId}
             modelConfig={modelConfig}
             customizedPrompts={appConfig.customizedPrompts}
-            isLoading={isChatComponentBusyFromStore || internalIsSubmitting}
+            isLoading={internalIsSubmitting}
             hitBottom={hitBottomFromStore}
             onSubmit={handleLayoutSubmit}
             scrollToBottom={

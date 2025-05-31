@@ -501,14 +501,14 @@ export function useChatSessionManager(
               type: "image_url", 
               image_url: { url: attachedFile.url } // file.url is already the base64 data URI
             });
-            files.push({file_id: attachedFile.fileId, file_name: attachedFile.name, file_type: attachedFile.type, file_size: attachedFile.size});
+            files.push({file_id: attachedFile.fileId, file_name: attachedFile.name, file_type: "image", file_size: attachedFile.size});
           } else if (attachedFile.type.startsWith("application/pdf")) {
             // Assuming Panda API format based on user request
             attachments.push({ 
               type: "pdf_url", 
               pdf_url: { url: attachedFile.url } // file.url is already the base64 data URI
             });
-            files.push({file_id: attachedFile.fileId, file_name: attachedFile.name, file_type: attachedFile.type, file_size: attachedFile.size});
+            files.push({file_id: attachedFile.fileId, file_name: attachedFile.name, file_type: "pdf", file_size: attachedFile.size});
           } else {
             // For other file types, we might send a link or just text representation
             // For now, let's add a text representation as requested for the payload structure

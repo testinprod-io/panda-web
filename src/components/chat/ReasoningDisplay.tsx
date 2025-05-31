@@ -112,7 +112,7 @@ export const ReasoningDisplay: React.FC<ReasoningDisplayProps> = ({
             content={reasoning}
             fontSize={fontSize * 0.85} // Slightly smaller font for reasoning
             fontFamily={fontFamily}
-            parentRef={scrollRef}
+            parentRef={scrollRef as React.RefObject<HTMLDivElement>}
           />
         </Box>
       )}

@@ -17,9 +17,6 @@ interface SidebarHeaderProps {
 }
 
 export default function SidebarHeader({ isSidebarCollapsed }: SidebarHeaderProps) {
-  const router = useRouter();
-  const store = useChatStore();
-
   const handleSettings = () => {
     window.location.hash = 'settings';
   };

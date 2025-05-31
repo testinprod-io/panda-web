@@ -108,17 +108,14 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
 
   const { role, streaming, isError, isReasoning, files, visibleContent: content, visibleReasoning: reasoning, reasoningTime } =
     message;
-  const { wallets } = useWallets();
   const { isLocked } = useEncryption();
   const apiClient = useApiClient();
 
   const loadedFiles = useLoadedFiles(files, sessionId, apiClient, isLocked);
 
   const handleResend = useCallback(
-    async () => { 
-      await AttestationService.getAttestation(wallets, sessionId); 
-    },
-    [onResend, messageId, wallets, sessionId]
+    () => onResend(messageId),
+    [onResend, messageId]
   );
   const handleUserStop = useCallback(() => onUserStop(messageId), [onUserStop, messageId]);
 

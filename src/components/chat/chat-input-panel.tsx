@@ -223,7 +223,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
         provisionalSessionIdRef.current = null;
       }
 
-      const session = await chatActions.newSession(modelConfig, customizedPrompts);
+      const session = await chatActions.newSession(modelConfig,   );
       if (session) {
         currentSessionIdToUse = session.id;
         provisionalSessionIdRef.current = session.id;
@@ -317,7 +317,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
         
         setAttachedFiles(prev =>
           prev.map(f =>
-            f.clientId === clientFile.clientId ? { ...f, uploadStatus: 'success' as const, fileId: uploadResponse.fileResponse.file_id as UUID, uploadProgress: 100, abortUpload: uploadResponse.abort } : f
+            f.clientId === clientFile.clientId ? { ...f, uploadStatus: 'success' as const, fileId: uploadResponse.fileResponse.file_id as UUID, fileType: uploadResponse.fileResponse.type, uploadProgress: 100, abortUpload: uploadResponse.abort } : f
           )
         );
       }).catch(error => {

@@ -109,7 +109,7 @@ export function useLoadedFiles(
     const fetchAndProcessSingleFile = async (fileInfo: FileInfo): Promise<LoadedFile> => {
       try {
         // Use the extracted getFileFunction here
-        const response = await getFileFunction(sessionId, fileInfo.file_id as UUID);
+        const response = await apiClient.app.getFile(sessionId, fileInfo.file_id as UUID);
         if (!response) {
           throw new Error("File response is undefined");
         }
