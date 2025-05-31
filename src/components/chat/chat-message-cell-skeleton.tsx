@@ -12,8 +12,6 @@ interface ChatMessageCellSkeletonProps {
  * Mimics the basic layout and alignment based on the role.
  */
 export const ChatMessageCellSkeleton: React.FC<ChatMessageCellSkeletonProps> = ({ role }) => {
-  // console.log('[ChatMessageCellSkeleton] Rendering skeleton for role:', role);
-  
   const isUser = role === Role.USER;
 
   return (
@@ -32,27 +30,4 @@ export const ChatMessageCellSkeleton: React.FC<ChatMessageCellSkeletonProps> = (
       </div>
     </div>
   );
-};
-
-// Add some basic skeleton styles to chat.module.scss if they don't exist:
-/*
-.chat-message-skeleton {
-  opacity: 0.7;
-}
-
-.chat-message-item-skeleton {
-  background-color: #e0e0e0; // Placeholder background
-  border-radius: 10px;
-  padding: 10px 12px;
-  min-height: 50px; // Ensure some height
-  display: flex;
-  flex-direction: column;
-  gap: 8px; // Space between lines
-}
-
-.skeleton-line {
-  background-color: #c0c0c0; // Darker placeholder line
-  height: 10px;
-  border-radius: 4px;
-}
-*/ 
+}; 

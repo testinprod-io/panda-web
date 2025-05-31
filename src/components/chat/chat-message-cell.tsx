@@ -10,25 +10,17 @@ import { EncryptionService } from "@/services/encryption-service";
 
 import { ActionButton } from "@/components/ui/action-button";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
-// import { GenericFileIcon } from "@/components/common/GenericFileIcon";
+import { GenericFileIcon } from "../../common/GenericFileIcon";
 import CloseIcon from "@mui/icons-material/Close";
-const GenericFileIcon = () => (
-  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="32" height="32" rx="5.33333" fill="none"/>
-    <path d="M21.3333 24H10.6666C9.92778 24 9.33325 23.4055 9.33325 22.6667V9.33333C9.33325 8.5945 9.92778 8 10.6666 8H16L22.6666 12.6667V22.6667C22.6666 23.4055 22.0721 24 21.3333 24Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M22.6666 12.6667H17.3333C16.5944 12.6667 16 12.0722 16 11.3333V8" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
+// const GenericFileIcon = () => ( ... ); // This will be removed and imported
+
 // MUI Imports
-import { TextField, Button, Box, IconButton, Typography, CircularProgress } from "@mui/material"; // IconButton not used
-import ReplayRoundedIcon from "@mui/icons-material/ReplayRounded";
-import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
-import ModeEditRoundedIcon from "@mui/icons-material/ModeEditRounded";
+import { TextField, Button, Box, Typography, CircularProgress, IconButton } from "@mui/material"; // IconButton removed, ReplayRoundedIcon, ModeEditRoundedIcon removed
 
 import SendIcon from "@mui/icons-material/Send";
 import CancelIcon from "@mui/icons-material/Cancel";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore"; // For expand/collapse
-import ChevronRightIcon from "@mui/icons-material/ChevronRight"; // For expand/collapse
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 
 import styles from "./chat.module.scss";
 import { UUID } from "crypto";
@@ -80,12 +72,6 @@ function getTextContent(
   return "";
 }
 
-function getFileUrls(
-  message: ChatMessage,
-): string[] {
-  return message.files.map((file) => file.file_id);
-}
-
 function getImageUrls(
   content: string | MultimodalContent[] | null | undefined
 ): string[] {
@@ -132,9 +118,9 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
   const handleResend = useCallback(
     async () => { 
       await AttestationService.getAttestation(wallets, sessionId); 
-      // onResend(messageId); 
+      // onResend(messageId); // Original onResend call is commented out, keeping as is for now.
     },
-    [onResend, messageId, wallets]
+    [onResend, messageId, wallets] // onResend is in deps but not called if above is commented.
   );
   const handleUserStop = useCallback(
     () => onUserStop(messageId),
@@ -180,7 +166,6 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     }
 
     const fetchFiles = async () => {
-      // Initialize files with loading state
       setLoadedFiles(
         files.map((file) => ({
           id: file.file_id as UUID,
@@ -191,7 +176,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
           originalType: "",
         }))
       );
-      console.log(`[chat-message-cell] files:`, files);
+      // console.log(`[chat-message-cell] files:`, files); // Removed log
       const newLoadedFiles: LoadedFile[] = [];
 
       for (const file of files) {
@@ -277,7 +262,6 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
 
     fetchFiles();
 
-    // Cleanup function to revoke object URLs
     return () => {
       loadedFiles.forEach((file) => {
         if (file.url && file.url.startsWith("blob:")) {
@@ -286,7 +270,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
       });
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps 
-  }, [files, sessionId, apiClient, isLocked]); // Ensure apiClient is stable or memoized if it comes from context
+  }, [files, sessionId, apiClient, isLocked]);
 
   // Ref to store the previous value of message.isReasoning
   const prevIsReasoningRef = React.useRef(message.isReasoning);
@@ -404,7 +388,6 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
               <img
                 src="/icons/panda.svg"
                 alt="Panda"
-                style={{ width: "32px", height: "32px" }}
               />
             </div>
           )}
@@ -436,7 +419,6 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                                 : "")
                           )
                         }
-                        // disabled={isChatLoading}
                         className={styles["user-action-button"]}
                         aria-label="Copy message content and reasoning"
                       >
@@ -452,23 +434,13 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                         aria-label="Resend message"
                       >
                         <img src="/icons/refresh.svg" alt="Resend message" />
-                        {/* <ReplayRoundedIcon /> */}
                       </button>
                     </>
                   )}
                   {isUser && (
                     <>
-                      {/* <button
-                      onClick={handleEditClick}
-                      disabled={isChatLoading}
-                      className={styles['user-action-button']}
-                      aria-label="Edit message"
-                    >
-                      <ModeEditRoundedIcon />
-                    </button> */}
                       <button
                         onClick={() => copyToClipboard(content as string)}
-                        // disabled={isChatLoading}
                         className={styles["user-action-button"]}
                         aria-label="Copy message"
                       >
@@ -504,24 +476,20 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                     width: "160px",
                     height: "160px",
                   }} >
-                     {/* <Box display="flex" alignItems="center" sx={{ ml: 1 }}> */}
-                      <CircularProgress size={24} color="inherit"/>
-                  {/* </Box> */}
-                    {/* <Typography variant="caption">Loading {file.name}...</Typography> */}
+                    <CircularProgress size={24} color="inherit"/>
                   </Box>
                 );
               }
               if (file.error) {
                 return (
                   <Box key={file.id} className={styles["chat-message-file-item-error"]}>
-                    <GenericFileIcon /> {/* Or a specific error icon */}
+                    <GenericFileIcon />
                     <Typography variant="caption" color="error">
                       Error: {file.name} ({file.error})
                     </Typography>
                   </Box>
                 );
               }
-              console.log(`[chat-message-cell] file:`, file);
               if (file.type.startsWith("image")) {
                 return (
                   <a 
@@ -530,21 +498,15 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                     download={file.name} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    style={{ textDecoration: 'none' }} // Optional: remove underline from link
+                    style={{ textDecoration: 'none' }}
                   >
                     <Image
                       key={file.id}
-                      className={styles["chat-message-item-image-outside"]}
+                      className={clsx(styles["chat-message-item-image-outside"], styles.attachedFileImagePreview)}
                       src={file.url}
                       alt={file.name || `attached image ${file.id}`}
-                      width={160} // Adjust as needed
-                      height={160} // Adjust as needed
-                      style={{
-                        borderRadius: "8px",
-                        outline: "1px #CACACA solid",
-                        objectFit: "cover",
-                        display: "block", // Ensure image behaves like a block for the anchor
-                      }}
+                      width={160}
+                      height={160}
                     />
                   </a>
                 );
@@ -557,7 +519,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                     download={file.name} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    style={{ textDecoration: 'none', display: 'block' }} // Optional: remove underline and make it block
+                    style={{ textDecoration: 'none', display: 'block' }}
                   >
                     <Box
                       key={file.id}
@@ -567,10 +529,10 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                         gap: "8px",
                         padding: "8px",
                         borderRadius: "8px",
-                        backgroundColor: "#f0f0f0", // Light background for the PDF item
+                        backgroundColor: "#f0f0f0",
                         border: "1px solid #e0e0e0",
                         maxWidth: "100%",
-                        cursor: "pointer", // Indicate it's clickable
+                        cursor: "pointer",
                       }}
                     >
                       <GenericFileIcon />
@@ -594,13 +556,12 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                   </a>
                 );
               }
-              // Fallback for 'other' file types
               return (
                 <a 
                   key={`${file.id}-anchor`}
                   href={file.url} 
                   download={file.name}
-                  style={{ textDecoration: 'none', display: 'block' }} // Optional: remove underline and make it block
+                  style={{ textDecoration: 'none', display: 'block' }}
                 >
                   <Box
                     key={file.id}
@@ -612,7 +573,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                       borderRadius: "8px",
                       backgroundColor: "#f0f0f0",
                       border: "1px solid #e0e0e0",
-                      cursor: "pointer", // Indicate it's clickable
+                      cursor: "pointer",
                     }}
                   >
                     <GenericFileIcon />
