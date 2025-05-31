@@ -341,6 +341,13 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   }, [apiClient, attachedFiles, modelConfig, showSnackbar, activeSessionId, getAccessToken, chatActions, newSession]);
 
   const doSubmit = () => {
+    console.log('[doSubmit] Called. isLoading:', isLoading, 'isUploadingFiles:', isUploadingFiles, 'activeSessionId:', activeSessionId);
+    console.log('[doSubmit] userInput:', `"${userInput}"`);
+    console.log('[doSubmit] attachedFiles at start of doSubmit:', JSON.stringify(attachedFiles.map(f => ({ clientId: f.clientId, name: f.name, status: f.uploadStatus, fileId: f.fileId, type: f.type, size: f.size })), null, 2));
+
+    const successfullyUploadedFiles = attachedFiles.filter(f => f.uploadStatus === 'success' && f.fileId);
+    console.log('[doSubmit] successfullyUploadedFiles (after filter):', JSON.stringify(successfullyUploadedFiles.map(f => ({ clientId: f.clientId, name: f.name, status: f.uploadStatus, fileId: f.fileId, type: f.type, size: f.size })), null, 2));
+    
     if (isLoading || isUploadingFiles || (userInput.trim() === "" && isEmpty(successfullyUploadedFiles))) {
       return;
     }
