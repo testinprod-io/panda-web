@@ -57,22 +57,27 @@ export function ChatItem({
   const [displayedTitle, setDisplayedTitle] = useState(session.visibleTopic);
   const [isAnimating, setIsAnimating] = useState(false);
   const animationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [visibleTopic, setVisibleTopic] = useState(session.visibleTopic);
 
   useEffect(() => {
     const topic = session.topic || Locale.Store.DefaultTopic;
     if (isLocked) {
-      session.visibleTopic = topic;
+      // session.visibleTopic = topic;
+      setVisibleTopic(topic);
     } else {
-      session.visibleTopic = EncryptionService.decrypt(topic);
+      // session.visibleTopic = EncryptionService.decrypt(topic);
+      setVisibleTopic(EncryptionService.decrypt(topic));
     }
   }, [isLocked, session.topic]);
 
   // Update editValue when actualDecryptedTopic changes and not editing
   useEffect(() => {
     if (!isEditing) {
-      setEditValue(session.visibleTopic);
+      // setEditValue(session.visibleTopic);
+      setEditValue(visibleTopic);
     }
-  }, [session.visibleTopic, isEditing]);
+  // }, [session.visibleTopic, isEditing]);
+  }, [visibleTopic, isEditing]);
 
   // Scroll into view when selected
   useEffect(() => {
@@ -169,7 +174,8 @@ export function ChatItem({
 
   const handleEdit = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
-    setEditValue(session.visibleTopic); // Start editing with the actual decrypted topic
+    // setEditValue(session.visibleTopic); // Start editing with the actual decrypted topic
+    setEditValue(visibleTopic); // Start editing with the actual decrypted topic
     setIsEditing(true);
     handleMenuClose();
   };
@@ -177,7 +183,8 @@ export function ChatItem({
   const handleCancelEdit = (event?: React.MouseEvent<HTMLElement>) => {
     event?.stopPropagation();
     setIsEditing(false);
-    setEditValue(session.visibleTopic); // Revert to original decrypted topic
+    // setEditValue(session.visibleTopic); // Revert to original decrypted topic
+    setEditValue(visibleTopic); // Revert to original decrypted topic
     handleMenuClose(); 
   };
 
@@ -210,13 +217,15 @@ export function ChatItem({
     setDisplayedTitle(animationStartDisplay);
 
     let revealedCount = 0;
-    const targetLength = session.visibleTopic.length;
+    // const targetLength = session.visibleTopic.length;
+    const targetLength = visibleTopic.length;
     const startDisplayLength = animationStartDisplay.length;
 
     animationIntervalRef.current = setInterval(() => {
       revealedCount++;
       const newTitle =
-        session.visibleTopic.substring(0, revealedCount) +
+        // session.visibleTopic.substring(0, revealedCount) +
+        visibleTopic.substring(0, revealedCount) +
         animationStartDisplay.substring(revealedCount);
 
       setDisplayedTitle(newTitle);
@@ -226,7 +235,8 @@ export function ChatItem({
           clearInterval(animationIntervalRef.current);
           animationIntervalRef.current = null;
         }
-        setDisplayedTitle(session.visibleTopic); // Ensure final state is perfect
+        // setDisplayedTitle(session.visibleTopic); // Ensure final state is perfect
+        setDisplayedTitle(visibleTopic); // Ensure final state is perfect
         setIsAnimating(false);
       }
     }, DECRYPTION_INTERVAL_MS);
@@ -237,7 +247,8 @@ export function ChatItem({
         animationIntervalRef.current = null;
       }
     };
-  }, [session.topic, session.visibleTopic, isLocked]); // Rerun if underlying topic, its decrypted version, or lock state changes
+  // }, [session.topic, session.visibleTopic, isLocked]); // Rerun if underlying topic, its decrypted version, or lock state changes
+  }, [session.topic, visibleTopic, isLocked]); // Rerun if underlying topic, its decrypted version, or lock state changes
 
   const handleItemClick = () => {
     if (isAnimating) {
@@ -245,7 +256,8 @@ export function ChatItem({
         clearInterval(animationIntervalRef.current);
         animationIntervalRef.current = null;
       }
-      setDisplayedTitle(session.visibleTopic);
+      // setDisplayedTitle(session.visibleTopic);
+      setDisplayedTitle(visibleTopic);
       setIsAnimating(false);
     }
     onClick?.();
@@ -391,7 +403,7 @@ export function ChatItem({
                     />
                 </Box>
             ) : (
-                <span className={styles['chat-item-title']} title={session.visibleTopic}>
+                <span className={styles['chat-item-title']} title={visibleTopic}>
                     {displayedTitle}
                 </span>
             )}
