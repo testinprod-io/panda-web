@@ -28,7 +28,7 @@ import { UUID } from "crypto";
 import CloseIcon from '@mui/icons-material/Close';
 import { useApiClient } from "@/providers/api-client-provider";
 import { useChatActions } from "@/hooks/use-chat-actions";
-import { GenericFileIcon } from "../../common/GenericFileIcon";
+import { GenericFileIcon } from "@/components/common/GenericFileIcon";
 import { SessionState, SubmittedFile } from "@/types/session";
 import { EncryptionService } from "@/services/encryption-service";
 import { FileCircularProgress } from "./FileCircularProgress";

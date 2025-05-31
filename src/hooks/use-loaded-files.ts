@@ -27,6 +27,10 @@ export function useLoadedFiles(
     JSON.stringify((messageFiles || []).map(f => ({ id: f.file_id, name: f.file_name }))), 
   [messageFiles]);
 
+  // Extract the specific function to be used in the effect's dependency array
+  // This helps if apiClient object reference changes but apiClient.app.getFile function reference is stable.
+  const getFileFunction = apiClient.app.getFile;
+
   useEffect(() => {
     let didCancel = false;
     const currentBlobUrls = new Set<string>();
@@ -71,7 +75,8 @@ export function useLoadedFiles(
 
     const fetchAndProcessSingleFile = async (fileInfo: FileInfo): Promise<LoadedFile> => {
       try {
-        const response = await apiClient.app.getFile(sessionId, fileInfo.file_id as UUID);
+        // Use the extracted getFileFunction here
+        const response = await getFileFunction(sessionId, fileInfo.file_id as UUID);
         if (!response) {
           throw new Error("File response is undefined");
         }
@@ -158,7 +163,7 @@ export function useLoadedFiles(
       currentBlobUrls.forEach(url => URL.revokeObjectURL(url));
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filesDep, sessionId, apiClient, isLocked]);
+  }, [filesDep, sessionId, getFileFunction, isLocked]);
 
   return loadedFiles;
 }

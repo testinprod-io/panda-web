@@ -10,7 +10,7 @@ import { EncryptionService } from "@/services/encryption-service";
 
 import { ActionButton } from "@/components/ui/action-button";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
-import { GenericFileIcon } from "../../common/GenericFileIcon";
+import { GenericFileIcon } from "@/components/common/GenericFileIcon";
 import CloseIcon from "@mui/icons-material/Close";
 // const GenericFileIcon = () => ( ... ); // This will be removed and imported
 
