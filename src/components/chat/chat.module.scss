@@ -1290,8 +1290,22 @@
   color: inherit; // Ensure anchor default color is removed
 
   &:hover {
-    background-color: var(--bg-hover, #e9e9e9); // Add a hover state
+    background-color: var(--bg-hover, #e9e9e9);
   }
+}
+
+// Icons used within ChatInputPanel controls
+.inputActionIcon {
+  width: 16px;
+  height: 16px;
+  display: block; // Good for layout
+}
+
+.deleteAttachmentIcon {
+  width: 16px;
+  height: 16px;
+  filter: invert(100%) sepia(0%) saturate(7500%) hue-rotate(257deg) brightness(113%) contrast(103%); // Makes it white
+  display: block;
 }
 
 // Container for the reasoning display section

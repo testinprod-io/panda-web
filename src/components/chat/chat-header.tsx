@@ -21,7 +21,6 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useAuthStatus } from "@/hooks/use-auth-status";
 import { useAppConfig, useChatStore } from "@/store";
 import { ServiceProvider } from "@/types/constant";
-// import { ModelType } from "@/store/config";
 import { ModelConfig, DEFAULT_MODELS, ModelType } from "@/types/constant";
 import LoginSignupPopup from "../login/login-signup-popup";
 import styles from "./chat-header.module.scss";
@@ -96,16 +95,10 @@ export default function ChatHeader({
   };
 
   const handleModelSelect = (modelName: ModelType) => {
-    console.log("handleModelSelect", modelName);
     const selectedModelDetails = availableModels.find(
       (m) => m.name === modelName
     );
-    console.log("selectedModelDetails", selectedModelDetails);
     if (selectedModelDetails && selectedModelDetails.available) {
-      console.log(
-        "setting api provider",
-        selectedModelDetails.provider.providerName
-      );
       setApiProvider(modelName);
     }
     handleModelClose();
@@ -145,9 +138,7 @@ export default function ChatHeader({
   const currentModelNameForSelectionLogic =
     activeSessionModelName || globalModelIdentifier;
 
-  const modelsToDisplay = useMemo(() => {
-    return availableModels;
-  }, [availableModels]);
+  const modelsToDisplay = availableModels;
 
   // Cycle through encryption states for demo
   const cycleEncryptionStatus = () => {
@@ -163,30 +154,25 @@ export default function ChatHeader({
       case "SUCCESSFUL":
         return {
           text: "Encryption Activated",
-          bgColor: "#C1FF83",
-          textColor: "#131A28",
-          icon: "/icons/lock.svg", // Assuming lock.svg is now black
+          statusClass: styles.encryptionStatusSuccessful,
+          icon: "/icons/lock.svg", 
         };
       case "FAILED":
         return {
           text: "Encryption Failed",
-          bgColor: "#FFC0CB", // Light Pink/Red for failure
-          textColor: "#8B0000", // Dark Red
-          icon: "/icons/lock.svg", // Placeholder, consider a warning icon
-                                     // If using lock, may need filter to change color if bg is dark
+          statusClass: styles.encryptionStatusFailed,
+          icon: "/icons/lock.svg",
         };
       case "IN_PROGRESS":
         return {
           text: "Encryption Activating",
-          bgColor: "#ADD8E6", // Light Blue for in progress
-          textColor: "#00008B", // Dark Blue
-          icon: "/icons/lock.svg", // Placeholder, consider a spinner or different lock state
+          statusClass: styles.encryptionStatusInProgress,
+          icon: "/icons/lock.svg",
         };
-      default: // Should not happen
+      default:
         return {
           text: "Status Unknown",
-          bgColor: "#D3D3D3", // Light Gray
-          textColor: "black",
+          statusClass: styles.encryptionStatusUnknown,
           icon: "/icons/lock.svg",
         };
     }
@@ -219,7 +205,7 @@ export default function ChatHeader({
                 <img
                   src="/icons/sidebar.svg"
                   alt="Reveal Sidebar"
-                  style={{ width: "24px", height: "24px", filter: 'invert(9%) sepia(0%) saturate(0%) hue-rotate(134deg) brightness(94%) contrast(92%)' }}
+                  className={styles.headerActionIconImg}
                 />
               </IconButton>
             </Tooltip>
@@ -231,7 +217,7 @@ export default function ChatHeader({
                 <img
                   src="/icons/new-chat.svg"
                   alt="New Chat"
-                  style={{ width: "24px", height: "24px", filter: 'invert(9%) sepia(0%) saturate(0%) hue-rotate(134deg) brightness(94%) contrast(92%)' }}
+                  className={styles.headerActionIconImg}
                 />
               </IconButton>
             </Tooltip>
@@ -298,7 +284,6 @@ export default function ChatHeader({
                         <img
                           src="/icons/check.svg"
                           alt="Selected"
-                          style={{ width: "24px", height: "24px" }}
                         />
                       )}
                       {!isActuallyAvailable && (
@@ -311,45 +296,31 @@ export default function ChatHeader({
                 );
               })}
             </Menu>
-            {/* Encryption Status Display - Placed after model selector */}
+            {/* Encryption Status Display */}
             {isAuthenticated && (
                  <Tooltip title="Click to cycle status (Dev only)">
                     <Box
-                        onClick={cycleEncryptionStatus} // Added for demo
-                        className={styles.encryptionStatus}
-                        sx={{
-                            cursor: 'pointer', // Indicate it\'s clickable for demo
-                            background: currentStatusInfo.bgColor,
-                        }}
+                        onClick={cycleEncryptionStatus}
+                        className={clsx(styles.encryptionStatus, currentStatusInfo.statusClass)}
+                        sx={{ cursor: 'pointer'}}
                         >
                         <Box
                             sx={{
-                            width: 20, // Adjusted to fit icon better
-                            height: 20, // Adjusted
+                            width: 20,
+                            height: 20,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            // position: "relative", // Not needed if using img directly
-                            // overflow: "hidden", // Not needed if using img directly
                             }}
                         >
-                            {/* The Figma icon was described as a 16x20 div at 4,2. 
-                                Using an img tag for the svg is simpler. 
-                                Ensure lock.svg is black as modified. */}
                             <img 
                                 src={currentStatusInfo.icon} 
                                 alt="status icon" 
-                                style={{ 
-                                    width: '16px', // Approximate size from Figma description
-                                    height: '16px', //  Approximate size 
-                                }}
+                                className={styles.encryptionStatusIconImg}
                             />
                         </Box>
                         <Typography
                             className={styles.encryptionStatusText}
-                            sx={{
-                            color: currentStatusInfo.textColor,
-                            }}
                         >
                             {currentStatusInfo.text}
                         </Typography>
@@ -420,17 +391,6 @@ export default function ChatHeader({
                   }}
                 />
               </Box>
-              {/*<Box className={styles.profileMenuCompanySection}>
-                <ListItemText
-                  primary="Company name is very lonoooooooooooooooooooooooooooog case"
-                  className={styles.profileMenuText}
-                  primaryTypographyProps={{
-                    style: {
-                    },
-                  }}
-                />
-              </Box>
-              */}
               <Divider className={styles.profileMenuDivider} />
               <MenuItem
                 onClick={() => {

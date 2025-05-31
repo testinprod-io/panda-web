@@ -15,20 +15,29 @@
   display: flex;
   align-items: center;
 
-  .newChatButton {
-    // margin-right: 8px; // Corresponds to sx={{ mr: 1 }}
+  .headerActionIconButton {
+    // Common class for IconButton wrappers of action icons
     height: 48px;
     width: 48px;
+    // The filter is applied to the img tag directly now
+  }
+
+  .headerActionIconImg {
+    // Common class for the <img> tags inside action IconButtons
+    width: 24px;
+    height: 24px;
     filter: invert(9%) sepia(0%) saturate(0%) hue-rotate(134deg) brightness(94%) contrast(92%);
-    // Add icon color if needed, e.g., color: var(--icon-color);
+  }
+
+  // Remove specific filter from .newChatButton and .revealSidebarButton if they are now just wrappers
+  .newChatButton {
+    // Now primarily a marker class if .headerActionIconButton handles size
+    // @extend .headerActionIconButton; // If it shares all button properties
   }
 
   .revealSidebarButton {
-    // margin-right: 8px; // Corresponds to sx={{ mr: 1 }}
-    height: 48px;
-    width: 48px;
-    filter: invert(9%) sepia(0%) saturate(0%) hue-rotate(134deg) brightness(94%) contrast(92%);
-    // Add icon color if needed, e.g., color: var(--icon-color);
+    // Now primarily a marker class
+    // @extend .headerActionIconButton; // If it shares all button properties
   }
 
   .modelSelectorContainer {
@@ -148,8 +157,46 @@
 
 .encryptionStatusText {
   font-size: 14px !important;
-  font-weight: 500 !important; // 500
+  font-weight: 500 !important;
   font-family: 'Inter', sans-serif !important;
+  // color is now handled by status-specific classes
+}
+
+// Base style for encryption status, existing .encryptionStatus handles layout
+// Adding status-specific classes for colors:
+.encryptionStatusSuccessful {
+  background-color: #C1FF83;
+  .encryptionStatusText {
+    color: #131A28;
+  }
+  // Icon color can be set here if needed, e.g. using filter or if icon inherits color
+}
+
+.encryptionStatusFailed {
+  background-color: #FFC0CB; // Light Pink/Red
+  .encryptionStatusText {
+    color: #8B0000; // Dark Red
+  }
+}
+
+.encryptionStatusInProgress {
+  background-color: #ADD8E6; // Light Blue
+  .encryptionStatusText {
+    color: #00008B; // Dark Blue
+  }
+}
+
+.encryptionStatusUnknown { // Fallback
+  background-color: #D3D3D3; // Light Gray
+  .encryptionStatusText {
+    color: black;
+  }
+}
+
+.encryptionStatusIconImg {
+  width: 16px;
+  height: 16px;
+  display: block; // Good for layout consistency
 }
 
 .iconContainer {
@@ -162,9 +209,10 @@
   // padding-left: 16px; // Removed - spacing now handled by margin-right on modelMenuItemText
   flex-shrink: 0; // Prevent icon container from shrinking
   
-  img { // For the user's check.svg
-    display: block; // remove extra space under img if any
-    // width and height are set inline in the component (24px)
+  img { // For the user's check.svg in model menu
+    display: block;
+    width: 24px; // Define size here instead of inline
+    height: 24px;
   }
 
   .selectedIcon { // This class might still be used elsewhere or for a different visual

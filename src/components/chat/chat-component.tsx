@@ -26,7 +26,6 @@ import CircularProgress from "@mui/material/CircularProgress"; // Assuming MUI i
 
 import styles from "./chat.module.scss";
 import { ActionButton } from "@/components/ui/action-button"; // Import ChatAction
-import { useDecryptionManager } from "@/hooks/use-decryption-manager"; // <-- Import the hook
 import { useChatSessionManager } from "@/hooks/use-chat-session-manager";
 import { UUID } from "crypto";
 import { SessionState } from "@/types/session";
@@ -54,8 +53,6 @@ export function ChatComponent(props: ChatComponentProps) {
   const config = useAppConfig();
   const { showSnackbar } = useSnackbar();
   const initialMessageProcessedRef = useRef<string | null>(null);
-  // DecryptionManager and other hooks remain
-  const { isLoading: isDecryptingMessage } = useDecryptionManager();
   const fontSize = config.fontSize;
   const fontFamily = config.fontFamily;
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -64,7 +61,7 @@ export function ChatComponent(props: ChatComponentProps) {
   const previousScrollHeightRef = useRef<number | null>(null);
   const previousScrollTopRef = useRef<number | null>(null);
 
-  const { 
+  const {
     displayedMessages, 
     isLoading: isLoadingMessages, 
     hasMoreMessages, 
@@ -72,8 +69,6 @@ export function ChatComponent(props: ChatComponentProps) {
     clearMessages, 
     sendNewUserMessage, 
     sendNewQuery,
-    // finalizeStreamedBotMessage, // Ensure this is used or removed if not
-    // markMessageAsError, // Ensure this is used or removed if not
   } = useChatSessionManager(sessionId, config.modelConfig);
   
   const lastMessage = displayedMessages[displayedMessages.length - 1];
@@ -82,7 +77,7 @@ export function ChatComponent(props: ChatComponentProps) {
   const { scrollDomToBottom, setAutoScroll } = useScrollToBottom(
     scrollRef,
     !internalHitBottom,
-    displayedMessages as any
+    displayedMessages
   );
 
   // Update store with hitBottom state
@@ -223,13 +218,6 @@ export function ChatComponent(props: ChatComponentProps) {
     [sessionId, showSnackbar, setAutoScroll, scrollDomToBottom, displayedMessages, clearMessages, sendNewUserMessage, setIsChatComponentBusy]
   );
 
-  // Layout effect for initial scroll
-  // useLayoutEffect(() => {
-  //   if (sessionId && !isLoadingMessages) { 
-  //     scrollDomToBottom();
-  //   }
-  // }, [sessionId, isLoadingMessages, scrollDomToBottom]);
-
   // Layout effect for scroll adjustment after loading more messages
   useLayoutEffect(() => {
     if (previousScrollHeightRef.current !== null && scrollRef.current && !isLoadingMessages) {
@@ -255,9 +243,6 @@ export function ChatComponent(props: ChatComponentProps) {
     debouncedCheckEdges(scrollTop, scrollHeight, clientHeight);
   };
   
-  const renderMessages = useMemo(() => displayedMessages, [displayedMessages]);
-  const messagesToRender = useMemo(() => renderMessages, [renderMessages]);
-
   const debouncedCheckEdges = useDebouncedCallback(
     (scrollTop: number, scrollHeight: number, clientHeight: number) => {
       const edgeThreshold = 50;
@@ -281,14 +266,13 @@ export function ChatComponent(props: ChatComponentProps) {
         ref={scrollRef}
         onScroll={onChatBodyScroll}
         onTouchStart={() => setAutoScroll(false)}
-        // style={{ scrollBehavior: "smooth" }}
       >
         {displayedMessages.length > 10 && isLoadingMessages && hasMoreMessages && (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
             <CircularProgress size={24} color="inherit" />
           </div>
         )}
-        {messagesToRender.map((msgObject, i) => (
+        {displayedMessages.map((msgObject, i) => (
           <Fragment key={msgObject.id}>
             <ChatMessageCell
               sessionId={sessionId}
@@ -300,7 +284,7 @@ export function ChatComponent(props: ChatComponentProps) {
               fontSize={fontSize}
               fontFamily={fontFamily}
               scrollRef={scrollRef}
-              renderMessagesLength={renderMessages.length}
+              renderMessagesLength={displayedMessages.length}
               onResend={onResend}
               onUserStop={onUserStop}
               onEditSubmit={onEditSubmit}
