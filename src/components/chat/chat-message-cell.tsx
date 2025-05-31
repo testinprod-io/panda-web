@@ -32,6 +32,7 @@ import { useLoadedFiles, LoadedFile } from "@/hooks/use-loaded-files";
 import { FilePreviewItem } from "./FilePreviewItem";
 import { MessageActionsBar } from "./MessageActionsBar";
 import { ReasoningDisplay } from "./ReasoningDisplay";
+import { EditMessageForm } from "./EditMessageForm";
 
 const Markdown = dynamic(async () => (await import("../ui/markdown")).Markdown, {
   loading: () => <LoadingAnimation />,
@@ -119,40 +120,28 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     },
     [onResend, messageId, wallets, sessionId]
   );
-  const handleUserStop = useCallback(
-    () => onUserStop(messageId),
-    [onUserStop, messageId]
-  );
+  const handleUserStop = useCallback(() => onUserStop(messageId), [onUserStop, messageId]);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editedText, setEditedText] = useState("");
 
   const isUser = role === "user";
 
-  useEffect(() => {
-    if (isEditing) {
-      setEditedText(content as string);
-    }
-  }, [content, isEditing]);
-
   const handleEditClick = useCallback(() => {
-    setEditedText(content as string);
     setIsEditing(true);
-  }, [content]);
+  }, []);
 
-  const handleCancelClick = useCallback(() => {
+  const handleEditCancel = useCallback(() => {
     setIsEditing(false);
   }, []);
 
-  const handleSendClick = useCallback(() => {
-    if (typeof content !== 'string') { return; }
-    if (editedText.trim() === content.trim()) {
+  const handleEditConfirm = useCallback((newText: string) => {
+    if (typeof content !== 'string') { 
       setIsEditing(false);
-      return;
+      return; 
     }
-    onEditSubmit(messageId, editedText);
+    onEditSubmit(messageId, newText);
     setIsEditing(false);
-  }, [messageId, editedText, content, onEditSubmit]);
+  }, [messageId, content, onEditSubmit]);
 
   if (isError) {
     return (
@@ -268,59 +257,20 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
             />
           )}
 
-          {isEditing ? (
-            <Box sx={{ width: "100%" }}>
-              <TextField
-                fullWidth
-                multiline
-                variant="outlined"
-                value={editedText}
-                onChange={(e) => setEditedText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendClick();
-                  }
-                  if (e.key === "Escape") {
-                    handleCancelClick();
-                  }
-                }}
-                sx={{ marginBottom: 1 }}
-              />
-              <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={handleCancelClick}
-                  startIcon={<CancelIcon />}
-                >
-                  {Locale.UI.Cancel}
-                </Button>
-                <Button
-                  variant="contained"
-                  size="small"
-                  onClick={handleSendClick}
-                  disabled={editedText.trim() === "" || isChatLoading}
-                  startIcon={<SendIcon />}
-                >
-                  {Locale.UI.Confirm}
-                </Button>
-              </Box>
-            </Box>
+          {isEditing && isUser ? (
+            <EditMessageForm 
+              initialText={content as string}
+              isChatLoading={isChatLoading}
+              onConfirm={handleEditConfirm}
+              onCancel={handleEditCancel}
+            />
           ) : (
             <>
-              {(content || /* currentImageUrls.length > 0 || */ (streaming && !isUser && !shouldShowReasoning)) && (
+              {(content || (streaming && !isUser && !shouldShowReasoning)) && (
                 <Markdown
-                  key={`${messageId}-${streaming ? "streaming" : "done"}-${
-                    isReasoning ? "reasoning" : "content"
-                  }`}
+                  key={`${messageId}-${streaming ? "streaming" : "done"}-${isReasoning ? "reasoning" : "content"}`}
                   content={content as string}
-                  loading={
-                    streaming &&
-                    !isUser &&
-                    content.length === 0 &&
-                    !isReasoning
-                  }
+                  loading={streaming && !isUser && content.length === 0 && !isReasoning}
                   fontSize={fontSize}
                   fontFamily={fontFamily}
                   parentRef={scrollRef as React.RefObject<HTMLDivElement>}
