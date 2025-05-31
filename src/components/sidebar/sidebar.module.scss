@@ -171,25 +171,36 @@ $sidebar-transition-timing: ease-in-out;
   align-items: center;
   height: 48px;
   width: 100%;
-  color: white; 
+  /* color: white; */ /* This color was likely for an old design or icon type */
   box-sizing: border-box; 
   svg {
     color: #b3b3b3;
   }
   :global(.MuiIconButton-root) {
-    color: white;
+    /* color: white; */ /* This color was likely for an old design or icon type */
+    /* If a specific color is needed for icons in IconButton, it's set directly in sx or on the icon */
   }
 }
 
 .sidebarHeaderLogoRow {
   display: flex;
   align-items: center;
-  padding: 8px 12px; // This is the padding for the logo row *within* the header container
+  padding: 8px 12px; 
   border-radius: 8px; 
   gap: 8px; 
   height: 48px;
   width: 100%; 
   box-sizing: border-box; 
+  transition: all 0.3s ease-in-out; // from sx
+  flex-direction: row; // default from sx
+  padding-left: 8px; // default from sx
+
+  &.collapsed {
+    flex-direction: column; // from sx
+    gap: 6px; // from sx
+    width: fit-content; // from sx
+    padding-left: 18px; // from sx
+  }
 }
 
 .sidebarHeaderLogoImage {
@@ -205,7 +216,13 @@ $sidebar-transition-timing: ease-in-out;
   font-size: 20px; 
   letter-spacing: 0.80px; 
   font-weight: 600;
-  line-height: 1.2; 
+  line-height: 1.2;
+  transition: none; // from sx
+
+  &.collapsed {
+    margin: 0; // from sx
+    text-align: center; // from sx
+  }
 }
 
 .logoTextBold {
@@ -220,6 +237,21 @@ $sidebar-transition-timing: ease-in-out;
   font-weight: 500; 
   font-size: 20px;
   letter-spacing: 0.80px;
+}
+
+// Icon for collapsed nav menu items
+.navMenuIcon {
+  width: 24px;
+  height: 24px;
+  filter: invert(0%) sepia(3%) saturate(4%) hue-rotate(324deg) brightness(100%) contrast(100%); // Makes icons appear black/dark
+  display: block; // Good practice for images in containers
+}
+
+// New class for the settings icon
+.settingsIcon {
+  width: 24px;
+  height: 24px;
+  filter: invert(50%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(90%) contrast(80%);
 }
 
 // Styles for ProjectPanel, AccessPanel can remain if they are self-contained

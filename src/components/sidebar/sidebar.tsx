@@ -41,8 +41,7 @@ export default function Sidebar({
   const expandedPaneWidth = "300px"; // Matches $sidebar-expanded-width
 
   const handleNewChat = () => {
-    // Logic for new chat, potentially from useChatStore or similar
-    console.log("New Chat clicked");
+    // console.log("New Chat clicked"); // Removed log
     router.push(`/`);
   };
 
@@ -50,28 +49,28 @@ export default function Sidebar({
   //   console.log("Search clicked");
   // };
 
-  const handleSettings = () => { // Partially handled by SidebarHeader, direct nav here for main settings page
-    console.log("Settings clicked from collapsed nav");
+  const handleSettings = () => {
+    // console.log("Settings clicked from collapsed nav"); // Removed log
     window.location.hash = 'settings';
   };
 
   const handleLogout = () => {
-    console.log("Logout clicked");
+    // console.log("Logout clicked"); // Removed log
     logout();
     lockApp();
   };
 
   const handleLockServiceClick = () => {
-    console.log("Lock Service clicked");
+    // console.log("Lock Service clicked"); // Removed log
     lockApp();
   };
 
   const navItems = [
     // { id: "search", icon: <SearchIcon />, text: "Search", action: handleSearch },
-    { id: "newChat", icon: <img src="/icons/new-chat.svg" alt="New Chat" style={{ width: '24px', height: '24px', filter: 'invert(0%) sepia(3%) saturate(4%) hue-rotate(324deg) brightness(100%) contrast(100%)'  }} />, text: "New chat", action: handleNewChat },
+    { id: "newChat", icon: <img src="/icons/new-chat.svg" alt="New Chat" className={styles.navMenuIcon} />, text: "New chat", action: handleNewChat },
     // { id: "archive", icon: <ArchiveIcon />, text: "Archive", action: handleArchive },
-    { id: "settings", icon: <img src="/icons/settings.svg" alt="Settings" style={{ width: '24px', height: '24px', filter: 'invert(0%) sepia(3%) saturate(4%) hue-rotate(324deg) brightness(100%) contrast(100%)' }} />, text: "Settings", action: handleSettings },
-    { id: "logout", icon: <img src="/icons/logout.svg" alt="Log out" style={{ width: '24px', height: '24px', filter: 'invert(0%) sepia(3%) saturate(4%) hue-rotate(324deg) brightness(100%) contrast(100%)' }} />, text: "Log out", action: handleLogout },
+    { id: "settings", icon: <img src="/icons/settings.svg" alt="Settings" className={styles.navMenuIcon} />, text: "Settings", action: handleSettings },
+    { id: "logout", icon: <img src="/icons/logout.svg" alt="Log out" className={styles.navMenuIcon} />, text: "Log out", action: handleLogout },
   ];
 
   return (
@@ -82,7 +81,6 @@ export default function Sidebar({
       )}
       style={!isOverlayMode ? {
         width: isSidebarCollapsed ? collapsedPaneWidth : expandedPaneWidth,
-        // overflowY: isSidebarCollapsed ? 'hidden' : 'auto', // Control overflow here
       } : {}}
       sx={isOverlayMode ? sx : { 
         width: isSidebarCollapsed ? collapsedPaneWidth : expandedPaneWidth,
