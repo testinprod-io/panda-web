@@ -118,7 +118,7 @@ export function useChatSessionManager(
 
           let newContent = originalContent;
           if (typeof originalContent === 'string') {
-            const decrypted = EncryptionService.decryptChatMessageContent(originalContent);
+            const decrypted = EncryptionService.decrypt(originalContent);
             if (decrypted !== originalContent) {
               newContent = decrypted;
               contentChanged = true;
@@ -128,7 +128,7 @@ export function useChatSessionManager(
 
           let newReasoning = originalReasoning;
           if (typeof originalReasoning === 'string') {
-            const decryptedR = EncryptionService.decryptChatMessageContent(originalReasoning);
+            const decryptedR = EncryptionService.decrypt(originalReasoning);
             if (decryptedR !== originalReasoning) {
               newReasoning = decryptedR;
               contentChanged = true;

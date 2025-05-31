@@ -1,46 +1,12 @@
 import {
   DEFAULT_INPUT_TEMPLATE,
   DEFAULT_MODELS,
-  DEFAULT_SYSTEM_TEMPLATE,
   KnowledgeCutOffDate,
-  ServiceProvider,
-  StoreKey,
-  DEFAULT_PANDA_MODEL_NAME,
 } from "@/types/constant";
-import Locale, { getLang } from "@/locales";
-import { ModelConfig, ModelType } from '@/types/constant';
-// import { ModelType, useAppConfig } from "@/store/config";
-import { collectModelsWithDefaultModel } from "./model";
-import { estimateTokenLength } from "./token";
+import { getLang } from "@/locales";
+import { ModelConfig } from '@/types/constant';
 import { ChatMessage } from "@/types/chat";
-import { getMessageTextContent, trimTopic } from "@/utils/utils";
-
-export { trimTopic } from "@/utils/utils";
-
-export function getSummarizeModel(
-  currentModel: string,
-  providerName: string,
-): string[] {
-  // if (currentModel.startsWith("gpt") || currentModel.startsWith("chatgpt")) {
-  //   const configStore = useAppConfig.getState();
-  //   const accessStore = useAccessStore.getState();
-  //   const allModel = collectModelsWithDefaultModel(
-  //     configStore.models,
-  //     [configStore.customModels, accessStore.customModels].join(","),
-  //     accessStore.defaultModel,
-  //   );
-  //   const summarizeModel = allModel.find(
-  //     (m) => m.name === SUMMARIZE_MODEL && m.available,
-  //   );
-  //   if (summarizeModel) {
-  //     return [
-  //       summarizeModel.name,
-  //       summarizeModel.provider?.providerName as string,
-  //     ];
-  //   }
-  // }
-  return [currentModel, providerName];
-}
+import { getMessageTextContent } from "@/utils/utils";
 
 export function countMessages(msgs: ChatMessage[]): number {
   return msgs.reduce(
@@ -88,3 +54,26 @@ export function fillTemplateWith(input: string, modelConfig: ModelConfig): strin
 
   return output;
 } 
+
+export function estimateTokenLength(input: string): number {
+  let tokenLength = 0;
+
+  for (let i = 0; i < input.length; i++) {
+    const charCode = input.charCodeAt(i);
+
+    if (charCode < 128) {
+      // ASCII character
+      if (charCode <= 122 && charCode >= 65) {
+        // a-Z
+        tokenLength += 0.25;
+      } else {
+        tokenLength += 0.5;
+      }
+    } else {
+      // Unicode character
+      tokenLength += 1.5;
+    }
+  }
+
+  return tokenLength;
+}

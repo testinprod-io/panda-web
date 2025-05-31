@@ -10,7 +10,7 @@ import React, {
   ReactNode,
 } from "react";
 import { EncryptionService } from "@/services/encryption-service";
-import { PasswordModal } from "@/components/modal/password-modal";
+import { PasswordModal } from "@/components/login/password-modal";
 import { useApiClient } from "@/providers/api-client-provider";
 import { usePrivy } from "@privy-io/react-auth";
 
@@ -157,9 +157,10 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         if (!user?.id) {
           throw new Error("User ID not found");
         }
-        // Existing user - verify password first
-        if (await EncryptionService.verifyKey(apiClient, user?.id, password)) {
-          EncryptionService.setKeyFromPassword(apiClient, user?.id, password); // Sets the key for active use
+
+        const verificationToken = await apiClient.app.getEncryptedId();
+        if (verificationToken && await EncryptionService.verifyKey(verificationToken.encrypted_id, user?.id, password)) {
+          EncryptionService.setKeyFromPassword(password); // Sets the key for active use
           handleUnlockSuccess();
           return true;
         } else {
@@ -185,11 +186,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         if (!user?.id) {
           throw new Error("User ID not found");
         }
-        await EncryptionService.setKeyFromPassword(
-          apiClient,
-          user?.id,
-          newPassword
-        ); // This also creates and stores the verification token
+        await EncryptionService.setKeyFromPassword(newPassword);
 
         const encryptedVerificationToken =
           EncryptionService.encryptVerificationToken(user?.id);
@@ -243,9 +240,8 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         clearTimeout(inactivityTimerRef.current);
       }
     };
-  }, [resetInactivityTimer, isLocked]); // Rerun effect if lock state changes
+  }, [resetInactivityTimer, isLocked]);
 
-  // Effect to lock app when Privy user logs out
   useEffect(() => {
     if (!user && !isLocked) {
       console.log("[EncryptionProvider] Privy user logged out. Locking app.");
@@ -269,9 +265,6 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
               modalType="create"
               onCreateSubmit={handleCreatePassword}
               onClose={() => {
-                // If CreatePasswordModal had a cancel button or explicit close,
-                // we might want to ensure the app remains locked or re-evaluate isFirstTimeUser.
-                // For now, it only closes on successful creation or if open prop changes.
                 console.log(
                   "[EncryptionProvider] CreatePasswordModal onClose called - app should remain locked if password not set."
                 );
@@ -279,11 +272,10 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
             />
           ) : (
             <PasswordModal
-              open={isLocked} // Pass open prop directly
+              open={isLocked}
               modalType="unlock"
               onUnlockSubmit={contextUnlockApp}
               onClose={() => {
-                // Corrected log message and made it more relevant
                 console.log(
                   "[EncryptionProvider] Unlock PasswordModal onClose triggered. App state (isLocked):", isLocked
                 );
@@ -292,12 +284,12 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
           )}
         </>
       )}
-      {/* Always render children with a key that changes when unlocked, forcing re-render */}
+
       <div
         style={{
           filter: isLocked ? "blur(3px) brightness(0.8)" : "none",
           transition: "filter 0.5s ease-in-out",
-          pointerEvents: isLocked ? "none" : "auto", // Prevent interaction with content when locked
+          pointerEvents: isLocked ? "none" : "auto",
         }}
       >
         {children}

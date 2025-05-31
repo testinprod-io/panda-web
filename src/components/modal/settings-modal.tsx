@@ -29,7 +29,7 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // For back navigation
 import styles from "./settings-modal.module.scss";
 import { SettingsPage } from './settings-modal-handler'; // Import the type
-import CustomizePromptsView from '../customize-prompts-view'; // Import the new view
+import CustomizePromptsView from './customize-prompts-view'; // Import the new view
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'; // For navigation
 import { useApiClient } from "@/providers/api-client-provider";
 import { usePrivy } from "@privy-io/react-auth";

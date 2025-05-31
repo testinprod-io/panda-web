@@ -11,7 +11,7 @@ import React, {
 } from "react";
 import { useDebouncedCallback } from "use-debounce"; // Added import
 
-import { useAppConfig, useChatStore } from "@/store"; // Adjust path
+import { useAppConfig, useChatStore } from "@/store";
 
 import { ChatControllerPool } from "@/client/controller";
 

@@ -15,7 +15,7 @@ import {
   ArtifactsShareButton,
   HTMLPreview,
   HTMLPreviewHander,
-} from "../artifacts";
+} from "@/components/ui/artifacts";
 import { useChatStore } from "@/store";
 
 // import { useAppConfig } from "@/store/config";

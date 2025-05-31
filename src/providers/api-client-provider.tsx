@@ -5,51 +5,28 @@ import { usePrivy } from '@privy-io/react-auth';
 import { useAppConfig } from '@/store';
 import { ClientApi, getClientApi } from '@/client/api';
 import { ServiceProvider } from '@/types/constant';
-import type { GetAccessTokenFn } from '@/client/platforms/panda'; // Import the type
+import type { GetAccessTokenFn } from '@/client/platforms/panda';
 
-// Define a default/placeholder getAccessToken function
 const defaultGetAccessToken: GetAccessTokenFn = async () => {
   console.warn('Attempted to use default getAccessToken. Privy context might not be ready or available.');
   return null;
 };
 
-// Create the context with a default value (can be null or a dummy implementation)
-const ApiClientContext = createContext<ClientApi | null>(null);
-
 export const ApiClientProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { apiProvider } = useAppConfig();
   const { ready: privyReady, getAccessToken } = usePrivy();
 
-  // // Use the real getAccessToken if Privy is ready and authenticated, otherwise use the default
-  // // Ensure getAccessToken from Privy matches the expected type GetAccessTokenFn
-  // const effectiveGetAccessToken = useMemo(() => {
-  //     if (privyReady && getAccessToken) {
-  //       // Explicitly cast or ensure the function signature matches
-  //       return getAccessToken as GetAccessTokenFn;
-  //     }
-
-  //     return defaultGetAccessToken;
-  // }, [privyReady, getAccessToken]);
-
-
   const apiClient = useMemo(() => {
     if (!privyReady || !getAccessToken) {
-      // return null;
-        // // Return a temporary client or null, depending on how consumers handle it.
-        // // Using OpenAI as a safe default if Privy isn't ready.
-        // console.warn('[ApiClientProvider] Privy not ready, using default OpenAI client temporarily.');
-        return getClientApi(ServiceProvider.Panda, defaultGetAccessToken); // Provide default token getter
+        return getClientApi(ServiceProvider.Panda, defaultGetAccessToken);
     }
 
     try {
-        // Pass the effective (potentially default) token getter function
         return getClientApi(apiProvider, getAccessToken);
     } catch (error) {
         console.error("[ApiClientProvider] Error creating API client:", error);
         throw error;
     }
-
-  // Depend on apiProvider, privyReady, and the effectiveGetAccessToken function itself
   }, [apiProvider, privyReady, getAccessToken]);
 
   return (
@@ -59,7 +36,7 @@ export const ApiClientProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   );
 };
 
-// Custom hook to use the API client context
+const ApiClientContext = createContext<ClientApi | null>(null);
 export const useApiClient = (): ClientApi => {
   const context = useContext(ApiClientContext);
   if (context === null) {

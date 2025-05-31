@@ -63,7 +63,7 @@ export function ChatItem({
     if (isLocked) {
       session.visibleTopic = topic;
     } else {
-      session.visibleTopic = EncryptionService.decryptChatMessageContent(topic);
+      session.visibleTopic = EncryptionService.decrypt(topic);
     }
   }, [isLocked, session.topic]);
 

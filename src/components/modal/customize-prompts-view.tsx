@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import styles from './customize-prompts-view.module.scss'; // We'll create this SCSS file next
-import { ApiClient, CustomizedPromptsResponse } from '../client/client';
+import { ApiClient, CustomizedPromptsResponse } from '../../client/client';
 import { useApiClient } from '@/providers/api-client-provider';
 import { CustomizedPromptsData } from '@/types';
 import { useAppConfig } from '@/store/config';

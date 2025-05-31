@@ -7,9 +7,8 @@
 .chat {
   display: flex;
   flex-direction: column;
-  height: 100%; /* Or 100vh depending on parent */
+  height: 100%;
   overflow: hidden;
-  /* background-color: aqua; */ /* Debug color */
 }
 
 .window-content {
@@ -17,32 +16,27 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  position: relative; /* For potential absolute children */
+  position: relative;
 }
 
 .chat-body-container {
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow: hidden; /* Contains chat-body and chat-input-panel */
-  /* background-color: gray; */ /* Debug color */
+  overflow: hidden;
 }
 
 .chat-body {
-  flex-grow: 1; /* Takes available space */
-  overflow-y: auto; /* Enables message scrolling */
+  flex-grow: 1;
+  overflow-y: auto;
   overflow-x: hidden;
-  padding: 20px 0; // Removed horizontal padding
-  padding-bottom: 120px; /* Space below last message, adjust as needed */
-  position: relative; /* For potential absolute children like dividers */
-  overscroll-behavior: none; /* Prevents scrolling chain */
-  min-height: 0; /* Added to ensure flex item can shrink and scroll */
-  /* height: 100%; */ /* Usually not needed with flex-grow: 1 */
-  /* background-color: green; */ /* Debug color */
-  /* max-height: calc(100vh - 200px); */ /* Conflicts with flex-grow, likely unnecessary */
+  padding: 20px 0;
+  padding-bottom: 120px;
+  position: relative;
+  overscroll-behavior: none;
+  min-height: 0;
 }
 
-/* Styles potentially related to a title within chat-body, might be less common */
 .chat-body-main-title {
   cursor: pointer;
 
@@ -57,7 +51,6 @@
   }
 }
 
-/* Style for main chat view containing sidebar toggle */
 .chat-main {
   display: flex;
   height: 100%;
@@ -65,9 +58,6 @@
   position: relative;
   overflow: hidden;
 
-  /* .chat-body-container styles are inherited from above */
-
-  /* Side panel, likely for settings or context */
   .chat-side-panel {
     position: absolute;
     inset: 0;
@@ -90,17 +80,17 @@
 .chat-message {
   display: flex;
   flex-direction: row;
-  margin-bottom: 10px; /* Add some space between messages */
-  width: 70%; /* Default width for larger screens */
-  margin-left: auto; /* Center the message row */
-  margin-right: auto; /* Center the message row */
+  margin-bottom: 10px;
+  width: 70%;
+  margin-left: auto;
+  margin-right: auto;
 
   @media (max-width: 1024px) {
-    width: 80%; /* Increase width for medium screens */
+    width: 80%;
   }
 
   @media (max-width: 768px) {
-    width: 95%; /* Further increase width for small screens */
+    width: 95%;
   }
 }
 
@@ -118,7 +108,6 @@
   align-items: center;
   flex-direction: row;
   gap: 16px;
-  /* Removed chat-message-actions from here */
 
   .chat-model-name {
     font-size: 12px;
@@ -128,14 +117,13 @@
 }
 
 .chat-message-container {
-  // max-width: var(--message-max-width);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   width: 100%;
-  /* Hover effect to show actions */
+  
   &:hover {
-    // .chat-message-edit { /* Edit action on avatar */
+    // .chat-message-edit {
     //   opacity: 0.9;
     // }
 
@@ -147,7 +135,6 @@
   }
 }
 
-/* Align user messages to the right */
 .chat-message-user > .chat-message-container {
   align-items: flex-end;
 }
@@ -156,25 +143,21 @@
   width: 32px !important;
   height: 32px !important;
 
-  /* .chat-message-edit removed as avatar is hidden */
 }
 
-/* Message content bubble */
 .chat-message-item {
   box-sizing: border-box;
   max-width: 100%;
   margin: 0px;
-  border-radius: 48px; // Default for bot
-  // background-color: rgba(0, 0, 0, 0.05); /* REMOVED Default bubble color for bot */
+  border-radius: 48px;
 
-  padding: 16px 24px; /* Adjusted padding */
-  // font-size: 1rem; // Default font size, will be overridden by prop for content
+  padding: 16px 24px;
   user-select: text;
   word-break: break-word;
-  border: none; // Ensure no border for bot message
+  border: none;
   position: relative;
   transition: all ease 0.3s;
-  overflow-x: auto; // Added to handle horizontal overflow
+  overflow-x: auto;
 }
 
 .chat-message-system > .chat-message-container > .chat-message-item {
@@ -182,33 +165,28 @@
   border-radius: 0px;
 }
 
-/* User message bubble color and styling */
 .chat-message-user > .chat-message-container > .chat-message-item {
-  background-color: #F3F3F3 !important; /* User bubble color */
-  border: none !important; // No border for user bubble
-  box-shadow: none !important; // No shadow for user bubble
-  border-radius: 48px !important; // User message corner radius
-  /* &:hover { min-width: 0; } */ /* Seems unnecessary */
+  background-color: #F3F3F3 !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 48px !important;
 }
 
-/* Actions container below message */
 .chat-message-actions {
   display: flex;
   box-sizing: border-box;
   font-size: 12px;
-  align-items: center; // Vertically center buttons
-  justify-content: flex-start; // Align buttons to the start (left for bot, right for user due to row-reverse)
+  align-items: center;
+  justify-content: flex-start;
   transition: all ease 0.3s;
-  margin: 0; // Add margin top, remove horizontal margin
+  margin: 0;
   height: 32px;
-  width: 32px; // Take full width
-  padding: 0; // Add slight padding
+  width: 32px;
+  padding: 0;
 
-  /* Uses the same action styles as input panel, but nowrap */
   .chat-input-actions { 
     display: flex;
     flex-wrap: nowrap; 
-    // gap: 8px; // Add gap between action buttons
   }
 }
 
@@ -648,104 +626,6 @@
   /* This might not be needed if panel structure handles spacing correctly */
 }
 
-
-/* Old Send button / Stop button - COMMENT OUT or REMOVE*/
-// .chat-input-send {
-//   position: absolute !important;
-//   right: 16px;
-//   bottom: 16px;
-//   border-radius: 50% !important;
-//   min-width: 40px !important;
-//   width: 40px !important;
-//   height: 40px !important;
-//   background-color: var(--black) !important;
-//   color: var(--white) !important;
-//   transition: all 0.3s ease;
-//   cursor: pointer;
-//   z-index: 2;
-
-//   .MuiButton-label, span:not([class*="MuiSvgIcon"]) {
-//     display: none;
-//   }
-
-//   &:disabled {
-//     cursor: not-allowed;
-//   }
-
-//   &:not(:disabled):hover {
-//     background-color: var(--black) !important;
-//     box-shadow: none !important;
-//     svg {
-//       opacity: 0.8;
-//     }
-//   }
-
-//   svg {
-//     stroke-width: 1.5;
-//     stroke: var(--white);
-//     fill: var(--white);
-//     transition: opacity 0.3s ease;
-//   }
-// }
-
-/* Old Action buttons container - COMMENT OUT or REMOVE */
-// .chat-input-actions {
-//   display: flex;
-//   flex-wrap: wrap;
-//   align-items: center;
-//   padding-left: 10px;
-
-//   &-end {
-//     display: flex;
-//     margin-left: auto;
-//   }
-
-//   .chat-input-action {
-//     display: inline-flex;
-//     border-radius: 50%;
-//     font-size: 8px;
-//     color: var(--black);
-//     padding: 0;
-//     align-items: center;
-//     justify-content: center;
-//     height: 32px;
-//     width: 32px;
-//     overflow: hidden;
-//     cursor: pointer;
-
-//     .text {
-//       white-space: nowrap;
-//       padding-left: 5px;
-//       opacity: 0;
-//       transform: translateX(-5px);
-//       transition: all ease 0.3s;
-//       pointer-events: none;
-//     }
-
-//     .text,
-//     .icon {
-//       display: flex;
-//       align-items: center;
-//       justify-content: center;
-//     }
-//   }
-// }
-
-/* Old styles for file attachment UI - RETAIN and ensure compatibility */
-/* .chat-input-actions-row was for the old plus button - COMMENT OUT or REMOVE */
-// .chat-input-actions-row {
-//   display: flex;
-//   align-items: center;
-//   padding: 0px 12px 8px 12px;
-//   gap: 8px;
-// }
-
-/* .chat-input-action-plus was the old plus button style - COMMENT OUT or REMOVE */
-// .chat-input-action-plus {
-// }
-
-
-// .attach-image, .attach-file-item styles should be reviewed to ensure they fit the new panel padding
 .attach-file-item {
   cursor: default;
   position: relative;
@@ -933,27 +813,6 @@
     text-overflow: ellipsis;
   }
 }
-
-// The old .attach-file-mask is now fully commented out to avoid conflicts and syntax errors.
-/*
-.attach-file-mask {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); // Slightly darker mask
-  opacity: 0;
-  transition: opacity 0.2s ease-in-out;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: inherit; // Inherit border-radius from parent (.attach-file-item)
-  &:hover {
-    opacity: 1;
-  }
-  // DeleteImageButton styling is likely within its own component or covered by .delete-image if that class is reused
-}
-*/
 
 /* ============================== */
 /* ===== Other UI Components ===== */

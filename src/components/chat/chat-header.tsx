@@ -23,7 +23,7 @@ import { useAppConfig, useChatStore } from "@/store";
 import { ServiceProvider } from "@/types/constant";
 // import { ModelType } from "@/store/config";
 import { ModelConfig, DEFAULT_MODELS, ModelType } from "@/types/constant";
-import LoginSignupPopup from "./login-signup-popup";
+import LoginSignupPopup from "../login/login-signup-popup";
 import styles from "./chat-header.module.scss";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";

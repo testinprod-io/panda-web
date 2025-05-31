@@ -757,7 +757,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
               styles["chat-input-action-search-new"],
               { [styles.active]: enableSearch }
             )}
-            // disabled={isLoading || isUploadingFiles}
+            disabled={!authenticated || isUploadingFiles}
             aria-pressed={enableSearch}
             aria-label={enableSearch ? "Disable web search" : "Enable web search"}
           >

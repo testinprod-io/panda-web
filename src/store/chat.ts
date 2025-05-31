@@ -6,7 +6,7 @@ import {
 import Locale from "@/locales";
 import { createPersistStore, MakeUpdater } from "@/utils/store";
 import { ModelConfig } from "@/types/constant";
-import { ChatSession,  SessionSyncState, MessagesLoadState, SessionState, SubmittedFile } from "@/types/session";
+import { ChatSession,  SessionSyncState, MessagesLoadState, SessionState } from "@/types/session";
 import { ChatMessage, MessageSyncState } from "@/types/chat";
 import { Conversation } from "@/client/types";
 import { createJSONStorage } from "zustand/middleware";
@@ -25,16 +25,13 @@ const DEFAULT_CHAT_INTERACTION_STATE = {
 };
 
 const DEFAULT_CHAT_STATE = {
-  sessions: [] as ChatSession[], // Initialize as empty, will be loaded/merged
-  currentSessionIndex: -1, // Start with no session selected
+  sessions: [] as ChatSession[],
+  currentSessionIndex: -1,
   lastInput: "",
-  ...DEFAULT_CHAT_INTERACTION_STATE, // Merge interaction state here
+  ...DEFAULT_CHAT_INTERACTION_STATE,
 };
 
-// Define the core chat state type
 type ChatState = typeof DEFAULT_CHAT_STATE;
-
-// Define the fully hydrated state type including MakeUpdater
 type HydratedChatState = ChatState & MakeUpdater<ChatState>;
 
 export const useChatStore = createPersistStore(
@@ -52,7 +49,7 @@ export const useChatStore = createPersistStore(
         
         const mergedSessions: ChatSession[] = [];
         const usedServerIds = new Set<UUID>();
-        const currentSession = get().currentSession(); // Get current session before merge
+        const currentSession = get().currentSession();
 
         localSessions.forEach(localSession => {
             const serverId = localSession.id;
@@ -354,48 +351,6 @@ export const useChatStore = createPersistStore(
           });
       },
 
-      // --- Getters needed by Actions/Components ---
-
-      // Simplified getMessagesWithMemory - operates on decrypted state
-      // Actual token counting / message slicing for API call should happen in actions
-      // getMemoryContextPrompts(modelConfig: ModelConfig): { systemPrompts: ChatMessage[], memoryPrompt?: ChatMessage, contextPrompts: ChatMessage[] } {
-      //   const session = get().currentSession();
-      //   if (!session) return { systemPrompts: [], contextPrompts: [] };
-
-      //   const systemPrompts: ChatMessage[] = [];
-      //   // Simplified system prompt creation - fillTemplateWith moved, assume action handles it
-      //   // Content here is assumed decrypted for LLM processing
-      //   systemPrompts.push(createMessage({ role: "system", content: `System prompt for ${modelConfig.name}` })); // Placeholder content
-
-      //   let memoryPrompt: ChatMessage | undefined = undefined;
-      //   const shouldSendLongTermMemory = modelConfig.sendMemory && session.memoryPrompt && session.memoryPrompt.length > 0;
-      //   if (shouldSendLongTermMemory) {
-      //       // Memory prompt content is assumed decrypted
-      //       memoryPrompt = createMessage({ role: "system", content: Locale.Store.Prompt.History(session.memoryPrompt), date: new Date() });
-      //   }
-      //   // Context messages are assumed decrypted
-      //   const contextPrompts = session.context.slice(); // Assuming context is already ChatMessage[]
-
-      //   return { systemPrompts, memoryPrompt, contextPrompts };
-      // },
-
-      // Retrieves recent messages based on count, skipping errors
-      // Used by actions before sending to API (content will be encrypted by ApiService)
-      // getRecentMessagesForApi(count: number): ChatMessage[] {
-      //     const session = get().currentSession();
-      //     if (!session) return [];
-      //     const messages = session.messages; // Decrypted messages
-      //     const recentMessages: ChatMessage[] = [];
-      //     for (let i = messages.length - 1; i >= 0 && recentMessages.length < count; i--) {
-      //         const msg = messages[i];
-      //         if (!msg.isError) { // Skip messages marked as errors
-      //             recentMessages.push(msg);
-      //         }
-      //     }
-      //     return recentMessages.reverse(); // Return in chronological order (decrypted)
-      // },
-
-      // --- New methods for chat interaction state ---
       setOnSendMessageHandler: (handler: ((sessionState: SessionState) => Promise<void>) | null) => {
         set({ onSendMessageHandler: handler });
       },
@@ -414,15 +369,14 @@ export const useChatStore = createPersistStore(
       setIsChatComponentBusy: (isBusy: boolean) => {
         set({ isChatComponentBusy: isBusy });
       },
-      // Method to clear handlers, e.g., when ChatComponent unmounts or session changes
+
       clearChatInteractionHandlers: () => {
         set({
           onSendMessageHandler: null,
-          // hitBottom: true, // Don't reset hitBottom, it reflects current scroll state
           scrollToBottomHandler: null,
           showPromptModalHandler: null,
           showShortcutKeyModalHandler: null,
-          isChatComponentBusy: false, // Reset busy state
+          isChatComponentBusy: false,
         });
       },
     };
@@ -431,9 +385,9 @@ export const useChatStore = createPersistStore(
   },
   {
     name: StoreKey.Chat,
-    version: 1.1, // Incremented version due to new state fields
+    version: 1.1,
 
-    storage: createJSONStorage(() => indexedDBStorage), // NEW
+    storage: createJSONStorage(() => indexedDBStorage),
 
     onRehydrateStorage: (state) => {
       console.log("[ChatStore] Hydration finished.");
@@ -445,6 +399,7 @@ export const useChatStore = createPersistStore(
           }
       }
     },
+
     migrate(persistedState: any, version: number) {
       const state = persistedState as Partial<ChatState>;
       if (version < 1.1 && state) {
@@ -456,7 +411,7 @@ export const useChatStore = createPersistStore(
         state.showShortcutKeyModalHandler = null;
         state.isChatComponentBusy = false;
       }
-      // Add any other migrations from previous versions here
+      
       return state as HydratedChatState;
     },
   },

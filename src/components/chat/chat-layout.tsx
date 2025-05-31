@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Box, easing, Typography, useMediaQuery, IconButton, Tooltip } from "@mui/material";
+import { Box, easing, Typography, useMediaQuery, IconButton, Tooltip, CircularProgress } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
+
 import Sidebar from "@/components/sidebar/sidebar";
-import ChatHeader from "@/components/chat-header";
+import ChatHeader from "@/components/chat/chat-header";
+
 import { ChatInputPanel } from "@/components/chat/chat-input-panel";
 import { useChatStore, useAppConfig } from "@/store";
 import { UNFINISHED_INPUT } from "@/types/constant";
@@ -18,8 +20,6 @@ import { useSnackbar } from "@/providers/snackbar-provider";
 import styles from "@/components/chat/chat.module.scss";
 import sidebarStyles from "@/components/sidebar/sidebar.module.scss";
 import { usePrivy } from "@privy-io/react-auth";
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 const localStorage = safeLocalStorage();
 
@@ -166,9 +166,9 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
     // Force collapse for this specific transition render to avoid flicker.
     effectiveIsSidebarCollapsed = true;
   }
-  // Conditional returns AFTER all hooks have been called.
+
   if (!privyReady) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Typography>Loading authentication...</Typography></Box>;
+    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress color="primary" /></Box>;
   }
 
   return (
@@ -193,7 +193,7 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
               // top: '50vh' and transform will be handled by SCSS
             }}
           >
-            {isSidebarCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+            {isSidebarCollapsed ? <img src="/icons/chevron-right.svg" style={{ width: '8.75px', height: '17.5px' }} alt="Expand Sidebar" /> : <img src="/icons/chevron-left.svg" style={{ width: '8.75px', height: '17.5px' }}  alt="Collapse Sidebar" />}
           </IconButton>
         </Tooltip>
       )}

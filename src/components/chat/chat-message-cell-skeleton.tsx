@@ -19,18 +19,12 @@ export const ChatMessageCellSkeleton: React.FC<ChatMessageCellSkeletonProps> = (
   return (
     <div
       className={clsx(
-        styles["chat-message"], // Base message style
-        isUser ? styles["chat-message-user"] : null, // User alignment
-        styles["chat-message-skeleton"] // Specific skeleton style
+        styles["chat-message"],
+        isUser ? styles["chat-message-user"] : null,
+        styles["chat-message-skeleton"]
       )}
     >
       <div className={styles["chat-message-container"]}>
-        {/* Skeleton Header (Optional: can add avatar skeleton) */}
-        {/* <div className={styles["chat-message-header"]}>
-          <div className={styles["chat-message-avatar-skeleton"]}></div>
-        </div> */}
-        
-        {/* Skeleton Bubble */}
         <div className={styles["chat-message-item-skeleton"]}>
           <div className={styles["skeleton-line"]} style={{ width: '80%' }}></div>
           <div className={styles["skeleton-line"]} style={{ width: '60%' }}></div>
