@@ -10,7 +10,7 @@ import Locale from "@/locales";
 import { ChatItem } from "./chat-item";
 import { ChatListSkeleton } from "./chat-list-skeleton";
 import styles from "./chat-list.module.scss";
-import { EncryptionService } from "@/services/EncryptionService";
+import { EncryptionService } from "@/services/encryption-service";
 
 // Constants for calculating paging skeleton height, mirroring ChatListSkeleton.tsx logic
 const PAGING_SK_HEADER_HEIGHT = 14;

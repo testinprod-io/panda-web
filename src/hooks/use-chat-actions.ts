@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useChatStore } from '@/store/chat';
-import { ChatApiService, mapApiMessagesToChatMessages, mapApiMessageToChatMessage, mapConversationToSession } from '@/services/ChatApiService';
+import { ChatApiService, mapApiMessagesToChatMessages, mapApiMessageToChatMessage, mapConversationToSession } from '@/services/api-service';
 import { useApiClient } from '@/providers/api-client-provider';
 import { ChatMessage, MessageSyncState } from '@/types/chat';
 import { MessagesLoadState, SessionSyncState, ChatSession } from '@/types/session';
@@ -20,7 +20,7 @@ import { RequestMessage } from '@/client/api';
 import { DEFAULT_TOPIC } from '@/store/chat';
 import { getMessageTextContent, trimTopic } from "@/utils/utils";
 // import { ModelType } from "@/store/config";
-import { EncryptionService } from '@/services/EncryptionService';
+import { EncryptionService } from '@/services/encryption-service';
 
 export function useChatActions() {
     const store = useChatStore();

@@ -9,6 +9,8 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import { usePrivy } from '@privy-io/react-auth';
+import { useRouter } from 'next/navigation';
 
 const MIN_PASSWORD_LENGTH = 10;
 const MAX_PASSWORD_LENGTH = 20;
@@ -84,7 +86,8 @@ export function PasswordModal({
   const [password, setPassword] = useState(initialPassword);
   const [error, setError] = useState('');
   const [debugMode, setDebugMode] = useState(false);
-
+  const router = useRouter();
+  const { logout } = usePrivy();
   const currentConfig = MODAL_CONFIG[modalType];
   
   const actualEnableKeydownDebugToggle = enableKeydownDebugToggle ?? (modalType === 'unlock');
@@ -138,6 +141,11 @@ export function PasswordModal({
       setError(`Error: ${err.message || 'Failed to process password'}`);
     }
   }, [password, modalType, onUnlockSubmit, onCreateSubmit, currentConfig]);
+
+  const handleLogOut = useCallback(() => {
+    router.replace('/');
+    logout();
+  }, [logout, router]);
 
   useEffect(() => {
     if (actualEnableKeydownDebugToggle) {
@@ -292,6 +300,7 @@ export function PasswordModal({
                 fontWeight: '400',
                 '&::placeholder': {
                   opacity: 1,
+                  color: '#CACACA',
                 }
               }
             }}
@@ -327,6 +336,32 @@ export function PasswordModal({
               {currentConfig.submitButtonText}
             </Button>
           </DialogActions>
+
+          <DialogActions sx={{ padding: 0, width: '100%' }}>
+            <Button 
+              variant="outlined" 
+              fullWidth 
+              sx={{
+                height: '48px',
+                background: "#FFFFFF",
+                color: '#131A28',
+                borderRadius: '24px',
+                borderColor: '#B3B3B3',
+                padding: '0 10px',
+                textTransform: 'none', 
+                fontColor: '#131A28',
+                fontSize: '16px',
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: '400',
+                boxShadow: 'none',
+                marginTop: '8px',
+              }}
+              onClick={handleLogOut}
+            >
+              {"Log out"}
+            </Button>
+          </DialogActions>
+
         </Box>
       </Box>
     </Dialog>

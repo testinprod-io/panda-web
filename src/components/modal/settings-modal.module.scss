@@ -20,6 +20,7 @@
   padding: 0; // Padding will be handled by inner elements
   display: flex;
   flex-direction: column;
+  height: 60vh;
   max-height: 90vh;
   overflow: hidden; // Prevent content from spilling before internal scroll is set
 }

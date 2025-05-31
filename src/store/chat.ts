@@ -10,7 +10,7 @@ import { ChatSession,  SessionSyncState, MessagesLoadState, SessionState, Submit
 import { ChatMessage, MessageSyncState } from "@/types/chat";
 import { Conversation } from "@/client/types";
 import { createJSONStorage } from "zustand/middleware";
-import { mapConversationToSession } from "@/services/ChatApiService";
+import { mapConversationToSession } from "@/services/api-service";
 
 export const DEFAULT_TOPIC = Locale.Store.DefaultTopic; // Use locale
 

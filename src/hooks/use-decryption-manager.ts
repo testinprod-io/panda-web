@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { ChatMessage } from '@/types/chat';
 import { MultimodalContent } from '@/client/api';
-import { EncryptionService } from '@/services/EncryptionService';
+import { EncryptionService } from '@/services/encryption-service';
 
 // Define the possible states for a decryption attempt
 enum DecryptionStatus {

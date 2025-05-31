@@ -6,7 +6,7 @@ import { ChatMessage, RequestMessage } from "@/types";
 import { copyToClipboard } from "@/utils/utils"; // Adjust path
 import Locale from "@/locales"; // Adjust path
 import { MultimodalContent } from "@/client/api";
-import { EncryptionService } from "@/services/EncryptionService";
+import { EncryptionService } from "@/services/encryption-service";
 
 import { ActionButton } from "@/components/ui/action-button";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
@@ -35,6 +35,7 @@ import { UUID } from "crypto";
 import { useApiClient } from "@/providers/api-client-provider";
 import { AttestationService } from "@/services/attestation-service";
 import { useWallets } from "@privy-io/react-auth";
+import { useEncryption } from "@/providers/encryption-provider";
 
 const Markdown = dynamic(async () => (await import("../ui/markdown")).Markdown, {
   loading: () => <LoadingAnimation />,
@@ -148,12 +149,33 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
   const isUser = role === "user";
 
   const currentImageUrls = getImageUrls(content);
-  
+  const { isLocked } = useEncryption();
   const apiClient = useApiClient();
 
   useEffect(() => {
     if (!files || files.length === 0) {
       setLoadedFiles([]);
+      return;
+    }
+
+    setLoadedFiles([]);
+
+    if (isLocked) {
+      const newLoadedFiles: LoadedFile[] = [];
+
+      for (const file of files) {
+        newLoadedFiles.push({
+          id: file.file_id as UUID,
+          name: file.file_name,
+          type: "other", // Or a specific error type
+          url: "",
+          isLoading: false,
+          error: "Cannot decrypt file",
+          originalType: file.file_type,
+        });
+      }
+
+      setLoadedFiles(newLoadedFiles);
       return;
     }
 
@@ -264,7 +286,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
       });
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps 
-  }, [files, sessionId, apiClient]); // Ensure apiClient is stable or memoized if it comes from context
+  }, [files, sessionId, apiClient, isLocked]); // Ensure apiClient is stable or memoized if it comes from context
 
   // Ref to store the previous value of message.isReasoning
   const prevIsReasoningRef = React.useRef(message.isReasoning);

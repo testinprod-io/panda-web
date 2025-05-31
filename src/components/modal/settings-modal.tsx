@@ -56,7 +56,7 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
   const { authenticated, logout } = usePrivy();
 
   if (!authenticated) {
-    return <div>Not authenticated</div>;
+    return <div></div>;
   }
 
   const { clearSessions } = useChatStore();

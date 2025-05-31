@@ -39,25 +39,12 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
   const params = useParams();
   const router = useRouter();
   const appConfig = useAppConfig();
-
   const prevIsMobile = usePrevious(isMobile); // Track previous isMobile state
 
   // Get Privy status
   const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
 
-  // If Privy is not ready, show a loading message.
-  if (!privyReady) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Typography>Loading authentication...</Typography></Box>;
-  }
-
-  // If the user is not authenticated, show a login message.
-  // This ensures that components like Sidebar (which use useEncryption)
-  // are only rendered after EncryptionProvider is available via AuthenticatedContentWrapper.
-  if (!privyAuthenticated) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Typography>Please log in to access the chat.</Typography></Box>;
-  }
-
-  // These hooks are now called only when authenticated and ready
+  // Hooks MUST be called unconditionally at the top level.
   const { newSession } = useChatActions();
   const { showSnackbar } = useSnackbar();
 
@@ -86,13 +73,16 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
   const currentChatId = params?.chatId as UUID | undefined;
   const isNewChatPage = !currentChatId;
 
+
+  // If Privy is ready but the user is not authenticated,
+  // ChatLayoutContent will still render its basic structure.
+  // Components inside it that require auth (like Sidebar) will be conditionally rendered.
+
+  // If we've reached this point, privyReady is true. privyAuthenticated may be true or false.
+
   useEffect(() => {
     setIsSidebarCollapsed(isMobile ? true : false);
   }, [isMobile]);
-
-  useEffect(() => {
-    clearChatInteractionHandlers();
-  }, [currentChatId, clearChatInteractionHandlers]);
 
   const modelConfig = React.useMemo(() => {
     if (currentChatId) {
@@ -111,7 +101,7 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
     ) => {
       if ((!sessionState.userInput || !sessionState.userInput.trim()) && sessionState.persistedAttachedFiles.length === 0) return;
       setInternalIsSubmitting(true);
-      console.log(`[handleLayoutSubmit] sessionId: ${sessionId}`);
+      console.log(`[handleLayoutSubmit] sessionId: ${sessionId} currentChatId: ${currentChatId} onSendMessageHandlerFromStore: ${onSendMessageHandlerFromStore}`);
       try {
         if (currentChatId && onSendMessageHandlerFromStore) {
           console.log(`[handleLayoutSubmit] currentChatId: ${currentChatId}`);
@@ -176,6 +166,10 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
     // Force collapse for this specific transition render to avoid flicker.
     effectiveIsSidebarCollapsed = true;
   }
+  // Conditional returns AFTER all hooks have been called.
+  if (!privyReady) {
+    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Typography>Loading authentication...</Typography></Box>;
+  }
 
   return (
     <Box
@@ -185,7 +179,8 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
         position: "relative",
       }}
     >
-      {/* Sidebar Toggle Button - Now in ChatLayoutContent */}
+      {privyAuthenticated && (
+        <>
       {!isMobile && (
         <Tooltip title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"} placement="right">
           <IconButton 
@@ -249,6 +244,8 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
           })}
         />
       </>
+      </>
+      )}
       <Box
         component="main"
         sx={{

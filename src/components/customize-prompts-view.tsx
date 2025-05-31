@@ -251,7 +251,7 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
             value={name}
             onChange={(e) => setName(e.target.value)}
             className={styles.textField}
-            disabled={isSaving}
+            disabled={isSaving || !enableForNewChats}
           />
         </Box>
 
@@ -264,7 +264,7 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
             value={job}
             onChange={(e) => setJob(e.target.value)}
             className={styles.textField}
-            disabled={isSaving}
+            disabled={isSaving || !enableForNewChats}
           />
         </Box>
 
@@ -279,7 +279,7 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
             value={traitsText}
             onChange={(e) => setTraitsText(e.target.value)}
             className={styles.textArea}
-            disabled={isSaving}
+            disabled={isSaving || !enableForNewChats}
             onBlur={() => {
               const currentTextTraits = traitsText.split(',').map(s => s.trim()).filter(Boolean);
               setTraits(prevTraits => prevTraits.map(trait => ({
@@ -298,7 +298,7 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
                 className={clsx(styles.traitChip, trait.selected && styles.selectedTrait)}
                 variant={trait.selected ? 'filled' : 'outlined'}
                 clickable={!isSaving}
-                disabled={isSaving}
+                disabled={isSaving || !enableForNewChats}
               />
             ))}
           </Box>
@@ -315,7 +315,7 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
             value={extraParams}
             onChange={(e) => setExtraParams(e.target.value)}
             className={styles.textArea}
-            disabled={isSaving}
+            disabled={isSaving || !enableForNewChats}
           />
         </Box>
       </Box>

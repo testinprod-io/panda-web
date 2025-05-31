@@ -24,7 +24,7 @@ import { ModelConfig, ModelType } from "@/types/constant";
 import Locale from "@/locales";
 import { DEFAULT_TOPIC } from "@/store/chat"; // Assuming these are exported from store
 import { trimTopic, getMessageTextContent } from "@/utils/utils"; // Import from utils
-import { EncryptionService } from "@/services/EncryptionService";
+import { EncryptionService } from "@/services/encryption-service";
 import { LLMConfig } from "@/client/api";
 
 // Helper to encrypt/decrypt conversation data

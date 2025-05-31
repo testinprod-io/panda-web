@@ -30,7 +30,7 @@ import { useApiClient } from "@/providers/api-client-provider";
 import { useChatActions } from "@/hooks/use-chat-actions";
 // Helper component for the generic file icon
 import { SessionState, SubmittedFile } from "@/types/session";
-import { EncryptionService } from "@/services/EncryptionService";
+import { EncryptionService } from "@/services/encryption-service";
 
 const GenericFileIcon = () => (
   <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
