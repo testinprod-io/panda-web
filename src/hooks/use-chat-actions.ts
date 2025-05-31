@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useChatStore } from '@/store/chat';
 import { ChatApiService, mapApiMessagesToChatMessages, mapApiMessageToChatMessage, mapConversationToSession } from '@/services/api-service';
 import { useApiClient } from '@/providers/api-client-provider';
@@ -316,7 +316,7 @@ export function useChatActions() {
             // Optionally notify the user
         }
 
-    }, [apiClient, store]);
+    }, [apiClient]);
 
     const updateConversation = useCallback(async (id: UUID, conversationData: ConversationUpdateRequest) => {
         if (!apiClient) {
@@ -341,7 +341,7 @@ export function useChatActions() {
         } catch (error) {
             console.error(`[ChatActions] Failed to update server title for ConvID ${id}:`, error);
         }
-    }, [apiClient, store]);
+    }, [apiClient]);
 
     const loadSummariesForSession = useCallback(async (sessionId: UUID): Promise<{ summaries: ApiSummary[], lastSummarizedMessageId: UUID | null }> => {
         if (!apiClient) {
@@ -429,7 +429,8 @@ export function useChatActions() {
         }
     }, [apiClient]);
 
-    return {
+    // Memoize the returned object of actions
+    const actions = useMemo(() => ({
         loadSessionsFromServer,
         newSession,
         selectSession,
@@ -440,5 +441,18 @@ export function useChatActions() {
         saveMessageToServer,
         generateSessionTitle,
         updateConversation,
-    };
+    }), [
+        loadSessionsFromServer,
+        newSession,
+        selectSession,
+        loadMessagesForSession,
+        loadSummariesForSession,
+        summarizeAndStoreMessages, 
+        deleteSession,
+        saveMessageToServer,
+        generateSessionTitle,
+        updateConversation
+    ]);
+
+    return actions;
 } 
