@@ -24,7 +24,11 @@ export function useLoadedFiles(
 
   // Create a stable dependency based on the content of messageFiles
   const filesDep = useMemo(() => 
-    JSON.stringify((messageFiles || []).map(f => ({ id: f.file_id, name: f.file_name }))), 
+    JSON.stringify(
+      (messageFiles || [])
+        .map(f => ({ id: f.file_id, name: f.file_name }))
+        .sort((a, b) => (a.id && b.id ? a.id.localeCompare(b.id) : 0)) // Sort by ID to ensure canonical string
+    ),
   [messageFiles]);
 
   // Extract the specific function to be used in the effect's dependency array
