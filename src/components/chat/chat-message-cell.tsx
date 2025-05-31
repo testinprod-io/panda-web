@@ -28,6 +28,7 @@ import { useApiClient } from "@/providers/api-client-provider";
 import { AttestationService } from "@/services/attestation-service";
 import { useWallets } from "@privy-io/react-auth";
 import { useEncryption } from "@/providers/encryption-provider";
+import { useLoadedFiles, LoadedFile } from "@/hooks/use-loaded-files";
 
 const Markdown = dynamic(async () => (await import("../ui/markdown")).Markdown, {
   loading: () => <LoadingAnimation />,
@@ -47,16 +48,6 @@ interface ChatMessageCellProps {
   onResend: (messageId: UUID) => void;
   onUserStop: (messageId: UUID) => void;
   onEditSubmit: (messageId: UUID, newText: string) => void;
-}
-
-interface LoadedFile {
-  id: UUID;
-  name: string;
-  type: string;
-  url: string;
-  isLoading: boolean;
-  error?: string;
-  originalType: string;
 }
 
 function getTextContent(
@@ -114,13 +105,16 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
   const { role, streaming, isError, isReasoning, files, visibleContent: content, visibleReasoning: reasoning } =
     message;
   const { wallets } = useWallets();
+  const { isLocked } = useEncryption();
+  const apiClient = useApiClient();
+
+  const loadedFiles = useLoadedFiles(files, sessionId, apiClient, isLocked);
 
   const handleResend = useCallback(
     async () => { 
       await AttestationService.getAttestation(wallets, sessionId); 
-      // onResend(messageId); // Original onResend call is commented out, keeping as is for now.
     },
-    [onResend, messageId, wallets] // onResend is in deps but not called if above is commented.
+    [onResend, messageId, wallets, sessionId]
   );
   const handleUserStop = useCallback(
     () => onUserStop(messageId),
@@ -130,151 +124,11 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState("");
   const [isReasoningCollapsed, setIsReasoningCollapsed] = useState(true);
-  const [loadedFiles, setLoadedFiles] = useState<LoadedFile[]>([]);
 
   const isUser = role === "user";
-
   const currentImageUrls = getImageUrls(content);
-  const { isLocked } = useEncryption();
-  const apiClient = useApiClient();
 
-  useEffect(() => {
-    if (!files || files.length === 0) {
-      setLoadedFiles([]);
-      return;
-    }
-
-    setLoadedFiles([]);
-
-    if (isLocked) {
-      const newLoadedFiles: LoadedFile[] = [];
-
-      for (const file of files) {
-        newLoadedFiles.push({
-          id: file.file_id as UUID,
-          name: file.file_name,
-          type: "other", // Or a specific error type
-          url: "",
-          isLoading: false,
-          error: "Cannot decrypt file",
-          originalType: file.file_type,
-        });
-      }
-
-      setLoadedFiles(newLoadedFiles);
-      return;
-    }
-
-    const fetchFiles = async () => {
-      setLoadedFiles(
-        files.map((file) => ({
-          id: file.file_id as UUID,
-          name: file.file_name,
-          type: file.file_type as "image" | "pdf" | "other",
-          url: "",
-          isLoading: true,
-          originalType: "",
-        }))
-      );
-      // console.log(`[chat-message-cell] files:`, files); // Removed log
-      const newLoadedFiles: LoadedFile[] = [];
-
-      for (const file of files) {
-        try {
-          const response = await apiClient.app.getFile(sessionId, file.file_id as UUID);
-          if (!response) {
-            throw new Error("File response is undefined");
-          }
-
-          const contentType = response.headers.get("Content-Type") || "application/octet-stream";
-          const contentDisposition = response.headers.get("Content-Disposition");
-          let fileName = file.file_name; // Default filename
-
-          if (contentDisposition) {
-            const match = contentDisposition.match(/filename="?([^"]+)"?/i);
-            if (match && match[1]) {
-              fileName = match[1];
-            }
-          }
-          
-          const reader = response.body?.getReader();
-          if (!reader) {
-            throw new Error("ReadableStream not available");
-          }
-
-          const chunks: Uint8Array[] = [];
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            if (value) {
-              chunks.push(value);
-            }
-          }
-          const blob = new Blob(chunks, { type: contentType });
-          let fileToProcess = new File([blob], fileName, { type: contentType });
-
-          if (EncryptionService.isKeySet()) {
-            try {
-              fileToProcess = await EncryptionService.decryptFile(fileToProcess);
-              fileName = EncryptionService.decrypt(fileName);
-            } catch (decryptionError) {
-              console.error("Error decrypting file:", file.file_id, decryptionError);
-              newLoadedFiles.push({
-                id: file.file_id as UUID,
-                name: fileName,
-                type: "other", // Or a specific error type
-                url: "",
-                isLoading: false,
-                error: "Decryption failed",
-                originalType: contentType,
-              });
-              continue; // Skip to the next file
-            }
-          }
-
-          const url = URL.createObjectURL(fileToProcess);
-
-          const fileType = file.file_type as "image" | "pdf" | "other";
-
-          newLoadedFiles.push({
-            id: file.file_id as UUID,
-            name: fileName,
-            type: fileType,
-            url: url,
-            isLoading: false,
-            originalType: contentType,
-          });
-        } catch (error) {
-          console.error("Error fetching file:", file.file_id, error);
-          newLoadedFiles.push({
-            id: file.file_id as UUID,
-            name: "Error loading file",
-            type: "other",
-            url: "",
-            isLoading: false,
-            error: (error as Error).message || "Unknown error",
-            originalType: "",
-          });
-        }
-      }
-      setLoadedFiles(newLoadedFiles);
-    };
-
-    fetchFiles();
-
-    return () => {
-      loadedFiles.forEach((file) => {
-        if (file.url && file.url.startsWith("blob:")) {
-          URL.revokeObjectURL(file.url);
-        }
-      });
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps 
-  }, [files, sessionId, apiClient, isLocked]);
-
-  // Ref to store the previous value of message.isReasoning
   const prevIsReasoningRef = React.useRef(message.isReasoning);
-
   useEffect(() => {
     if (isEditing) {
       setEditedText(content as string);
@@ -282,18 +136,14 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
   }, [content, isEditing]);
 
   useEffect(() => {
-    // On initial mount or if reasoning starts
     if (message.isReasoning && !prevIsReasoningRef.current) {
       setIsReasoningCollapsed(false);
     }
-    // If reasoning finishes
     else if (!message.isReasoning && prevIsReasoningRef.current) {
       setIsReasoningCollapsed(true);
     }
-
-    // Update the ref with the current value for the next render
     prevIsReasoningRef.current = message.isReasoning;
-  }, [message.isReasoning]); // Only re-run when message.isReasoning changes
+  }, [message.isReasoning]);
 
   const handleEditClick = useCallback(() => {
     setEditedText(content as string);
