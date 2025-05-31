@@ -1293,3 +1293,12 @@
     background-color: var(--bg-hover, #e9e9e9); // Add a hover state
   }
 }
+
+// Container for the reasoning display section
+.chat-message-reasoning-container {
+  margin-bottom: var(--spacing-1, 8px); // Corresponds to mb: 1
+  padding: var(--spacing-1, 8px);       // Corresponds to p: 1
+  border-radius: var(--border-radius-medium, 4px); // Corresponds to borderRadius: 1 (assuming 4px or theme value)
+  // background-color: var(--subtle-background, transparent); // Optional subtle background
+  // Consider adding a transition for smooth collapse/expand if not handled by content visibility alone
+}

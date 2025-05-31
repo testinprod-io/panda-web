@@ -31,6 +31,7 @@ import { useEncryption } from "@/providers/encryption-provider";
 import { useLoadedFiles, LoadedFile } from "@/hooks/use-loaded-files";
 import { FilePreviewItem } from "./FilePreviewItem";
 import { MessageActionsBar } from "./MessageActionsBar";
+import { ReasoningDisplay } from "./ReasoningDisplay";
 
 const Markdown = dynamic(async () => (await import("../ui/markdown")).Markdown, {
   loading: () => <LoadingAnimation />,
@@ -104,7 +105,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     onEditSubmit,
   } = props;
 
-  const { role, streaming, isError, isReasoning, files, visibleContent: content, visibleReasoning: reasoning } =
+  const { role, streaming, isError, isReasoning, files, visibleContent: content, visibleReasoning: reasoning, reasoningTime } =
     message;
   const { wallets } = useWallets();
   const { isLocked } = useEncryption();
@@ -125,27 +126,14 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState("");
-  const [isReasoningCollapsed, setIsReasoningCollapsed] = useState(true);
 
   const isUser = role === "user";
-  const currentImageUrls = getImageUrls(content);
 
-  const prevIsReasoningRef = React.useRef(message.isReasoning);
   useEffect(() => {
     if (isEditing) {
       setEditedText(content as string);
     }
   }, [content, isEditing]);
-
-  useEffect(() => {
-    if (message.isReasoning && !prevIsReasoningRef.current) {
-      setIsReasoningCollapsed(false);
-    }
-    else if (!message.isReasoning && prevIsReasoningRef.current) {
-      setIsReasoningCollapsed(true);
-    }
-    prevIsReasoningRef.current = message.isReasoning;
-  }, [message.isReasoning]);
 
   const handleEditClick = useCallback(() => {
     setEditedText(content as string);
@@ -165,10 +153,6 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     onEditSubmit(messageId, editedText);
     setIsEditing(false);
   }, [messageId, editedText, content, onEditSubmit]);
-
-  const toggleReasoningCollapse = useCallback(() => {
-    setIsReasoningCollapsed((prev) => !prev);
-  }, []);
 
   if (isError) {
     return (
@@ -206,7 +190,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     );
   }
 
-  const showReasoning = !isUser && (reasoning || isReasoning);
+  const shouldShowReasoning = !isUser && (reasoning || isReasoning);
   return (
     <div
       className={clsx(
@@ -273,61 +257,15 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
         )}
 
         <Box className={styles["chat-message-item"]}>
-          {showReasoning && (
-            <Box
-              className={styles["chat-message-reasoning-container"]}
-              sx={{ mb: 1, p: 1, borderRadius: 1 }}
-            >
-              <Box
-                display="flex"
-                alignItems="center"
-                onClick={toggleReasoningCollapse}
-                sx={{ cursor: "pointer" }}
-              >
-                <IconButton size="small" sx={{ mr: 0.5 }}>
-                  {isReasoningCollapsed ? (
-                    <ChevronRightIcon fontSize="inherit" />
-                  ) : (
-                    <ExpandMoreIcon fontSize="inherit" />
-                  )}
-                </IconButton>
-                <Typography
-                  variant="caption"
-                  sx={{ fontWeight: "medium", color: "text.secondary" }}
-                >
-                  {isReasoning
-                    ? "Thinking..."
-                    : message.reasoningTime && message.reasoningTime > 0
-                    ? `Thought for ${(message.reasoningTime / 1000).toFixed(
-                        1
-                      )} seconds`
-                    : "Processing complete"}
-                </Typography>
-                {isReasoning && !reasoning && (
-                  <Box sx={{ ml: 1 }}>
-                    <LoadingAnimation />
-                  </Box>
-                )}
-              </Box>
-              {!isReasoningCollapsed && reasoning && (
-                <Box
-                  sx={{
-                    mt: 1,
-                    pl: 2.5,
-                    borderLeft: `2px solid rgba(0,0,0,0.1)`,
-                    ml: 1.2,
-                    color: "text.disabled",
-                  }}
-                >
-                  <Markdown
-                    content={reasoning}
-                    fontSize={fontSize * 0.85}
-                    fontFamily={fontFamily}
-                    parentRef={scrollRef as React.RefObject<HTMLDivElement>}
-                  />
-                </Box>
-              )}
-            </Box>
+          {shouldShowReasoning && (
+            <ReasoningDisplay 
+              reasoning={reasoning}
+              isReasoningInProgress={isReasoning || false}
+              reasoningTime={reasoningTime}
+              fontSize={fontSize} 
+              fontFamily={fontFamily}
+              scrollRef={scrollRef}
+            />
           )}
 
           {isEditing ? (
@@ -371,9 +309,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
             </Box>
           ) : (
             <>
-              {(content ||
-                currentImageUrls.length > 0 ||
-                (streaming && !isUser && !showReasoning)) && (
+              {(content || /* currentImageUrls.length > 0 || */ (streaming && !isUser && !shouldShowReasoning)) && (
                 <Markdown
                   key={`${messageId}-${streaming ? "streaming" : "done"}-${
                     isReasoning ? "reasoning" : "content"
