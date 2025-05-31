@@ -29,6 +29,7 @@ import { AttestationService } from "@/services/attestation-service";
 import { useWallets } from "@privy-io/react-auth";
 import { useEncryption } from "@/providers/encryption-provider";
 import { useLoadedFiles, LoadedFile } from "@/hooks/use-loaded-files";
+import { FilePreviewItem } from "./FilePreviewItem";
 
 const Markdown = dynamic(async () => (await import("../ui/markdown")).Markdown, {
   loading: () => <LoadingAnimation />,
@@ -315,138 +316,9 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
               maxWidth: "460px",
             }}
           >
-            {loadedFiles.map((file) => {
-              if (file.isLoading) {
-                return (
-                  <Box key={file.id} className={styles["chat-message-item-loading"]} display="flex" alignItems="center" justifyContent="center" style={{
-                    borderRadius: "8px",
-                    outline: "1px #CACACA solid",
-                    backgroundColor: "#F0F0F0",
-                    objectFit: "cover",
-                    width: "160px",
-                    height: "160px",
-                  }} >
-                    <CircularProgress size={24} color="inherit"/>
-                  </Box>
-                );
-              }
-              if (file.error) {
-                return (
-                  <Box key={file.id} className={styles["chat-message-file-item-error"]}>
-                    <GenericFileIcon />
-                    <Typography variant="caption" color="error">
-                      Error: {file.name} ({file.error})
-                    </Typography>
-                  </Box>
-                );
-              }
-              if (file.type.startsWith("image")) {
-                return (
-                  <a 
-                    key={`${file.id}-anchor`}
-                    href={file.url} 
-                    download={file.name} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    style={{ textDecoration: 'none' }}
-                  >
-                    <Image
-                      key={file.id}
-                      className={clsx(styles["chat-message-item-image-outside"], styles.attachedFileImagePreview)}
-                      src={file.url}
-                      alt={file.name || `attached image ${file.id}`}
-                      width={160}
-                      height={160}
-                    />
-                  </a>
-                );
-              }
-              if (file.type.startsWith("application/pdf") || file.type.startsWith("pdf")) {
-                return (
-                  <a 
-                    key={`${file.id}-anchor`}
-                    href={file.url} 
-                    download={file.name} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    style={{ textDecoration: 'none', display: 'block' }}
-                  >
-                    <Box
-                      key={file.id}
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        padding: "8px",
-                        borderRadius: "8px",
-                        backgroundColor: "#f0f0f0",
-                        border: "1px solid #e0e0e0",
-                        maxWidth: "100%",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <GenericFileIcon />
-                      <Box sx={{ overflow: "hidden" }}>
-                        <Typography 
-                          variant="body2" 
-                          sx={{ 
-                            whiteSpace: "nowrap", 
-                            overflow: "hidden", 
-                            textOverflow: "ellipsis",
-                            fontWeight: 500,
-                          }}
-                        >
-                          {file.name}
-                        </Typography>
-                        <Typography variant="caption" color="textSecondary">
-                          PDF Document {file.originalType ? `(${file.originalType})` : ""}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </a>
-                );
-              }
-              return (
-                <a 
-                  key={`${file.id}-anchor`}
-                  href={file.url} 
-                  download={file.name}
-                  style={{ textDecoration: 'none', display: 'block' }}
-                >
-                  <Box
-                    key={file.id}
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      padding: "8px",
-                      borderRadius: "8px",
-                      backgroundColor: "#f0f0f0",
-                      border: "1px solid #e0e0e0",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <GenericFileIcon />
-                    <Box sx={{ overflow: "hidden" }}>
-                      <Typography 
-                        variant="body2"
-                        sx={{ 
-                          whiteSpace: "nowrap", 
-                          overflow: "hidden", 
-                          textOverflow: "ellipsis",
-                          fontWeight: 500,
-                        }}
-                      >
-                        {file.name}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        {file.originalType || "File"}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </a>
-              );
-            })}
+            {loadedFiles.map((file: LoadedFile) => (
+              <FilePreviewItem key={file.id} file={file} />
+            ))}
           </Box>
         )}
 

@@ -1235,7 +1235,61 @@
 // Styles for attached image previews in ChatMessageCell
 .attachedFileImagePreview {
   border-radius: 8px;
-  outline: 1px solid #CACACA; // Consider using var(--border-color) or similar theme variable
+  outline: 1px solid #CACACA; 
   object-fit: cover;
-  display: block; // Ensures image behaves like a block element for layout
+  display: block; 
+}
+
+// Styles for file previews in ChatMessageCell / FilePreviewItem
+.chat-message-item-loading {
+  // Styles were previously inline on Box for loading state
+  // width: "160px", height: "160px", borderRadius: "8px", outline: "1px solid #CACACA", backgroundColor: "#F0F0F0"
+  // display: flex, alignItems: center, justifyContent: center are handled by MUI Box props in component
+  width: 160px;
+  height: 160px;
+  border-radius: 8px;
+  outline: 1px solid var(--border-color, #CACACA); // Using fallback
+  background-color: var(--bg-subtle, #F0F0F0);    // Using fallback
+}
+
+.chat-message-file-item-error {
+  // Styles were previously sx prop for error state
+  // display: flex, flexDirection: column, alignItems: center, justifyContent: center, textAlign: center
+  // padding: 10px, borderRadius: 8px, border: 1px solid #F33D4F, backgroundColor: #FFF4F4
+  // width: 160px, height: 160px, gap: 8px are handled by MUI Box props or direct style in component
+  // For class, focus on non-layout critical aspects if layout is by Box props:
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--error-color, #F33D4F);
+  background-color: var(--error-bg-color, #FFF4F4);
+  width: 160px; // Keep fixed size for consistency in grid
+  height: 160px;
+  display: flex; // Add display flex for direct children alignment
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.chat-message-file-item-doc {
+  // Styles were previously sx prop for PDF/other file items
+  // display: flex, alignItems: center, gap: 8px, padding: 8px, borderRadius: 8px
+  // backgroundColor: #f0f0f0, border: 1px solid #e0e0e0, width: 160px, minHeight: 60px, cursor: pointer
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  background-color: var(--bg-subtle, #f0f0f0);
+  border: 1px solid var(--border-color-light, #e0e0e0);
+  width: 160px; // Fixed width for grid consistency
+  min-height: 60px; // Auto height will be determined by content
+  cursor: pointer;
+  text-decoration: none; // Ensure anchor default underline is removed
+  color: inherit; // Ensure anchor default color is removed
+
+  &:hover {
+    background-color: var(--bg-hover, #e9e9e9); // Add a hover state
+  }
 }
