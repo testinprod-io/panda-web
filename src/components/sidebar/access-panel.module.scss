@@ -1,6 +1,5 @@
 .container {
   width: 100%;
-//   height: 100%;
   flex-direction: column;
   align-items: flex-start;
   display: inline-flex;
@@ -62,9 +61,8 @@
 
 /* Styles for the lock icon img tag */
 .lockIcon {
-  width: 20px; /* From original Figma HTML for the inner div */
-  height: 20px; /* From original Figma HTML for the inner div */
-  /* Add any other specific styling for the img if needed */
+  width: 20px; /* Figma: 20px */
+  height: 20px; /* Figma: 20px */
 }
 
 .lockServiceText {

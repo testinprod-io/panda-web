@@ -18,9 +18,8 @@ const AccessPanel: React.FC<AccessPanelProps> = ({ onLockServiceClick }) => {
         tabIndex={0}
       >
         <div className={styles.iconContainer}>
-          <div className={styles.iconWrapper} data-size="20">
+          <div className={styles.iconWrapper} >
             <img src="/icons/lock-icon.svg" alt="Lock" className={styles.lockIcon} />
-            {/* <div className={styles.lockIconOutline} /> */}
           </div>
         </div>
         <div className={styles.lockServiceText}>Lock Panda</div>
