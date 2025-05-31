@@ -30,6 +30,7 @@ import { useWallets } from "@privy-io/react-auth";
 import { useEncryption } from "@/providers/encryption-provider";
 import { useLoadedFiles, LoadedFile } from "@/hooks/use-loaded-files";
 import { FilePreviewItem } from "./FilePreviewItem";
+import { MessageActionsBar } from "./MessageActionsBar";
 
 const Markdown = dynamic(async () => (await import("../ui/markdown")).Markdown, {
   loading: () => <LoadingAnimation />,
@@ -243,65 +244,14 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
             </div>
           )}
 
-          {showActions && !isEditing && (
-            <Box
-              className={styles["chat-message-actions"]}
-              sx={
-                isUser
-                  ? {
-                      display: "flex",
-                      justifyContent: "flex-end",
-                      alignItems: "center",
-                      gap: "4px",
-                    }
-                  : {}
-              }
-            >
-              {!(streaming || isReasoning) && (
-                <>
-                  {!isUser && (
-                    <>
-                      <button
-                        onClick={() =>
-                          copyToClipboard(
-                            content +
-                              (reasoning
-                                ? `\n\n[Reasoning]:\n${reasoning}`
-                                : "")
-                          )
-                        }
-                        className={styles["user-action-button"]}
-                        aria-label="Copy message content and reasoning"
-                      >
-                        <img
-                          src="/icons/copy.svg"
-                          alt="Copy message content and reasoning"
-                        />
-                      </button>
-                      <button
-                        onClick={handleResend}
-                        disabled={isChatLoading}
-                        className={styles["user-action-button"]}
-                        aria-label="Resend message"
-                      >
-                        <img src="/icons/refresh.svg" alt="Resend message" />
-                      </button>
-                    </>
-                  )}
-                  {isUser && (
-                    <>
-                      <button
-                        onClick={() => copyToClipboard(content as string)}
-                        className={styles["user-action-button"]}
-                        aria-label="Copy message"
-                      >
-                        <img src="/icons/copy.svg" alt="Copy message" />
-                      </button>
-                    </>
-                  )}
-                </>
-              )}
-            </Box>
+          {showActions && !isEditing && !(streaming || isReasoning) && (
+            <MessageActionsBar 
+              isUser={isUser}
+              isChatLoading={isChatLoading}
+              messageContent={content}
+              reasoningText={reasoning}
+              onResend={handleResend} 
+            />
           )}
         </div>
         
