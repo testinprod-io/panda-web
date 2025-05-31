@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { UUID } from 'crypto';
 import { FileInfo } from '@/client/types'; // Corrected type for messageFiles elements
 import { ClientApi } from '@/client/api'; // Corrected: apiClient is of type ClientApi
@@ -31,7 +31,36 @@ export function useLoadedFiles(
   // This helps if apiClient object reference changes but apiClient.app.getFile function reference is stable.
   const getFileFunction = apiClient.app.getFile;
 
+  // Ref to store previous dependencies for logging
+  const prevDepsRef = useRef<{ filesDep?: string, sessionId?: UUID, getFileFunction?: any, isLocked?: boolean }>({});
+
   useEffect(() => {
+    // Log if dependencies have changed since the last run
+    if (prevDepsRef.current.filesDep !== undefined) { // Avoid logging on the very first run
+      let changed = false;
+      if (prevDepsRef.current.filesDep !== filesDep) {
+        // console.warn("[useLoadedFiles] Dependency changed: filesDep");
+        changed = true;
+      }
+      if (prevDepsRef.current.sessionId !== sessionId) {
+        // console.warn("[useLoadedFiles] Dependency changed: sessionId");
+        changed = true;
+      }
+      if (prevDepsRef.current.getFileFunction !== getFileFunction) {
+        // console.warn("[useLoadedFiles] Dependency changed: getFileFunction");
+        changed = true;
+      }
+      if (prevDepsRef.current.isLocked !== isLocked) {
+        // console.warn("[useLoadedFiles] Dependency changed: isLocked");
+        changed = true;
+      }
+      if (changed) {
+        // console.warn("[useLoadedFiles] useEffect is re-running due to dependency changes.");
+      }
+    }
+    // Update previous dependencies ref
+    prevDepsRef.current = { filesDep, sessionId, getFileFunction, isLocked };
+
     let didCancel = false;
     const currentBlobUrls = new Set<string>();
 
