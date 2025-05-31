@@ -10,9 +10,8 @@ import {
 import { useParams } from "next/navigation";
 import { nanoid } from "nanoid";
 import Locale from "@/locales";
-import { copyToClipboard, downloadAs, safeShowSnackbar } from "@/utils/utils";
-import { Path, ApiPath, REPO_URL } from "@/types/constant";
-import { useSnackbar } from "@/providers/snackbar-provider";
+import { copyToClipboard, downloadAs } from "@/utils/utils";
+import { Path, REPO_URL } from "@/types/constant";
 import MuiIconButton from '@mui/material/IconButton';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -85,10 +84,7 @@ export const HTMLPreview = forwardRef<HTMLPreviewHander, HTMLPreviewProps>(
     }, [props.autoHeight, props.height, iframeHeight]);
 
     const srcDoc = useMemo(() => {
-      const script = `<script>window.addEventListener("DOMContentLoaded", () => new ResizeObserver((entries) => parent.postMessage({id: '${frameId}', height: entries[0].target.clientHeight}, '*')).observe(document.body))</script>`;
-      if (props.code.includes("<!DOCTYPE html>")) {
-        props.code.replace("<!DOCTYPE html>", "<!DOCTYPE html>" + script);
-      }
+      const script = `<script>window.addEventListener("DOMContentLoaded", () => new ResizeObserver((entries) => parent.postMessage({id: '${frameId}', height: entries[0].target.clientHeight, title: document.title}, '*')).observe(document.body))</script>`;
       return script + props.code;
     }, [props.code, frameId]);
 
@@ -123,58 +119,22 @@ export function ArtifactsShareButton({
   style?: any;
   fileName?: string;
 }) {
-  const [loading, setLoading] = useState(false);
   const [name, setName] = useState(id);
   const [showDialog, setShowDialog] = useState(false);
-  const { showSnackbar } = useSnackbar();
 
   const shareUrl = useMemo(
     () => [location.origin, "#", Path.Artifacts, "/", name].join(""),
     [name],
   );
 
-  // const upload = useCallback((code: string) =>
-  //   id
-  //     ? Promise.resolve({ id })
-  //     : fetch(ApiPath.Artifacts, {
-  //         method: "POST",
-  //         body: code,
-  //       })
-  //         .then((res) => res.json())
-  //         .then(({ id: newId }) => {
-  //           if (newId) {
-  //             return { id: newId };
-  //           }
-  //           throw new Error("Upload failed, no ID returned");
-  //         })
-  //         .catch((e) => {
-  //           console.error("[Artifacts] Upload Error:", e);
-  //           showSnackbar(Locale.Export.Artifacts.Error, 'error');
-  //           return null;
-  //         }), [id, showSnackbar]
-  // );
-
-  // const handleShareClick = useCallback(() => {
-  //   if (loading) return;
-  //   setLoading(true);
-  //   upload(getCode())
-  //     .then((res) => {
-  //       if (res?.id) {
-  //         setShowDialog(true);
-  //         setName(res?.id);
-  //       }
-  //     })
-  //     .finally(() => setLoading(false));
-  // }, [loading, upload, getCode]);
-
-  const handleCloseDialog = () => {
+  const handleCloseDialog = useCallback(() => {
     setShowDialog(false);
-  };
+  }, []);
 
   const handleDownload = useCallback(() => {
     downloadAs(getCode(), `${fileName || name}.html`);
     handleCloseDialog();
-  }, [getCode, fileName, name]);
+  }, [getCode, fileName, name, handleCloseDialog]);
 
   const handleCopy = useCallback(() => {
     copyToClipboard(shareUrl);
@@ -183,17 +143,6 @@ export function ArtifactsShareButton({
 
   return (
     <>
-      {/* <div className="window-action-button" style={style}>
-        <MuiIconButton
-          size="small"
-          title={Locale.Export.Artifacts.Title}
-          onClick={handleShareClick}
-          disabled={loading}
-          aria-label={Locale.Export.Artifacts.Title}
-        >
-          {loading ? <CircularProgress size={20} /> : <ShareIcon fontSize="inherit" />}
-        </MuiIconButton>
-      </div> */}
       <Dialog open={showDialog} onClose={handleCloseDialog}>
         <DialogTitle>{Locale.Export.Artifacts.Title}</DialogTitle>
         <DialogContent>
@@ -226,33 +175,10 @@ export function ArtifactsShareButton({
 export function Artifacts() {
   const params = useParams();
   const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
-  const { showSnackbar } = useSnackbar();
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(true);
   const [fileName, setFileName] = useState("");
   const previewRef = useRef<HTMLPreviewHander>(null);
-
-  // useEffect(() => {
-  //   if (id) {
-  //     setLoading(true);
-  //     fetch(`${ApiPath.Artifacts}?id=${id}`)
-  //       .then((res) => {
-  //         if (!res.ok) {
-  //           throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
-  //         }
-  //         return res.text();
-  //       })
-  //       .then(setCode)
-  //       .catch((e) => {
-  //         console.error("[Artifacts] Fetch Error:", e);
-  //         showSnackbar(Locale.Export.Artifacts.Error, 'error');
-  //       })
-  //       .finally(() => {
-  //         // Ensure loading is set to false even on error
-  //         // setLoading(false); // Moved setting false to onLoad of HTMLPreview
-  //       });
-  //   }
-  // }, [id, showSnackbar]);
 
   return (
     <div className={styles["artifacts"]}>

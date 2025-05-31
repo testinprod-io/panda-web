@@ -6,21 +6,16 @@ import RehypeKatex from "rehype-katex";
 import RemarkGfm from "remark-gfm";
 import RehypeHighlight from "rehype-highlight";
 import { useRef, useState, RefObject, useEffect, useMemo, useCallback } from "react";
-import { copyToClipboard, useWindowSize } from "@/utils/utils";
+import { copyToClipboard } from "@/utils/utils";
 import mermaid from "mermaid";
 import Locale from "@/locales";
 import React from "react";
 import { useDebouncedCallback } from "use-debounce";
-import {
-  ArtifactsShareButton,
-  HTMLPreview,
-  HTMLPreviewHander,
-} from "@/components/ui/artifacts";
 import { useChatStore } from "@/store";
 
 // import { useAppConfig } from "@/store/config";
 import clsx from "clsx";
-import { HTMLAttributes, ClassAttributes, ComponentProps } from 'react';
+import { HTMLAttributes } from 'react';
 
 // MUI Imports for Image Dialog
 import Dialog from '@mui/material/Dialog';
@@ -30,12 +25,12 @@ import MuiIconButton from '@mui/material/IconButton'; // Renamed to avoid confli
 import CloseIcon from '@mui/icons-material/Close';
 
 // MUI Imports for Fullscreen Button
-import FullscreenIcon from '@mui/icons-material/Fullscreen';
-import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
-import ReloadIcon from '@mui/icons-material/Replay'; // Replaced ReloadButtonIcon
+// import FullscreenIcon from '@mui/icons-material/Fullscreen';
+// import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
+// import ReloadIcon from '@mui/icons-material/Replay'; // Keep if Mermaid reload is different
 
 // MUI Imports for LoopIcon
-import LoopIcon from '@mui/icons-material/Loop';
+// import LoopIcon from '@mui/icons-material/Loop';
 import { LoadingAnimation } from "./loading-animation";
 
 export function Mermaid(props: { code: string }) {
@@ -146,18 +141,10 @@ const PreCode = React.forwardRef<HTMLPreElement, React.HTMLAttributes<HTMLPreEle
   ({ className, children, ...props }, forwardedRef) => {
     const innerRef = useRef<HTMLPreElement>(null);
     const ref = (forwardedRef || innerRef) as React.RefObject<HTMLPreElement>;
-    const previewRef = useRef<HTMLPreviewHander>(null);
     const [mermaidCode, setMermaidCode] = useState("");
-    const [htmlCode, setHtmlCode] = useState("");
-    const { height } = useWindowSize();
-    const chatStore = useChatStore();
-    const session = chatStore.currentSession();
-    // const config = useAppConfig();
-    const enableArtifacts = false; // Hardcoded based on original logic
-
-    // Fullscreen state and ref
-    const [isFullScreen, setIsFullScreen] = useState(false);
-    const fullScreenRef = useRef<HTMLDivElement>(null); // Ref for the element to make fullscreen
+    // Removed unused chatStore and session variables
+    // const chatStore = useChatStore();
+    // const session = chatStore.currentSession();
 
     const renderArtifacts = useDebouncedCallback(() => {
       if (!ref.current) return;
@@ -165,20 +152,8 @@ const PreCode = React.forwardRef<HTMLPreElement, React.HTMLAttributes<HTMLPreEle
       if (mermaidDom) {
         setMermaidCode((mermaidDom as HTMLElement).innerText);
       }
-      const htmlDom = ref.current.querySelector("code.language-html");
-      const refText = ref.current.querySelector("code")?.innerText;
-      if (htmlDom) {
-        setHtmlCode((htmlDom as HTMLElement).innerText);
-      } else if (
-        refText?.startsWith("<!DOCTYPE") ||
-        refText?.startsWith("<svg") ||
-        refText?.startsWith("<?xml")
-      ) {
-        setHtmlCode(refText);
-      }
     }, 600);
 
-    //Wrap the paragraph for plain-text
     useEffect(() => {
       if (ref.current) {
         const codeElements = ref.current.querySelectorAll(
@@ -201,32 +176,11 @@ const PreCode = React.forwardRef<HTMLPreElement, React.HTMLAttributes<HTMLPreEle
             codeElement.style.whiteSpace = "pre-wrap";
           }
         });
+        // setTimeout ensures renderArtifacts is called after the current rendering tick,
+        // allowing ReactMarkdown children to be in the DOM for querying.
         setTimeout(renderArtifacts, 1);
       }
     }, [ref, renderArtifacts]);
-
-    // Fullscreen toggle function
-    const toggleFullScreen = useCallback(() => {
-      if (!fullScreenRef.current) return;
-      if (!document.fullscreenElement) {
-        fullScreenRef.current.requestFullscreen();
-      } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        }
-      }
-    }, []);
-
-    // Effect to listen for fullscreen changes
-    useEffect(() => {
-      const handleScreenChange = () => {
-        setIsFullScreen(!!document.fullscreenElement);
-      };
-      document.addEventListener("fullscreenchange", handleScreenChange);
-      return () => {
-        document.removeEventListener("fullscreenchange", handleScreenChange);
-      };
-    }, []);
 
     return (
       <>
@@ -244,36 +198,6 @@ const PreCode = React.forwardRef<HTMLPreElement, React.HTMLAttributes<HTMLPreEle
           {children}
         </pre>
         {mermaidCode && <Mermaid code={mermaidCode} />}
-        {htmlCode && enableArtifacts && (
-          <div ref={fullScreenRef} className={clsx("no-dark html", { "fullscreen-active": isFullScreen })} style={{ position: 'relative', background: 'white' }}>
-            <ArtifactsShareButton
-              style={{ position: "absolute", right: 20, top: 10, zIndex: 1 }}
-              getCode={() => htmlCode}
-            />
-            <MuiIconButton
-              style={{ position: "absolute", right: 70, top: 8, zIndex: 1 }}
-              size="small"
-              aria-label="Reload Preview"
-              onClick={() => previewRef.current?.reload()}
-            >
-              <ReloadIcon fontSize="inherit" />
-            </MuiIconButton>
-            <MuiIconButton
-              style={{ position: "absolute", right: 120, top: 8, zIndex: 1 }}
-              size="small"
-              aria-label={isFullScreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-              onClick={toggleFullScreen}
-            >
-              {isFullScreen ? <FullscreenExitIcon fontSize="inherit" /> : <FullscreenIcon fontSize="inherit" />}
-            </MuiIconButton>
-            <HTMLPreview
-              ref={previewRef}
-              code={htmlCode}
-              autoHeight={!isFullScreen}
-              height={isFullScreen ? height : 600}
-            />
-          </div>
-        )}
       </>
     );
   }
@@ -282,58 +206,17 @@ const PreCode = React.forwardRef<HTMLPreElement, React.HTMLAttributes<HTMLPreEle
 PreCode.displayName = "PreCode";
 
 function CustomCode(props: React.HTMLAttributes<HTMLElement> & { children?: React.ReactNode }) {
-  const chatStore = useChatStore();
-  const session = chatStore.currentSession();
-  // const config = useAppConfig();
-  const enableCodeFold = false;
-    // session.mask?.enableCodeFold !== false && config.enableCodeFold;
+  // Removed unused chatStore, session, config, enableCodeFold variables
+  const ref = useRef<HTMLElement>(null); // Changed HTMLPreElement to HTMLElement
 
-  const ref = useRef<HTMLPreElement>(null);
-  const [collapsed, setCollapsed] = useState(true);
-  const [showToggle, setShowToggle] = useState(false);
-
-  useEffect(() => {
-    if (ref.current) {
-      const codeHeight = ref.current.scrollHeight;
-      setShowToggle(codeHeight > 400);
-      ref.current.scrollTop = ref.current.scrollHeight;
-    }
-  }, [props.children]);
-
-  const toggleCollapsed = () => {
-    setCollapsed((collapsed) => !collapsed);
-  };
-  const renderShowMoreButton = () => {
-    if (showToggle && enableCodeFold && collapsed) {
-      return (
-        <div
-          className={clsx("show-hide-button", {
-            collapsed,
-            expanded: !collapsed,
-          })}
-        >
-          <button onClick={toggleCollapsed}>{Locale.NewChat.More}</button>
-        </div>
-      );
-    }
-    return null;
-  };
   return (
-    <>
-      <code
-        className={clsx(props?.className)}
-        ref={ref}
-        style={{
-          maxHeight: enableCodeFold && collapsed ? "400px" : "none",
-          overflowY: "hidden",
-        }}
-        {...props}
-      >
-        {props.children}
-      </code>
-
-      {renderShowMoreButton()}
-    </>
+    <code
+      className={clsx(props?.className)} // props.className is already optional, so props?.className is fine
+      ref={ref} // Kept ref, as ReactMarkdown might utilize it.
+      {...props} // Spreads other HTML attributes like className, children
+    >
+      {props.children}
+    </code>
   );
 }
 

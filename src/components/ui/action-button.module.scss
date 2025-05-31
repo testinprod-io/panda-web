@@ -4,23 +4,15 @@
   cursor: pointer;
   overflow: hidden;
   position: relative;
-  // Transitions for properties like width that might be animated by external styles using the CSS variables
-  transition: width 0.3s ease, background-color 0.2s ease, border-color 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 
-  // The "clickable" class is maintained for compatibility or external targeting,
-  // though cursor: pointer is already on .actionButton.
   &.clickable {
     // No specific styles here, acts as a marker or for external CSS.
   }
 
   &[aria-disabled="true"] {
-    opacity: 0.5; // General dimming for disabled state
+    opacity: 0.5;
     cursor: not-allowed;
-
-    // Example: further styling for icon/text when disabled
-    // .icon, .text {
-    //   color: #999; // A generic muted color
-    // }
   }
 
   .icon {
