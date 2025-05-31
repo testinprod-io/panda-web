@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useChatStore } from '@/store/chat';
 import { ChatApiService, mapApiMessagesToChatMessages, mapApiMessageToChatMessage, mapConversationToSession } from '@/services/api-service';
 import { useApiClient } from '@/providers/api-client-provider';
-import { ChatMessage, MessageSyncState } from '@/types/chat';
+import { ChatMessage, CustomizedPromptsData, MessageSyncState } from '@/types/chat';
 import { MessagesLoadState, SessionSyncState, ChatSession } from '@/types/session';
 import { ModelConfig, ModelType } from '@/types/constant';
 import { useAppConfig } from '@/store/config';
@@ -21,6 +21,7 @@ import { DEFAULT_TOPIC } from '@/store/chat';
 import { getMessageTextContent, trimTopic } from "@/utils/utils";
 // import { ModelType } from "@/store/config";
 import { EncryptionService } from '@/services/encryption-service';
+import { generateSystemPrompt } from '@/types/chat';
 
 export function useChatActions() {
     const store = useChatStore();
@@ -92,7 +93,7 @@ export function useChatActions() {
         }
     }, [apiClient, store]);
 
-    const newSession = useCallback(async (modelConfig?: ModelConfig): Promise<ChatSession | undefined> => {
+    const newSession = useCallback(async (modelConfig?: ModelConfig, customizedPrompts?: CustomizedPromptsData): Promise<ChatSession | undefined> => {
         if (!apiClient) {
             console.warn("[ChatActions] API client not available, cannot create new session on server.");
             return undefined;
@@ -101,6 +102,9 @@ export function useChatActions() {
         console.log("[ChatActions] Creating new session...");
         
         const createRequest: ConversationCreateRequest = { title: EncryptionService.encrypt(DEFAULT_TOPIC) };
+        if (customizedPrompts && customizedPrompts.enabled) {
+            createRequest.custom_data = { 'customized_prompts': generateSystemPrompt(customizedPrompts) };
+        }
 
         try {
             const newConversation = await ChatApiService.createConversation(apiClient, createRequest);

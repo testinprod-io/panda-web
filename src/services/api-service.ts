@@ -88,6 +88,7 @@ export function mapConversationToSession(
   session.topic = conversation.title || DEFAULT_TOPIC;
   session.visibleTopic = decryptedConvo.title || DEFAULT_TOPIC;
   session.lastUpdate = new Date(decryptedConvo.updated_at).getTime();
+  session.customizedPrompts = decryptedConvo.custom_data?.customized_prompts;
   return session;
 }
 
@@ -280,7 +281,7 @@ export const ChatApiService = {
       config: ModelConfig & {
         stream?: boolean;
         useSearch?: boolean;
-        customizedPrompts?: CustomizedPromptsData;
+        customizedPrompts?: string;
       };
       onReasoningStart?: (messageId?: string) => void;
       onReasoningChunk?: (messageId: string | undefined, chunk: string) => void;

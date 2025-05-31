@@ -6,6 +6,7 @@ export interface Conversation {
   conversation_id: UUID;
   created_at: string;
   updated_at: string;
+  custom_data?: Record<string, any>;
 }
 
 export interface Message {
@@ -44,6 +45,7 @@ export interface HTTPValidationError {
 export interface ConversationCreateRequest {
   title?: string | null;
   initial_messages?: InitialMessageContent[] | null;
+  custom_data?: Record<string, any>;
 }
 
 export interface ConversationUpdateRequest {

@@ -2,7 +2,7 @@ import { UUID } from "crypto";
 import { useAppConfig } from "@/store/config";
 import { ModelConfig } from "@/types/constant";
 import { DEFAULT_TOPIC } from "@/store/chat";
-import { ChatMessage } from "./chat";
+import { ChatMessage, CustomizedPromptsData } from "./chat";
 import { Summary } from "@/client/types";
 
 export enum SessionSyncState {
@@ -47,6 +47,7 @@ export interface ChatSession {
   
   // maskAvatar: boolean;
   modelConfig: ModelConfig;
+  customizedPrompts?: string;
   // context: ChatMessage[];
   // hideContext: boolean;
 

@@ -65,6 +65,16 @@ export interface CustomizedPromptsData {
   enabled: boolean;
 }
 
+export function generateSystemPrompt(data: CustomizedPromptsData): string {
+  const name = data.personal_info?.name || "User";
+  const job = data.personal_info?.job || "individual";
+  const traits = data.prompts?.traits || "Neutral";
+  const extra = data.prompts?.extra_params || "";
+
+  return `You are assisting ${name}, who is ${job}. When responding, adapt your tone and approach to suit someone who appreciates the following traits: ${traits}. ${extra.trim() ? `Also, ${extra}` : ""}`.trim();
+}
+
+
 /**
  * Represents a chat message with additional metadata
  * Content is assumed to be decrypted for temporary in-memory use (e.g., LLM calls)

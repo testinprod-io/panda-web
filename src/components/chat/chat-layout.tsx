@@ -122,7 +122,7 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
             showSnackbar("Failed to start new chat", "error");
           }
         } else {
-          const createdSession = await newSession();
+          const createdSession = await newSession(modelConfig, appConfig.customizedPrompts);
           if (createdSession) {
             const newUserMessage = { sessionState };
             localStorage.setItem(
@@ -299,6 +299,7 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
           <ChatInputPanel
             sessionId={currentChatId}
             modelConfig={modelConfig}
+            customizedPrompts={appConfig.customizedPrompts}
             isLoading={isChatComponentBusyFromStore || internalIsSubmitting}
             hitBottom={hitBottomFromStore}
             onSubmit={handleLayoutSubmit}

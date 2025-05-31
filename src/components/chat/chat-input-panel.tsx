@@ -41,10 +41,12 @@ import {
   FileError,
   AttachedClientFile
 } from './chat-input-panel.utils';
+import { CustomizedPromptsData } from "@/types";
 
 interface ChatInputPanelProps {
   sessionId: UUID | undefined;
   modelConfig?: ModelConfig;
+  customizedPrompts?: CustomizedPromptsData;
   isLoading: boolean;
   hitBottom: boolean;
   onSubmit: (sessionId: UUID | undefined, SessionState: SessionState) => Promise<void>;
@@ -60,6 +62,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
   const {
     sessionId: propSessionId,
     modelConfig,
+    customizedPrompts,
     isLoading,
     hitBottom,
     onSubmit,
@@ -220,7 +223,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
         provisionalSessionIdRef.current = null;
       }
 
-      const session = await chatActions.newSession(modelConfig);
+      const session = await chatActions.newSession(modelConfig, customizedPrompts);
       if (session) {
         currentSessionIdToUse = session.id;
         provisionalSessionIdRef.current = session.id;

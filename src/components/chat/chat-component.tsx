@@ -28,16 +28,16 @@ import styles from "./chat.module.scss";
 import { ActionButton } from "@/components/ui/action-button"; // Import ChatAction
 import { useChatSessionManager } from "@/hooks/use-chat-session-manager";
 import { UUID } from "crypto";
-import { SessionState } from "@/types/session";
+import { ChatSession, SessionState } from "@/types/session";
 
 // ChatComponentProps is now simpler as it gets most things from the store or direct sessionID
 export interface ChatComponentProps {
   sessionId: UUID;
+  session: ChatSession;
 }
 
 export function ChatComponent(props: ChatComponentProps) {
-  const { 
-    sessionId  } = props;
+  const {  sessionId, session  } = props;
 
   const chatStore = useChatStore();
   // Destructure setters and states from the store
@@ -69,7 +69,7 @@ export function ChatComponent(props: ChatComponentProps) {
     clearMessages, 
     sendNewUserMessage, 
     sendNewQuery,
-  } = useChatSessionManager(sessionId, config.modelConfig);
+  } = useChatSessionManager(sessionId, session.modelConfig, session.customizedPrompts);
   
   const lastMessage = displayedMessages[displayedMessages.length - 1];
   const isBotStreaming = !!(lastMessage?.role === "assistant" && lastMessage.streaming);

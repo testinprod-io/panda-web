@@ -34,7 +34,7 @@ export interface LLMConfig {
   reasoning?: boolean;
   useSearch?: boolean;
   targetEndpoint?: string;
-  customizedPrompts?: CustomizedPromptsData;
+  customizedPrompts?: string;
 }
 
 export interface ChatOptions {

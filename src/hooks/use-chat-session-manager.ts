@@ -73,7 +73,8 @@ const PAGINATION_LOAD_LIMIT = 20;
 
 export function useChatSessionManager(
   sessionId: UUID,
-  modelConfig: ModelConfig
+  modelConfig: ModelConfig,
+  customizedPrompts?: string
 ): ChatSessionManagerResult {
   const { 
     loadMessagesForSession: actionLoadMessages, 
@@ -703,7 +704,7 @@ export function useChatSessionManager(
 
       ChatApiService.callLlmChat(apiClient, {
         messages: messagesForApi,
-        config: { ...modelConfig, stream: true, reasoning: modelConfig.reasoning, useSearch: newUserMessage.useSearch, customizedPrompts: appConfig.customizedPrompts },
+        config: { ...modelConfig, stream: true, reasoning: modelConfig.reasoning, useSearch: newUserMessage.useSearch, customizedPrompts: customizedPrompts },
         onReasoningStart: () => {
           reasoningStartTimeForThisQuery = Date.now();
           setDisplayedMessages((prev) =>
@@ -803,7 +804,7 @@ export function useChatSessionManager(
       });
     },
     // Removed store.sessions from dependencies, added local summary states
-    [apiClient, sessionId, modelConfig, localSummaries, localLastSummarizedMessageId, finalizeStreamedBotMessage] 
+    [apiClient, sessionId, modelConfig, localSummaries, localLastSummarizedMessageId, appConfig.customizedPrompts, finalizeStreamedBotMessage] 
   );
 
   const markMessageAsError = useCallback(

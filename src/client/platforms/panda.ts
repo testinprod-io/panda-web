@@ -1,6 +1,6 @@
 import { PandaPath, DEFAULT_PANDA_MODEL_NAME } from "@/types/constant";
 import { ChatOptions, LLMApi, LLMModel, LLMUsage, MultimodalContent, LLMConfig } from "@/client/api";
-import { RequestMessage, Role, CustomizedPromptsData } from "@/types";
+import { RequestMessage, Role } from "@/types";
 
 // Type for the Privy getAccessToken function
 export type GetAccessTokenFn = () => Promise<string | null>;
@@ -66,12 +66,11 @@ export class PandaApi implements LLMApi {
       content: v.attachments ? [...v.attachments, { type: "text", text: v.content }] : v.content,
     }));
 
-    if (options.config.customizedPrompts && options.config.customizedPrompts.enabled) {
-      const systemPrompt = generateSystemPrompt(options.config.customizedPrompts);
+    if (options.config.customizedPrompts) {
       messages = [
         {
           role: Role.SYSTEM,
-          content: systemPrompt,
+          content: options.config.customizedPrompts,
         },
         ...messages,
       ];
@@ -363,12 +362,3 @@ export class PandaApi implements LLMApi {
     }
   }
 } 
-
-function generateSystemPrompt(data: CustomizedPromptsData): string {
-  const name = data.personal_info?.name || "User";
-  const job = data.personal_info?.job || "individual";
-  const traits = data.prompts?.traits || "Neutral";
-  const extra = data.prompts?.extra_params || "";
-
-  return `You are assisting ${name}, who is ${job}. When responding, adapt your tone and approach to suit someone who appreciates the following traits: ${traits}. ${extra.trim() ? `Also, ${extra}` : ""}`.trim();
-}

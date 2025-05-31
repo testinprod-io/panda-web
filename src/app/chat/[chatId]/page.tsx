@@ -85,6 +85,7 @@ export default function ChatPage() {
       <MemoizedChatComponent 
         key={sessionDataForValidation.id}
         sessionId={sessionDataForValidation.id}
+        session={sessionDataForValidation}
       />
   );
 }
