@@ -13,6 +13,7 @@ import {
   ListItemIcon,
   ListItemText,
   Select,
+  SelectChangeEvent,
   MenuItem as SelectMenuItem,
   Dialog,
   DialogActions,
@@ -28,7 +29,7 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import styles from "./settings-modal.module.scss";
 import { SettingsPage } from "./settings-modal-handler";
 import CustomizePromptsView from "./customize-prompts-view";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useApiClient } from "@/providers/api-client-provider";
 import { usePrivy } from "@privy-io/react-auth";
 import { useChatStore } from "@/store";
@@ -52,31 +53,25 @@ export default function SettingsModal({
   const [isPromptsModalOpen, setIsPromptsModalOpen] = useState(false);
 
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { authenticated, logout } = usePrivy();
+  const { clearSessions } = useChatStore();
+  const apiClient = useApiClient();
+  const [theme, setTheme] = useState("light");
 
   if (!authenticated) {
     return <div></div>;
   }
 
-  const { clearSessions } = useChatStore();
-  const apiClient = useApiClient();
-
-  const navigateTo = (hash: string) => {
-    const currentSearchParams = searchParams.toString();
-    const newUrl = `${pathname}${currentSearchParams ? "?" + currentSearchParams : ""}${hash}`;
-    router.push(newUrl, { scroll: false });
-  };
-
   const handleCloseModal = () => {
     onClose();
+    setDeleteConfirmOpen(false);
   };
 
   const handleLogOut = () => {
     router.replace("/");
     logout();
     console.log("Log out on this device clicked");
+    setDeleteConfirmOpen(false);
   };
 
   const handleDeleteAllChats = () => {
@@ -91,30 +86,29 @@ export default function SettingsModal({
     setDeleteConfirmOpen(false);
   };
 
-  const [theme, setTheme] = useState("light");
-  const handleThemeChange = (event: any) => {
-    setTheme(event.target.value);
+  const handleThemeChange = (event: SelectChangeEvent<string>) => {
+    setTheme(event.target.value as string);
   };
 
   const generalSettingsItems = [
-    {
-      label: "Theme",
-      control: (
-        <Select
-          value={theme}
-          onChange={handleThemeChange}
-          variant="outlined"
-          size="small"
-          className={styles.selectControl}
-          IconComponent={ExpandMoreIcon}
-          MenuProps={{ classes: { paper: styles.selectMenuPaper } }}
-        >
-          <SelectMenuItem value="light">Light mode</SelectMenuItem>
-          <SelectMenuItem value="dark">Dark mode</SelectMenuItem>
-          <SelectMenuItem value="system">System</SelectMenuItem>
-        </Select>
-      ),
-    },
+    // {
+    //   label: "Theme",
+    //   control: (
+    //     <Select
+    //       value={theme}
+    //       onChange={handleThemeChange}
+    //       variant="outlined"
+    //       size="small"
+    //       className={styles.selectControl}
+    //       IconComponent={ExpandMoreIcon}
+    //       MenuProps={{ classes: { paper: styles.selectMenuPaper } }}
+    //     >
+    //       <SelectMenuItem value="light">Light mode</SelectMenuItem>
+    //       <SelectMenuItem value="dark">Dark mode</SelectMenuItem>
+    //       <SelectMenuItem value="system">System</SelectMenuItem>
+    //     </Select>
+    //   ),
+    // },
     {
       label: "Custom instructions",
       control: (
@@ -159,6 +153,7 @@ export default function SettingsModal({
           variant="contained"
           className={styles.deleteButton}
           onClick={handleDeleteAllChats}
+          sx={{ boxShadow: "0px" }}
         >
           Delete
         </Button>
@@ -308,19 +303,41 @@ export default function SettingsModal({
         onClose={() => setDeleteConfirmOpen(false)}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
+        className={styles.confirmDialog}
       >
-        <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            Are you sure you want to delete all your chats? This action cannot
-            be undone.
+        <DialogTitle
+          id="alert-dialog-title"
+          className={styles.confirmDialogTitleContainer}
+        >
+          <div className={styles.confirmDialogTitle}>Clear chat data</div>
+        </DialogTitle>
+        <DialogContent className={styles.confirmDialogContent} sx={{ padding: "0px 24px 16px 20px" }}>
+          <DialogContentText
+            id="alert-dialog-description-primary"
+            className={styles.confirmDialogContentTextPrimary}
+          >
+            This will delete all Chat.
+          </DialogContentText>
+          <DialogContentText
+            id="alert-dialog-description-secondary"
+            className={styles.confirmDialogContentTextSecondary}
+          >
+            Your messages are not used for training purposes and cannot be
+            recovered, even if you choose not to reset your chat data.
           </DialogContentText>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteConfirmOpen(false)} color="primary">
+        <DialogActions className={styles.confirmDialogActions} sx={{ padding: "0px 12px 16px 16px"}}>
+          <Button
+            onClick={() => setDeleteConfirmOpen(false)}
+            className={styles.confirmDialogButton}
+          >
             Cancel
           </Button>
-          <Button onClick={confirmDeleteAllChats} color="error" autoFocus>
+          <Button
+            onClick={confirmDeleteAllChats}
+            className={styles.confirmDialogButtonDelete}
+            autoFocus
+          >
             Delete
           </Button>
         </DialogActions>

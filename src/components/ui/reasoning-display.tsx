@@ -64,7 +64,7 @@ export const ReasoningDisplay: React.FC<ReasoningDisplayProps> = ({
   }
 
   // Do not render if there's no reasoning text and reasoning is not in progress
-  if (!reasoning && !isReasoningInProgress) {
+  if (!reasoning) {
     return null;
   }
 

@@ -2,7 +2,6 @@ import React from "react";
 import { Box } from "@mui/material";
 import { copyToClipboard } from "@/utils/utils";
 import styles from "@/components/chat/chat.module.scss"; // Reusing chat styles
-import { ChatMessage } from "@/types"; // For content and reasoning types, though direct strings are passed
 
 interface MessageActionsBarProps {
   isUser: boolean;

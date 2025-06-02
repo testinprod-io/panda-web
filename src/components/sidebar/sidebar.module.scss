@@ -1,5 +1,5 @@
-$sidebar-expanded-width: 378px;
-$sidebar-collapsed-width: 125px;
+$sidebar-expanded-width: 256px;
+$sidebar-collapsed-width: 80px;
 $nav-menu-collapsed-width: 77px;
 
 $sidebar-transition-duration: 0.4s;
@@ -15,7 +15,7 @@ $sidebar-transition-timing: ease-in-out;
   border-right: 1px solid #cacaca;
   overflow-x: hidden;
   position: relative;
-  transition: width $sidebar-transition-duration $sidebar-transition-timing;
+  // transition: width $sidebar-// transition-duration $sidebar-// transition-timing;
   overflow-y: hidden;
 
   &::-webkit-scrollbar {
@@ -30,7 +30,7 @@ $sidebar-transition-timing: ease-in-out;
     border-radius: 4px;
     border: 2px solid transparent;
     background-clip: content-box;
-    transition: background-color 0.3s ease-in-out;
+    // transition: background-color 0.3s ease-in-out;
   }
   &:hover::-webkit-scrollbar-thumb {
     background-color: rgba(255, 255, 255, 0.25);
@@ -47,7 +47,7 @@ $sidebar-transition-timing: ease-in-out;
   width: calc($sidebar-expanded-width + $sidebar-collapsed-width);
   flex-grow: 1;
   min-height: 0;
-  transition: transform $sidebar-transition-duration $sidebar-transition-timing;
+  // transition: transform $sidebar-// transition-duration $sidebar-// transition-timing;
   will-change: transform;
 }
 
@@ -78,10 +78,11 @@ $sidebar-transition-timing: ease-in-out;
 .sidebarHeaderContainer {
   display: flex;
   flex-direction: column;
-  padding: 17px 31px;
+  padding: 2rem 1rem 0 1rem;
 
   &.collapsed {
-    padding: 17px 12px;
+    padding: 0;
+    justify-content: center;
   }
 }
 
@@ -92,7 +93,7 @@ $sidebar-transition-timing: ease-in-out;
   gap: 20px;
   width: 100%;
   min-height: 0;
-  padding: 17px 31px;
+  padding: 2rem 1rem;
 }
 
 .sidebarContent {
@@ -127,6 +128,7 @@ $sidebar-transition-timing: ease-in-out;
       height: 24px;
       color: #1e1e1e;
     }
+    padding: 0.5rem;
   }
   .navItemText {
     font-family: 'Inter', sans-serif;
@@ -167,22 +169,31 @@ $sidebar-transition-timing: ease-in-out;
   height: 48px;
   width: 100%; 
   box-sizing: border-box; 
-  transition: all 0.3s ease-in-out;
+  // transition: all 0.3s ease-in-out;
   flex-direction: row;
   padding-left: 8px;
 
   &.collapsed {
+    justify-content: center;
     flex-direction: column;
-    gap: 6px;
+    height: 2.5rem;
+    width: 2.5rem;
+    padding: 2.5rem 1rem;
+    // gap: 6px;
     width: fit-content;
-    padding-left: 18px;
+    // padding-left: 18px;
   }
 }
 
 .sidebarHeaderLogoImage {
-  width: 32px;
-  height: 32px;
-  border-radius: 4px; 
+  width: 2rem;
+  height: 2rem;
+  border-radius: 12px; 
+
+  &.collapsed {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
 }
 
 .sidebarHeaderLogoTextContainer { 
@@ -193,7 +204,7 @@ $sidebar-transition-timing: ease-in-out;
   letter-spacing: 0.80px; 
   font-weight: 600;
   line-height: 1.2;
-  transition: none;
+  // transition: none;
 
   &.collapsed {
     margin: 0;

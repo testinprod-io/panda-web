@@ -255,7 +255,48 @@ export const useAppConfig = createPersistStore(
   }),
   {
     name: StoreKey.Config,
-    version: 1.2,
+    version: 1.3,
     storage: createJSONStorage(() => indexedDBStorage),
+    migrate: (persistedState: unknown, version: number): ChatConfig => {
+      const oldState = persistedState as Partial<ChatConfig>;
+
+      if (version < 1.3) {
+        console.log(
+          `[AppConfigStore] Migrating config from version ${version} to 1.3`,
+        );
+
+        const currentDefaultModelDef =
+          DEFAULT_MODELS.find(
+            (m) => m.name === DEFAULT_PANDA_MODEL_NAME && m.available,
+          ) ||
+          DEFAULT_MODELS.find((m) => m.available) ||
+          DEFAULT_MODELS[0];
+
+        if (!currentDefaultModelDef) {
+          console.error(
+            "[AppConfigStore] Migration error: Could not determine default model. Returning old state.",
+          );
+          return oldState as ChatConfig;
+        }
+
+        const migratedState: ChatConfig = {
+          ...DEFAULT_CONFIG,
+          ...oldState,
+          models: DEFAULT_MODELS,
+          modelConfig: {
+            ...currentDefaultModelDef.config,
+            model: currentDefaultModelDef.name as ModelType,
+            providerName: currentDefaultModelDef.provider
+              .providerName as ServiceProvider,
+          },
+          lastUpdate: Date.now(),
+        };
+        console.log(
+          "[AppConfigStore] Migration successful to version 1.3.",
+        );
+        return migratedState;
+      }
+      return { ...DEFAULT_CONFIG, ...oldState } as ChatConfig;
+    },
   },
 );

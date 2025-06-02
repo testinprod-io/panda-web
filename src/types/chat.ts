@@ -3,6 +3,7 @@ import { nanoid } from "nanoid";
 import { MultimodalContent } from "@/client/api";
 import { UUID } from "crypto";
 import { FileInfo } from "@/client/types";
+import { EncryptionService } from "../services/encryption-service";
 
 export enum Role {
   USER = "user",
@@ -71,6 +72,74 @@ export function generateSystemPrompt(data: CustomizedPromptsData): string {
   const extra = data.prompts?.extra_params || "";
 
   return `You are assisting ${name}, who is ${job}. When responding, adapt your tone and approach to suit someone who appreciates the following traits: ${traits}. ${extra.trim() ? `Also, ${extra}` : ""}`.trim();
+}
+
+export function encryptSystemPrompt(
+  prompt: CustomizedPromptsData,
+): CustomizedPromptsData {
+  const encryptedPersonalInfo: { [key: string]: string } = {};
+  if (prompt.personal_info) {
+    for (const key in prompt.personal_info) {
+      if (Object.prototype.hasOwnProperty.call(prompt.personal_info, key)) {
+        encryptedPersonalInfo[key] = EncryptionService.encrypt(
+          prompt.personal_info[key],
+        );
+      }
+    }
+  }
+
+  const encryptedPrompts: { [key: string]: string } = {};
+  if (prompt.prompts) {
+    for (const key in prompt.prompts) {
+      if (Object.prototype.hasOwnProperty.call(prompt.prompts, key)) {
+        encryptedPrompts[key] = EncryptionService.encrypt(prompt.prompts[key]);
+      }
+    }
+  }
+
+  return {
+    personal_info:
+      Object.keys(encryptedPersonalInfo).length > 0
+        ? encryptedPersonalInfo
+        : undefined,
+    prompts:
+      Object.keys(encryptedPrompts).length > 0 ? encryptedPrompts : undefined,
+    enabled: prompt.enabled,
+  };
+}
+
+export function decryptSystemPrompt(
+  prompt: CustomizedPromptsData,
+): CustomizedPromptsData {
+  const decryptedPersonalInfo: { [key: string]: string } = {};
+  if (prompt.personal_info) {
+    for (const key in prompt.personal_info) {
+      if (Object.prototype.hasOwnProperty.call(prompt.personal_info, key)) {
+        decryptedPersonalInfo[key] = EncryptionService.decrypt(
+          prompt.personal_info[key],
+        );
+      }
+    }
+  }
+
+  const decryptedPrompts: { [key: string]: string } = {};
+  if (prompt.prompts) {
+    for (const key in prompt.prompts) {
+      if (Object.prototype.hasOwnProperty.call(prompt.prompts, key)) {
+        decryptedPrompts[key] = EncryptionService.decrypt(prompt.prompts[key]);
+      }
+    }
+  }
+
+  return {
+    personal_info:
+      Object.keys(decryptedPersonalInfo).length > 0
+        ? decryptedPersonalInfo
+        : undefined,
+    prompts:
+      Object.keys(decryptedPrompts).length > 0 ? decryptedPrompts : undefined,
+    enabled: prompt.enabled,
+  };
 }
 
 /**

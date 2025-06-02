@@ -18,18 +18,18 @@ function AuthenticatedContentWrapper({
 }: {
   children: React.ReactNode;
 }) {
-  const { authenticated } = usePrivy();
+  // const { authenticated } = usePrivy();
 
   return (
     <>
-      {authenticated ? (
+      {/* {authenticated ? ( */}
         <EncryptionProvider>
           <AuthChatListener />
           <SnackbarProvider>{children}</SnackbarProvider>
         </EncryptionProvider>
-      ) : (
+      {/* ) : (
         <SnackbarProvider>{children}</SnackbarProvider>
-      )}
+      )} */}
     </>
   );
 }

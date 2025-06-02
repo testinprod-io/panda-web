@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Typography } from "@mui/material";
+import Image from "next/image";
 
 export default function NewChatPage() {
   return (
@@ -14,10 +15,12 @@ export default function NewChatPage() {
         paddingTop: "0px",
       }}
     >
-      <img
-        style={{ width: "9.26vh", height: "9.26vh" }}
+      <Image
         src="/icons/panda.svg"
         alt="Panda AI Logo"
+        width={32}
+        height={32}
+        style={{ width: "9.26vh", height: "9.26vh" }}
       />
       <Typography
         gutterBottom

@@ -2,7 +2,6 @@ import { PandaPath, DEFAULT_PANDA_MODEL_NAME } from "@/types/constant";
 import {
   ChatOptions,
   LLMApi,
-  LLMModel,
   LLMUsage,
   MultimodalContent,
   LLMConfig,
@@ -11,18 +10,6 @@ import { RequestMessage, Role } from "@/types";
 
 // Type for the Privy getAccessToken function
 export type GetAccessTokenFn = () => Promise<string | null>;
-
-export interface PandaListModelResponse {
-  data: {
-    id: string;
-    object: string;
-    owned_by: string;
-    permission: any[];
-    root: string;
-    parent: null;
-  }[];
-  object: string;
-}
 
 export interface RequestPayload {
   messages: {
@@ -45,19 +32,14 @@ export interface SummaryResponse {
 
 export class PandaApi implements LLMApi {
   private baseUrl: string;
-  private disableListModels: boolean = false;
   private getAccessToken: GetAccessTokenFn;
 
   constructor(
     baseUrl: string,
     getAccessToken: GetAccessTokenFn,
-    disableListModels?: boolean,
   ) {
     this.baseUrl = baseUrl;
     this.getAccessToken = getAccessToken;
-    if (disableListModels) {
-      this.disableListModels = disableListModels;
-    }
   }
 
   path(path: string, targetEndpoint?: string): string {
@@ -258,109 +240,6 @@ export class PandaApi implements LLMApi {
     };
   }
 
-  async models(): Promise<LLMModel[]> {
-    if (this.disableListModels) {
-      return [
-        {
-          name: "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
-          available: true,
-          sorted: 1000,
-          provider: {
-            id: "panda",
-            providerName: "Panda",
-            providerType: "panda",
-            sorted: 1,
-          },
-        },
-        {
-          name: "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16",
-          available: true,
-          sorted: 1001,
-          provider: {
-            id: "panda",
-            providerName: "Panda",
-            providerType: "panda",
-            sorted: 1,
-          },
-        },
-        {
-          name: "deepseek-ai/deepseek-coder-6.7b-instruct",
-          available: true,
-          sorted: 1002,
-          provider: {
-            id: "panda",
-            providerName: "Panda",
-            providerType: "panda",
-            sorted: 1,
-          },
-        },
-        {
-          name: "deepseek-ai/deepseek-coder-33b-instruct",
-          available: true,
-          sorted: 1003,
-          provider: {
-            id: "panda",
-            providerName: "Panda",
-            providerType: "panda",
-            sorted: 1,
-          },
-        },
-      ];
-    }
-
-    try {
-      const accessToken = await this.getAccessToken();
-      if (!accessToken) {
-        console.error(
-          "[Models] Panda API requires authentication. Access token not available.",
-        );
-        return [];
-      }
-      const bearerToken = `Bearer ${accessToken}`;
-
-      const requestUrl = this.path(PandaPath.ListModelPath);
-      const response = await fetch(requestUrl, {
-        method: "GET",
-        headers: {
-          Authorization: bearerToken,
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Panda API error fetching models: ${response.status} ${response.statusText} - ${errorText}`,
-        );
-      }
-
-      const resJson = (await response.json()) as PandaListModelResponse;
-      const chatModels = resJson.data?.filter(
-        (m) => m.id.startsWith("deepseek-ai/"), // Example filter, adjust if Panda uses different model naming
-      );
-      console.log("[Models] Panda models found:", chatModels);
-
-      if (!chatModels) {
-        return [];
-      }
-
-      let seq = 1000;
-      return chatModels.map((m) => ({
-        name: m.id,
-        available: true,
-        sorted: seq++,
-        provider: {
-          id: "panda",
-          providerName: "Panda",
-          providerType: "panda",
-          sorted: 1,
-        },
-      }));
-    } catch (error) {
-      console.error("[Models] Panda: failed to fetch models", error);
-      return []; // Return empty or default models on error
-    }
-  }
-
   async summary(
     config: LLMConfig,
     messages: RequestMessage[],
@@ -413,7 +292,7 @@ export class PandaApi implements LLMApi {
 
       const data = (await response.json()) as SummaryResponse;
       return data;
-    } catch (error: any) {
+    } catch (error) {
       console.error("[Panda Request] Summary failed", error);
       throw error;
     }

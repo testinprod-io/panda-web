@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Tooltip } from "@mui/material";
+import { Box } from "@mui/material";
 import { ChatList } from "@/components/chat-list/chat-list";
 import SidebarHeader from "@/components/sidebar/sidebar-header";
 import { useAuthStatus } from "@/hooks/use-auth-status";
@@ -34,8 +34,8 @@ export default function Sidebar({
   }
 
   const isOverlayMode = Boolean(sx);
-  const collapsedPaneWidth = "125px";
-  const expandedPaneWidth = "300px";
+  const collapsedPaneWidth = "80px";
+  const expandedPaneWidth = "256px";
 
   const handleNewChat = () => {
     router.push(`/`);
@@ -56,6 +56,18 @@ export default function Sidebar({
 
   const navItems = [
     // { id: "search", icon: <SearchIcon />, text: "Search", action: handleSearch },
+    {
+      id: "menu",
+      icon: (
+        <img
+          src="/icons/menu.svg"
+          alt="Menu"
+          className={styles.navMenuIcon}
+        />
+      ),
+      text: "Menu",
+      action: onToggleSidebar,
+    },
     {
       id: "newChat",
       icon: (
@@ -119,8 +131,6 @@ export default function Sidebar({
             }
       }
     >
-      <SidebarHeader isSidebarCollapsed={isSidebarCollapsed} />
-
       <Box
         className={styles.slidingContainer}
         style={{
@@ -133,6 +143,7 @@ export default function Sidebar({
           className={styles.expandedPane}
           style={{ width: expandedPaneWidth }}
         >
+          <SidebarHeader isSidebarCollapsed={false} />
           <Box
             className={styles.expandedContentArea}
             sx={{ flexGrow: 1, minHeight: 0 }}
@@ -149,14 +160,15 @@ export default function Sidebar({
           className={styles.collapsedPane}
           style={{ width: collapsedPaneWidth }}
         >
+          <SidebarHeader isSidebarCollapsed={true} />
           <Box className={styles.collapsedNavMenu}>
             {navItems.map((item) => (
-              <Tooltip title={item.text} placement="right" key={item.id}>
-                <Box className={styles.collapsedNavItem} onClick={item.action}>
-                  <Box className={styles.navItemText}>{item.text}</Box>
-                  <Box className={styles.navItemIcon}>{item.icon}</Box>
+              // <Tooltip title={item.text} placement="right" key={item.id}>
+                <Box className={styles.collapsedNavItem} onClick={item.action} key={item.id}>
+                  {/* <Box className={styles.navItemText}>{item.text}</Box> */}
+                   <Box className={styles.navItemIcon}>{item.icon}</Box>
                 </Box>
-              </Tooltip>
+              // </Tooltip>
             ))}
           </Box>
         </Box>

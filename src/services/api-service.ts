@@ -80,7 +80,7 @@ export function mapConversationToSession(
   session.topic = conversation.title || DEFAULT_TOPIC;
   session.visibleTopic = decryptedConvo.title || DEFAULT_TOPIC;
   session.lastUpdate = new Date(decryptedConvo.updated_at).getTime();
-  session.customizedPrompts = decryptedConvo.custom_data?.customized_prompts;
+  session.customizedPrompts = EncryptionService.decrypt(decryptedConvo.custom_data?.customized_prompts);
   return session;
 }
 

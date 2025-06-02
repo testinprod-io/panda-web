@@ -2,14 +2,8 @@
 
 import { Box, IconButton, Tooltip, Typography } from "@mui/material";
 import styles from "./sidebar.module.scss";
-import { Montserrat } from "next/font/google";
 import clsx from "clsx";
-
-const montserrat = Montserrat({
-  subsets: ["latin"],
-  weight: ["600", "500"],
-});
-
+import Image from "next/image";
 interface SidebarHeaderProps {
   isSidebarCollapsed: boolean;
 }
@@ -28,50 +22,34 @@ export default function SidebarHeader({
         isSidebarCollapsed && styles.collapsed,
       )}
     >
-      <Box className={styles.sidebarHeaderIconRow}>
-        {!isSidebarCollapsed && (
-          <>
-            <Box sx={{ display: "flex", alignItems: "center" }}>
-              {/* Removed placeholder comment for other left-aligned icons */}
-            </Box>
-
-            <Tooltip title="Settings">
-              <IconButton onClick={handleSettings} sx={{ color: "#757575" }}>
-                <img
-                  src="/icons/settings.svg"
-                  alt="Settings"
-                  className={styles.settingsIcon}
-                />
-              </IconButton>
-            </Tooltip>
-          </>
-        )}
-      </Box>
-
       <Box
         className={clsx(
           styles.sidebarHeaderLogoRow,
           isSidebarCollapsed && styles.collapsed,
         )}
       >
-        <img
+        <Image
           src="/icons/logo.png"
           alt="Panda AI Logo"
-          className={styles.sidebarHeaderLogoImage}
+          className={clsx(styles.sidebarHeaderLogoImage, isSidebarCollapsed && styles.collapsed)}
+          width={32}
+          height={32}
         />
+        {!isSidebarCollapsed && (
         <Box
           className={clsx(
             styles.sidebarHeaderLogoTextContainer,
             isSidebarCollapsed && styles.collapsed,
           )}
         >
-          <Typography
+          <Box
             component="span"
-            className={clsx(styles.logoTextBold, montserrat.className)}
+            className={styles.logoTextBold}
           >
             PANDA
-          </Typography>
+          </Box>
         </Box>
+        )}
       </Box>
     </Box>
   );

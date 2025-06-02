@@ -97,7 +97,7 @@
 :root {
   @include light;
 
-  --sidebar-width: 300px;
+  --sidebar-width: 256px;
   --window-width: 100vw;
   --window-height: 100vh;
   --window-content-width: calc(100% - var(--sidebar-width));

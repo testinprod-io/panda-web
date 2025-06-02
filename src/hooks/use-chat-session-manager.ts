@@ -800,7 +800,7 @@ export function useChatSessionManager(
           stream: true,
           reasoning: modelConfig.reasoning,
           useSearch: newUserMessage.useSearch,
-          customizedPrompts: customizedPrompts,
+          customizedPrompts: customizedPrompts ? EncryptionService.decrypt(customizedPrompts) : undefined,
         },
         onReasoningStart: () => {
           reasoningStartTimeForThisQuery = Date.now();
@@ -812,22 +812,24 @@ export function useChatSessionManager(
                     isReasoning: true,
                     visibleReasoning: msg.reasoning || "",
                   }
-                : msg,
+                : msg
             ),
           );
           callbacks?.onReasoningStart?.(localBotMessageId);
         },
         onReasoningChunk: (_messageId, chunk) => {
           setDisplayedMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === localBotMessageId
+            prev.map((msg) => {
+              const visibleReasoning = (msg.visibleReasoning || "") + chunk
+              return msg.id === localBotMessageId
                 ? {
                     ...msg,
                     streaming: true,
                     isReasoning: true,
-                    visibleReasoning: msg.reasoning || "",
+                    visibleReasoning: visibleReasoning,
                   }
-                : msg,
+                : msg
+            },
             ),
           );
           callbacks?.onReasoningChunk?.(localBotMessageId, chunk);
@@ -839,16 +841,18 @@ export function useChatSessionManager(
             reasoningStartTimeForThisQuery = null;
           }
           setDisplayedMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === localBotMessageId
+            prev.map((msg) => {
+              const visibleReasoning = msg.visibleReasoning || ""
+              return msg.id === localBotMessageId
                 ? {
                     ...msg,
                     isReasoning: false,
                     reasoningTime: duration,
-                    visibleReasoning: msg.reasoning || "",
-                    content: EncryptionService.encrypt(msg.content || ""),
+                    visibleReasoning: visibleReasoning,
+                    reasoning: EncryptionService.encrypt(visibleReasoning),
                   }
-                : msg,
+                : msg
+            },
             ),
           );
           callbacks?.onReasoningEnd?.(localBotMessageId);

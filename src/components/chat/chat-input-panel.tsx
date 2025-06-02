@@ -6,14 +6,13 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { isEmpty } from "lodash-es";
 import { useDebouncedCallback } from "use-debounce";
 import { ModelConfig } from "@/types/constant";
 import { usePrivy } from "@privy-io/react-auth";
 
-import { useAppConfig, useChatStore } from "@/store";
+import { useChatStore } from "@/store";
 import { UNFINISHED_INPUT } from "@/types/constant";
 import {
   autoGrowTextArea,
@@ -53,7 +52,6 @@ interface ChatInputPanelProps {
   modelConfig?: ModelConfig;
   customizedPrompts?: CustomizedPromptsData;
   isLoading: boolean;
-  hitBottom: boolean;
   onSubmit: (
     sessionId: UUID | undefined,
     SessionState: SessionState,
@@ -70,7 +68,6 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
       modelConfig,
       customizedPrompts,
       isLoading,
-      hitBottom,
       onSubmit,
       scrollToBottom,
     } = props;
@@ -86,8 +83,6 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
 
     const { authenticated, getAccessToken } = usePrivy();
     const apiClient = useApiClient();
-    const config = useAppConfig();
-    const router = useRouter();
     const { newSession } = useChatActions();
     const isMobileScreen = useMobileScreen();
     const { submitKey, shouldSubmit } = useSubmitHandler();
@@ -126,8 +121,8 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
           ) {
             chatActions
               .deleteSession(provisionalSessionIdRef.current)
-              .catch((err) => {
-                console.error("Error deleting provisional session:", err);
+              .catch(() => {
+                // console.error("Error deleting provisional session:", err);
               });
             provisionalSessionIdRef.current = null;
           }
@@ -150,7 +145,6 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
                 typeof window !== "undefined" && window.crypto?.randomUUID
                   ? window.crypto.randomUUID()
                   : Date.now().toString() + Math.random().toString(),
-              originalFile: null as any,
               previewUrl: persistedFile.url,
               type: persistedFile.type,
               name: persistedFile.name,
@@ -172,7 +166,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
         ) {
           chatActions
             .deleteSession(provisionalSessionIdRef.current)
-            .catch((err) => {});
+            .catch(() => {});
         }
         provisionalSessionIdRef.current = null;
         isProvisionalSessionCommittedRef.current = false;
@@ -261,10 +255,6 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
       }
     }, [userInput, isMobileScreen, inputRows]);
 
-    const onInput = (text: string) => {
-      setUserInput(text);
-    };
-
     const executeFileUploads = useCallback(
       async (candidateFiles: File[]) => {
         let currentSessionIdToUse = activeSessionId;
@@ -279,7 +269,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
           ) {
             await chatActions
               .deleteSession(provisionalSessionIdRef.current)
-              .catch((err) => {});
+              .catch(() => {});
             provisionalSessionIdRef.current = null;
             console.log(
               "DEBUG [executeFileUploads] Deleted provisional session",
@@ -538,7 +528,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
       ) {
         chatActions
           .deleteSession(provisionalSessionIdRef.current)
-          .catch((err) => {});
+          .catch(() => {});
         provisionalSessionIdRef.current = null;
         isProvisionalSessionCommittedRef.current = false;
       }
@@ -618,7 +608,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
           await executeFileUploads(candidateFiles);
         }
       },
-      [modelConfig, showSnackbar, activeSessionId, executeFileUploads],
+      [modelConfig, activeSessionId, executeFileUploads],
     );
 
     const uploadFile = useCallback(async () => {
@@ -626,18 +616,14 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
       fileInput.type = "file";
       fileInput.multiple = true;
       fileInput.accept = ALLOWED_FILE_TYPES.join(",");
-      fileInput.onchange = async (event: any) => {
-        const files = event.target.files as FileList | null;
+      fileInput.onchange = async (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const files = target.files as FileList | null;
         if (!files || files.length === 0) return;
         await executeFileUploads(Array.from(files));
       };
       fileInput.click();
-    }, [
-      showSnackbar,
-      activeSessionId,
-      executeFileUploads,
-      chatActions.newSession,
-    ]);
+    }, [executeFileUploads]);
 
     const handleRemoveFile = useCallback(
       async (file: AttachedClientFile) => {

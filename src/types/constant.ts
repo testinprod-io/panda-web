@@ -102,7 +102,7 @@ Latex inline: \\(x^2\\)
 Latex block: $$e=mc^2$$
 `;
 
-export const DEFAULT_PANDA_MODEL_NAME = "ig1/r1-1776-AWQ";
+export const DEFAULT_PANDA_MODEL_NAME = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B";
 
 export const KnowledgeCutOffDate: Record<string, string> = {
   default: "2023-10",
@@ -122,7 +122,7 @@ function getModelEndpointEnvVarName(modelName: string): string {
 }
 
 const PandaModels = [
-  "ig1/r1-1776-AWQ",
+  "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
   "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16",
 ];
 
@@ -193,7 +193,7 @@ export const DEFAULT_MODELS: AppModelDefinition[] = [
 
     // Default endpoint, can be overridden by environment variables
     let defaultEndpoint = "";
-    if (name === "ig1/r1-1776-AWQ") {
+    if (name === "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B") {
       defaultEndpoint = process.env.NEXT_PUBLIC_LLM_SERVER_ENDPOINT || "";
     } else if (
       name === "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16"

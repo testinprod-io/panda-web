@@ -2,9 +2,7 @@
 
 import React, { createContext, useContext, useMemo } from "react";
 import { usePrivy } from "@privy-io/react-auth";
-import { useAppConfig } from "@/store";
 import { ClientApi, getClientApi } from "@/client/api";
-import { ServiceProvider } from "@/types/constant";
 import type { GetAccessTokenFn } from "@/client/platforms/panda";
 
 const defaultGetAccessToken: GetAccessTokenFn = async () => {
@@ -17,21 +15,20 @@ const defaultGetAccessToken: GetAccessTokenFn = async () => {
 export const ApiClientProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { apiProvider } = useAppConfig();
   const { ready: privyReady, getAccessToken } = usePrivy();
 
   const apiClient = useMemo(() => {
     if (!privyReady || !getAccessToken) {
-      return getClientApi(ServiceProvider.Panda, defaultGetAccessToken);
+      return getClientApi(defaultGetAccessToken);
     }
 
     try {
-      return getClientApi(apiProvider, getAccessToken);
+      return getClientApi(getAccessToken);
     } catch (error) {
       console.error("[ApiClientProvider] Error creating API client:", error);
       throw error;
     }
-  }, [apiProvider, privyReady, getAccessToken]);
+  }, [privyReady, getAccessToken]);
 
   return (
     <ApiClientContext.Provider value={apiClient}>

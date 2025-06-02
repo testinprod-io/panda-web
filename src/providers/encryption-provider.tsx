@@ -47,7 +47,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   const [errorMessage, setErrorMessage] = useState<string>("");
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const apiClient = useApiClient();
-  const { user } = usePrivy();
+  const { user, authenticated } = usePrivy();
 
   // Set up error handling for encryption-related operations
   useEffect(() => {
@@ -261,6 +261,14 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     unlockApp: contextUnlockApp,
     lockApp,
   };
+
+  if (!authenticated) {
+    return (
+      <EncryptionContext.Provider value={contextValue}>
+        {children}
+      </EncryptionContext.Provider>
+    );
+  }
 
   return (
     <EncryptionContext.Provider value={contextValue}>

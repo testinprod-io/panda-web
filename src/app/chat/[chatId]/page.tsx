@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { Box, Typography, CircularProgress } from "@mui/material";
+import { Box, CircularProgress } from "@mui/material";
 import { useChatStore } from "@/store/chat";
 import { useEffect, useState } from "react";
 import { MemoizedChatComponent } from "@/components/chat/chat-component";

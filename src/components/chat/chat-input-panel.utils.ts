@@ -16,7 +16,7 @@ export interface FileError {
 
 export interface AttachedClientFile {
   clientId: string;
-  originalFile: File;
+  originalFile?: File;
   previewUrl: string;
   type: string;
   name: string;

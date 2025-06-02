@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   Box,
-  easing,
   Typography,
   useMediaQuery,
   IconButton,
@@ -19,7 +18,7 @@ import ChatHeader from "@/components/chat/chat-header";
 import { ChatInputPanel } from "@/components/chat/chat-input-panel";
 import { useChatStore, useAppConfig } from "@/store";
 import { UNFINISHED_INPUT } from "@/types/constant";
-import { SessionState, SubmittedFile } from "@/types/session";
+import { SessionState } from "@/types/session";
 import { safeLocalStorage } from "@/utils/utils";
 import { useChatActions } from "@/hooks/use-chat-actions";
 import type { UUID } from "crypto"; // Keep as type import
@@ -74,9 +73,6 @@ export default function ChatLayoutContent({
   );
   const isChatComponentBusyFromStore = useChatStore(
     (state) => state.isChatComponentBusy,
-  );
-  const clearChatInteractionHandlers = useChatStore(
-    (state) => state.clearChatInteractionHandlers,
   );
 
   const [internalIsSubmitting, setInternalIsSubmitting] = useState(false);
@@ -161,8 +157,8 @@ export default function ChatLayoutContent({
 
   const handleToggleSidebar = () => setIsSidebarCollapsed((prev) => !prev);
 
-  const sidebarExpandedWidth = 300;
-  const sidebarCollapsedWidth = 125;
+  const sidebarExpandedWidth = 256;
+  const sidebarCollapsedWidth = 80;
   const sidebarTransitionDuration = "0.4s";
   const sidebarTransitionTiming = "ease-in-out";
 
@@ -212,9 +208,9 @@ export default function ChatLayoutContent({
                 }
                 style={{
                   left: isSidebarCollapsed
-                    ? `${sidebarCollapsedWidth - 20}px`
-                    : `${sidebarExpandedWidth - 20}px`,
-                  transition: `left ${sidebarTransitionDuration} ${sidebarTransitionTiming}`,
+                    ? `${sidebarCollapsedWidth - 16}px`
+                    : `${sidebarExpandedWidth - 16}px`,
+                  // transition: `left ${sidebarTransitionDuration} ${sidebarTransitionTiming}`,
                 }}
               >
                 {isSidebarCollapsed ? (
@@ -337,7 +333,6 @@ export default function ChatLayoutContent({
             modelConfig={modelConfig}
             customizedPrompts={appConfig.customizedPrompts}
             isLoading={internalIsSubmitting}
-            hitBottom={hitBottomFromStore}
             onSubmit={handleLayoutSubmit}
             scrollToBottom={
               scrollToBottomHandlerFromStore ||

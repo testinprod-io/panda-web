@@ -16,7 +16,7 @@ import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import styles from "./customize-prompts-view.module.scss";
 import { CustomizedPromptsResponse } from "@/client/client";
 import { useApiClient } from "@/providers/api-client-provider";
-import { CustomizedPromptsData } from "@/types";
+import { CustomizedPromptsData, decryptSystemPrompt, encryptSystemPrompt } from "@/types";
 import { useAppConfig } from "@/store/config";
 
 interface Trait {
@@ -66,7 +66,7 @@ export default function CustomizePromptsView({
   const [error, setError] = useState<string | null>(null);
   const [isUpdateMode, setIsUpdateMode] = useState(false);
   const [initialData, setInitialData] =
-    useState<CustomizedPromptsResponse | null>(null);
+    useState<CustomizedPromptsData | null>(null);
   const [enableForNewChats, setEnableForNewChats] = useState(true);
   const { customizedPrompts, setCustomizedPrompts } = useAppConfig();
 
@@ -75,7 +75,7 @@ export default function CustomizePromptsView({
       setIsLoading(true);
       setError(null);
       try {
-        const data = await apiClient.app.getCustomizedPrompts();
+        const data = decryptSystemPrompt(await apiClient.app.getCustomizedPrompts());
         setName(data.personal_info?.name || "");
         setJob(data.personal_info?.job || "");
         const currentTraitsText = data.prompts?.traits || "";
@@ -208,11 +208,12 @@ export default function CustomizePromptsView({
     if (Object.keys(payload.prompts!).length === 0) delete payload.prompts;
 
     try {
-      let responseData: CustomizedPromptsResponse;
+      const encryptedPayload = encryptSystemPrompt(payload);
+      let responseData: CustomizedPromptsData;
       if (isUpdateMode) {
-        responseData = await apiClient.app.updateCustomizedPrompts(payload);
+        responseData = decryptSystemPrompt(await apiClient.app.updateCustomizedPrompts(encryptedPayload));
       } else {
-        responseData = await apiClient.app.createCustomizedPrompts(payload);
+        responseData = decryptSystemPrompt(await apiClient.app.createCustomizedPrompts(encryptedPayload));
       }
       setName(responseData.personal_info?.name || "");
       setJob(responseData.personal_info?.job || "");

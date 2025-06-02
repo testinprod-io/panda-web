@@ -289,7 +289,12 @@ export default function ChatHeader({
                 );
               })}
             </Menu>
-            {isAuthenticated && (
+          </Box>
+        )}
+      </Box>
+
+      <Box className={styles.headerRight}>
+        {isAuthenticated && (
               <Tooltip title="Click to cycle status (Dev only)">
                 <Box
                   onClick={cycleEncryptionStatus}
@@ -320,11 +325,6 @@ export default function ChatHeader({
                 </Box>
               </Tooltip>
             )}
-          </Box>
-        )}
-      </Box>
-
-      <Box className={styles.headerRight}>
         {!isReady ? (
           <Box className={styles.loadingPlaceholder} />
         ) : isAuthenticated ? (

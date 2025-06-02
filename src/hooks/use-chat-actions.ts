@@ -143,8 +143,9 @@ export function useChatActions() {
         title: EncryptionService.encrypt(DEFAULT_TOPIC),
       };
       if (customizedPrompts && customizedPrompts.enabled) {
+        const systemPrompt = generateSystemPrompt(customizedPrompts)
         createRequest.custom_data = {
-          customized_prompts: generateSystemPrompt(customizedPrompts),
+          customized_prompts: EncryptionService.encrypt(systemPrompt)
         };
       }
 

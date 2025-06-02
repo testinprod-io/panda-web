@@ -104,16 +104,6 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     return (
       <div className={clsx(styles["chat-message"])}>
         <div className={styles["chat-message-container"]}>
-          <div className={styles["chat-message-actions"]}>
-            <div className={styles["chat-input-actions"]}>
-              <ActionButton
-                text={null}
-                icon={<img src="/icons/refresh.svg" alt="Resend message" />}
-                onClick={handleResend}
-                disabled={isChatLoading}
-              />
-            </div>
-          </div>
           <div
             className={clsx(
               styles["chat-message-item"],
@@ -129,6 +119,16 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                 {" "}
                 help.panda.com.
               </span>
+            </div>
+          </div>
+          <div className={styles["chat-message-actions"]}>
+            <div className={styles["chat-input-actions"]}>
+              <ActionButton
+                text={null}
+                icon={<img src="/icons/refresh.svg" alt="Resend message" />}
+                onClick={handleResend}
+                disabled={isChatLoading}
+              />
             </div>
           </div>
         </div>
@@ -154,13 +154,13 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "flex-end",
-                gap: "10px",
+                gap: "0.25rem",
               }
             : {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "flex-start",
-                gap: "10px",
+                gap: "0.25rem",
               }
         }
       >
@@ -169,16 +169,6 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
             <div className={styles["chat-message-avatar"]}>
               <img src="/icons/panda.svg" alt="Panda" />
             </div>
-          )}
-
-          {showActions && !isEditing && !(streaming || isReasoning) && (
-            <MessageActionsBar
-              isUser={isUser}
-              isChatLoading={isChatLoading}
-              messageContent={content}
-              reasoningText={reasoning}
-              onResend={handleResend}
-            />
           )}
         </div>
 
@@ -236,6 +226,16 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
             </>
           )}
         </Box>
+          {showActions && !isEditing && !(streaming || isReasoning) && (
+            <MessageActionsBar
+              isUser={isUser}
+              isChatLoading={isChatLoading}
+              messageContent={content}
+              reasoningText={reasoning}
+              onResend={handleResend}
+            />
+          )}
+
       </Box>
     </div>
   );
