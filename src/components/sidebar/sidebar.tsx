@@ -42,7 +42,7 @@ export default function Sidebar({
   };
 
   const handleSettings = () => {
-    window.location.hash = 'settings';
+    window.location.hash = "settings";
   };
 
   const handleLogout = () => {
@@ -56,26 +56,68 @@ export default function Sidebar({
 
   const navItems = [
     // { id: "search", icon: <SearchIcon />, text: "Search", action: handleSearch },
-    { id: "newChat", icon: <img src="/icons/new-chat.svg" alt="New Chat" className={styles.navMenuIcon} />, text: "New chat", action: handleNewChat },
+    {
+      id: "newChat",
+      icon: (
+        <img
+          src="/icons/new-chat.svg"
+          alt="New Chat"
+          className={styles.navMenuIcon}
+        />
+      ),
+      text: "New chat",
+      action: handleNewChat,
+    },
     // { id: "archive", icon: <ArchiveIcon />, text: "Archive", action: handleArchive },
-    { id: "settings", icon: <img src="/icons/settings.svg" alt="Settings" className={styles.navMenuIcon} />, text: "Settings", action: handleSettings },
-    { id: "logout", icon: <img src="/icons/logout.svg" alt="Log out" className={styles.navMenuIcon} />, text: "Log out", action: handleLogout },
+    {
+      id: "settings",
+      icon: (
+        <img
+          src="/icons/settings.svg"
+          alt="Settings"
+          className={styles.navMenuIcon}
+        />
+      ),
+      text: "Settings",
+      action: handleSettings,
+    },
+    {
+      id: "logout",
+      icon: (
+        <img
+          src="/icons/logout.svg"
+          alt="Log out"
+          className={styles.navMenuIcon}
+        />
+      ),
+      text: "Log out",
+      action: handleLogout,
+    },
   ];
 
   return (
     <Box
-      className={clsx(
-        styles.sidebar,
-        isOverlayMode && styles.sidebarOverlay
-      )}
-      style={!isOverlayMode ? {
-        width: isSidebarCollapsed ? collapsedPaneWidth : expandedPaneWidth,
-      } : {}}
-      sx={isOverlayMode ? sx : { 
-        width: isSidebarCollapsed ? collapsedPaneWidth : expandedPaneWidth,
-        display: 'flex',
-        flexDirection: 'column'
-      }}
+      className={clsx(styles.sidebar, isOverlayMode && styles.sidebarOverlay)}
+      style={
+        !isOverlayMode
+          ? {
+              width: isSidebarCollapsed
+                ? collapsedPaneWidth
+                : expandedPaneWidth,
+            }
+          : {}
+      }
+      sx={
+        isOverlayMode
+          ? sx
+          : {
+              width: isSidebarCollapsed
+                ? collapsedPaneWidth
+                : expandedPaneWidth,
+              display: "flex",
+              flexDirection: "column",
+            }
+      }
     >
       <SidebarHeader isSidebarCollapsed={isSidebarCollapsed} />
 
@@ -87,8 +129,14 @@ export default function Sidebar({
             : "translateX(0px)",
         }}
       >
-        <Box className={styles.expandedPane} style={{ width: expandedPaneWidth }}>
-          <Box className={styles.expandedContentArea} sx={{ flexGrow: 1, minHeight: 0 }}>
+        <Box
+          className={styles.expandedPane}
+          style={{ width: expandedPaneWidth }}
+        >
+          <Box
+            className={styles.expandedContentArea}
+            sx={{ flexGrow: 1, minHeight: 0 }}
+          >
             <ProjectPanel onNewChat={handleNewChat} />
             <AccessPanel onLockServiceClick={handleLockServiceClick} />
             <Box className={styles.sidebarContent}>
@@ -97,7 +145,10 @@ export default function Sidebar({
           </Box>
         </Box>
 
-        <Box className={styles.collapsedPane} style={{ width: collapsedPaneWidth }}>
+        <Box
+          className={styles.collapsedPane}
+          style={{ width: collapsedPaneWidth }}
+        >
           <Box className={styles.collapsedNavMenu}>
             {navItems.map((item) => (
               <Tooltip title={item.text} placement="right" key={item.id}>

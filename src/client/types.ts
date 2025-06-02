@@ -1,5 +1,5 @@
-import { UUID } from 'crypto';
-import { Role } from '@/types';
+import { UUID } from "crypto";
+import { Role } from "@/types";
 
 export interface Conversation {
   title: string | null;
@@ -22,9 +22,9 @@ export interface Message {
 }
 
 export interface InitialMessageContent {
-    sender_type: Role;
-    message_id: UUID;
-    content: string;
+  sender_type: Role;
+  message_id: UUID;
+  content: string;
 }
 
 export interface PaginationInfo {
@@ -82,16 +82,16 @@ export interface PaginatedMessagesResponse {
 }
 
 export interface GetConversationsParams {
-    cursor?: string | null;
-    limit?: number; // Default: 20, Max: 20
+  cursor?: string | null;
+  limit?: number; // Default: 20, Max: 20
 }
 
 export interface GetConversationMessagesParams {
-    cursor?: string | null;
-    limit?: number; // Default: 20, Max: 200
-} 
+  cursor?: string | null;
+  limit?: number; // Default: 20, Max: 200
+}
 
-export interface EncryptedIdResponse { 
+export interface EncryptedIdResponse {
   user_id: string;
   encrypted_id: string;
   created_at: string;
@@ -101,7 +101,7 @@ export interface EncryptedIdResponse {
 export interface FileResponse {
   file_id: UUID;
   conversation_id: UUID;
-  file_type: 'pdf' | 'image';
+  file_type: "pdf" | "image";
   content: string | null;
   created_at: string;
   updated_at: string;

@@ -1,5 +1,12 @@
 import { PandaPath, DEFAULT_PANDA_MODEL_NAME } from "@/types/constant";
-import { ChatOptions, LLMApi, LLMModel, LLMUsage, MultimodalContent, LLMConfig } from "@/client/api";
+import {
+  ChatOptions,
+  LLMApi,
+  LLMModel,
+  LLMUsage,
+  MultimodalContent,
+  LLMConfig,
+} from "@/client/api";
 import { RequestMessage, Role } from "@/types";
 
 // Type for the Privy getAccessToken function
@@ -41,7 +48,11 @@ export class PandaApi implements LLMApi {
   private disableListModels: boolean = false;
   private getAccessToken: GetAccessTokenFn;
 
-  constructor(baseUrl: string, getAccessToken: GetAccessTokenFn, disableListModels?: boolean) {
+  constructor(
+    baseUrl: string,
+    getAccessToken: GetAccessTokenFn,
+    disableListModels?: boolean,
+  ) {
     this.baseUrl = baseUrl;
     this.getAccessToken = getAccessToken;
     if (disableListModels) {
@@ -52,18 +63,21 @@ export class PandaApi implements LLMApi {
   path(path: string, targetEndpoint?: string): string {
     const baseUrlToUse = targetEndpoint || this.baseUrl;
     // Ensure no double slashes and handle if baseUrlToUse is empty
-    const A = baseUrlToUse.endsWith("/") ? baseUrlToUse.slice(0, -1) : baseUrlToUse;
+    const A = baseUrlToUse.endsWith("/")
+      ? baseUrlToUse.slice(0, -1)
+      : baseUrlToUse;
     const B = path.startsWith("/") ? path.slice(1) : path;
     const finalPath = `${A}/${B}`;
     console.log("[Panda Endpoint Used] ", finalPath);
     return finalPath;
   }
 
-  
   async chat(options: ChatOptions) {
     let messages = options.messages.map((v) => ({
       role: v.role,
-      content: v.attachments ? [...v.attachments, { type: "text", text: v.content }] : v.content,
+      content: v.attachments
+        ? [...v.attachments, { type: "text", text: v.content }]
+        : v.content,
     }));
 
     if (options.config.customizedPrompts) {
@@ -83,18 +97,26 @@ export class PandaApi implements LLMApi {
     let reasoningStartedForThisMessage = false;
     let mainContentText = "";
     let timestamp = new Date();
-    const usePdf = messages.some((v) => Array.isArray(v.content) && v.content.some((c) => c.type === "pdf_url"));
+    const usePdf = messages.some(
+      (v) =>
+        Array.isArray(v.content) && v.content.some((c) => c.type === "pdf_url"),
+    );
 
     try {
       const accessToken = await this.getAccessToken();
       if (!accessToken) {
-        throw new Error("Panda API requires authentication. Access token not available.");
+        throw new Error(
+          "Panda API requires authentication. Access token not available.",
+        );
       }
       const bearerToken = `Bearer ${accessToken}`;
 
       // Use targetEndpoint from options.config if available, otherwise default to this.baseUrl via this.path
-      const requestUrl = this.path(PandaPath.ChatPath, options.config.targetEndpoint);
-      
+      const requestUrl = this.path(
+        PandaPath.ChatPath,
+        options.config.targetEndpoint,
+      );
+
       const requestBody = {
         model: options.config.model,
         messages,
@@ -109,8 +131,8 @@ export class PandaApi implements LLMApi {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": bearerToken,
-          "Accept": requestBody.stream ? "text/event-stream" : "application/json",
+          Authorization: bearerToken,
+          Accept: requestBody.stream ? "text/event-stream" : "application/json",
         },
         body: JSON.stringify(requestBody),
         signal: controller.signal,
@@ -118,9 +140,15 @@ export class PandaApi implements LLMApi {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("[Panda Error] Response not OK:", response.status, response.statusText);
+        console.error(
+          "[Panda Error] Response not OK:",
+          response.status,
+          response.statusText,
+        );
         console.error("[Panda Error] Response body:", errorText);
-        throw new Error(`Panda API error: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(
+          `Panda API error: ${response.status} ${response.statusText} - ${errorText}`,
+        );
       }
 
       if (requestBody.stream) {
@@ -131,7 +159,7 @@ export class PandaApi implements LLMApi {
           throw new Error("No response body for streaming");
         }
 
-        mainContentText = ""; 
+        mainContentText = "";
         timestamp = new Date();
         inReasoningPhase = false;
         reasoningStartedForThisMessage = false;
@@ -141,7 +169,9 @@ export class PandaApi implements LLMApi {
           if (done) break;
 
           const text = decoder.decode(value);
-          const lines = text.split("\n").filter((line) => line.trim().startsWith("data: "));
+          const lines = text
+            .split("\n")
+            .filter((line) => line.trim().startsWith("data: "));
 
           for (const line of lines) {
             const data = line.slice(6);
@@ -155,7 +185,11 @@ export class PandaApi implements LLMApi {
             try {
               const json = JSON.parse(data);
               const delta = json.choices[0]?.delta;
-              timestamp = json.created ? new Date(json.created * 1000) : (json.timestamp ? new Date(json.timestamp) : new Date());
+              timestamp = json.created
+                ? new Date(json.created * 1000)
+                : json.timestamp
+                  ? new Date(json.timestamp)
+                  : new Date();
               if (!delta) continue;
               const reasoningContent = delta.reasoning_content;
               const mainResponseContent = delta.content;
@@ -178,7 +212,7 @@ export class PandaApi implements LLMApi {
               console.error("[Panda Request] stream parse error", line, e);
             }
           }
-          if (text.includes("[DONE]")) break; 
+          if (text.includes("[DONE]")) break;
         }
         if (inReasoningPhase) {
           options.onReasoningEnd?.(undefined);
@@ -186,7 +220,11 @@ export class PandaApi implements LLMApi {
         options.onFinish(mainContentText, timestamp, response);
       } else {
         const jsonResponse = await response.json();
-        timestamp = jsonResponse.created ? new Date(jsonResponse.created * 1000) : (jsonResponse.timestamp ? new Date(jsonResponse.timestamp) : new Date());
+        timestamp = jsonResponse.created
+          ? new Date(jsonResponse.created * 1000)
+          : jsonResponse.timestamp
+            ? new Date(jsonResponse.timestamp)
+            : new Date();
 
         const message = jsonResponse.choices?.[0]?.message;
         const finalReasoning = message.reasoning_content as string | undefined;
@@ -197,7 +235,7 @@ export class PandaApi implements LLMApi {
           options.onReasoningChunk?.(undefined, finalReasoning);
           options.onReasoningEnd?.(undefined);
         }
-        
+
         const mainMessageToFinish = finalContent || "";
         options.onContentChunk?.(undefined, mainMessageToFinish);
         options.onFinish(mainMessageToFinish, timestamp, response);
@@ -266,14 +304,16 @@ export class PandaApi implements LLMApi {
             providerType: "panda",
             sorted: 1,
           },
-        }
+        },
       ];
     }
 
     try {
       const accessToken = await this.getAccessToken();
       if (!accessToken) {
-        console.error("[Models] Panda API requires authentication. Access token not available.");
+        console.error(
+          "[Models] Panda API requires authentication. Access token not available.",
+        );
         return [];
       }
       const bearerToken = `Bearer ${accessToken}`;
@@ -282,13 +322,15 @@ export class PandaApi implements LLMApi {
       const response = await fetch(requestUrl, {
         method: "GET",
         headers: {
-          "Authorization": bearerToken,
+          Authorization: bearerToken,
         },
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Panda API error fetching models: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(
+          `Panda API error fetching models: ${response.status} ${response.statusText} - ${errorText}`,
+        );
       }
 
       const resJson = (await response.json()) as PandaListModelResponse;
@@ -319,16 +361,25 @@ export class PandaApi implements LLMApi {
     }
   }
 
-  async summary(config: LLMConfig, messages: RequestMessage[], maxTokens: number = 1000): Promise<SummaryResponse> {
+  async summary(
+    config: LLMConfig,
+    messages: RequestMessage[],
+    maxTokens: number = 1000,
+  ): Promise<SummaryResponse> {
     try {
       const accessToken = await this.getAccessToken();
       if (!accessToken) {
-        throw new Error("Panda API requires authentication. Access token not available.");
+        throw new Error(
+          "Panda API requires authentication. Access token not available.",
+        );
       }
       const bearerToken = `Bearer ${accessToken}`;
 
-      const requestUrl = this.path(PandaPath.SummaryPath, config.targetEndpoint);
-      
+      const requestUrl = this.path(
+        PandaPath.SummaryPath,
+        config.targetEndpoint,
+      );
+
       const requestBody = {
         model: DEFAULT_PANDA_MODEL_NAME,
         messages,
@@ -341,24 +392,30 @@ export class PandaApi implements LLMApi {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": bearerToken,
-          "Accept": "application/json",
+          Authorization: bearerToken,
+          Accept: "application/json",
         },
         body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("[Panda Error] Summary response not OK:", response.status, response.statusText);
+        console.error(
+          "[Panda Error] Summary response not OK:",
+          response.status,
+          response.statusText,
+        );
         console.error("[Panda Error] Summary response body:", errorText);
-        throw new Error(`Panda API error: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(
+          `Panda API error: ${response.status} ${response.statusText} - ${errorText}`,
+        );
       }
 
-      const data = await response.json() as SummaryResponse;
+      const data = (await response.json()) as SummaryResponse;
       return data;
     } catch (error: any) {
       console.error("[Panda Request] Summary failed", error);
       throw error;
     }
   }
-} 
+}

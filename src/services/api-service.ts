@@ -14,7 +14,7 @@ import { UUID } from "crypto";
 import { ChatMessage, createMessage, Role } from "@/types/chat";
 import { ChatSession, createNewSession } from "@/types/session";
 import { ModelConfig } from "@/types/constant";
-import { DEFAULT_TOPIC } from "@/store/chat"; 
+import { DEFAULT_TOPIC } from "@/store/chat";
 import { trimTopic } from "@/utils/utils";
 import { EncryptionService } from "@/services/encryption-service";
 import { LLMConfig } from "@/client/api";
@@ -29,7 +29,7 @@ function decryptConversationData(conversation: Conversation): Conversation {
       decryptedConvo.title = "Invalid password";
       console.error(
         "[ChatApiService] Error decrypting conversation title:",
-        err
+        err,
       );
     }
   }
@@ -57,12 +57,13 @@ function decryptMessageData<T extends MessageWithContent>(message: T): T {
 
   if (decryptedMsg.reasoning_content) {
     try {
-      decryptedMsg.reasoning_content =
-        EncryptionService.decrypt(decryptedMsg.reasoning_content);
+      decryptedMsg.reasoning_content = EncryptionService.decrypt(
+        decryptedMsg.reasoning_content,
+      );
     } catch (err) {
       console.error(
         "[ChatApiService] Error decrypting message reasoning content:",
-        err
+        err,
       );
     }
   }
@@ -71,7 +72,7 @@ function decryptMessageData<T extends MessageWithContent>(message: T): T {
 }
 
 export function mapConversationToSession(
-  conversation: Conversation
+  conversation: Conversation,
 ): ChatSession {
   const decryptedConvo = decryptConversationData(conversation);
 
@@ -84,7 +85,7 @@ export function mapConversationToSession(
 }
 
 export function mapApiMessagesToChatMessages(
-  messages: ApiMessage[]
+  messages: ApiMessage[],
 ): ChatMessage[] {
   return messages.map((msg) => mapApiMessageToChatMessage(msg));
 }
@@ -110,18 +111,18 @@ export function mapApiMessageToChatMessage(message: ApiMessage): ChatMessage {
 export const ChatApiService = {
   async fetchConversations(
     api: ClientApi,
-    params: GetConversationsParams
+    params: GetConversationsParams,
   ): Promise<PaginatedConversationsResponse> {
     console.log("[ChatApiService] Fetching conversations:", params);
     try {
       const response = await api.app.getConversations(params);
       console.log(
-        `[ChatApiService] Received ${response.data.length} conversations.`
+        `[ChatApiService] Received ${response.data.length} conversations.`,
       );
 
       // Decrypt conversation data
       const decryptedData = response.data.map((convo) =>
-        decryptConversationData(convo)
+        decryptConversationData(convo),
       );
 
       // Create a new response with decrypted data
@@ -139,16 +140,14 @@ export const ChatApiService = {
 
   async createConversation(
     api: ClientApi,
-    createRequest: ConversationCreateRequest
+    createRequest: ConversationCreateRequest,
   ): Promise<Conversation> {
     console.log("[ChatApiService] Creating conversation:", createRequest);
     try {
-      const newConversation = await api.app.createConversation(
-        createRequest
-      );
+      const newConversation = await api.app.createConversation(createRequest);
       console.log(
         "[ChatApiService] Conversation created:",
-        newConversation.conversation_id
+        newConversation.conversation_id,
       );
       return newConversation;
     } catch (error) {
@@ -160,20 +159,20 @@ export const ChatApiService = {
   async updateConversation(
     api: ClientApi,
     id: UUID,
-    updateRequest: ConversationUpdateRequest
+    updateRequest: ConversationUpdateRequest,
   ): Promise<Conversation> {
     console.log(`[ChatApiService] Updating conversation ${id}:`, updateRequest);
     try {
       const updatedConversation = await api.app.updateConversation(
         id,
-        updateRequest
+        updateRequest,
       );
       console.log(`[ChatApiService] Conversation ${id} updated.`);
       return updatedConversation;
     } catch (error) {
       console.error(
         `[ChatApiService] Failed to update conversation ${id}:`,
-        error
+        error,
       );
       throw error;
     }
@@ -187,7 +186,7 @@ export const ChatApiService = {
     } catch (error) {
       console.error(
         `[ChatApiService] Failed to delete conversation ${id}:`,
-        error
+        error,
       );
       throw error;
     }
@@ -196,11 +195,11 @@ export const ChatApiService = {
   async fetchMessages(
     api: ClientApi,
     id: UUID,
-    params?: GetConversationMessagesParams
+    params?: GetConversationMessagesParams,
   ): Promise<PaginatedMessagesResponse> {
     console.log(
       `[ChatApiService] Fetching messages for conversation ${id}:`,
-      params
+      params,
     );
     try {
       // Explicitly handle null cursor before calling API
@@ -211,7 +210,7 @@ export const ChatApiService = {
       // Now apiParams.cursor is either string or undefined
       const response = await api.app.getConversationMessages(id, apiParams);
       console.log(
-        `[ChatApiService] Received ${response.data.length} messages for ${id}.`
+        `[ChatApiService] Received ${response.data.length} messages for ${id}.`,
       );
 
       // Decrypt the message data
@@ -227,7 +226,7 @@ export const ChatApiService = {
     } catch (error) {
       console.error(
         `[ChatApiService] Failed to fetch messages for ${id}:`,
-        error
+        error,
       );
       throw error;
     }
@@ -236,25 +235,25 @@ export const ChatApiService = {
   async createMessage(
     api: ClientApi,
     id: UUID,
-    createRequest: MessageCreateRequest
+    createRequest: MessageCreateRequest,
   ): Promise<ApiMessage> {
     console.log(
       `[ChatApiService] Creating message for conversation ${id}:`,
-      createRequest.message_id
+      createRequest.message_id,
     );
     try {
       // Encrypt the message content before sending to server
       // const encryptedRequest = encryptMessageData(createRequest) as MessageCreateRequest;
       const savedMessage = await api.app.createMessage(id, createRequest);
       console.log(
-        `[ChatApiService] Message ${savedMessage.message_id} created successfully.`
+        `[ChatApiService] Message ${savedMessage.message_id} created successfully.`,
       );
 
       return savedMessage;
     } catch (error) {
       console.error(
         `[ChatApiService] Failed to create message ${createRequest.message_id}:`,
-        error
+        error,
       );
       throw error;
     }
@@ -280,7 +279,7 @@ export const ChatApiService = {
       onFinish: (message: string, date: Date, responseRes?: any) => void;
       onError: (error: Error) => void;
       onController?: (controller: AbortController) => void;
-    }
+    },
   ): Promise<void> {
     console.log("[ChatApiService] Calling LLM chat:", {
       messagesCount: args.messages.length,
@@ -315,7 +314,7 @@ export const ChatApiService = {
     } catch (error) {
       console.error(
         "[ChatApiService] Failed to initiate LLM chat call:",
-        error
+        error,
       );
       args.onError(error as Error);
     }
@@ -325,7 +324,7 @@ export const ChatApiService = {
   async callLlmSummarize(
     api: ClientApi,
     messages: RequestMessage[],
-    config: ModelConfig
+    config: ModelConfig,
   ): Promise<string> {
     console.log("[ChatApiService] Calling LLM summarize:", {
       messagesCount: messages.length,
@@ -358,7 +357,7 @@ export const ChatApiService = {
   async callLlmGenerateTitle(
     api: ClientApi,
     prompt: string,
-    config: ModelConfig
+    config: ModelConfig,
   ): Promise<string> {
     console.log("[ChatApiService] Calling LLM generate title:", { config });
     return new Promise((resolve, reject) => {
@@ -385,18 +384,18 @@ export const ChatApiService = {
             const cleanedTitle =
               title && title.length > 0 ? trimTopic(title) : DEFAULT_TOPIC;
             console.log(
-              `[ChatApiService] LLM generated title: "${cleanedTitle}"`
+              `[ChatApiService] LLM generated title: "${cleanedTitle}"`,
             );
             resolve(cleanedTitle);
           } else {
             console.error(
               "[ChatApiService] LLM title generation finished with non-200 status:",
-              responseRes?.status
+              responseRes?.status,
             );
             reject(
               new Error(
-                `Title generation failed with status: ${responseRes?.status}`
-              )
+                `Title generation failed with status: ${responseRes?.status}`,
+              ),
             );
           }
         },

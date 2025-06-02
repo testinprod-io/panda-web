@@ -1,6 +1,4 @@
-import {
-  CACHE_URL_PREFIX,
-} from "@/types/constant";
+import { CACHE_URL_PREFIX } from "@/types/constant";
 import { MultimodalContent, RequestMessage } from "@/client/api";
 
 export function compressImage(file: Blob, maxSize: number): Promise<string> {
@@ -81,9 +79,7 @@ export async function preProcessImageContentBase(
   return result;
 }
 
-export async function preProcessImageContent(
-  message: RequestMessage,
-) {
+export async function preProcessImageContent(message: RequestMessage) {
   return preProcessImageContentBase(message, async (url) => ({
     type: "image_url",
     image_url: { url },
@@ -139,14 +135,25 @@ export function base64Image2Blob(base64Data: string, contentType: string) {
 export function uploadFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     // Check if the file is an image based on its MIME type
-    if (!file.type.startsWith("image/") && !file.type.startsWith("application/pdf") && !file.type.startsWith("application/msword") && !file.type.startsWith("application/vnd.openxmlformats-officedocument.wordprocessingml.document")) {
-      reject(new Error("File is not an image. Only images can be processed for image_url payload."));
+    if (
+      !file.type.startsWith("image/") &&
+      !file.type.startsWith("application/pdf") &&
+      !file.type.startsWith("application/msword") &&
+      !file.type.startsWith(
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      )
+    ) {
+      reject(
+        new Error(
+          "File is not an image. Only images can be processed for image_url payload.",
+        ),
+      );
       return;
     }
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      if (event.target && typeof event.target.result === 'string') {
+      if (event.target && typeof event.target.result === "string") {
         resolve(event.target.result);
       } else {
         reject(new Error("Failed to read file as data URL."));

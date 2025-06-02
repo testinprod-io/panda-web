@@ -21,9 +21,8 @@ export enum Path {
   McpMarket = "/mcp-market",
   Auth = "/auth",
   Artifacts = "/artifacts",
-  SearchChat = "/search-chat"
+  SearchChat = "/search-chat",
 }
-
 
 export enum ApiPath {
   Cors = "",
@@ -92,7 +91,6 @@ export enum GoogleSafetySettingsThreshold {
 export enum ModelProvider {
   Panda = "Panda",
 }
-
 
 export const DEFAULT_INPUT_TEMPLATE = `{{input}}`; // input / time / model / lang
 export const DEFAULT_SYSTEM_TEMPLATE = `
@@ -188,17 +186,18 @@ export interface AppModelDefinition {
 }
 export type ModelType = AppModelDefinition["name"];
 
-
 export const DEFAULT_MODELS: AppModelDefinition[] = [
   ...PandaModels.map((name) => {
     let config: ModelConfig;
     let isVision = false;
 
     // Default endpoint, can be overridden by environment variables
-    let defaultEndpoint = ""; 
+    let defaultEndpoint = "";
     if (name === "ig1/r1-1776-AWQ") {
       defaultEndpoint = process.env.NEXT_PUBLIC_LLM_SERVER_ENDPOINT || "";
-    } else if (name === "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16") {
+    } else if (
+      name === "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16"
+    ) {
       defaultEndpoint = process.env.NEXT_PUBLIC_LLM_OMNI_SERVER_ENDPOINT || "";
     }
 
@@ -212,7 +211,9 @@ export const DEFAULT_MODELS: AppModelDefinition[] = [
         endpoint: defaultEndpoint,
       };
       isVision = false;
-    } else if (name === "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16") {
+    } else if (
+      name === "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16"
+    ) {
       config = {
         ...BASE_MODEL_CONFIG,
         name: name,
@@ -224,10 +225,15 @@ export const DEFAULT_MODELS: AppModelDefinition[] = [
       isVision = true;
     } else {
       // Fallback, though ideally all PandaModels are handled above
-      config = { ...BASE_MODEL_CONFIG, name: name,
-        displayName: name, reasoning: true, endpoint: defaultEndpoint };
+      config = {
+        ...BASE_MODEL_CONFIG,
+        name: name,
+        displayName: name,
+        reasoning: true,
+        endpoint: defaultEndpoint,
+      };
     }
-    
+
     return {
       name,
       displayName: name.split("/")[0],

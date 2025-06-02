@@ -13,15 +13,7 @@ export interface ActionButtonProps {
 }
 
 export function ActionButton(props: ActionButtonProps) {
-  const {
-    text,
-    icon,
-    onClick,
-    className,
-    disabled,
-    title,
-    ariaLabel,
-  } = props;
+  const { text, icon, onClick, className, disabled, title, ariaLabel } = props;
 
   const iconRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -33,17 +25,15 @@ export function ActionButton(props: ActionButtonProps) {
 
   return (
     <div
-      className={clsx(
-        styles.actionButton,
-        "clickable",
-        className,
-      )}
+      className={clsx(styles.actionButton, "clickable", className)}
       onClick={handleClick}
       aria-disabled={disabled}
       role="button"
       tabIndex={disabled ? -1 : 0}
-      title={title || (typeof text === 'string' ? text : undefined)}
-      aria-label={ariaLabel || title || (typeof text === 'string' ? text : undefined)}
+      title={title || (typeof text === "string" ? text : undefined)}
+      aria-label={
+        ariaLabel || title || (typeof text === "string" ? text : undefined)
+      }
     >
       <div ref={iconRef} className={styles.icon}>
         {icon}
@@ -55,4 +45,4 @@ export function ActionButton(props: ActionButtonProps) {
       )}
     </div>
   );
-} 
+}

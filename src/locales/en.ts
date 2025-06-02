@@ -1,5 +1,4 @@
-
-const isApp = false;//  !!getClientConfig()?.isApp;
+const isApp = false; //  !!getClientConfig()?.isApp;
 const en = {
   WIP: "Coming Soon...",
   Error: {
@@ -803,6 +802,5 @@ type DeepPartial<T> = T extends object
 
 export type LocaleType = typeof en;
 export type PartialLocaleType = DeepPartial<typeof en>;
-
 
 export default en;

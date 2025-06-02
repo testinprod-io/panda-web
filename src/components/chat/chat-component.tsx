@@ -12,7 +12,7 @@ import { useDebouncedCallback } from "use-debounce";
 import { useAppConfig, useChatStore } from "@/store";
 import { ChatControllerPool } from "@/client/controller";
 import Locale from "@/locales";
-import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom"; 
+import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom";
 import { useSnackbar } from "@/providers/snackbar-provider";
 import { ChatMessageCell } from "@/components/chat/chat-message-cell";
 import ArrowDownwardRoundedIcon from "@mui/icons-material/ArrowDownwardRounded";
@@ -30,7 +30,7 @@ export interface ChatComponentProps {
 }
 
 export function ChatComponent(props: ChatComponentProps) {
-  const {  sessionId, session  } = props;
+  const { sessionId, session } = props;
 
   const chatStore = useChatStore();
   // Destructure setters and states from the store
@@ -53,22 +53,28 @@ export function ChatComponent(props: ChatComponentProps) {
   const previousScrollTopRef = useRef<number | null>(null);
 
   const {
-    displayedMessages, 
-    isLoading: isLoadingMessages, 
-    hasMoreMessages, 
-    loadMoreMessages, 
-    clearMessages, 
-    sendNewUserMessage, 
+    displayedMessages,
+    isLoading: isLoadingMessages,
+    hasMoreMessages,
+    loadMoreMessages,
+    clearMessages,
+    sendNewUserMessage,
     sendNewQuery,
-  } = useChatSessionManager(sessionId, session.modelConfig, session.customizedPrompts);
-  
+  } = useChatSessionManager(
+    sessionId,
+    session.modelConfig,
+    session.customizedPrompts,
+  );
+
   const lastMessage = displayedMessages[displayedMessages.length - 1];
-  const isBotStreaming = !!(lastMessage?.role === "assistant" && lastMessage.streaming);
+  const isBotStreaming = !!(
+    lastMessage?.role === "assistant" && lastMessage.streaming
+  );
 
   const { scrollDomToBottom, setAutoScroll } = useScrollToBottom(
     scrollRef,
     !internalHitBottom,
-    displayedMessages
+    displayedMessages,
   );
 
   // Update store with hitBottom state
@@ -79,28 +85,33 @@ export function ChatComponent(props: ChatComponentProps) {
   const doSubmit = useCallback(
     async (sessionState: SessionState) => {
       setIsChatComponentBusy(true);
-        await new Promise<void>((resolve, reject) => {
-          sendNewUserMessage(sessionState, {
-            onReasoningStart: () => {},
-            onReasoningChunk: (chunk: string) => {},
-            onReasoningEnd: () => {},
-            onContentChunk: (chunk: string) => {},
-            onSuccess: () => {
-              setIsChatComponentBusy(false);
-              resolve();
-            },
-            onFailure: (error: Error) => {
-              console.error("[ChatComponent] Failed user input", error);
-              setIsChatComponentBusy(false);
-              showSnackbar(Locale.Store.Error, "error");
-              reject(error);
-            },
-          });
+      await new Promise<void>((resolve, reject) => {
+        sendNewUserMessage(sessionState, {
+          onReasoningStart: () => {},
+          onReasoningChunk: (chunk: string) => {},
+          onReasoningEnd: () => {},
+          onContentChunk: (chunk: string) => {},
+          onSuccess: () => {
+            setIsChatComponentBusy(false);
+            resolve();
+          },
+          onFailure: (error: Error) => {
+            console.error("[ChatComponent] Failed user input", error);
+            setIsChatComponentBusy(false);
+            showSnackbar(Locale.Store.Error, "error");
+            reject(error);
+          },
         });
-        setAutoScroll(true);
-
+      });
+      setAutoScroll(true);
     },
-    [sessionId, sendNewUserMessage, setAutoScroll, showSnackbar, setIsChatComponentBusy]
+    [
+      sessionId,
+      sendNewUserMessage,
+      setAutoScroll,
+      showSnackbar,
+      setIsChatComponentBusy,
+    ],
   );
 
   // Register/unregister submit handler with the store
@@ -129,7 +140,9 @@ export function ChatComponent(props: ChatComponentProps) {
       const storedDataString = localStorage.getItem(sessionId);
       if (storedDataString) {
         try {
-          const { sessionState } = JSON.parse(storedDataString) as { sessionState: SessionState };
+          const { sessionState } = JSON.parse(storedDataString) as {
+            sessionState: SessionState;
+          };
           if (sessionState) {
             // doSubmit will set isChatComponentBusy
             doSubmit(sessionState);
@@ -137,7 +150,10 @@ export function ChatComponent(props: ChatComponentProps) {
             initialMessageProcessedRef.current = sessionId;
           }
         } catch (error) {
-          console.error("Failed to parse pendingChatInput from localStorage:", error);
+          console.error(
+            "Failed to parse pendingChatInput from localStorage:",
+            error,
+          );
           localStorage.removeItem(sessionId);
         }
       }
@@ -148,12 +164,14 @@ export function ChatComponent(props: ChatComponentProps) {
     (messageId: string) => {
       ChatControllerPool.stop(sessionId, messageId);
     },
-    [sessionId]
+    [sessionId],
   );
 
   const onResend = useCallback(
     async (messageId: UUID) => {
-      const resendingIndex = displayedMessages.findIndex((m) => m.id === messageId);
+      const resendingIndex = displayedMessages.findIndex(
+        (m) => m.id === messageId,
+      );
       if (resendingIndex <= 0) return;
       const messages = displayedMessages.slice(0, resendingIndex);
       setIsChatComponentBusy(true);
@@ -165,55 +183,103 @@ export function ChatComponent(props: ChatComponentProps) {
             onReasoningChunk: (chunk: string) => {},
             onReasoningEnd: () => {},
             onContentChunk: (chunk: string) => {},
-            onSuccess: () => { setIsChatComponentBusy(false); resolve(); },
+            onSuccess: () => {
+              setIsChatComponentBusy(false);
+              resolve();
+            },
             onFailure: (error: Error) => {
               console.error("[ChatComponent] Failed resend query", error);
-              setIsChatComponentBusy(false); showSnackbar(Locale.Store.Error, "error"); reject(error);
+              setIsChatComponentBusy(false);
+              showSnackbar(Locale.Store.Error, "error");
+              reject(error);
             },
           });
         });
         setAutoScroll(true);
-      } catch (error) { /* Handled */ }
+      } catch (error) {
+        /* Handled */
+      }
     },
-    [sessionId, displayedMessages, clearMessages, sendNewQuery, setAutoScroll, showSnackbar, setIsChatComponentBusy]
+    [
+      sessionId,
+      displayedMessages,
+      clearMessages,
+      sendNewQuery,
+      setAutoScroll,
+      showSnackbar,
+      setIsChatComponentBusy,
+    ],
   );
 
   const onEditSubmit = useCallback(
     async (messageId: UUID, newText: string) => {
       const editIndex = displayedMessages.findIndex((m) => m.id === messageId);
       if (editIndex < 0) {
-        console.error("[ChatComponent] Cannot find message to edit:", messageId);
+        console.error(
+          "[ChatComponent] Cannot find message to edit:",
+          messageId,
+        );
         return;
       }
       clearMessages(messageId);
       setIsChatComponentBusy(true);
       try {
         await new Promise<void>((resolve, reject) => {
-          sendNewUserMessage({ userInput: newText, persistedAttachedFiles: [], enableSearch: false }, {
-            onReasoningStart: () => {},
-            onReasoningChunk: (chunk: string) => {},
-            onReasoningEnd: () => {},
-            onContentChunk: (chunk: string) => {},
-            onSuccess: () => { setIsChatComponentBusy(false); resolve(); },
-            onFailure: (error: Error) => {
-              console.error("[ChatComponent] Failed edit submission", error);
-              setIsChatComponentBusy(false); showSnackbar(Locale.Store.Error, "error"); reject(error);
+          sendNewUserMessage(
+            {
+              userInput: newText,
+              persistedAttachedFiles: [],
+              enableSearch: false,
             },
-          });
+            {
+              onReasoningStart: () => {},
+              onReasoningChunk: (chunk: string) => {},
+              onReasoningEnd: () => {},
+              onContentChunk: (chunk: string) => {},
+              onSuccess: () => {
+                setIsChatComponentBusy(false);
+                resolve();
+              },
+              onFailure: (error: Error) => {
+                console.error("[ChatComponent] Failed edit submission", error);
+                setIsChatComponentBusy(false);
+                showSnackbar(Locale.Store.Error, "error");
+                reject(error);
+              },
+            },
+          );
         });
         setAutoScroll(true);
         setTimeout(scrollDomToBottom, 0);
-      } catch (error) { /* Handled */ }
+      } catch (error) {
+        /* Handled */
+      }
     },
-    [sessionId, showSnackbar, setAutoScroll, scrollDomToBottom, displayedMessages, clearMessages, sendNewUserMessage, setIsChatComponentBusy]
+    [
+      sessionId,
+      showSnackbar,
+      setAutoScroll,
+      scrollDomToBottom,
+      displayedMessages,
+      clearMessages,
+      sendNewUserMessage,
+      setIsChatComponentBusy,
+    ],
   );
 
   // Layout effect for scroll adjustment after loading more messages
   useLayoutEffect(() => {
-    if (previousScrollHeightRef.current !== null && scrollRef.current && !isLoadingMessages) {
-      const scrollHeightDiff = scrollRef.current.scrollHeight - previousScrollHeightRef.current;
-      if (scrollHeightDiff > 0 && previousScrollTopRef.current !== null) { // Ensure height actually increased
-        scrollRef.current.scrollTop = previousScrollTopRef.current + scrollHeightDiff;
+    if (
+      previousScrollHeightRef.current !== null &&
+      scrollRef.current &&
+      !isLoadingMessages
+    ) {
+      const scrollHeightDiff =
+        scrollRef.current.scrollHeight - previousScrollHeightRef.current;
+      if (scrollHeightDiff > 0 && previousScrollTopRef.current !== null) {
+        // Ensure height actually increased
+        scrollRef.current.scrollTop =
+          previousScrollTopRef.current + scrollHeightDiff;
       }
       previousScrollHeightRef.current = null; // Reset after adjustment
       previousScrollTopRef.current = null; // Reset after adjustment
@@ -226,18 +292,19 @@ export function ChatComponent(props: ChatComponentProps) {
     const target = e.currentTarget;
     const { scrollTop, scrollHeight, clientHeight } = target;
     const bottomHeight = scrollTop + clientHeight;
-    const newIsHitBottom = scrollHeight > 0 && bottomHeight >= scrollHeight - 10;
+    const newIsHitBottom =
+      scrollHeight > 0 && bottomHeight >= scrollHeight - 10;
     if (newIsHitBottom !== internalHitBottom) {
       setInternalHitBottom(newIsHitBottom); // This will trigger useEffect to update store
     }
     debouncedCheckEdges(scrollTop, scrollHeight, clientHeight);
   };
-  
+
   const debouncedCheckEdges = useDebouncedCallback(
     (scrollTop: number, scrollHeight: number, clientHeight: number) => {
       const edgeThreshold = 50;
       const isTouchTopEdge = scrollTop <= edgeThreshold;
-      if (isTouchTopEdge && !isLoadingMessages) { 
+      if (isTouchTopEdge && !isLoadingMessages) {
         if (scrollRef.current) {
           previousScrollHeightRef.current = scrollRef.current.scrollHeight;
           previousScrollTopRef.current = scrollRef.current.scrollTop;
@@ -246,7 +313,7 @@ export function ChatComponent(props: ChatComponentProps) {
       }
     },
     200,
-    { leading: false, trailing: true }
+    { leading: false, trailing: true },
   );
 
   return (
@@ -257,11 +324,19 @@ export function ChatComponent(props: ChatComponentProps) {
         onScroll={onChatBodyScroll}
         onTouchStart={() => setAutoScroll(false)}
       >
-        {displayedMessages.length > 10 && isLoadingMessages && hasMoreMessages && (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
-            <CircularProgress size={24} color="inherit" />
-          </div>
-        )}
+        {displayedMessages.length > 10 &&
+          isLoadingMessages &&
+          hasMoreMessages && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                padding: "20px 0",
+              }}
+            >
+              <CircularProgress size={24} color="inherit" />
+            </div>
+          )}
         {displayedMessages.map((msgObject, i) => (
           <Fragment key={msgObject.id}>
             <ChatMessageCell
@@ -270,7 +345,7 @@ export function ChatComponent(props: ChatComponentProps) {
               message={msgObject}
               index={i}
               isLoading={isMessageAreaLoading}
-              showActions={true} 
+              showActions={true}
               fontSize={fontSize}
               fontFamily={fontFamily}
               scrollRef={scrollRef}
@@ -284,7 +359,7 @@ export function ChatComponent(props: ChatComponentProps) {
       {!internalHitBottom && (
         <div
           className={styles["scroll-to-bottom-chatview-wrapper"]}
-          style={{ bottom: '20px' }}
+          style={{ bottom: "20px" }}
         >
           <ActionButton
             onClick={internalScrollToBottom}

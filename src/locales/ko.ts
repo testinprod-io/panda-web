@@ -1,7 +1,7 @@
 // import { SubmitKey } from "../store/config";
 import type { PartialLocaleType } from "./index";
 // import { getClientConfig } from "../config/client";
-const isApp = false;// !!getClientConfig()?.isApp;
+const isApp = false; // !!getClientConfig()?.isApp;
 
 const ko: PartialLocaleType = {
   WIP: "곧 출시 예정...",

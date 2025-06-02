@@ -44,22 +44,22 @@ export default function ChatHeader({
   const { models: availableModels, setApiProvider } = useAppConfig();
 
   const activeSessionModelName = useChatStore(
-    (state) => state.currentSession()?.modelConfig?.name
+    (state) => state.currentSession()?.modelConfig?.name,
   );
   const activeSessionModelDisplayName = useChatStore(
-    (state) => state.currentSession()?.modelConfig?.displayName
+    (state) => state.currentSession()?.modelConfig?.displayName,
   );
 
   const globalModelIdentifier = useAppConfig(
-    (state) => state.modelConfig.model
+    (state) => state.modelConfig.model,
   );
   const globalModelName = useAppConfig((state) => state.modelConfig.name);
   const globalModelDisplayName = useAppConfig(
-    (state) => state.modelConfig.displayName
+    (state) => state.modelConfig.displayName,
   );
 
   const [profileAnchorEl, setProfileAnchorEl] = useState<null | HTMLElement>(
-    null
+    null,
   );
   const profileMenuOpen = Boolean(profileAnchorEl);
 
@@ -93,7 +93,7 @@ export default function ChatHeader({
 
   const handleModelSelect = (modelName: ModelType) => {
     const selectedModelDetails = availableModels.find(
-      (m) => m.name === modelName
+      (m) => m.name === modelName,
     );
     if (selectedModelDetails && selectedModelDetails.available) {
       setApiProvider(modelName);
@@ -151,7 +151,7 @@ export default function ChatHeader({
         return {
           text: "Encryption Activated",
           statusClass: styles.encryptionStatusSuccessful,
-          icon: "/icons/lock.svg", 
+          icon: "/icons/lock.svg",
         };
       case "FAILED":
         return {
@@ -184,14 +184,14 @@ export default function ChatHeader({
     handleProfileClose(); // Close the profile menu first
 
     requestAnimationFrame(() => {
-      window.location.hash = 'settings'; // Directly set the hash
+      window.location.hash = "settings"; // Directly set the hash
     });
   };
 
   return (
     <Box className={styles.chatHeader}>
       <Box className={styles.headerLeft}>
-        {isReady && isAuthenticated && (isSidebarCollapsed && isMobile) && (
+        {isReady && isAuthenticated && isSidebarCollapsed && isMobile && (
           <>
             <Tooltip title="Reveal Sidebar">
               <IconButton
@@ -267,7 +267,7 @@ export default function ChatHeader({
                     className={clsx(
                       styles.modelMenuItem,
                       isSelected && isActuallyAvailable && styles.selected,
-                      !isActuallyAvailable && styles.unavailable
+                      !isActuallyAvailable && styles.unavailable,
                     )}
                     disabled={!isActuallyAvailable}
                   >
@@ -277,10 +277,7 @@ export default function ChatHeader({
                     />
                     <Box className={styles.iconContainer}>
                       {isSelected && isActuallyAvailable && (
-                        <img
-                          src="/icons/check.svg"
-                          alt="Selected"
-                        />
+                        <img src="/icons/check.svg" alt="Selected" />
                       )}
                       {!isActuallyAvailable && (
                         <WarningAmberOutlinedIcon
@@ -293,34 +290,35 @@ export default function ChatHeader({
               })}
             </Menu>
             {isAuthenticated && (
-                 <Tooltip title="Click to cycle status (Dev only)">
-                    <Box
-                        onClick={cycleEncryptionStatus}
-                        className={clsx(styles.encryptionStatus, currentStatusInfo.statusClass)}
-                        sx={{ cursor: 'pointer'}}
-                        >
-                        <Box
-                            sx={{
-                            width: 20,
-                            height: 20,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            }}
-                        >
-                            <img 
-                                src={currentStatusInfo.icon} 
-                                alt="status icon" 
-                                className={styles.encryptionStatusIconImg}
-                            />
-                        </Box>
-                        <Typography
-                            className={styles.encryptionStatusText}
-                        >
-                            {currentStatusInfo.text}
-                        </Typography>
-                    </Box>
-                </Tooltip>
+              <Tooltip title="Click to cycle status (Dev only)">
+                <Box
+                  onClick={cycleEncryptionStatus}
+                  className={clsx(
+                    styles.encryptionStatus,
+                    currentStatusInfo.statusClass,
+                  )}
+                  sx={{ cursor: "pointer" }}
+                >
+                  <Box
+                    sx={{
+                      width: 20,
+                      height: 20,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <img
+                      src={currentStatusInfo.icon}
+                      alt="status icon"
+                      className={styles.encryptionStatusIconImg}
+                    />
+                  </Box>
+                  <Typography className={styles.encryptionStatusText}>
+                    {currentStatusInfo.text}
+                  </Typography>
+                </Box>
+              </Tooltip>
             )}
           </Box>
         )}

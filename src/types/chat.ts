@@ -1,13 +1,13 @@
-import { ServiceProvider, ModelType } from './constant';
-import { nanoid } from 'nanoid';
+import { ServiceProvider, ModelType } from "./constant";
+import { nanoid } from "nanoid";
 import { MultimodalContent } from "@/client/api";
 import { UUID } from "crypto";
-import { FileInfo } from '@/client/types';
+import { FileInfo } from "@/client/types";
 
 export enum Role {
-  USER = 'user',
-  SYSTEM = 'system',
-  ASSISTANT = 'assistant',
+  USER = "user",
+  SYSTEM = "system",
+  ASSISTANT = "assistant",
 }
 
 export interface Message {
@@ -37,25 +37,25 @@ export interface ChatProps {
 }
 
 /**
-* Represents a tool that can be used by a chat message
-*/
+ * Represents a tool that can be used by a chat message
+ */
 export type ChatMessageTool = {
- id: string;
- index?: number;
- type?: string;
- function?: {
-   name: string;
-   arguments?: string;
- };
- content?: string;
- isError?: boolean;
- errorMsg?: string;
+  id: string;
+  index?: number;
+  type?: string;
+  function?: {
+    name: string;
+    arguments?: string;
+  };
+  content?: string;
+  isError?: boolean;
+  errorMsg?: string;
 };
 
 export enum MessageSyncState {
-  SYNCED = 'synced',
-  PENDING_CREATE = 'pending_create',
-  ERROR = 'error',
+  SYNCED = "synced",
+  PENDING_CREATE = "pending_create",
+  ERROR = "error",
 }
 
 export interface CustomizedPromptsData {
@@ -73,17 +73,17 @@ export function generateSystemPrompt(data: CustomizedPromptsData): string {
   return `You are assisting ${name}, who is ${job}. When responding, adapt your tone and approach to suit someone who appreciates the following traits: ${traits}. ${extra.trim() ? `Also, ${extra}` : ""}`.trim();
 }
 
-
 /**
  * Represents a chat message with additional metadata
  * Content is assumed to be decrypted for temporary in-memory use (e.g., LLM calls)
  * but is NOT stored this way.
  */
-export type ChatMessage = Omit<RequestMessage, 'content'> & { // Omit original content
+export type ChatMessage = Omit<RequestMessage, "content"> & {
+  // Omit original content
   content: string; // Allow MultimodalContent[]
   visibleContent: string;
   attachments?: MultimodalContent[];
-  files: FileInfo[];  
+  files: FileInfo[];
   date: Date;
   streaming: boolean;
   isError: boolean;
@@ -111,16 +111,18 @@ export type EncryptedMessage = {
   syncState?: MessageSyncState;
   // Fields needed for UI rendering/state, but not encrypted
   streaming?: boolean; // Transient state, not persisted encrypted
-  isError?: boolean;   // Transient state, not persisted encrypted
+  isError?: boolean; // Transient state, not persisted encrypted
 };
 
 /**
-* Creates a new chat message in its ENCRYPTED form suitable for storing.
-* Requires the caller to provide already encrypted content.
-* @param override - Partial message properties including encryptedContent
-* @returns A new EncryptedMessage
-*/
-export function createEncryptedMessage(override: Partial<EncryptedMessage> & { content: string }): EncryptedMessage {
+ * Creates a new chat message in its ENCRYPTED form suitable for storing.
+ * Requires the caller to provide already encrypted content.
+ * @param override - Partial message properties including encryptedContent
+ * @returns A new EncryptedMessage
+ */
+export function createEncryptedMessage(
+  override: Partial<EncryptedMessage> & { content: string },
+): EncryptedMessage {
   const date = override.date instanceof Date ? override.date : new Date();
 
   return {
@@ -136,26 +138,26 @@ export function createEncryptedMessage(override: Partial<EncryptedMessage> & { c
 }
 
 /**
-* Creates a new chat message with the given overrides
-* @param override - Partial message properties to override defaults
-* @returns A new chat message
-*/
-export function createMessage(override: Partial<ChatMessage>): ChatMessage { // Reverted signature to accept Partial<ChatMessage>
- return {
-   id: crypto.randomUUID() as UUID,
-   date: new Date(),
-   role: Role.USER, 
-   files: [],
-   streaming: false,
-   isError: false,
-   syncState: MessageSyncState.PENDING_CREATE,
-   isReasoning: false,
-   content: override.content ?? "",
-   visibleContent: override.content ?? "",
-   reasoning: override.reasoning ?? "",
-   visibleReasoning: override.reasoning ?? "",
-   useSearch: override.useSearch ?? false,
-   ...override,
- };
+ * Creates a new chat message with the given overrides
+ * @param override - Partial message properties to override defaults
+ * @returns A new chat message
+ */
+export function createMessage(override: Partial<ChatMessage>): ChatMessage {
+  // Reverted signature to accept Partial<ChatMessage>
+  return {
+    id: crypto.randomUUID() as UUID,
+    date: new Date(),
+    role: Role.USER,
+    files: [],
+    streaming: false,
+    isError: false,
+    syncState: MessageSyncState.PENDING_CREATE,
+    isReasoning: false,
+    content: override.content ?? "",
+    visibleContent: override.content ?? "",
+    reasoning: override.reasoning ?? "",
+    visibleReasoning: override.reasoning ?? "",
+    useSearch: override.useSearch ?? false,
+    ...override,
+  };
 }
-

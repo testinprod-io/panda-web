@@ -3,20 +3,20 @@ import { useAppConfig } from "@/store/config";
 import { ModelConfig } from "@/types/constant";
 
 export enum SessionSyncState {
-  SYNCED = 'synced',
-  PENDING_CREATE = 'pending_create',
-  PENDING_UPDATE = 'pending_update',
-  PENDING_DELETE = 'pending_delete',
-  ERROR = 'error',
-  LOCAL = 'local',
+  SYNCED = "synced",
+  PENDING_CREATE = "pending_create",
+  PENDING_UPDATE = "pending_update",
+  PENDING_DELETE = "pending_delete",
+  ERROR = "error",
+  LOCAL = "local",
 }
 
 export enum MessagesLoadState {
-  NONE = 'none',
-  LOADING = 'loading',
-  PARTIAL = 'partial',
-  FULL = 'full',
-  ERROR = 'error',
+  NONE = "none",
+  LOADING = "loading",
+  PARTIAL = "partial",
+  FULL = "full",
+  ERROR = "error",
 }
 
 /**
@@ -40,14 +40,14 @@ export interface ChatSession {
   lastUpdate: number;
   lastSummarizeIndex: number;
   clearContextIndex?: number;
-  
+
   modelConfig: ModelConfig;
   customizedPrompts?: string;
-  
+
   syncState: SessionSyncState;
   messagesLoadState: MessagesLoadState;
   serverMessagesCursor?: string;
-  
+
   lastSummarizedMessageId: UUID | null;
   isSummarizing: boolean;
 }
@@ -59,7 +59,6 @@ export interface SubmittedFile {
   name: string;
   size: number;
 }
-
 
 export interface SessionState {
   userInput: string;

@@ -1,14 +1,23 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import clsx from "clsx";
-import { ListItemText, IconButton, Menu, MenuItem, TextField, Box, ListItemButton, ListItemIcon } from '@mui/material';
+import {
+  ListItemText,
+  IconButton,
+  Menu,
+  MenuItem,
+  TextField,
+  Box,
+  ListItemButton,
+  ListItemIcon,
+} from "@mui/material";
 
 import styles from "./chat-list.module.scss";
 import type { ChatSession } from "@/types/session";
-import Locale from '@/locales';
+import Locale from "@/locales";
 import { useEncryption } from "@/providers/encryption-provider";
 import { EncryptionService } from "@/services/encryption-service";
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 
 interface ChatItemProps {
   onClick?: () => void;
@@ -84,20 +93,20 @@ export function ChatItem({
         top: rect.bottom + window.scrollY,
         left: Math.min(
           rect.left + window.scrollX,
-          window.innerWidth - 150 // 150 = approximate dropdown width + padding
+          window.innerWidth - 150, // 150 = approximate dropdown width + padding
         ),
       });
     }
   }, [showMenu]);
-  
+
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditValue(e.target.value);
   };
 
   const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSaveEdit();
-    } else if (e.key === 'Escape') {
+    } else if (e.key === "Escape") {
       setIsEditing(false);
       setEditValue(session.visibleTopic);
     }
@@ -105,7 +114,7 @@ export function ChatItem({
 
   const handleSaveEdit = () => {
     if (
-      editValue.trim() !== '' &&
+      editValue.trim() !== "" &&
       editValue !== session.visibleTopic &&
       onRename
     ) {
@@ -116,16 +125,29 @@ export function ChatItem({
 
   const handleClickOutside = useCallback(
     (e: MouseEvent) => {
-      if (showMenu && menuRef.current && !menuRef.current.contains(e.target as Node) && dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        showMenu &&
+        menuRef.current &&
+        !menuRef.current.contains(e.target as Node) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
         setShowMenu(false);
       }
-      if (isEditing && inputRef.current && !inputRef.current.contains(e.target as Node)) {
-        if (editInputRef.current && !editInputRef.current.contains(e.target as Node)) {
-            handleSaveEdit();
+      if (
+        isEditing &&
+        inputRef.current &&
+        !inputRef.current.contains(e.target as Node)
+      ) {
+        if (
+          editInputRef.current &&
+          !editInputRef.current.contains(e.target as Node)
+        ) {
+          handleSaveEdit();
         }
       }
     },
-    [showMenu, isEditing, handleSaveEdit] 
+    [showMenu, isEditing, handleSaveEdit],
   );
 
   useEffect(() => {
@@ -138,23 +160,32 @@ export function ChatItem({
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
-    setIsHovered(false); 
+    setIsHovered(false);
   };
 
-  const handleMenuClose = (event?: React.MouseEvent<HTMLElement> | {}, reason?: "backdropClick" | "escapeKeyDown") => {
-    if (event && typeof event === 'object' && 'stopPropagation' in event && typeof event.stopPropagation === 'function') {
-        (event as React.MouseEvent<HTMLElement>).stopPropagation();
+  const handleMenuClose = (
+    event?: React.MouseEvent<HTMLElement> | {},
+    reason?: "backdropClick" | "escapeKeyDown",
+  ) => {
+    if (
+      event &&
+      typeof event === "object" &&
+      "stopPropagation" in event &&
+      typeof event.stopPropagation === "function"
+    ) {
+      (event as React.MouseEvent<HTMLElement>).stopPropagation();
     }
     const menuWasPreviouslyOpen = Boolean(anchorEl);
-    setAnchorEl(null); 
+    setAnchorEl(null);
 
     if (menuWasPreviouslyOpen) {
-        setTimeout(() => {
-          if (listItemRef.current) {
-            const isCurrentlyHoveredOverItem = listItemRef.current.matches(':hover');
-            setIsHovered(isCurrentlyHoveredOverItem);
-          }
-        }, 0);
+      setTimeout(() => {
+        if (listItemRef.current) {
+          const isCurrentlyHoveredOverItem =
+            listItemRef.current.matches(":hover");
+          setIsHovered(isCurrentlyHoveredOverItem);
+        }
+      }, 0);
     }
   };
 
@@ -171,7 +202,7 @@ export function ChatItem({
     setIsEditing(false);
     // setEditValue(session.visibleTopic); // Revert to original decrypted topic
     setEditValue(visibleTopic); // Revert to original decrypted topic
-    handleMenuClose(); 
+    handleMenuClose();
   };
 
   useEffect(() => {
@@ -199,7 +230,7 @@ export function ChatItem({
     // App is unlocked and it's not a default topic, proceed with animation
     setIsAnimating(true);
     // Start animation from the raw (potentially encrypted) topic
-    const animationStartDisplay = rawTopic; 
+    const animationStartDisplay = rawTopic;
     setDisplayedTitle(animationStartDisplay);
 
     let revealedCount = 0;
@@ -216,7 +247,10 @@ export function ChatItem({
 
       setDisplayedTitle(newTitle);
 
-      if (revealedCount >= targetLength && revealedCount >= startDisplayLength) {
+      if (
+        revealedCount >= targetLength &&
+        revealedCount >= startDisplayLength
+      ) {
         if (animationIntervalRef.current) {
           clearInterval(animationIntervalRef.current);
           animationIntervalRef.current = null;
@@ -233,7 +267,7 @@ export function ChatItem({
         animationIntervalRef.current = null;
       }
     };
-  // }, [session.topic, session.visibleTopic, isLocked]); // Rerun if underlying topic, its decrypted version, or lock state changes
+    // }, [session.topic, session.visibleTopic, isLocked]); // Rerun if underlying topic, its decrypted version, or lock state changes
   }, [session.topic, visibleTopic, isLocked]); // Rerun if underlying topic, its decrypted version, or lock state changes
 
   const handleItemClick = () => {
@@ -264,7 +298,7 @@ export function ChatItem({
     handleMenuClose();
     console.log("Archive action triggered for session:", session.id);
   };
-  
+
   const handleDeleteClick = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
     onDelete?.();
@@ -273,127 +307,173 @@ export function ChatItem({
 
   return (
     <ListItemButton
-      ref={listItemRef} 
-      onClick={handleItemClick} 
-      className={styles['chat-item']} 
-      disableTouchRipple={true} 
+      ref={listItemRef}
+      onClick={handleItemClick}
+      className={styles["chat-item"]}
+      disableTouchRipple={true}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      sx={{ 
-          padding: 0, 
-          minHeight: '48px', 
-          alignItems: 'stretch', 
-          '&:hover': {
-            backgroundColor: 'transparent',
-          },
+      sx={{
+        padding: 0,
+        minHeight: "48px",
+        alignItems: "stretch",
+        "&:hover": {
+          backgroundColor: "transparent",
+        },
       }}
     >
-        <Box className={clsx(styles['chat-item-highlight'], selected && styles['chat-item-selected-highlight'])} 
-             sx={{ 
-                 display: 'flex', 
-                 alignItems: 'center', 
-                 width: '100%', 
-                 paddingRight: ((isHovered || open) && !isEditing) ? '50px' : '12px',
-             }}>
-            <Box sx={{ 
-                position: 'absolute', 
-                right: 12, 
-                top: '50%', 
-                transform: 'translateY(-50%)', 
-                zIndex: 1, 
-                display: ((isHovered || open) && !isEditing) ? 'flex' : 'none',
-                alignItems: 'center',
-            }}>
-                {!isEditing && (
-                  <>
-                    <IconButton edge="end" aria-label="actions" onClick={handleMenuClick} size="small">
-                      <img src="/icons/more.svg" alt="More" style={{ width: '24px', height: '24px' }} />
-                    </IconButton>
-                    <Menu
-                      anchorEl={anchorEl}
-                      open={open} 
-                      onClose={handleMenuClose}
-                      onClick={(e) => e.stopPropagation()} 
-                      PaperProps={{
-                        className: styles.chatActionMenuPaper, 
-                      }}
-                      MenuListProps={{
-                        sx: { 
-                          paddingTop: 0, 
-                          paddingBottom: 0,
-                          display: 'flex',       
-                          flexDirection: 'column', 
-                          gap: '10px',           
-                        }
-                      }}
-                    >
-                      <MenuItem onClick={handleEdit} className={styles.chatActionMenuItem}>
-                        <ListItemIcon className={styles.chatActionMenuItemIcon}>
-                          <EditOutlinedIcon fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText primary="Rename" className={styles.chatActionMenuItemText} />
-                      </MenuItem>
-                      <MenuItem onClick={handleDeleteClick} className={clsx(styles.chatActionMenuItem, styles.deleteAction)}>
-                        <ListItemIcon className={clsx(styles.chatActionMenuItemIcon, styles.deleteActionIcon)}>
-                          <DeleteOutlineOutlinedIcon fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText primary="Delete" className={clsx(styles.chatActionMenuItemText, styles.deleteActionText)} />
-                      </MenuItem>
-                    </Menu>
-                  </>
-                )}
-            </Box>
+      <Box
+        className={clsx(
+          styles["chat-item-highlight"],
+          selected && styles["chat-item-selected-highlight"],
+        )}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          width: "100%",
+          paddingRight: (isHovered || open) && !isEditing ? "50px" : "12px",
+        }}
+      >
+        <Box
+          sx={{
+            position: "absolute",
+            right: 12,
+            top: "50%",
+            transform: "translateY(-50%)",
+            zIndex: 1,
+            display: (isHovered || open) && !isEditing ? "flex" : "none",
+            alignItems: "center",
+          }}
+        >
+          {!isEditing && (
+            <>
+              <IconButton
+                edge="end"
+                aria-label="actions"
+                onClick={handleMenuClick}
+                size="small"
+              >
+                <img
+                  src="/icons/more.svg"
+                  alt="More"
+                  style={{ width: "24px", height: "24px" }}
+                />
+              </IconButton>
+              <Menu
+                anchorEl={anchorEl}
+                open={open}
+                onClose={handleMenuClose}
+                onClick={(e) => e.stopPropagation()}
+                PaperProps={{
+                  className: styles.chatActionMenuPaper,
+                }}
+                MenuListProps={{
+                  sx: {
+                    paddingTop: 0,
+                    paddingBottom: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "10px",
+                  },
+                }}
+              >
+                <MenuItem
+                  onClick={handleEdit}
+                  className={styles.chatActionMenuItem}
+                >
+                  <ListItemIcon className={styles.chatActionMenuItemIcon}>
+                    <EditOutlinedIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Rename"
+                    className={styles.chatActionMenuItemText}
+                  />
+                </MenuItem>
+                <MenuItem
+                  onClick={handleDeleteClick}
+                  className={clsx(
+                    styles.chatActionMenuItem,
+                    styles.deleteAction,
+                  )}
+                >
+                  <ListItemIcon
+                    className={clsx(
+                      styles.chatActionMenuItemIcon,
+                      styles.deleteActionIcon,
+                    )}
+                  >
+                    <DeleteOutlineOutlinedIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Delete"
+                    className={clsx(
+                      styles.chatActionMenuItemText,
+                      styles.deleteActionText,
+                    )}
+                  />
+                </MenuItem>
+              </Menu>
+            </>
+          )}
+        </Box>
 
-            {isEditing ? (
-                <Box component="form" onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }} sx={{ width: '100%', flexGrow: 1 }}>
-                    <TextField 
-                      className={styles["chat-item-title-input"]}
-                      value={editValue}
-                      onChange={handleEditChange}
-                      onKeyDown={handleEditKeyDown}
-                      onBlur={handleSaveEdit} // Save on blur
-                      onClick={(e) => e.stopPropagation()}
-                      inputRef={editInputRef}
-                      autoFocus
-                      variant="standard"
-                      InputProps={{ 
-                          disableUnderline: true, 
-                      }} 
-                      sx={{
-                        backgroundColor: 'transparent',
-                        width: '100%',
-                        margin: 0,
-                        padding: 0,
-                        '& .MuiInputBase-root': {
-                           backgroundColor: 'transparent !important',
-                           marginTop: '0',
-                           padding: '0', 
-                           height: 'auto', 
-                           lineHeight: 'inherit',
-                           border: 'none',
-                           boxShadow: 'none',
-                           color: 'white',
-                        },
-                        '& .MuiInputBase-input': {
-                          backgroundColor: 'transparent !important',
-                          padding: '0', 
-                          fontSize: 'inherit', 
-                          color: 'white',
-                          fontFamily: 'inherit',
-                          fontWeight: 'inherit', 
-                          lineHeight: 'inherit', 
-                          height: 'auto', 
-                          border: 'none',
-                        },
-                      }}
-                    />
-                </Box>
-            ) : (
-                <span className={styles['chat-item-title']} title={visibleTopic}>
-                    {displayedTitle}
-                </span>
-            )}
-        </Box> 
+        {isEditing ? (
+          <Box
+            component="form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSaveEdit();
+            }}
+            sx={{ width: "100%", flexGrow: 1 }}
+          >
+            <TextField
+              className={styles["chat-item-title-input"]}
+              value={editValue}
+              onChange={handleEditChange}
+              onKeyDown={handleEditKeyDown}
+              onBlur={handleSaveEdit} // Save on blur
+              onClick={(e) => e.stopPropagation()}
+              inputRef={editInputRef}
+              autoFocus
+              variant="standard"
+              InputProps={{
+                disableUnderline: true,
+              }}
+              sx={{
+                backgroundColor: "transparent",
+                width: "100%",
+                margin: 0,
+                padding: 0,
+                "& .MuiInputBase-root": {
+                  backgroundColor: "transparent !important",
+                  marginTop: "0",
+                  padding: "0",
+                  height: "auto",
+                  lineHeight: "inherit",
+                  border: "none",
+                  boxShadow: "none",
+                  color: "white",
+                },
+                "& .MuiInputBase-input": {
+                  backgroundColor: "transparent !important",
+                  padding: "0",
+                  fontSize: "inherit",
+                  color: "white",
+                  fontFamily: "inherit",
+                  fontWeight: "inherit",
+                  lineHeight: "inherit",
+                  height: "auto",
+                  border: "none",
+                },
+              }}
+            />
+          </Box>
+        ) : (
+          <span className={styles["chat-item-title"]} title={visibleTopic}>
+            {displayedTitle}
+          </span>
+        )}
+      </Box>
     </ListItemButton>
   );
-} 
+}

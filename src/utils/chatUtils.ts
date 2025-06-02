@@ -4,7 +4,7 @@ import {
   KnowledgeCutOffDate,
 } from "@/types/constant";
 import { getLang } from "@/locales";
-import { ModelConfig } from '@/types/constant';
+import { ModelConfig } from "@/types/constant";
 import { ChatMessage } from "@/types/chat";
 import { getMessageTextContent } from "@/utils/utils";
 
@@ -15,7 +15,10 @@ export function countMessages(msgs: ChatMessage[]): number {
   );
 }
 
-export function fillTemplateWith(input: string, modelConfig: ModelConfig): string {
+export function fillTemplateWith(
+  input: string,
+  modelConfig: ModelConfig,
+): string {
   const cutoff =
     KnowledgeCutOffDate[modelConfig.name] ?? KnowledgeCutOffDate.default;
   const modelInfo = DEFAULT_MODELS.find((m) => m.name === modelConfig.name);
@@ -53,7 +56,7 @@ export function fillTemplateWith(input: string, modelConfig: ModelConfig): strin
   output = output.replace(inputVar, input);
 
   return output;
-} 
+}
 
 export function estimateTokenLength(input: string): number {
   let tokenLength = 0;

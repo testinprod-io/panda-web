@@ -1,8 +1,8 @@
 "use client";
 
-import React from 'react';
-import { Box, Button, Typography, Modal } from '@mui/material';
-import styles from './login-signup-popup.module.scss';
+import React from "react";
+import { Box, Button, Typography, Modal } from "@mui/material";
+import styles from "./login-signup-popup.module.scss";
 
 interface LoginSignupPopupProps {
   open: boolean;
@@ -11,7 +11,12 @@ interface LoginSignupPopupProps {
   onSignup: () => void;
 }
 
-const LoginSignupPopup: React.FC<LoginSignupPopupProps> = ({ open, onClose, onLogin, onSignup }) => {
+const LoginSignupPopup: React.FC<LoginSignupPopupProps> = ({
+  open,
+  onClose,
+  onLogin,
+  onSignup,
+}) => {
   return (
     <Modal
       open={open}
@@ -26,7 +31,8 @@ const LoginSignupPopup: React.FC<LoginSignupPopupProps> = ({ open, onClose, onLo
             Welcome 👋
           </Typography>
           <Typography variant="body1" className={styles.description}>
-            Log in or sign up to access exclusive features and enjoy secure, private conversations.
+            Log in or sign up to access exclusive features and enjoy secure,
+            private conversations.
           </Typography>
         </Box>
         <Box className={styles.buttonContainer}>
@@ -56,4 +62,4 @@ const LoginSignupPopup: React.FC<LoginSignupPopupProps> = ({ open, onClose, onLo
   );
 };
 
-export default LoginSignupPopup; 
+export default LoginSignupPopup;

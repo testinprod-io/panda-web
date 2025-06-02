@@ -26,9 +26,9 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import styles from "./settings-modal.module.scss";
-import { SettingsPage } from './settings-modal-handler';
-import CustomizePromptsView from './customize-prompts-view';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { SettingsPage } from "./settings-modal-handler";
+import CustomizePromptsView from "./customize-prompts-view";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useApiClient } from "@/providers/api-client-provider";
 import { usePrivy } from "@privy-io/react-auth";
 import { useChatStore } from "@/store";
@@ -41,7 +41,11 @@ interface SettingsModalProps {
 
 type ActiveSettingSection = "general" | "faq";
 
-export default function SettingsModal({ open, currentPage, onClose }: SettingsModalProps) {
+export default function SettingsModal({
+  open,
+  currentPage,
+  onClose,
+}: SettingsModalProps) {
   const [activeNavSection, setActiveNavSection] =
     useState<ActiveSettingSection>("general");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -61,7 +65,7 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
 
   const navigateTo = (hash: string) => {
     const currentSearchParams = searchParams.toString();
-    const newUrl = `${pathname}${currentSearchParams ? '?' + currentSearchParams : ''}${hash}`;
+    const newUrl = `${pathname}${currentSearchParams ? "?" + currentSearchParams : ""}${hash}`;
     router.push(newUrl, { scroll: false });
   };
 
@@ -70,19 +74,19 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
   };
 
   const handleLogOut = () => {
-    router.replace('/');
+    router.replace("/");
     logout();
     console.log("Log out on this device clicked");
   };
 
-  const handleDeleteAllChats = () => {    
+  const handleDeleteAllChats = () => {
     setDeleteConfirmOpen(true);
   };
 
   const confirmDeleteAllChats = () => {
     apiClient.app.deleteConversations();
     clearSessions();
-    router.replace('/');
+    router.replace("/");
     console.log("All chats deleted after confirmation");
     setDeleteConfirmOpen(false);
   };
@@ -176,7 +180,7 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
 
   const renderContent = () => {
     switch (currentPage) {
-      case 'general':
+      case "general":
       default:
         return (
           <Box className={styles.generalSettings}>
@@ -185,9 +189,7 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
                 <Typography className={styles.settingItemLabel}>
                   {item.label}
                 </Typography>
-                <Box className={styles.settingItemControl}>
-                  {item.control}
-                </Box>
+                <Box className={styles.settingItemControl}>{item.control}</Box>
               </Box>
             ))}
           </Box>
@@ -231,7 +233,10 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
                 <ListItemButton
                   selected={activeNavSection === "general"}
                   onClick={() => setActiveNavSection("general")}
-                  className={clsx(styles.navItem, activeNavSection === "general" && styles.navItemActive)}
+                  className={clsx(
+                    styles.navItem,
+                    activeNavSection === "general" && styles.navItemActive,
+                  )}
                 >
                   <ListItemIcon className={styles.navItemIcon}>
                     <SettingsIcon fontSize="small" />
@@ -241,7 +246,10 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
                 <ListItemButton
                   selected={activeNavSection === "faq"}
                   onClick={() => setActiveNavSection("faq")}
-                  className={clsx(styles.navItem, activeNavSection === "faq" && styles.navItemActive)}
+                  className={clsx(
+                    styles.navItem,
+                    activeNavSection === "faq" && styles.navItemActive,
+                  )}
                 >
                   <ListItemIcon className={styles.navItemIcon}>
                     <HelpOutlineIcon fontSize="small" />
@@ -251,11 +259,13 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
               </List>
             </Box>
             <Box className={styles.rightPanel}>
-              {activeNavSection === 'general' && renderContent()} 
-              {activeNavSection === 'faq' && (
-                 <Box>
-                    <Typography variant="h6">Help & FAQ</Typography>
-                    <Typography>This is where help and FAQ content will go.</Typography>
+              {activeNavSection === "general" && renderContent()}
+              {activeNavSection === "faq" && (
+                <Box>
+                  <Typography variant="h6">Help & FAQ</Typography>
+                  <Typography>
+                    This is where help and FAQ content will go.
+                  </Typography>
                 </Box>
               )}
             </Box>
@@ -269,23 +279,27 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
         aria-labelledby="customize-prompts-modal-title"
         className={styles.modalBackdrop}
       >
-        <Box sx={{ 
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 'clamp(300px, 80vw, 750px)',
-          bgcolor: 'background.paper',
-          boxShadow: 24,
-          p: 0, 
-          borderRadius: '16px', 
-          outline: 'none',
-          maxHeight: '90vh',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden'
-        }}>
-          <CustomizePromptsView onCloseRequest={() => setIsPromptsModalOpen(false)} />
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "clamp(300px, 80vw, 750px)",
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            p: 0,
+            borderRadius: "16px",
+            outline: "none",
+            maxHeight: "90vh",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          <CustomizePromptsView
+            onCloseRequest={() => setIsPromptsModalOpen(false)}
+          />
         </Box>
       </Modal>
 
@@ -295,12 +309,11 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">
-          {"Confirm Delete"}
-        </DialogTitle>
+        <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
-            Are you sure you want to delete all your chats? This action cannot be undone.
+            Are you sure you want to delete all your chats? This action cannot
+            be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -318,4 +331,4 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
 
 function clsx(...classes: (string | boolean | undefined | null)[]) {
   return classes.filter(Boolean).join(" ");
-} 
+}

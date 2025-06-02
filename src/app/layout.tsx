@@ -1,19 +1,19 @@
-import React from 'react';
-import { Inter } from 'next/font/google';
-import { Providers } from './providers';
-import SettingsModalHandler from '../components/modal/settings-modal-handler';
-import ChatLayoutContent from '@/components/chat/chat-layout';
-import '@/styles/globals.scss';
+import React from "react";
+import { Inter } from "next/font/google";
+import { Providers } from "./providers";
+import SettingsModalHandler from "../components/modal/settings-modal-handler";
+import ChatLayoutContent from "@/components/chat/chat-layout";
+import "@/styles/globals.scss";
 import "@/styles/markdown.scss";
 
 const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata = {
-  title: 'Panda',
-  description: 'Your private AI assistant',
+  title: "Panda",
+  description: "Your private AI assistant",
 };
 
 export default function RootLayout({

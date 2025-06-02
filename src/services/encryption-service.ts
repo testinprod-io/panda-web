@@ -76,7 +76,7 @@ export const EncryptionService = {
     } catch (error) {
       console.error(
         "[EncryptionService] Failed to derive key from password:",
-        error
+        error,
       );
       this.clearKey();
     }
@@ -104,7 +104,7 @@ export const EncryptionService = {
   encryptVerificationToken(userId: string): string {
     if (!this.isKeySet()) {
       console.error(
-        "[EncryptionService] encryptVerificationToken called without key set."
+        "[EncryptionService] encryptVerificationToken called without key set.",
       );
       return "";
     }
@@ -118,7 +118,7 @@ export const EncryptionService = {
     } catch (error) {
       console.error(
         "[EncryptionService] Failed to encrypt verification token:",
-        error
+        error,
       );
       return "";
     }
@@ -131,7 +131,7 @@ export const EncryptionService = {
   async verifyKey(
     verificationToken: string,
     userId: string,
-    password: string
+    password: string,
   ): Promise<boolean> {
     if (typeof window === "undefined") {
       console.error("[EncryptionService] verifyKey called outside of browser.");
@@ -158,7 +158,7 @@ export const EncryptionService = {
   encrypt(text: string): string {
     if (!this.isKeySet()) {
       console.warn(
-        "[EncryptionService] encrypt called but no key set. Returning plain text."
+        "[EncryptionService] encrypt called but no key set. Returning plain text.",
       );
       return text;
     }
@@ -180,7 +180,7 @@ export const EncryptionService = {
   decrypt(encryptedText: string): string {
     if (!this.isKeySet()) {
       console.warn(
-        "[EncryptionService] decrypt called but no key set. Returning plain text."
+        "[EncryptionService] decrypt called but no key set. Returning plain text.",
       );
       return encryptedText;
     }
@@ -200,7 +200,7 @@ export const EncryptionService = {
 
       if (!decryptedText && encryptedText) {
         console.error(
-          "Decryption failed - incorrect password or corrupted data"
+          "Decryption failed - incorrect password or corrupted data",
         );
         return encryptedText;
       }
@@ -228,7 +228,7 @@ export const EncryptionService = {
         keyUint8Array,
         { name: "AES-GCM", length: inMemoryKey!.sigBytes * 8 },
         false,
-        ["encrypt", "decrypt"]
+        ["encrypt", "decrypt"],
       );
 
       const encryptedData = await crypto.subtle.encrypt(
@@ -237,7 +237,7 @@ export const EncryptionService = {
           iv: ivUint8Array,
         },
         cryptoKey,
-        data
+        data,
       );
 
       const encryptedFile = new File([encryptedData], file.name, {
@@ -265,13 +265,13 @@ export const EncryptionService = {
       keyUint8Array,
       { name: "AES-GCM", length: inMemoryKey!.sigBytes * 8 },
       false,
-      ["encrypt", "decrypt"]
+      ["encrypt", "decrypt"],
     );
 
     const decryptedBuffer = await crypto.subtle.decrypt(
       { name: "AES-GCM", iv: ivUint8Array },
       cryptoKey,
-      data
+      data,
     );
 
     return new File([decryptedBuffer], file.name, { type: file.type });

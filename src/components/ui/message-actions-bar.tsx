@@ -1,8 +1,8 @@
-import React from 'react';
-import { Box } from '@mui/material';
-import { copyToClipboard } from '@/utils/utils';
-import styles from '@/components/chat/chat.module.scss'; // Reusing chat styles
-import { ChatMessage } from '@/types'; // For content and reasoning types, though direct strings are passed
+import React from "react";
+import { Box } from "@mui/material";
+import { copyToClipboard } from "@/utils/utils";
+import styles from "@/components/chat/chat.module.scss"; // Reusing chat styles
+import { ChatMessage } from "@/types"; // For content and reasoning types, though direct strings are passed
 
 interface MessageActionsBarProps {
   isUser: boolean;
@@ -22,8 +22,8 @@ export const MessageActionsBar: React.FC<MessageActionsBarProps> = ({
   onResend,
 }) => {
   const contentToCopy = messageContent || "";
-  const fullContentToCopy = reasoningText 
-    ? `${contentToCopy}\n\n[Reasoning]:\n${reasoningText}` 
+  const fullContentToCopy = reasoningText
+    ? `${contentToCopy}\n\n[Reasoning]:\n${reasoningText}`
     : contentToCopy;
 
   if (isUser) {
@@ -52,8 +52,8 @@ export const MessageActionsBar: React.FC<MessageActionsBarProps> = ({
 
   // Assistant/System messages
   return (
-    <Box 
-      className={styles["chat-message-actions"]} 
+    <Box
+      className={styles["chat-message-actions"]}
       // No specific sx needed here if default chat-message-actions alignment is fine
     >
       <button

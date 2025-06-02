@@ -15,13 +15,14 @@ export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
   const store = useChatStore();
-  
+
   const chatId = params?.chatId as UUID | undefined;
   const { isReady: isAuthReady, isAuthenticated } = useAuthStatus();
 
   const [isLoadingState, setIsLoadingState] = useState(true);
   const [isValidSession, setIsValidSession] = useState<boolean>(false);
-  const [sessionDataForValidation, setSessionDataForValidation] = useState<ChatSession | null>(null);
+  const [sessionDataForValidation, setSessionDataForValidation] =
+    useState<ChatSession | null>(null);
 
   useEffect(() => {
     const isStoreHydrated = store._hasHydrated;
@@ -36,30 +37,42 @@ export default function ChatPage() {
       setSessionDataForValidation(null);
       return;
     }
-    
+
     if (!chatId) {
-      setIsValidSession(false); setSessionDataForValidation(null); setIsLoadingState(false);
+      setIsValidSession(false);
+      setSessionDataForValidation(null);
+      setIsLoadingState(false);
       return;
     }
 
     const currentSession = store.sessions.find((s) => s.id === chatId);
     if (currentSession) {
       if (store.currentSession()?.id !== chatId) {
-        const sessionIndex = store.sessions.findIndex(s => s.id === chatId);
+        const sessionIndex = store.sessions.findIndex((s) => s.id === chatId);
         if (sessionIndex !== -1) {
           store.setCurrentSessionIndex(sessionIndex);
         }
       }
-      setIsValidSession(true); setSessionDataForValidation(currentSession); 
+      setIsValidSession(true);
+      setSessionDataForValidation(currentSession);
     } else {
-      setIsValidSession(false); setSessionDataForValidation(null);
+      setIsValidSession(false);
+      setSessionDataForValidation(null);
     }
     setIsLoadingState(false);
-  }, [chatId, isAuthReady, isAuthenticated, store._hasHydrated, store.sessions, store, router]);
+  }, [
+    chatId,
+    isAuthReady,
+    isAuthenticated,
+    store._hasHydrated,
+    store.sessions,
+    store,
+    router,
+  ]);
 
   useEffect(() => {
     if (!isLoadingState && !isValidSession) {
-      if (isAuthenticated) { 
+      if (isAuthenticated) {
         toast.error(`Chat session not found: ${chatId || "Invalid ID"}`);
         router.replace("/");
       } else if (isAuthReady && !isAuthenticated) {
@@ -67,25 +80,65 @@ export default function ChatPage() {
         router.replace("/");
       }
     }
-  }, [isLoadingState, isValidSession, chatId, router, isAuthenticated, isAuthReady]);
+  }, [
+    isLoadingState,
+    isValidSession,
+    chatId,
+    router,
+    isAuthenticated,
+    isAuthReady,
+  ]);
 
   if (isLoadingState) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>;
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100%",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
   }
 
   if (isAuthReady && !isAuthenticated) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>;;
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100%",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
   }
 
   if (!isValidSession || !sessionDataForValidation) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>;
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100%",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
   }
-  
+
   return (
-      <MemoizedChatComponent 
-        key={sessionDataForValidation.id}
-        sessionId={sessionDataForValidation.id}
-        session={sessionDataForValidation}
-      />
+    <MemoizedChatComponent
+      key={sessionDataForValidation.id}
+      sessionId={sessionDataForValidation.id}
+      session={sessionDataForValidation}
+    />
   );
 }

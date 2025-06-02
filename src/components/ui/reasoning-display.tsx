@@ -1,10 +1,10 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Box, Typography, IconButton } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { LoadingAnimation } from '@/components/ui/loading-animation';
-import styles from '@/components/chat/chat.module.scss'; // Assuming some styles might be reused or new ones added here
-import dynamic from 'next/dynamic';
+import React, { useState, useCallback, useEffect, useRef } from "react";
+import { Box, Typography, IconButton } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import { LoadingAnimation } from "@/components/ui/loading-animation";
+import styles from "@/components/chat/chat.module.scss"; // Assuming some styles might be reused or new ones added here
+import dynamic from "next/dynamic";
 
 // Dynamically import Markdown to avoid SSR issues if it's client-heavy
 const Markdown = dynamic(async () => (await import("./markdown")).Markdown, {
@@ -19,7 +19,7 @@ interface ReasoningDisplayProps {
   // Props for Markdown rendering
   fontSize: number;
   fontFamily: string;
-  scrollRef: React.RefObject<HTMLDivElement | null>; 
+  scrollRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export const ReasoningDisplay: React.FC<ReasoningDisplayProps> = ({
@@ -71,7 +71,12 @@ export const ReasoningDisplay: React.FC<ReasoningDisplayProps> = ({
   return (
     <Box
       className={styles["chat-message-reasoning-container"]} // Ensure this class exists or create it
-      sx={{ mb: 1, p: 1, borderRadius: 1, backgroundColor: 'transparent' /* Or a subtle background */ }}
+      sx={{
+        mb: 1,
+        p: 1,
+        borderRadius: 1,
+        backgroundColor: "transparent" /* Or a subtle background */,
+      }}
     >
       <Box
         display="flex"

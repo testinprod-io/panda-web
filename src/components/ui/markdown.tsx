@@ -5,7 +5,14 @@ import RemarkBreaks from "remark-breaks";
 import RehypeKatex from "rehype-katex";
 import RemarkGfm from "remark-gfm";
 import RehypeHighlight from "rehype-highlight";
-import { useRef, useState, RefObject, useEffect, useMemo, useCallback } from "react";
+import {
+  useRef,
+  useState,
+  RefObject,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import { copyToClipboard } from "@/utils/utils";
 import mermaid from "mermaid";
 import Locale from "@/locales";
@@ -15,14 +22,14 @@ import { useChatStore } from "@/store";
 
 // import { useAppConfig } from "@/store/config";
 import clsx from "clsx";
-import { HTMLAttributes } from 'react';
+import { HTMLAttributes } from "react";
 
 // MUI Imports for Image Dialog
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
-import MuiIconButton from '@mui/material/IconButton'; // Renamed to avoid conflict
-import CloseIcon from '@mui/icons-material/Close';
+import Dialog from "@mui/material/Dialog";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
+import MuiIconButton from "@mui/material/IconButton"; // Renamed to avoid conflict
+import CloseIcon from "@mui/icons-material/Close";
 
 // MUI Imports for Fullscreen Button
 // import FullscreenIcon from '@mui/icons-material/Fullscreen';
@@ -54,7 +61,7 @@ export function Mermaid(props: { code: string }) {
     }
     // Cleanup blob URL on unmount or code change
     return () => {
-      if (imageUrl && imageUrl.startsWith('blob:')) {
+      if (imageUrl && imageUrl.startsWith("blob:")) {
         URL.revokeObjectURL(imageUrl);
       }
     };
@@ -66,9 +73,9 @@ export function Mermaid(props: { code: string }) {
     const text = new XMLSerializer().serializeToString(svg);
     const blob = new Blob([text], { type: "image/svg+xml" });
     const newImageUrl = URL.createObjectURL(blob);
-    
+
     // Revoke previous blob URL if it exists
-    if (imageUrl && imageUrl.startsWith('blob:')) {
+    if (imageUrl && imageUrl.startsWith("blob:")) {
       URL.revokeObjectURL(imageUrl);
     }
 
@@ -103,14 +110,19 @@ export function Mermaid(props: { code: string }) {
         {props.code}
       </div>
       {/* Image Dialog */}
-      <Dialog open={imageModalOpen} onClose={closeImageModal} maxWidth="lg" fullWidth>
+      <Dialog
+        open={imageModalOpen}
+        onClose={closeImageModal}
+        maxWidth="lg"
+        fullWidth
+      >
         <DialogTitle sx={{ m: 0, p: 2 }}>
           {Locale.Export.Image.Modal} {/* Assuming this locale exists */}
           <MuiIconButton
             aria-label="close"
             onClick={closeImageModal}
             sx={{
-              position: 'absolute',
+              position: "absolute",
               right: 8,
               top: 8,
               color: (theme) => theme.palette.grey[500],
@@ -119,12 +131,15 @@ export function Mermaid(props: { code: string }) {
             <CloseIcon />
           </MuiIconButton>
         </DialogTitle>
-        <DialogContent dividers style={{ display: 'flex', justifyContent: 'center' }}>
+        <DialogContent
+          dividers
+          style={{ display: "flex", justifyContent: "center" }}
+        >
           {imageUrl && (
-            <img 
-              src={imageUrl} 
-              alt="Mermaid Diagram Preview" 
-              style={{ maxWidth: '100%', maxHeight: '80vh' }} 
+            <img
+              src={imageUrl}
+              alt="Mermaid Diagram Preview"
+              style={{ maxWidth: "100%", maxHeight: "80vh" }}
             />
           )}
         </DialogContent>
@@ -137,75 +152,78 @@ interface PreCodeProps extends React.HTMLAttributes<HTMLPreElement> {
   children: React.ReactNode;
 }
 
-const PreCode = React.forwardRef<HTMLPreElement, React.HTMLAttributes<HTMLPreElement>>(
-  ({ className, children, ...props }, forwardedRef) => {
-    const innerRef = useRef<HTMLPreElement>(null);
-    const ref = (forwardedRef || innerRef) as React.RefObject<HTMLPreElement>;
-    const [mermaidCode, setMermaidCode] = useState("");
-    // Removed unused chatStore and session variables
-    // const chatStore = useChatStore();
-    // const session = chatStore.currentSession();
+const PreCode = React.forwardRef<
+  HTMLPreElement,
+  React.HTMLAttributes<HTMLPreElement>
+>(({ className, children, ...props }, forwardedRef) => {
+  const innerRef = useRef<HTMLPreElement>(null);
+  const ref = (forwardedRef || innerRef) as React.RefObject<HTMLPreElement>;
+  const [mermaidCode, setMermaidCode] = useState("");
+  // Removed unused chatStore and session variables
+  // const chatStore = useChatStore();
+  // const session = chatStore.currentSession();
 
-    const renderArtifacts = useDebouncedCallback(() => {
-      if (!ref.current) return;
-      const mermaidDom = ref.current.querySelector("code.language-mermaid");
-      if (mermaidDom) {
-        setMermaidCode((mermaidDom as HTMLElement).innerText);
-      }
-    }, 600);
+  const renderArtifacts = useDebouncedCallback(() => {
+    if (!ref.current) return;
+    const mermaidDom = ref.current.querySelector("code.language-mermaid");
+    if (mermaidDom) {
+      setMermaidCode((mermaidDom as HTMLElement).innerText);
+    }
+  }, 600);
 
-    useEffect(() => {
-      if (ref.current) {
-        const codeElements = ref.current.querySelectorAll(
-          "code",
-        ) as NodeListOf<HTMLElement>;
-        const wrapLanguages = [
-          "",
-          "md",
-          "markdown",
-          "text",
-          "txt",
-          "plaintext",
-          "tex",
-          "latex",
-        ];
-        codeElements.forEach((codeElement) => {
-          let languageClass = codeElement.className.match(/language-(\w+)/);
-          let name = languageClass ? languageClass[1] : "";
-          if (wrapLanguages.includes(name)) {
-            codeElement.style.whiteSpace = "pre-wrap";
-          }
-        });
-        // setTimeout ensures renderArtifacts is called after the current rendering tick,
-        // allowing ReactMarkdown children to be in the DOM for querying.
-        setTimeout(renderArtifacts, 1);
-      }
-    }, [ref, renderArtifacts]);
+  useEffect(() => {
+    if (ref.current) {
+      const codeElements = ref.current.querySelectorAll(
+        "code",
+      ) as NodeListOf<HTMLElement>;
+      const wrapLanguages = [
+        "",
+        "md",
+        "markdown",
+        "text",
+        "txt",
+        "plaintext",
+        "tex",
+        "latex",
+      ];
+      codeElements.forEach((codeElement) => {
+        let languageClass = codeElement.className.match(/language-(\w+)/);
+        let name = languageClass ? languageClass[1] : "";
+        if (wrapLanguages.includes(name)) {
+          codeElement.style.whiteSpace = "pre-wrap";
+        }
+      });
+      // setTimeout ensures renderArtifacts is called after the current rendering tick,
+      // allowing ReactMarkdown children to be in the DOM for querying.
+      setTimeout(renderArtifacts, 1);
+    }
+  }, [ref, renderArtifacts]);
 
-    return (
-      <>
-        <pre ref={ref} className={className} {...props}>
-          <button
-            className="copy-code-button"
-            onClick={() => {
-              if (ref.current) {
-                copyToClipboard(
-                  ref.current.querySelector("code")?.innerText ?? "",
-                );
-              }
-            }}
-          />
-          {children}
-        </pre>
-        {mermaidCode && <Mermaid code={mermaidCode} />}
-      </>
-    );
-  }
-);
+  return (
+    <>
+      <pre ref={ref} className={className} {...props}>
+        <button
+          className="copy-code-button"
+          onClick={() => {
+            if (ref.current) {
+              copyToClipboard(
+                ref.current.querySelector("code")?.innerText ?? "",
+              );
+            }
+          }}
+        />
+        {children}
+      </pre>
+      {mermaidCode && <Mermaid code={mermaidCode} />}
+    </>
+  );
+});
 
 PreCode.displayName = "PreCode";
 
-function CustomCode(props: React.HTMLAttributes<HTMLElement> & { children?: React.ReactNode }) {
+function CustomCode(
+  props: React.HTMLAttributes<HTMLElement> & { children?: React.ReactNode },
+) {
   // Removed unused chatStore, session, config, enableCodeFold variables
   const ref = useRef<HTMLElement>(null); // Changed HTMLPreElement to HTMLElement
 
@@ -298,7 +316,7 @@ function MarkDownContent(props: { content: string }) {
             );
           }
           const isInternal = /^\/#/i.test(href);
-          const target = isInternal ? "_self" : aProps.target ?? "_blank";
+          const target = isInternal ? "_self" : (aProps.target ?? "_blank");
           return <a {...aProps} target={target} />;
         },
       }}

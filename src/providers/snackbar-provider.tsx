@@ -1,19 +1,36 @@
-'use client';
+"use client";
 
-import React, { createContext, useState, useContext, useCallback, ReactNode, useEffect } from 'react';
-import Snackbar from '@mui/material/Snackbar';
-import Alert, { AlertColor } from '@mui/material/Alert';
+import React, {
+  createContext,
+  useState,
+  useContext,
+  useCallback,
+  ReactNode,
+  useEffect,
+} from "react";
+import Snackbar from "@mui/material/Snackbar";
+import Alert, { AlertColor } from "@mui/material/Alert";
 
 interface SnackbarContextProps {
-  showSnackbar: (message: string, severity?: AlertColor, duration?: number | null) => void;
+  showSnackbar: (
+    message: string,
+    severity?: AlertColor,
+    duration?: number | null,
+  ) => void;
 }
 
-const SnackbarContext = createContext<SnackbarContextProps | undefined>(undefined);
+const SnackbarContext = createContext<SnackbarContextProps | undefined>(
+  undefined,
+);
 
 // Define a global type for the snackbar function
 declare global {
   interface Window {
-    showSnackbar?: (message: string, severity?: AlertColor, duration?: number | null) => void;
+    showSnackbar?: (
+      message: string,
+      severity?: AlertColor,
+      duration?: number | null,
+    ) => void;
   }
 }
 
@@ -21,18 +38,27 @@ interface SnackbarProviderProps {
   children: ReactNode;
 }
 
-export const SnackbarProvider: React.FC<SnackbarProviderProps> = ({ children }) => {
+export const SnackbarProvider: React.FC<SnackbarProviderProps> = ({
+  children,
+}) => {
   const [open, setOpen] = useState(false);
-  const [message, setMessage] = useState('');
-  const [severity, setSeverity] = useState<AlertColor>('info'); // Default severity
+  const [message, setMessage] = useState("");
+  const [severity, setSeverity] = useState<AlertColor>("info"); // Default severity
   const [autoHideDuration, setAutoHideDuration] = useState<number | null>(6000); // Default duration
 
-  const showSnackbar = useCallback((newMessage: string, newSeverity: AlertColor = 'info', duration: number | null = 6000) => {
-    setMessage(newMessage);
-    setSeverity(newSeverity);
-    setAutoHideDuration(duration);
-    setOpen(true);
-  }, []);
+  const showSnackbar = useCallback(
+    (
+      newMessage: string,
+      newSeverity: AlertColor = "info",
+      duration: number | null = 6000,
+    ) => {
+      setMessage(newMessage);
+      setSeverity(newSeverity);
+      setAutoHideDuration(duration);
+      setOpen(true);
+    },
+    [],
+  );
 
   // Expose the showSnackbar function globally
   useEffect(() => {
@@ -41,13 +67,16 @@ export const SnackbarProvider: React.FC<SnackbarProviderProps> = ({ children }) 
     return () => {
       // Assign undefined instead of using delete
       if (window.showSnackbar === showSnackbar) {
-         window.showSnackbar = undefined;
+        window.showSnackbar = undefined;
       }
     };
   }, [showSnackbar]); // Dependency array ensures this runs only when showSnackbar changes
 
-  const handleClose = (event?: React.SyntheticEvent | Event, reason?: string) => {
-    if (reason === 'clickaway') {
+  const handleClose = (
+    event?: React.SyntheticEvent | Event,
+    reason?: string,
+  ) => {
+    if (reason === "clickaway") {
       return;
     }
     setOpen(false);
@@ -60,9 +89,9 @@ export const SnackbarProvider: React.FC<SnackbarProviderProps> = ({ children }) 
         open={open}
         autoHideDuration={autoHideDuration}
         onClose={handleClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} // Position can be adjusted
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }} // Position can be adjusted
       >
-        <Alert onClose={handleClose} severity={severity} sx={{ width: '100%' }}>
+        <Alert onClose={handleClose} severity={severity} sx={{ width: "100%" }}>
           {message}
         </Alert>
       </Snackbar>
@@ -73,7 +102,7 @@ export const SnackbarProvider: React.FC<SnackbarProviderProps> = ({ children }) 
 export const useSnackbar = (): SnackbarContextProps => {
   const context = useContext(SnackbarContext);
   if (context === undefined) {
-    throw new Error('useSnackbar must be used within a SnackbarProvider');
+    throw new Error("useSnackbar must be used within a SnackbarProvider");
   }
   return context;
-}; 
+};

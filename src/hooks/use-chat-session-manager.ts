@@ -10,9 +10,9 @@ import { useChatActions } from "./use-chat-actions";
 import { useApiClient } from "@/providers/api-client-provider";
 import { ChatApiService } from "@/services/api-service";
 import { MultimodalContent, RequestMessage } from "@/client/api";
-import { ModelConfig } from '@/types/constant';
+import { ModelConfig } from "@/types/constant";
 import { ChatControllerPool } from "@/client/controller";
-import {  SessionState } from '@/types/session';
+import { SessionState } from "@/types/session";
 import { FileInfo, Summary } from "@/client/types";
 import { useEncryption } from "@/providers/encryption-provider";
 import { EncryptionService } from "@/services/encryption-service";
@@ -27,7 +27,7 @@ interface ChatSessionManagerResult {
   addOptimisticMessage: (message: ChatMessage) => void;
   updateOptimisticMessage: (
     localMessageId: string,
-    updates: Partial<ChatMessage>
+    updates: Partial<ChatMessage>,
   ) => void;
   sendNewUserMessage: (
     sessionState: SessionState,
@@ -39,11 +39,11 @@ interface ChatSessionManagerResult {
       onSuccess?: (
         messageId: UUID,
         finalMessage: string,
-        timestamp: Date
+        timestamp: Date,
       ) => void;
       onFailure?: (error: Error) => void;
       onController?: (controller: AbortController) => void;
-    }
+    },
   ) => Promise<void>;
   sendNewQuery: (
     messages: ChatMessage[],
@@ -55,16 +55,20 @@ interface ChatSessionManagerResult {
       onSuccess?: (
         messageId: UUID,
         finalMessage: string,
-        timestamp: Date
+        timestamp: Date,
       ) => void;
       onFailure?: (error: Error) => void;
       onController?: (controller: AbortController) => void;
-    }
+    },
   ) => Promise<void>;
 
   clearMessages: (fromMessageId: UUID) => Promise<void>;
   markMessageAsError: (messageId: string, errorInfo?: any) => void;
-  finalizeStreamedBotMessage: (botMessageId: UUID, finalContent: string, date: Date) => void;
+  finalizeStreamedBotMessage: (
+    botMessageId: UUID,
+    finalContent: string,
+    date: Date,
+  ) => void;
 }
 
 const INITIAL_LOAD_LIMIT = 20;
@@ -73,18 +77,18 @@ const PAGINATION_LOAD_LIMIT = 20;
 export function useChatSessionManager(
   sessionId: UUID,
   modelConfig: ModelConfig,
-  customizedPrompts?: string
+  customizedPrompts?: string,
 ): ChatSessionManagerResult {
-  const { 
-    loadMessagesForSession: actionLoadMessages, 
-    saveMessageToServer, 
-    generateSessionTitle, 
+  const {
+    loadMessagesForSession: actionLoadMessages,
+    saveMessageToServer,
+    generateSessionTitle,
     loadSummariesForSession: actionLoadSummaries,
-    summarizeAndStoreMessages: actionSummarize
+    summarizeAndStoreMessages: actionSummarize,
   } = useChatActions();
   const apiClient = useApiClient();
   const appConfig = useAppConfig();
-  
+
   const [displayedMessages, setDisplayedMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMoreServerMessages, setHasMoreServerMessages] = useState(true);
@@ -92,12 +96,13 @@ export function useChatSessionManager(
     string | undefined
   >(undefined);
   const [messageFetchError, setMessageFetchError] = useState<Error | null>(
-    null
+    null,
   );
 
   // Local state for summaries
   const [localSummaries, setLocalSummaries] = useState<Summary[]>([]);
-  const [localLastSummarizedMessageId, setLocalLastSummarizedMessageId] = useState<UUID | null>(null);
+  const [localLastSummarizedMessageId, setLocalLastSummarizedMessageId] =
+    useState<UUID | null>(null);
   const [localIsSummarizing, setLocalIsSummarizing] = useState<boolean>(false);
 
   const loadInProgress = useRef(false); // Prevents concurrent fetch operations
@@ -106,9 +111,11 @@ export function useChatSessionManager(
 
   useEffect(() => {
     if (!isLocked) {
-      console.log(`[useChatSessionManager] App is UNLOCKED. Processing messages for decryption.`);
-      setDisplayedMessages(prevMessages => 
-        prevMessages.map(msg => {
+      console.log(
+        `[useChatSessionManager] App is UNLOCKED. Processing messages for decryption.`,
+      );
+      setDisplayedMessages((prevMessages) =>
+        prevMessages.map((msg) => {
           // Avoid re-decrypting if content is not a string (already an object like MultimodalContent or already processed)
           // or if it doesn't look like it needs decryption (e.g., simple heuristic or flag).
           // For this example, we'll proceed if it's a string.
@@ -117,7 +124,7 @@ export function useChatSessionManager(
           let contentChanged = false;
 
           let newContent = originalContent;
-          if (typeof originalContent === 'string') {
+          if (typeof originalContent === "string") {
             const decrypted = EncryptionService.decrypt(originalContent);
             if (decrypted !== originalContent) {
               newContent = decrypted;
@@ -127,7 +134,7 @@ export function useChatSessionManager(
           // TODO: Handle MultimodalContent parts if they can be encrypted individually
 
           let newReasoning = originalReasoning;
-          if (typeof originalReasoning === 'string') {
+          if (typeof originalReasoning === "string") {
             const decryptedR = EncryptionService.decrypt(originalReasoning);
             if (decryptedR !== originalReasoning) {
               newReasoning = decryptedR;
@@ -136,41 +143,53 @@ export function useChatSessionManager(
           }
 
           if (contentChanged) {
-            console.log(`[useChatSessionManager] Decrypted message ID: ${msg.id}`);
-            return { ...msg, visibleContent: newContent, visibleReasoning: newReasoning };
+            console.log(
+              `[useChatSessionManager] Decrypted message ID: ${msg.id}`,
+            );
+            return {
+              ...msg,
+              visibleContent: newContent,
+              visibleReasoning: newReasoning,
+            };
           }
           return msg;
-        })
+        }),
       );
-      setLocalSummaries(prevSummaries => 
-        prevSummaries.map(summary => {
+      setLocalSummaries((prevSummaries) =>
+        prevSummaries.map((summary) => {
           const decrypted = EncryptionService.decrypt(summary.content);
           if (decrypted !== summary.content) {
             return { ...summary, content: decrypted };
           }
           return summary;
-        })
+        }),
       );
     } else {
-      console.log(`[useChatSessionManager] App is LOCKED. Ensuring messages are in their original/encrypted state.`);
+      console.log(
+        `[useChatSessionManager] App is LOCKED. Ensuring messages are in their original/encrypted state.`,
+      );
       // If you need to revert to an encrypted state or placeholder when locked:
       // This assumes that the initial load (when locked) provides encrypted data.
       // If displayedMessages could hold decrypted data from a previous unlock,
       // you might need to fetch the original encrypted versions or apply a placeholder.
       // For now, we'll assume messages are fetched encrypted or this useEffect handles the toggle.
-      setDisplayedMessages(prevMessages => 
-        prevMessages.map(msg => {
-          return { ...msg, visibleContent: msg.content, visibleReasoning: msg.reasoning };
+      setDisplayedMessages((prevMessages) =>
+        prevMessages.map((msg) => {
+          return {
+            ...msg,
+            visibleContent: msg.content,
+            visibleReasoning: msg.reasoning,
+          };
           // This is a simplified placeholder logic. Ideally, you'd revert to actual encrypted strings
           // or have a clear way to distinguish between pre-decryption and post-decryption states.
-          // For this example, if it was decrypted, it might be complex to re-encrypt without original. 
+          // For this example, if it was decrypted, it might be complex to re-encrypt without original.
           // So, this else block might be more about ensuring new messages loaded while locked are treated as raw.
-          // If msg.content was previously decrypted and isLocked is now true, 
+          // If msg.content was previously decrypted and isLocked is now true,
           // we should show a placeholder or the original encrypted form if available.
           // This part requires careful state management of original encrypted values if true reversion is needed.
           // For simplicity, this example doesn't revert already decrypted messages back to encrypted on lock.
           // It primarily focuses on decrypting when unlocked.
-        })
+        }),
       );
     }
   }, [isLocked]); // Removed displayedMessages from deps to avoid loop with setDisplayedMessages, isLocked is the trigger.
@@ -194,64 +213,79 @@ export function useChatSessionManager(
     if (loadInProgress.current) return;
 
     console.log(
-      `[useChatSessionManager] Session ID is: ${sessionId}. Initializing message and summary load.`
+      `[useChatSessionManager] Session ID is: ${sessionId}. Initializing message and summary load.`,
     );
     setDisplayedMessages([]); // Reset for new session
-    setLocalSummaries([]);      // Reset for new session
+    setLocalSummaries([]); // Reset for new session
     setLocalLastSummarizedMessageId(null);
     setLocalIsSummarizing(false);
     setHasMoreServerMessages(true);
     setNextServerMessageCursor(undefined);
     setMessageFetchError(null);
-    
+
     setIsLoading(true);
     loadInProgress.current = true;
 
     Promise.all([
       actionLoadMessages(sessionId, { limit: INITIAL_LOAD_LIMIT }),
-      actionLoadSummaries(sessionId) 
-    ]).then(([messagesResult, summariesResult]) => {
-        const { messages: fetchedChatMessages, pagination: messagesPagination } = messagesResult;
-        const { summaries: fetchedSummaries, lastSummarizedMessageId: newLastSummarizedId } = summariesResult;
+      actionLoadSummaries(sessionId),
+    ])
+      .then(([messagesResult, summariesResult]) => {
+        const {
+          messages: fetchedChatMessages,
+          pagination: messagesPagination,
+        } = messagesResult;
+        const {
+          summaries: fetchedSummaries,
+          lastSummarizedMessageId: newLastSummarizedId,
+        } = summariesResult;
 
         console.log(
-          `[useChatSessionManager] Initial messages fetched. Count: ${fetchedChatMessages.length}. Pagination:`, messagesPagination
+          `[useChatSessionManager] Initial messages fetched. Count: ${fetchedChatMessages.length}. Pagination:`,
+          messagesPagination,
         );
         console.log(
-          `[useChatSessionManager] Initial summaries fetched. Count: ${fetchedSummaries.length}. LastSummarizedID: ${newLastSummarizedId}`
+          `[useChatSessionManager] Initial summaries fetched. Count: ${fetchedSummaries.length}. LastSummarizedID: ${newLastSummarizedId}`,
         );
 
-        const serverMessagesChronological = fetchedChatMessages.slice().reverse();
-        setDisplayedMessages(prevMessages => {
+        const serverMessagesChronological = fetchedChatMessages
+          .slice()
+          .reverse();
+        setDisplayedMessages((prevMessages) => {
           // Filter out optimistic messages from the current state (prevMessages)
           // that are not present in the newly fetched server messages.
-          console.log(`[useChatSessionManager] Filtering out optimistic messages from the current state (prevMessages) that are not present in the newly fetched server messages.`);
+          console.log(
+            `[useChatSessionManager] Filtering out optimistic messages from the current state (prevMessages) that are not present in the newly fetched server messages.`,
+          );
           console.log(`[useChatSessionManager] PrevMessages:`, prevMessages);
-          console.log(`[useChatSessionManager] ServerMessagesChronological:`, serverMessagesChronological);
+          console.log(
+            `[useChatSessionManager] ServerMessagesChronological:`,
+            serverMessagesChronological,
+          );
           const optimisticMessagesToKeep = prevMessages.filter(
-            msg => !serverMessagesChronological.some(sm => sm.id === msg.id)
+            (msg) =>
+              !serverMessagesChronological.some((sm) => sm.id === msg.id),
           );
           // The new state will be the server messages followed by any such optimistic messages.
           return [...serverMessagesChronological, ...optimisticMessagesToKeep];
         });
-        
+
         setHasMoreServerMessages(messagesPagination.has_more);
         setNextServerMessageCursor(messagesPagination.next_cursor ?? undefined);
 
         setLocalSummaries(fetchedSummaries);
         setLocalLastSummarizedMessageId(newLastSummarizedId);
-
       })
       .catch((err) => {
         console.error(
           `[useChatSessionManager] Error loading initial messages or summaries for ${sessionId}:`,
-          err
+          err,
         );
         setMessageFetchError(err);
       })
       .finally(() => {
         console.log(
-          `[useChatSessionManager] Initial load process finished for session: ${sessionId}`
+          `[useChatSessionManager] Initial load process finished for session: ${sessionId}`,
         );
         setIsLoading(false);
         loadInProgress.current = false;
@@ -261,52 +295,59 @@ export function useChatSessionManager(
   // Effect to generate session title after the first user message and bot response
   useEffect(() => {
     if (!sessionId || !generateSessionTitle) {
-      console.log(`[useChatSessionManager] Session ID is: ${sessionId}. Skipping session title generation.`);
+      console.log(
+        `[useChatSessionManager] Session ID is: ${sessionId}. Skipping session title generation.`,
+      );
       return;
     }
 
     // Helper to get text content from a message
-    const getTextFromMessage = (messageContent: string | MultimodalContent[]): string => {
-      if (typeof messageContent === 'string') {
+    const getTextFromMessage = (
+      messageContent: string | MultimodalContent[],
+    ): string => {
+      if (typeof messageContent === "string") {
         return messageContent;
       }
       if (Array.isArray(messageContent)) {
-        const textPart = messageContent.find(part => part.type === 'text');
+        const textPart = messageContent.find((part) => part.type === "text");
         return textPart?.text || "";
       }
       return "";
     };
 
     const nonErrorMessages = displayedMessages.filter(
-      (m) => !m.isError && (m.role === Role.USER || m.role === Role.ASSISTANT) && !m.streaming
+      (m) =>
+        !m.isError &&
+        (m.role === Role.USER || m.role === Role.ASSISTANT) &&
+        !m.streaming,
     );
-    console.log(`[useChatSessionManager] Non-error messages:`, nonErrorMessages);
+    console.log(
+      `[useChatSessionManager] Non-error messages:`,
+      nonErrorMessages,
+    );
     if (
       nonErrorMessages.length === 2 &&
       nonErrorMessages[0].role === Role.USER &&
       nonErrorMessages[1].role === Role.ASSISTANT
     ) {
-      const userMessageText = getTextFromMessage(nonErrorMessages[0].visibleContent).trim();
-      const assistantMessageText = getTextFromMessage(nonErrorMessages[1].visibleContent).trim();
+      const userMessageText = getTextFromMessage(
+        nonErrorMessages[0].visibleContent,
+      ).trim();
+      const assistantMessageText = getTextFromMessage(
+        nonErrorMessages[1].visibleContent,
+      ).trim();
 
-      if (
-        userMessageText.length > 0 &&
-        assistantMessageText.length > 0
-      ) {
+      if (userMessageText.length > 0 && assistantMessageText.length > 0) {
         setTimeout(() => {
           generateSessionTitle(
             sessionId,
             userMessageText,
-            assistantMessageText
+            assistantMessageText,
           );
         }, 0);
       }
     }
-  }, [
-    displayedMessages,
-    sessionId,
-    generateSessionTitle
-  ]);
+  }, [displayedMessages, sessionId, generateSessionTitle]);
 
   // Effect for triggering summarization
   useEffect(() => {
@@ -322,65 +363,90 @@ export function useChatSessionManager(
     // displayedMessages is chronological (oldest first)
     if (localLastSummarizedMessageId) {
       const lastSummarizedMsgIndex = displayedMessages.findIndex(
-        (msg: ChatMessage) => msg.id === localLastSummarizedMessageId
+        (msg: ChatMessage) => msg.id === localLastSummarizedMessageId,
       );
       if (lastSummarizedMsgIndex !== -1) {
-        messagesToConsiderForSummarization = displayedMessages.slice(lastSummarizedMsgIndex + 1);
+        messagesToConsiderForSummarization = displayedMessages.slice(
+          lastSummarizedMsgIndex + 1,
+        );
       } else {
         // If last summarized ID isn't in displayedMessages, it implies it's older than the current view.
         // For summarization, we should only consider messages *within the current view* that are newer.
         // So, if the ID is not found, all displayedMessages are candidates (as if no summary was relevant to current view).
         // This interpretation might need refinement based on desired behavior for very long scrollbacks.
         // A simpler take: if not found, assume all displayedMessages are newer than any known summary relevant to *this view*.
-        console.warn(`[ChatSessionManager] Summarization Trigger: localLastSummarizedMessageId ${localLastSummarizedMessageId} not found in displayedMessages. Considering all displayed messages.`);
+        console.warn(
+          `[ChatSessionManager] Summarization Trigger: localLastSummarizedMessageId ${localLastSummarizedMessageId} not found in displayedMessages. Considering all displayed messages.`,
+        );
         messagesToConsiderForSummarization = displayedMessages;
       }
     } else {
       messagesToConsiderForSummarization = displayedMessages; // No summaries yet for this session instance
     }
-    
-    const finalMessagesToConsider = messagesToConsiderForSummarization.filter((msg: ChatMessage) => msg.syncState === MessageSyncState.SYNCED && !msg.isError);
+
+    const finalMessagesToConsider = messagesToConsiderForSummarization.filter(
+      (msg: ChatMessage) =>
+        msg.syncState === MessageSyncState.SYNCED && !msg.isError,
+    );
 
     if (finalMessagesToConsider.length >= SUMMARIZE_INTERVAL) {
-      const batchToSummarize = finalMessagesToConsider.slice(0, SUMMARIZE_INTERVAL);
-      
-      console.log(`[ChatSessionManager] Triggering summarization (from displayedMessages) with ${batchToSummarize.length} messages.`);
+      const batchToSummarize = finalMessagesToConsider.slice(
+        0,
+        SUMMARIZE_INTERVAL,
+      );
+
+      console.log(
+        `[ChatSessionManager] Triggering summarization (from displayedMessages) with ${batchToSummarize.length} messages.`,
+      );
       setLocalIsSummarizing(true);
       actionSummarize(sessionId, batchToSummarize)
-        .then(newSummary => {
+        .then((newSummary) => {
           if (newSummary) {
-            setLocalSummaries(prevSummaries => 
-              [...prevSummaries, newSummary].sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            setLocalSummaries((prevSummaries) =>
+              [...prevSummaries, newSummary].sort(
+                (a, b) =>
+                  new Date(b.created_at).getTime() -
+                  new Date(a.created_at).getTime(),
+              ),
             );
             setLocalLastSummarizedMessageId(newSummary.end_message_id);
           }
         })
-        .catch(error => {
-          console.error("[ChatSessionManager] Error during summarization action call:", error);
+        .catch((error) => {
+          console.error(
+            "[ChatSessionManager] Error during summarization action call:",
+            error,
+          );
         })
         .finally(() => {
           setLocalIsSummarizing(false);
         });
     }
-  // Depends on displayedMessages now, instead of store.sessions
-  }, [sessionId, displayedMessages, actionSummarize, localIsSummarizing, localLastSummarizedMessageId]);
+    // Depends on displayedMessages now, instead of store.sessions
+  }, [
+    sessionId,
+    displayedMessages,
+    actionSummarize,
+    localIsSummarizing,
+    localLastSummarizedMessageId,
+  ]);
 
   const loadMoreMessages = useCallback(async () => {
     if (!sessionId) {
       console.log(
-        "[useChatSessionManager] loadMoreMessages: No session ID, skipping."
+        "[useChatSessionManager] loadMoreMessages: No session ID, skipping.",
       );
       return;
     }
     if (isLoading || !hasMoreServerMessages || loadInProgress.current) {
       console.log(
-        `[useChatSessionManager] loadMoreMessages: Skipping due to loading/no more/in progress. Initial: ${isLoading}, HasMore: ${hasMoreServerMessages}, InProgress: ${loadInProgress.current}`
+        `[useChatSessionManager] loadMoreMessages: Skipping due to loading/no more/in progress. Initial: ${isLoading}, HasMore: ${hasMoreServerMessages}, InProgress: ${loadInProgress.current}`,
       );
       return;
     }
 
     console.log(
-      `[useChatSessionManager] Loading more messages for ${sessionId}, cursor: ${nextServerMessageCursor}`
+      `[useChatSessionManager] Loading more messages for ${sessionId}, cursor: ${nextServerMessageCursor}`,
     );
     setIsLoading(true);
     setMessageFetchError(null); // Clear previous pagination error
@@ -389,11 +455,11 @@ export function useChatSessionManager(
     try {
       const { messages: newMessages, pagination } = await actionLoadMessages(
         sessionId,
-        { cursor: nextServerMessageCursor, limit: PAGINATION_LOAD_LIMIT }
+        { cursor: nextServerMessageCursor, limit: PAGINATION_LOAD_LIMIT },
       );
       console.log(
         `[useChatSessionManager] Fetched ${newMessages.length} more messages. Pagination:`,
-        pagination
+        pagination,
       );
       // New messages are older (fetched from a cursor going back in time).
       // Reverse them to maintain chronological order when prepending.
@@ -403,7 +469,7 @@ export function useChatSessionManager(
         const optimisticMessagesToShow = prevMessages.filter(
           (pm) =>
             pm.syncState === MessageSyncState.PENDING_CREATE &&
-            !serverMessages.some((sm) => sm.id === pm.id) // Avoid dupes if server returns it
+            !serverMessages.some((sm) => sm.id === pm.id), // Avoid dupes if server returns it
         );
         // Combine server messages with still-pending optimistic messages
         const updatedMessages = [
@@ -421,12 +487,12 @@ export function useChatSessionManager(
     } catch (err: any) {
       console.error(
         `[useChatSessionManager] Error loading more messages for ${sessionId}:`,
-        err
+        err,
       );
       setMessageFetchError(err);
     } finally {
       console.log(
-        `[useChatSessionManager] Load more process finished for session: ${sessionId}`
+        `[useChatSessionManager] Load more process finished for session: ${sessionId}`,
       );
       setIsLoading(false);
       loadInProgress.current = false;
@@ -437,27 +503,27 @@ export function useChatSessionManager(
     (message: ChatMessage) => {
       console.log(
         "[useChatSessionManager] Adding optimistic message (user input):",
-        message
+        message,
       );
       setDisplayedMessages((prev) => [...prev, message]);
       saveMessageToServer(sessionId, message);
     },
-    [sessionId]
+    [sessionId],
   );
 
   const updateOptimisticMessage = useCallback(
     (localMessageId: string, updates: Partial<ChatMessage>) => {
       console.log(
         `[useChatSessionManager] Updating optimistic message ID ${localMessageId} with:`,
-        updates
+        updates,
       );
       setDisplayedMessages((prev) =>
         prev.map((msg) =>
-          msg.id === localMessageId ? { ...msg, ...updates } : msg
-        )
+          msg.id === localMessageId ? { ...msg, ...updates } : msg,
+        ),
       );
     },
-    []
+    [],
   );
 
   const sendNewUserMessage = useCallback(
@@ -471,11 +537,11 @@ export function useChatSessionManager(
         onSuccess?: (
           messageId: UUID,
           finalMessage: string,
-          timestamp: Date
+          timestamp: Date,
         ) => void;
         onFailure?: (error: Error) => void;
         onController?: (controller: AbortController) => void;
-      }
+      },
     ) => {
       if (!apiClient) {
         const error = new Error("[ChatActions] API Client not available.");
@@ -489,33 +555,48 @@ export function useChatSessionManager(
       const attachedFiles = sessionState.persistedAttachedFiles;
       let attachments: MultimodalContent[] = [];
       let files: FileInfo[] = [];
-      
+
       if (attachedFiles && attachedFiles.length > 0) {
         for (const attachedFile of attachedFiles) {
-          console.log(`[useChatSessionManager] Adding file to message:`, attachedFile);
+          console.log(
+            `[useChatSessionManager] Adding file to message:`,
+            attachedFile,
+          );
           console.log(`[useChatSessionManager] File type:`, attachedFile.type);
           if (attachedFile.type.startsWith("image/")) {
             // Assuming Panda API format based on user request
-            attachments.push({ 
-              type: "image_url", 
-              image_url: { url: attachedFile.url } // file.url is already the base64 data URI
+            attachments.push({
+              type: "image_url",
+              image_url: { url: attachedFile.url }, // file.url is already the base64 data URI
             });
-            files.push({file_id: attachedFile.fileId, file_name: attachedFile.name, file_type: "image", file_size: attachedFile.size});
+            files.push({
+              file_id: attachedFile.fileId,
+              file_name: attachedFile.name,
+              file_type: "image",
+              file_size: attachedFile.size,
+            });
           } else if (attachedFile.type.startsWith("application/pdf")) {
             // Assuming Panda API format based on user request
-            attachments.push({ 
-              type: "pdf_url", 
-              pdf_url: { url: attachedFile.url } // file.url is already the base64 data URI
+            attachments.push({
+              type: "pdf_url",
+              pdf_url: { url: attachedFile.url }, // file.url is already the base64 data URI
             });
-            files.push({file_id: attachedFile.fileId, file_name: attachedFile.name, file_type: "pdf", file_size: attachedFile.size});
+            files.push({
+              file_id: attachedFile.fileId,
+              file_name: attachedFile.name,
+              file_type: "pdf",
+              file_size: attachedFile.size,
+            });
           } else {
             // For other file types, we might send a link or just text representation
             // For now, let's add a text representation as requested for the payload structure
             // This part might need further clarification on how non-image files are handled by Panda API
-            // The user payload showed image_url, not a generic file_url. 
+            // The user payload showed image_url, not a generic file_url.
             // For now, we will only include image files in the structured content for Panda.
             // Non-image files will be ignored for the multimodal content part.
-            console.warn(`File ${attachedFile.name} is not an image and will be ignored for Panda API multimodal content.`);
+            console.warn(
+              `File ${attachedFile.name} is not an image and will be ignored for Panda API multimodal content.`,
+            );
           }
         }
       }
@@ -532,7 +613,7 @@ export function useChatSessionManager(
       });
       if (!userMessage) {
         const error = new Error(
-          "[ChatActions] Failed to add user message to store."
+          "[ChatActions] Failed to add user message to store.",
         );
         console.error(error.message);
         callbacks?.onFailure?.(error);
@@ -552,7 +633,7 @@ export function useChatSessionManager(
 
       sendNewQuery(messagesForApi, callbacks);
     },
-    [apiClient, sessionId, modelConfig, displayedMessages]
+    [apiClient, sessionId, modelConfig, displayedMessages],
   );
 
   const finalizeStreamedBotMessage = useCallback(
@@ -582,7 +663,7 @@ export function useChatSessionManager(
             //   date: date,
             //   syncState: MessageSyncState.PENDING_CREATE,
             // };
-            
+
             // console.log("[ChatSessionManager] Finalizing bot message in setDisplayedMessages. ID:", messageToSave.id, "Content for DB:", messageToSave.content);
 
             // // Return the version for UI state (separate content and reasoning)
@@ -601,7 +682,7 @@ export function useChatSessionManager(
           // This case should ideally not happen if botMessage was correctly added
           // to displayedMessages by sendNewQuery and not removed before finalization.
           console.error(
-            `[ChatSessionManager] finalizeStreamedBotMessage: Bot message with ID ${botMessageId} not found in prevMessages. This is unexpected. Saving a new message without prior streamed reasoning.`
+            `[ChatSessionManager] finalizeStreamedBotMessage: Bot message with ID ${botMessageId} not found in prevMessages. This is unexpected. Saving a new message without prior streamed reasoning.`,
           );
           // Fallback: create a new message and save it (similar to old behavior on find fail)
           const fallbackBotMessage = createMessage({
@@ -620,7 +701,7 @@ export function useChatSessionManager(
         return updatedMessages;
       });
     },
-    [sessionId, displayedMessages] // displayedMessages is removed as we use functional update
+    [sessionId, displayedMessages], // displayedMessages is removed as we use functional update
   );
 
   const sendNewQuery = useCallback(
@@ -634,25 +715,28 @@ export function useChatSessionManager(
         onSuccess?: (
           messageId: UUID,
           finalMessage: string,
-          timestamp: Date
+          timestamp: Date,
         ) => void;
         onFailure?: (error: Error) => void;
         onController?: (controller: AbortController) => void;
-      }
+      },
     ) => {
       // No longer using currentSessionFromStore for messages here.
       // localSummaries and localLastSummarizedMessageId are from local state.
 
       let messagesForApi: RequestMessage[] = [];
 
-      const chronoSortedSummaries = [...localSummaries].reverse(); 
-      chronoSortedSummaries.forEach(summary => {
+      const chronoSortedSummaries = [...localSummaries].reverse();
+      chronoSortedSummaries.forEach((summary) => {
         messagesForApi.push({
           role: Role.SYSTEM,
-          content: `Summary of previous conversation context (from ${summary.start_message_id} to ${summary.end_message_id}):\n${summary.content}`
+          content: `Summary of previous conversation context (from ${summary.start_message_id} to ${summary.end_message_id}):\n${summary.content}`,
         });
       });
-      console.log("[ChatSessionManager] Summaries added to messagesForApi:", messagesForApi);
+      console.log(
+        "[ChatSessionManager] Summaries added to messagesForApi:",
+        messagesForApi,
+      );
 
       let recentMessagesToInclude: ChatMessage[];
       // currentDisplayedMessagesSnapshot are the messages that were in displayedMessages when sendNewUserMessage was called.
@@ -660,11 +744,14 @@ export function useChatSessionManager(
       const newUserMessage = rawMessages[rawMessages.length - 1];
 
       if (localLastSummarizedMessageId) {
-        const lastSummarizedMsgIndexInSnapshot = currentDisplayedMessagesSnapshot.findIndex(
-          msg => msg.id === localLastSummarizedMessageId
-        );
+        const lastSummarizedMsgIndexInSnapshot =
+          currentDisplayedMessagesSnapshot.findIndex(
+            (msg) => msg.id === localLastSummarizedMessageId,
+          );
         if (lastSummarizedMsgIndexInSnapshot !== -1) {
-          recentMessagesToInclude = currentDisplayedMessagesSnapshot.slice(lastSummarizedMsgIndexInSnapshot + 1);
+          recentMessagesToInclude = currentDisplayedMessagesSnapshot.slice(
+            lastSummarizedMsgIndexInSnapshot + 1,
+          );
         } else {
           // Last summary is older than anything in the current snapshot of displayed messages.
           // So, all messages in the snapshot are considered "recent" in this context.
@@ -674,8 +761,8 @@ export function useChatSessionManager(
         // No summaries yet, all messages in the snapshot are "recent".
         recentMessagesToInclude = currentDisplayedMessagesSnapshot;
       }
-      
-      recentMessagesToInclude.forEach(msg => {
+
+      recentMessagesToInclude.forEach((msg) => {
         // newUserMessage is already filtered out implicitly as it's not in currentDisplayedMessagesSnapshot
         messagesForApi.push({
           role: msg.role,
@@ -683,35 +770,50 @@ export function useChatSessionManager(
           attachments: msg.attachments,
         });
       });
-      
+
       // Add the new user message itself
       messagesForApi.push({
         role: newUserMessage.role,
         content: newUserMessage.visibleContent,
         attachments: newUserMessage.attachments,
       });
-      
+
       // ... (rest of sendNewQuery: create bot message placeholder, call ChatApiService.callLlmChat)
       // ... (Make sure the callbacks for onReasoningStart etc. are still correctly wired)
       let reasoningStartTimeForThisQuery: number | null = null;
       const botMessage = createMessage({
-        role: Role.ASSISTANT, content: "", reasoning: "", isReasoning: false, 
-        streaming: true, model: modelConfig.name, syncState: MessageSyncState.PENDING_CREATE,
+        role: Role.ASSISTANT,
+        content: "",
+        reasoning: "",
+        isReasoning: false,
+        streaming: true,
+        model: modelConfig.name,
+        syncState: MessageSyncState.PENDING_CREATE,
       });
       const localBotMessageId = botMessage.id;
       setDisplayedMessages((prev) => [...prev, botMessage]);
 
       ChatApiService.callLlmChat(apiClient, {
         messages: messagesForApi,
-        config: { ...modelConfig, stream: true, reasoning: modelConfig.reasoning, useSearch: newUserMessage.useSearch, customizedPrompts: customizedPrompts },
+        config: {
+          ...modelConfig,
+          stream: true,
+          reasoning: modelConfig.reasoning,
+          useSearch: newUserMessage.useSearch,
+          customizedPrompts: customizedPrompts,
+        },
         onReasoningStart: () => {
           reasoningStartTimeForThisQuery = Date.now();
           setDisplayedMessages((prev) =>
             prev.map((msg) =>
               msg.id === localBotMessageId
-                ? { ...msg, isReasoning: true, visibleReasoning: msg.reasoning || "" } 
-                : msg
-            )
+                ? {
+                    ...msg,
+                    isReasoning: true,
+                    visibleReasoning: msg.reasoning || "",
+                  }
+                : msg,
+            ),
           );
           callbacks?.onReasoningStart?.(localBotMessageId);
         },
@@ -719,9 +821,14 @@ export function useChatSessionManager(
           setDisplayedMessages((prev) =>
             prev.map((msg) =>
               msg.id === localBotMessageId
-                ? { ...msg, streaming: true, isReasoning: true, visibleReasoning: msg.reasoning || "" }
-                : msg
-            )
+                ? {
+                    ...msg,
+                    streaming: true,
+                    isReasoning: true,
+                    visibleReasoning: msg.reasoning || "",
+                  }
+                : msg,
+            ),
           );
           callbacks?.onReasoningChunk?.(localBotMessageId, chunk);
         },
@@ -733,8 +840,16 @@ export function useChatSessionManager(
           }
           setDisplayedMessages((prev) =>
             prev.map((msg) =>
-              msg.id === localBotMessageId ? { ...msg, isReasoning: false, reasoningTime: duration, visibleReasoning: msg.reasoning || "", content: EncryptionService.encrypt(msg.content || "") } : msg
-            )
+              msg.id === localBotMessageId
+                ? {
+                    ...msg,
+                    isReasoning: false,
+                    reasoningTime: duration,
+                    visibleReasoning: msg.reasoning || "",
+                    content: EncryptionService.encrypt(msg.content || ""),
+                  }
+                : msg,
+            ),
           );
           callbacks?.onReasoningEnd?.(localBotMessageId);
         },
@@ -742,37 +857,66 @@ export function useChatSessionManager(
           setDisplayedMessages((prev) =>
             prev.map((msg) =>
               msg.id === localBotMessageId
-                ? { ...msg, visibleContent: (msg.visibleContent || "") + chunk, streaming: true, isReasoning: false } 
-                : msg
-            )
+                ? {
+                    ...msg,
+                    visibleContent: (msg.visibleContent || "") + chunk,
+                    streaming: true,
+                    isReasoning: false,
+                  }
+                : msg,
+            ),
           );
           callbacks?.onContentChunk?.(localBotMessageId, chunk);
         },
-        onFinish(finalMainContent: string, timestamp: Date, response: Response) {
-          finalizeStreamedBotMessage(localBotMessageId, finalMainContent, new Date(timestamp));
-          callbacks?.onSuccess?.(localBotMessageId, finalMainContent, new Date(timestamp));
+        onFinish(
+          finalMainContent: string,
+          timestamp: Date,
+          response: Response,
+        ) {
+          finalizeStreamedBotMessage(
+            localBotMessageId,
+            finalMainContent,
+            new Date(timestamp),
+          );
+          callbacks?.onSuccess?.(
+            localBotMessageId,
+            finalMainContent,
+            new Date(timestamp),
+          );
           ChatControllerPool.remove(sessionId, localBotMessageId);
         },
         onError(error: Error) {
           console.log(`[useChatSessionManager] onError:`, error);
           if (error.name === "AbortError") {
-            console.log(`[useChatSessionManager] onError: AbortError. Ignoring.`);
+            console.log(
+              `[useChatSessionManager] onError: AbortError. Ignoring.`,
+            );
             let finalContent: string = "";
             setDisplayedMessages((prev) =>
               prev.map((msg) => {
                 if (msg.id === localBotMessageId) {
-                  console.log(`[useChatSessionManager] onError: Finalizing last bot message. ID: ${localBotMessageId}, Content: ${msg.content}`);
-                  finalizeStreamedBotMessage(localBotMessageId, msg.content as string, new Date());
-                  callbacks?.onSuccess?.(localBotMessageId, msg.content as string, new Date());
+                  console.log(
+                    `[useChatSessionManager] onError: Finalizing last bot message. ID: ${localBotMessageId}, Content: ${msg.content}`,
+                  );
+                  finalizeStreamedBotMessage(
+                    localBotMessageId,
+                    msg.content as string,
+                    new Date(),
+                  );
+                  callbacks?.onSuccess?.(
+                    localBotMessageId,
+                    msg.content as string,
+                    new Date(),
+                  );
                   finalContent = msg.content as string;
                 }
                 return msg;
-              })
+              }),
             );
 
             return;
           }
-          
+
           let duration = 0;
           if (reasoningStartTimeForThisQuery !== null) {
             duration = Date.now() - reasoningStartTimeForThisQuery;
@@ -781,36 +925,51 @@ export function useChatSessionManager(
           setDisplayedMessages((prev) =>
             prev.map((msg) =>
               msg.id === localBotMessageId
-                ? { 
-                    ...msg, 
-                    isError: true, 
-                    streaming: false, 
+                ? {
+                    ...msg,
+                    isError: true,
+                    streaming: false,
                     isReasoning: false,
-                    reasoningTime: duration, 
-                    content: (typeof msg.content === 'string' ? msg.content : "") + "\n\n--- ERROR ---\n" + error.message,
-                    syncState: MessageSyncState.ERROR 
+                    reasoningTime: duration,
+                    content:
+                      (typeof msg.content === "string" ? msg.content : "") +
+                      "\n\n--- ERROR ---\n" +
+                      error.message,
+                    syncState: MessageSyncState.ERROR,
                   }
-                : msg
-            )
+                : msg,
+            ),
           );
           ChatControllerPool.remove(sessionId, localBotMessageId);
           callbacks?.onFailure?.(error);
         },
         onController(controller: AbortController) {
-          ChatControllerPool.addController(sessionId,localBotMessageId,controller);
+          ChatControllerPool.addController(
+            sessionId,
+            localBotMessageId,
+            controller,
+          );
           callbacks?.onController?.(controller);
-        }
+        },
       });
     },
     // Removed store.sessions from dependencies, added local summary states
-    [apiClient, sessionId, modelConfig, localSummaries, localLastSummarizedMessageId, appConfig.customizedPrompts, finalizeStreamedBotMessage] 
+    [
+      apiClient,
+      sessionId,
+      modelConfig,
+      localSummaries,
+      localLastSummarizedMessageId,
+      appConfig.customizedPrompts,
+      finalizeStreamedBotMessage,
+    ],
   );
 
   const markMessageAsError = useCallback(
     (messageId: string, errorInfo?: any) => {
       console.log(
         `[useChatSessionManager] Marking message ID ${messageId} as error. Error:`,
-        errorInfo
+        errorInfo,
       );
       setDisplayedMessages((prev) =>
         prev.map((msg) =>
@@ -824,11 +983,11 @@ export function useChatSessionManager(
                   `\n\n--- ERROR ---\n${errorInfo?.message || "Unknown error"}`,
                 syncState: MessageSyncState.ERROR,
               }
-            : msg
-        )
+            : msg,
+        ),
       );
     },
-    []
+    [],
   );
 
   const clearMessages = useCallback(
@@ -837,26 +996,34 @@ export function useChatSessionManager(
         "[useChatSessionManager] Clearing messages from:",
         fromMessageId,
         "messages:",
-        displayedMessages.map((m) => m.id)
+        displayedMessages.map((m) => m.id),
       );
       const clearIndex = displayedMessages.findIndex(
-        (msg) => msg.id === fromMessageId
+        (msg) => msg.id === fromMessageId,
       );
       if (clearIndex === -1) {
         console.error(
           "[useChatSessionManager] clearMessages: Could not find message to clear after:",
           fromMessageId,
           "messages:",
-          displayedMessages.map((m) => m.id)
+          displayedMessages.map((m) => m.id),
         );
         return;
       }
-      const messageIdsToRemove = displayedMessages.slice(clearIndex).map(msg => msg.id);
-      await apiClient.app.deleteMessages(sessionId, messageIdsToRemove).then(response => {
-        console.log("[useChatSessionManager] deleteMessages response:", response);
-      }).catch(error => {
-        console.error("[useChatSessionManager] deleteMessages error:", error);
-      });
+      const messageIdsToRemove = displayedMessages
+        .slice(clearIndex)
+        .map((msg) => msg.id);
+      await apiClient.app
+        .deleteMessages(sessionId, messageIdsToRemove)
+        .then((response) => {
+          console.log(
+            "[useChatSessionManager] deleteMessages response:",
+            response,
+          );
+        })
+        .catch((error) => {
+          console.error("[useChatSessionManager] deleteMessages error:", error);
+        });
 
       if (clearIndex > 0) {
         setDisplayedMessages((prev) => prev.slice(0, clearIndex));
@@ -864,7 +1031,7 @@ export function useChatSessionManager(
         setDisplayedMessages([]);
       }
     },
-    [apiClient, sessionId, displayedMessages]
+    [apiClient, sessionId, displayedMessages],
   );
 
   return {

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 interface FormattedDateProps {
   date: Date;
@@ -22,4 +22,4 @@ export function FormattedDate({ date, options }: FormattedDateProps) {
   // Render null initially (or a placeholder) to match server render
   // Then render the formatted date once the effect runs on the client
   return <>{formattedDate}</>;
-} 
+}

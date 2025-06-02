@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { TextField, Button, Box } from '@mui/material';
-import SendIcon from '@mui/icons-material/Send';
-import CancelIcon from '@mui/icons-material/Cancel';
-import Locale from '@/locales'; // Assuming Locale is accessible
+import React, { useState, useEffect } from "react";
+import { TextField, Button, Box } from "@mui/material";
+import SendIcon from "@mui/icons-material/Send";
+import CancelIcon from "@mui/icons-material/Cancel";
+import Locale from "@/locales"; // Assuming Locale is accessible
 
 interface EditMessageFormProps {
   initialText: string;
@@ -28,7 +28,7 @@ export const EditMessageForm: React.FC<EditMessageFormProps> = ({
   const handleConfirmClick = () => {
     if (editedText.trim() === initialText.trim() || editedText.trim() === "") {
       // If text is unchanged or empty, treat as cancel or do nothing, then cancel.
-      onCancel(); 
+      onCancel();
       return;
     }
     onConfirm(editedText);

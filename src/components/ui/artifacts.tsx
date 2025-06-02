@@ -12,19 +12,19 @@ import { nanoid } from "nanoid";
 import Locale from "@/locales";
 import { copyToClipboard, downloadAs } from "@/utils/utils";
 import { Path, REPO_URL } from "@/types/constant";
-import MuiIconButton from '@mui/material/IconButton';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
-import Button from '@mui/material/Button';
-import CircularProgress from '@mui/material/CircularProgress';
-import ShareIcon from '@mui/icons-material/Share';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import DownloadIcon from '@mui/icons-material/Download';
-import GitHubIcon from '@mui/icons-material/GitHub';
-import ReplayIcon from '@mui/icons-material/Replay';
+import MuiIconButton from "@mui/material/IconButton";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogTitle from "@mui/material/DialogTitle";
+import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
+import ShareIcon from "@mui/icons-material/Share";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import DownloadIcon from "@mui/icons-material/Download";
+import GitHubIcon from "@mui/icons-material/GitHub";
+import ReplayIcon from "@mui/icons-material/Replay";
 import styles from "./artifacts.module.scss";
 
 type HTMLPreviewProps = {
@@ -146,7 +146,7 @@ export function ArtifactsShareButton({
       <Dialog open={showDialog} onClose={handleCloseDialog}>
         <DialogTitle>{Locale.Export.Artifacts.Title}</DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ wordBreak: 'break-all' }}>
+          <DialogContentText sx={{ wordBreak: "break-all" }}>
             <a target="_blank" rel="noopener noreferrer" href={shareUrl}>
               {shareUrl}
             </a>
@@ -184,7 +184,7 @@ export function Artifacts() {
     <div className={styles["artifacts"]}>
       <div className={styles["artifacts-header"]}>
         <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
-          <MuiIconButton 
+          <MuiIconButton
             aria-label="GitHub Repository"
             href={REPO_URL}
             target="_blank"
@@ -208,7 +208,11 @@ export function Artifacts() {
         />
       </div>
       <div className={styles["artifacts-content"]}>
-        {loading && <div className={styles["loading-container"]}><CircularProgress /></div>}
+        {loading && (
+          <div className={styles["loading-container"]}>
+            <CircularProgress />
+          </div>
+        )}
         {code && !loading && (
           <HTMLPreview
             code={code}

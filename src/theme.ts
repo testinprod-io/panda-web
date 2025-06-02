@@ -1,12 +1,12 @@
-import { createTheme } from '@mui/material/styles';
+import { createTheme } from "@mui/material/styles";
 
 const theme = createTheme({
   transitions: {
     easing: {
-      easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
-      easeOut: 'cubic-bezier(0.0, 0, 0.2, 1)',
-      easeIn: 'cubic-bezier(0.4, 0, 1, 1)',
-      sharp: 'cubic-bezier(0.4, 0, 0.6, 1)',
+      easeInOut: "cubic-bezier(0.4, 0, 0.2, 1)",
+      easeOut: "cubic-bezier(0.0, 0, 0.2, 1)",
+      easeIn: "cubic-bezier(0.4, 0, 1, 1)",
+      sharp: "cubic-bezier(0.4, 0, 0.6, 1)",
     },
     duration: {
       shortest: 150,
@@ -19,26 +19,26 @@ const theme = createTheme({
     },
   },
   palette: {
-    mode: 'light',
+    mode: "light",
     primary: {
-      main: '#10a37f',
+      main: "#10a37f",
     },
     background: {
-      default: '#ffffff',
-      paper: '#f7f7f8',
+      default: "#ffffff",
+      paper: "#f7f7f8",
     },
     action: {
       hoverOpacity: 0,
     },
   },
   typography: {
-    fontFamily: 'Inter, system-ui, sans-serif',
+    fontFamily: "Inter, system-ui, sans-serif",
   },
   components: {
     MuiButton: {
       styleOverrides: {
         root: {
-          textTransform: 'none',
+          textTransform: "none",
         },
       },
     },
@@ -50,13 +50,13 @@ const theme = createTheme({
     MuiTooltip: {
       styleOverrides: {
         tooltip: {
-          backgroundColor: '#131A28',
-          color: '#F3F3F3',
-          border: '1px solid #dadde9',
+          backgroundColor: "#131A28",
+          color: "#F3F3F3",
+          border: "1px solid #dadde9",
         },
       },
     },
   },
 });
 
-export default theme; 
+export default theme;

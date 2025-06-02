@@ -7,7 +7,7 @@ import {
   ServiceProvider,
 } from "../types/constant";
 import { ModelSize } from "@/types";
-import { ModelConfig } from '@/types/constant';
+import { ModelConfig } from "@/types/constant";
 
 export function trimTopic(topic: string) {
   // Fix an issue where double quotes still show in the Indonesian language
@@ -22,11 +22,14 @@ export function trimTopic(topic: string) {
 }
 
 // Helper function to safely call the global snackbar
-export function safeShowSnackbar(message: string, severity?: import('@mui/material/Alert').AlertColor) {
-  if (typeof window !== 'undefined' && window.showSnackbar) {
+export function safeShowSnackbar(
+  message: string,
+  severity?: import("@mui/material/Alert").AlertColor,
+) {
+  if (typeof window !== "undefined" && window.showSnackbar) {
     window.showSnackbar(message, severity);
   } else {
-    console.warn('Snackbar function not available on window:', message);
+    console.warn("Snackbar function not available on window:", message);
     // Fallback or alternative logging if needed
   }
 }
@@ -39,7 +42,7 @@ export async function copyToClipboard(text: string) {
       await navigator.clipboard.writeText(text);
     }
 
-    safeShowSnackbar(Locale.Copy.Success, 'success');
+    safeShowSnackbar(Locale.Copy.Success, "success");
   } catch (error) {
     const textArea = document.createElement("textarea");
     textArea.value = text;
@@ -48,9 +51,9 @@ export async function copyToClipboard(text: string) {
     textArea.select();
     try {
       document.execCommand("copy");
-      safeShowSnackbar(Locale.Copy.Success, 'success');
+      safeShowSnackbar(Locale.Copy.Success, "success");
     } catch (error) {
-      safeShowSnackbar(Locale.Copy.Failed, 'error');
+      safeShowSnackbar(Locale.Copy.Failed, "error");
     }
     document.body.removeChild(textArea);
   }
@@ -75,12 +78,12 @@ export async function downloadAs(text: string, filename: string) {
     if (result !== null) {
       try {
         await window.__TAURI__.fs.writeTextFile(result, text);
-        safeShowSnackbar(Locale.Download.Success, 'success');
+        safeShowSnackbar(Locale.Download.Success, "success");
       } catch (error) {
-        safeShowSnackbar(Locale.Download.Failed, 'error');
+        safeShowSnackbar(Locale.Download.Failed, "error");
       }
     } else {
-      safeShowSnackbar(Locale.Download.Failed, 'error');
+      safeShowSnackbar(Locale.Download.Failed, "error");
     }
   } else {
     const element = document.createElement("a");
@@ -132,7 +135,7 @@ export function useWindowSize() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    
+
     const onResize = () => {
       setSize({
         width: window.innerWidth,
@@ -166,7 +169,7 @@ export function isFirefox() {
 
 export function selectOrCopy(el: HTMLElement, content: string) {
   if (typeof window === "undefined") return false;
-  
+
   const currentSelection = window.getSelection();
 
   if (currentSelection?.type === "Range") {
@@ -260,20 +263,27 @@ export function getMessageTextContentWithoutThinking(message: RequestMessage) {
 }
 
 export function getMessageImages(message: RequestMessage): string[] {
-  return message.attachments?.filter(a => a.type === "image_url")?.map(a => a.image_url?.url ?? "") ?? [];
+  return (
+    message.attachments
+      ?.filter((a) => a.type === "image_url")
+      ?.map((a) => a.image_url?.url ?? "") ?? []
+  );
 }
 
 export function isVisionModel(modelConfig: ModelConfig | undefined) {
-  return modelConfig?.name === "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16";
-//   const visionModels = useAccessStore.getState().visionModels;
-//   const envVisionModels = visionModels?.split(",").map((m) => m.trim());
-//   if (envVisionModels?.includes(model)) {
-//     return true;
-//   }
-//   return (
-//     !EXCLUDE_VISION_MODEL_REGEXES.some((regex) => regex.test(model)) &&
-//     VISION_MODEL_REGEXES.some((regex) => regex.test(model))
-//   );
+  return (
+    modelConfig?.name ===
+    "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16"
+  );
+  //   const visionModels = useAccessStore.getState().visionModels;
+  //   const envVisionModels = visionModels?.split(",").map((m) => m.trim());
+  //   if (envVisionModels?.includes(model)) {
+  //     return true;
+  //   }
+  //   return (
+  //     !EXCLUDE_VISION_MODEL_REGEXES.some((regex) => regex.test(model)) &&
+  //     VISION_MODEL_REGEXES.some((regex) => regex.test(model))
+  //   );
 }
 
 export function isDalle3(model: string) {
@@ -320,7 +330,7 @@ export function showPlugins(provider: ServiceProvider, model: string) {
   // if (provider == ServiceProvider.OpenAI ) {
   //   return true;
   // }
-  
+
   return false;
 }
 
@@ -405,17 +415,17 @@ export function clientUpdate() {
         window.__TAURI__?.updater
           .installUpdate()
           .then((result) => {
-            safeShowSnackbar(Locale.Settings.Update.Success, 'success');
+            safeShowSnackbar(Locale.Settings.Update.Success, "success");
           })
           .catch((e) => {
             console.error("[Install Update Error]", e);
-            safeShowSnackbar(Locale.Settings.Update.Failed, 'error');
+            safeShowSnackbar(Locale.Settings.Update.Failed, "error");
           });
       }
     })
     .catch((e) => {
       console.error("[Check Update Error]", e);
-      safeShowSnackbar(Locale.Settings.Update.Failed, 'error');
+      safeShowSnackbar(Locale.Settings.Update.Failed, "error");
     });
 }
 

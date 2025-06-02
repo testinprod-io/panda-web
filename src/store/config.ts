@@ -29,13 +29,17 @@ export enum Theme {
   Light = "light",
 }
 
-const defaultModelDefinition = 
-  DEFAULT_MODELS.find(m => m.name === DEFAULT_PANDA_MODEL_NAME && m.available) || 
-  DEFAULT_MODELS.find(m => m.available) || 
+const defaultModelDefinition =
+  DEFAULT_MODELS.find(
+    (m) => m.name === DEFAULT_PANDA_MODEL_NAME && m.available,
+  ) ||
+  DEFAULT_MODELS.find((m) => m.available) ||
   DEFAULT_MODELS[0];
 
 if (!defaultModelDefinition) {
-  throw new Error("No default model definition found in DEFAULT_MODELS. Ensure app/constant.ts is configured.");
+  throw new Error(
+    "No default model definition found in DEFAULT_MODELS. Ensure app/constant.ts is configured.",
+  );
 }
 
 export const DEFAULT_CONFIG = {
@@ -65,13 +69,14 @@ export const DEFAULT_CONFIG = {
   modelConfig: {
     ...defaultModelDefinition.config,
     model: defaultModelDefinition.name as ModelType,
-    providerName: defaultModelDefinition.provider.providerName as ServiceProvider,
+    providerName: defaultModelDefinition.provider
+      .providerName as ServiceProvider,
   },
 
   customizedPrompts: {
     enabled: false,
-    personal_info: { name: '', job: '' },
-    prompts: { traits: '', extra_params: '' },
+    personal_info: { name: "", job: "" },
+    prompts: { traits: "", extra_params: "" },
   } as CustomizedPromptsData,
 };
 
@@ -112,15 +117,17 @@ export const ModalConfigValidator = {
 };
 
 export const useAppConfig = createPersistStore(
-  DEFAULT_CONFIG ,
+  DEFAULT_CONFIG,
   (set, get) => ({
     reset() {
       // When resetting, ensure it uses the potentially updated DEFAULT_CONFIG from constants
-      const currentDefaultModel = 
-        DEFAULT_MODELS.find(m => m.name === DEFAULT_PANDA_MODEL_NAME && m.available) || 
-        DEFAULT_MODELS.find(m => m.available) || 
+      const currentDefaultModel =
+        DEFAULT_MODELS.find(
+          (m) => m.name === DEFAULT_PANDA_MODEL_NAME && m.available,
+        ) ||
+        DEFAULT_MODELS.find((m) => m.available) ||
         DEFAULT_MODELS[0];
-      
+
       if (!currentDefaultModel) {
         throw new Error("Failed to find a default model on reset.");
       }
@@ -132,22 +139,31 @@ export const useAppConfig = createPersistStore(
         modelConfig: {
           ...currentDefaultModel.config,
           model: currentDefaultModel.name as ModelType,
-          providerName: currentDefaultModel.provider.providerName as ServiceProvider,
+          providerName: currentDefaultModel.provider
+            .providerName as ServiceProvider,
         },
       }));
     },
 
     setApiProvider(modelName: ModelType) {
-      console.log("[AppConfigStore] setApiProvider called with:", { modelName });
+      console.log("[AppConfigStore] setApiProvider called with:", {
+        modelName,
+      });
       const models = get().models;
-      const selectedModelDetail = models.find(
-        (m) => m.name === modelName,
-      );
+      const selectedModelDetail = models.find((m) => m.name === modelName);
 
       if (selectedModelDetail) {
-        console.log("[AppConfigStore] setApiProvider - model found:", { selectedModelDetail });
-        set(state => {
-          console.log("[AppConfigStore] setApiProvider - setting new state with modelConfig:", { modelConfig: selectedModelDetail.config, modelName: selectedModelDetail.name });
+        console.log("[AppConfigStore] setApiProvider - model found:", {
+          selectedModelDetail,
+        });
+        set((state) => {
+          console.log(
+            "[AppConfigStore] setApiProvider - setting new state with modelConfig:",
+            {
+              modelConfig: selectedModelDetail.config,
+              modelName: selectedModelDetail.name,
+            },
+          );
           return {
             ...state,
             modelConfig: {
@@ -157,13 +173,20 @@ export const useAppConfig = createPersistStore(
             },
           };
         });
-        
+
         // Update the current chat session to use the selected model's specific config
         // selectedModelDetail.config is (ModelConfig from app/constant.ts)
-        console.log("[AppConfigStore] setApiProvider - updating current chat session model with:", selectedModelDetail.config);
-        useChatStore.getState().updateCurrentSessionModel(selectedModelDetail.config);
+        console.log(
+          "[AppConfigStore] setApiProvider - updating current chat session model with:",
+          selectedModelDetail.config,
+        );
+        useChatStore
+          .getState()
+          .updateCurrentSessionModel(selectedModelDetail.config);
       } else {
-        console.warn(`[AppConfigStore] setApiProvider - Model ${modelName} with provider Panda not found. Cannot set API provider.`);
+        console.warn(
+          `[AppConfigStore] setApiProvider - Model ${modelName} with provider Panda not found. Cannot set API provider.`,
+        );
       }
     },
 
@@ -173,44 +196,60 @@ export const useAppConfig = createPersistStore(
       }));
     },
 
-    mergeModels(newModels: LLMModel[]) { 
+    mergeModels(newModels: LLMModel[]) {
       console.log("[AppConfigStore] mergeModels called with:", { newModels });
-      const oldModels = get().models; 
+      const oldModels = get().models;
       console.log("[AppConfigStore] mergeModels - old models:", { oldModels });
-      const modelMap: Record<string, AppModelDefinition> = {}; 
+      const modelMap: Record<string, AppModelDefinition> = {};
 
       for (const model of oldModels) {
-        model.available = false; 
+        model.available = false;
         modelMap[`${model.name}@${model.provider.id}`] = model;
       }
-      console.log("[AppConfigStore] mergeModels - initial modelMap (all set to unavailable):", { modelMap: { ...modelMap } });
+      console.log(
+        "[AppConfigStore] mergeModels - initial modelMap (all set to unavailable):",
+        { modelMap: { ...modelMap } },
+      );
 
       for (const newModel of newModels) {
         // Assuming newModels from API will also have provider.id = 'panda'
         const key = `${newModel.name}@${newModel.provider.id}`;
         if (modelMap[key]) {
-          console.log(`[AppConfigStore] mergeModels - updating existing model: ${key}`, { newModelData: newModel });
-          modelMap[key].available = newModel.available; 
-          if (newModel.displayName) modelMap[key].displayName = newModel.displayName;
+          console.log(
+            `[AppConfigStore] mergeModels - updating existing model: ${key}`,
+            { newModelData: newModel },
+          );
+          modelMap[key].available = newModel.available;
+          if (newModel.displayName)
+            modelMap[key].displayName = newModel.displayName;
         } else {
           // If API returns a Panda model not in our predefined list, how to handle?
           // For now, we only update availability of predefined models.
-          console.warn(`[AppConfigStore] mergeModels - New model ${newModel.name} from Panda API not in predefined app/constant.ts models. It will be ignored for now.`, { newModel });
+          console.warn(
+            `[AppConfigStore] mergeModels - New model ${newModel.name} from Panda API not in predefined app/constant.ts models. It will be ignored for now.`,
+            { newModel },
+          );
           // To truly support dynamic models from Panda backend not in constants, we'd need a default AppModelDefinition structure here.
         }
       }
-      console.log("[AppConfigStore] mergeModels - final modelMap before setting state:", { modelMap: { ...modelMap } });
+      console.log(
+        "[AppConfigStore] mergeModels - final modelMap before setting state:",
+        { modelMap: { ...modelMap } },
+      );
 
       set(() => {
         const updatedModels = Object.values(modelMap);
-        console.log("[AppConfigStore] mergeModels - setting new models state:", { updatedModels });
+        console.log(
+          "[AppConfigStore] mergeModels - setting new models state:",
+          { updatedModels },
+        );
         return {
           models: updatedModels,
         };
       });
     },
 
-    allModels() { 
+    allModels() {
       return get().models;
     },
   }),
@@ -220,4 +259,3 @@ export const useAppConfig = createPersistStore(
     storage: createJSONStorage(() => indexedDBStorage),
   },
 );
-

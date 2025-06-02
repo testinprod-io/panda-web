@@ -16,9 +16,12 @@ import { MessageActionsBar } from "../ui/message-actions-bar";
 import { ReasoningDisplay } from "../ui/reasoning-display";
 import { EditMessageForm } from "../ui/edit-message-form";
 
-const Markdown = dynamic(async () => (await import("../ui/markdown")).Markdown, {
-  loading: () => <LoadingAnimation />,
-});
+const Markdown = dynamic(
+  async () => (await import("../ui/markdown")).Markdown,
+  {
+    loading: () => <LoadingAnimation />,
+  },
+);
 
 interface ChatMessageCellProps {
   sessionId: UUID;
@@ -36,7 +39,7 @@ interface ChatMessageCellProps {
 }
 
 export const ChatMessageCell = React.memo(function ChatMessageCell(
-  props: ChatMessageCellProps
+  props: ChatMessageCellProps,
 ) {
   const {
     sessionId,
@@ -53,8 +56,16 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     onEditSubmit,
   } = props;
 
-  const { role, streaming, isError, isReasoning, files, visibleContent: content, visibleReasoning: reasoning, reasoningTime } =
-    message;
+  const {
+    role,
+    streaming,
+    isError,
+    isReasoning,
+    files,
+    visibleContent: content,
+    visibleReasoning: reasoning,
+    reasoningTime,
+  } = message;
   const { isLocked } = useEncryption();
   const apiClient = useApiClient();
 
@@ -62,7 +73,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
 
   const handleResend = useCallback(
     () => onResend(messageId),
-    [onResend, messageId]
+    [onResend, messageId],
   );
 
   const [isEditing, setIsEditing] = useState(false);
@@ -77,14 +88,17 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     setIsEditing(false);
   }, []);
 
-  const handleEditConfirm = useCallback((newText: string) => {
-    if (typeof content !== 'string') { 
+  const handleEditConfirm = useCallback(
+    (newText: string) => {
+      if (typeof content !== "string") {
+        setIsEditing(false);
+        return;
+      }
+      onEditSubmit(messageId, newText);
       setIsEditing(false);
-      return; 
-    }
-    onEditSubmit(messageId, newText);
-    setIsEditing(false);
-  }, [messageId, content, onEditSubmit]);
+    },
+    [messageId, content, onEditSubmit],
+  );
 
   if (isError) {
     return (
@@ -103,7 +117,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
           <div
             className={clsx(
               styles["chat-message-item"],
-              styles["chat-message-error-bubble"]
+              styles["chat-message-error-bubble"],
             )}
           >
             <div className={styles["chat-message-error-content-inner"]}>
@@ -129,7 +143,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
         styles["chat-message"],
         isUser && styles["chat-message-user"],
         !isUser && styles["chat-message-system"],
-        (streaming || isReasoning) && styles["chat-message-streaming"]
+        (streaming || isReasoning) && styles["chat-message-streaming"],
       )}
     >
       <Box
@@ -153,24 +167,21 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
         <div className={styles["chat-message-header"]}>
           {!isUser && (
             <div className={styles["chat-message-avatar"]}>
-              <img
-                src="/icons/panda.svg"
-                alt="Panda"
-              />
+              <img src="/icons/panda.svg" alt="Panda" />
             </div>
           )}
 
           {showActions && !isEditing && !(streaming || isReasoning) && (
-            <MessageActionsBar 
+            <MessageActionsBar
               isUser={isUser}
               isChatLoading={isChatLoading}
               messageContent={content}
               reasoningText={reasoning}
-              onResend={handleResend} 
+              onResend={handleResend}
             />
           )}
         </div>
-        
+
         {loadedFiles.length > 0 && (
           <Box
             sx={{
@@ -190,18 +201,18 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
 
         <Box className={styles["chat-message-item"]}>
           {shouldShowReasoning && (
-            <ReasoningDisplay 
+            <ReasoningDisplay
               reasoning={reasoning}
               isReasoningInProgress={isReasoning || false}
               reasoningTime={reasoningTime}
-              fontSize={fontSize} 
+              fontSize={fontSize}
               fontFamily={fontFamily}
               scrollRef={scrollRef}
             />
           )}
 
           {isEditing && isUser ? (
-            <EditMessageForm 
+            <EditMessageForm
               initialText={content as string}
               isChatLoading={isChatLoading}
               onConfirm={handleEditConfirm}
@@ -213,7 +224,9 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                 <Markdown
                   key={`${messageId}-${streaming ? "streaming" : "done"}-${isReasoning ? "reasoning" : "content"}`}
                   content={content as string}
-                  loading={streaming && !isUser && content.length === 0 && !isReasoning}
+                  loading={
+                    streaming && !isUser && content.length === 0 && !isReasoning
+                  }
                   fontSize={fontSize}
                   fontFamily={fontFamily}
                   parentRef={scrollRef as React.RefObject<HTMLDivElement>}

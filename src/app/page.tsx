@@ -15,7 +15,7 @@ export default function NewChatPage() {
       }}
     >
       <img
-        style={{ width: '9.26vh', height: '9.26vh' }}
+        style={{ width: "9.26vh", height: "9.26vh" }}
         src="/icons/panda.svg"
         alt="Panda AI Logo"
       />

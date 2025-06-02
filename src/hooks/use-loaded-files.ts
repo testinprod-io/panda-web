@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { UUID } from 'crypto';
-import { FileInfo } from '@/client/types'; // Corrected type for messageFiles elements
-import { ClientApi } from '@/client/api'; // Corrected: apiClient is of type ClientApi
-import { EncryptionService } from '@/services/encryption-service';
+import { useState, useEffect, useMemo, useRef } from "react";
+import { UUID } from "crypto";
+import { FileInfo } from "@/client/types"; // Corrected type for messageFiles elements
+import { ClientApi } from "@/client/api"; // Corrected: apiClient is of type ClientApi
+import { EncryptionService } from "@/services/encryption-service";
 
 export interface LoadedFile {
   id: UUID;
@@ -17,30 +17,38 @@ export interface LoadedFile {
 export function useLoadedFiles(
   messageFiles: FileInfo[], // Updated type
   sessionId: UUID,
-  apiClient: ClientApi,    // Updated type to ClientApi
-  isLocked: boolean
+  apiClient: ClientApi, // Updated type to ClientApi
+  isLocked: boolean,
 ): LoadedFile[] {
   const [loadedFiles, setLoadedFiles] = useState<LoadedFile[]>([]);
 
   // Create a stable dependency based on the content of messageFiles
-  const filesDep = useMemo(() => 
-    JSON.stringify(
-      (messageFiles || [])
-        .map(f => ({ id: f.file_id, name: f.file_name }))
-        .sort((a, b) => (a.id && b.id ? a.id.localeCompare(b.id) : 0)) // Sort by ID to ensure canonical string
-    ),
-  [messageFiles]);
+  const filesDep = useMemo(
+    () =>
+      JSON.stringify(
+        (messageFiles || [])
+          .map((f) => ({ id: f.file_id, name: f.file_name }))
+          .sort((a, b) => (a.id && b.id ? a.id.localeCompare(b.id) : 0)), // Sort by ID to ensure canonical string
+      ),
+    [messageFiles],
+  );
 
   // Extract the specific function to be used in the effect's dependency array
   // This helps if apiClient object reference changes but apiClient.app.getFile function reference is stable.
   const getFileFunction = apiClient.app.getFile;
 
   // Ref to store previous dependencies for logging
-  const prevDepsRef = useRef<{ filesDep?: string, sessionId?: UUID, getFileFunction?: any, isLocked?: boolean }>({});
+  const prevDepsRef = useRef<{
+    filesDep?: string;
+    sessionId?: UUID;
+    getFileFunction?: any;
+    isLocked?: boolean;
+  }>({});
 
   useEffect(() => {
     // Log if dependencies have changed since the last run
-    if (prevDepsRef.current.filesDep !== undefined) { // Avoid logging on the very first run
+    if (prevDepsRef.current.filesDep !== undefined) {
+      // Avoid logging on the very first run
       let changed = false;
       if (prevDepsRef.current.filesDep !== filesDep) {
         // console.warn("[useLoadedFiles] Dependency changed: filesDep");
@@ -68,14 +76,14 @@ export function useLoadedFiles(
     let didCancel = false;
     const currentBlobUrls = new Set<string>();
 
-    // Parse back messageFiles from filesDep for use in this effect run, 
+    // Parse back messageFiles from filesDep for use in this effect run,
     // or better, rely on the messageFiles prop directly as it's what filesDep is derived from.
     // The key is that the effect *runs* based on filesDep changing.
     const currentMessageFiles = messageFiles || []; // Use the prop directly inside the effect
 
     if (currentMessageFiles.length === 0) {
       setLoadedFiles([]);
-      return; 
+      return;
     }
 
     const initialLoadingStates = currentMessageFiles.map((file) => ({
@@ -88,12 +96,13 @@ export function useLoadedFiles(
       originalType: file.file_type,
     }));
     if (!didCancel) {
-        setLoadedFiles(initialLoadingStates);
+      setLoadedFiles(initialLoadingStates);
     }
 
     if (isLocked) {
       if (!didCancel) {
-        setLoadedFiles(currentMessageFiles.map((file) => ({
+        setLoadedFiles(
+          currentMessageFiles.map((file) => ({
             id: file.file_id as UUID,
             name: file.file_name,
             type: "other",
@@ -101,20 +110,27 @@ export function useLoadedFiles(
             isLoading: false,
             error: "Cannot decrypt file: App is locked",
             originalType: file.file_type,
-        })));
+          })),
+        );
       }
-      return; 
+      return;
     }
 
-    const fetchAndProcessSingleFile = async (fileInfo: FileInfo): Promise<LoadedFile> => {
+    const fetchAndProcessSingleFile = async (
+      fileInfo: FileInfo,
+    ): Promise<LoadedFile> => {
       try {
         // Use the extracted getFileFunction here
-        const response = await apiClient.app.getFile(sessionId, fileInfo.file_id as UUID);
+        const response = await apiClient.app.getFile(
+          sessionId,
+          fileInfo.file_id as UUID,
+        );
         if (!response) {
           throw new Error("File response is undefined");
         }
 
-        const contentType = response.headers.get("Content-Type") || "application/octet-stream";
+        const contentType =
+          response.headers.get("Content-Type") || "application/octet-stream";
         const contentDisposition = response.headers.get("Content-Disposition");
         let fileName = fileInfo.file_name;
 
@@ -124,7 +140,7 @@ export function useLoadedFiles(
             fileName = match[1];
           }
         }
-        
+
         const reader = response.body?.getReader();
         if (!reader) {
           throw new Error("ReadableStream not available");
@@ -148,15 +164,20 @@ export function useLoadedFiles(
             decryptedFileName = EncryptionService.decrypt(fileInfo.file_name);
           } catch (decryptionError) {
             // console.error("Error decrypting file:", fileInfo.file_id, decryptionError); // Keep console for debug if needed
-            return { 
-              id: fileInfo.file_id as UUID, name: fileName, type: "other", url: "", 
-              isLoading: false, error: "Decryption failed", originalType: contentType 
+            return {
+              id: fileInfo.file_id as UUID,
+              name: fileName,
+              type: "other",
+              url: "",
+              isLoading: false,
+              error: "Decryption failed",
+              originalType: contentType,
             };
           }
         }
 
         const url = URL.createObjectURL(fileToProcess);
-        if (!didCancel) currentBlobUrls.add(url); 
+        if (!didCancel) currentBlobUrls.add(url);
 
         return {
           id: fileInfo.file_id as UUID,
@@ -181,21 +202,24 @@ export function useLoadedFiles(
     };
 
     const processAllFiles = async () => {
-      const results = await Promise.all(currentMessageFiles.map(fetchAndProcessSingleFile));
+      const results = await Promise.all(
+        currentMessageFiles.map(fetchAndProcessSingleFile),
+      );
       if (!didCancel) {
         setLoadedFiles(results);
       }
     };
 
-    if (!didCancel) { // Check didCancel before starting async operation
-        processAllFiles();
+    if (!didCancel) {
+      // Check didCancel before starting async operation
+      processAllFiles();
     }
 
     return () => {
       didCancel = true;
-      currentBlobUrls.forEach(url => URL.revokeObjectURL(url));
+      currentBlobUrls.forEach((url) => URL.revokeObjectURL(url));
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filesDep, sessionId, getFileFunction, isLocked]);
 
   return loadedFiles;

@@ -24,7 +24,7 @@ interface EncryptionContextType {
 }
 
 const EncryptionContext = createContext<EncryptionContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export function useEncryption(): EncryptionContextType {
@@ -79,7 +79,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     return () =>
       window.removeEventListener(
         "unhandledrejection",
-        handleUnhandledRejection
+        handleUnhandledRejection,
       );
   }, []);
 
@@ -91,14 +91,14 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         if (verificationToken.encrypted_id) {
           setIsFirstTimeUser(false);
           console.log(
-            "[EncryptionProvider] Verification token found. Existing user."
+            "[EncryptionProvider] Verification token found. Existing user.",
           );
           return;
         }
       } catch (error) {
         console.error(
           "[EncryptionProvider] Error verifying first time user:",
-          error
+          error,
         );
       }
       setIsFirstTimeUser(true);
@@ -114,7 +114,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     if (!isLocked) {
       inactivityTimerRef.current = setTimeout(() => {
         console.log(
-          "[EncryptionProvider] Inactivity timeout reached. Locking app."
+          "[EncryptionProvider] Inactivity timeout reached. Locking app.",
         );
         lockApp();
       }, INACTIVITY_TIMEOUT_MS);
@@ -159,7 +159,14 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         }
 
         const verificationToken = await apiClient.app.getEncryptedId();
-        if (verificationToken && await EncryptionService.verifyKey(verificationToken.encrypted_id, user?.id, password)) {
+        if (
+          verificationToken &&
+          (await EncryptionService.verifyKey(
+            verificationToken.encrypted_id,
+            user?.id,
+            password,
+          ))
+        ) {
           EncryptionService.setKeyFromPassword(password); // Sets the key for active use
           handleUnlockSuccess();
           return true;
@@ -175,7 +182,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         return false;
       }
     },
-    [apiClient, user?.id, handleUnlockSuccess, handleEncryptionError]
+    [apiClient, user?.id, handleUnlockSuccess, handleEncryptionError],
   ); // Removed isFirstTimeUser from deps if it was there implicitly
 
   // Handler for password creation
@@ -195,12 +202,12 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         setIsFirstTimeUser(false); // No longer a first-time user
         handleUnlockSuccess(); // Unlock the app
         console.log(
-          "[EncryptionProvider] New password created and app unlocked."
+          "[EncryptionProvider] New password created and app unlocked.",
         );
       } catch (error) {
         console.error(
           "[EncryptionProvider] Error during password creation:",
-          error
+          error,
         );
         if (error instanceof Error) {
           handleEncryptionError(error);
@@ -209,7 +216,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         setIsLocked(true);
       }
     },
-    [apiClient, user?.id, handleUnlockSuccess, handleEncryptionError]
+    [apiClient, user?.id, handleUnlockSuccess, handleEncryptionError],
   );
 
   // Set up global event listeners to reset the timer on user activity
@@ -266,7 +273,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
               onCreateSubmit={handleCreatePassword}
               onClose={() => {
                 console.log(
-                  "[EncryptionProvider] CreatePasswordModal onClose called - app should remain locked if password not set."
+                  "[EncryptionProvider] CreatePasswordModal onClose called - app should remain locked if password not set.",
                 );
               }}
             />
@@ -277,7 +284,8 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
               onUnlockSubmit={contextUnlockApp}
               onClose={() => {
                 console.log(
-                  "[EncryptionProvider] Unlock PasswordModal onClose triggered. App state (isLocked):", isLocked
+                  "[EncryptionProvider] Unlock PasswordModal onClose triggered. App state (isLocked):",
+                  isLocked,
                 );
               }}
             />

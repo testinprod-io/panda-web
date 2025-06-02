@@ -1,4 +1,9 @@
-import { ModelConfig, ModelProvider, ServiceProvider, ModelType } from "@/types/constant";
+import {
+  ModelConfig,
+  ModelProvider,
+  ServiceProvider,
+  ModelType,
+} from "@/types/constant";
 import { ChatMessage, Role, CustomizedPromptsData } from "@/types";
 import { PandaApi, GetAccessTokenFn } from "@/client/platforms/panda";
 import { ApiClient } from "@/client/client";
@@ -73,7 +78,11 @@ export abstract class LLMApi {
   abstract chat(options: ChatOptions): Promise<void>;
   abstract usage(): Promise<LLMUsage>;
   abstract models(): Promise<LLMModel[]>;
-  abstract summary(config: LLMConfig, messages: RequestMessage[], maxTokens: number): Promise<SummaryResponse>;
+  abstract summary(
+    config: LLMConfig,
+    messages: RequestMessage[],
+    maxTokens: number,
+  ): Promise<SummaryResponse>;
 }
 
 export class ClientApi {
@@ -82,12 +91,12 @@ export class ClientApi {
 
   constructor(
     provider: ModelProvider = ModelProvider.Panda,
-    getAccessToken?: GetAccessTokenFn
+    getAccessToken?: GetAccessTokenFn,
   ) {
     if (!getAccessToken) {
       throw new Error("getAccessToken function is required for Panda provider");
     }
-    const pandaBaseUrl = ""; 
+    const pandaBaseUrl = "";
     this.llm = new PandaApi(pandaBaseUrl, getAccessToken);
     const appBaseUrl = process.env.NEXT_PUBLIC_APP_SERVER_ENDPOINT || "";
     this.app = new ApiClient(appBaseUrl, getAccessToken);
@@ -115,7 +124,7 @@ export function getHeaders() {
 
 export function getClientApi(
   provider: ServiceProvider,
-  getAccessToken: GetAccessTokenFn
+  getAccessToken: GetAccessTokenFn,
 ): ClientApi {
   return new ClientApi(ModelProvider.Panda, getAccessToken);
 }
