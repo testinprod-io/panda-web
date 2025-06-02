@@ -3,13 +3,13 @@ import clsx from "clsx";
 import styles from "./action-button.module.scss";
 
 export interface ActionButtonProps {
-  text?: string | null; // Text is now optional
+  text?: string | null;
   icon: React.ReactElement;
   onClick?: (event: React.MouseEvent<HTMLDivElement>) => void;
   className?: string;
   disabled?: boolean;
-  title?: string; // Added for accessibility and tooltips
-  ariaLabel?: string; // For more specific accessibility labeling
+  title?: string;
+  ariaLabel?: string;
 }
 
 export function ActionButton(props: ActionButtonProps) {
@@ -35,14 +35,14 @@ export function ActionButton(props: ActionButtonProps) {
     <div
       className={clsx(
         styles.actionButton,
-        "clickable", // Kept for potential global styles or compatibility
+        "clickable",
         className,
       )}
       onClick={handleClick}
       aria-disabled={disabled}
-      role="button" // Explicitly define role
-      tabIndex={disabled ? -1 : 0} // Make it focusable if not disabled
-      title={title || (typeof text === 'string' ? text : undefined)} // Use text for title if no specific title provided
+      role="button"
+      tabIndex={disabled ? -1 : 0}
+      title={title || (typeof text === 'string' ? text : undefined)}
       aria-label={ariaLabel || title || (typeof text === 'string' ? text : undefined)}
     >
       <div ref={iconRef} className={styles.icon}>

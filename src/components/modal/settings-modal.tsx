@@ -9,12 +9,11 @@ import {
   Button,
   Divider,
   List,
-  ListItem,
   ListItemButton,
   ListItemIcon,
   ListItemText,
   Select,
-  MenuItem as SelectMenuItem, // Renamed to avoid conflict with Menu's MenuItem
+  MenuItem as SelectMenuItem,
   Dialog,
   DialogActions,
   DialogContent,
@@ -26,29 +25,27 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // For back navigation
 import styles from "./settings-modal.module.scss";
-import { SettingsPage } from './settings-modal-handler'; // Import the type
-import CustomizePromptsView from './customize-prompts-view'; // Import the new view
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'; // For navigation
+import { SettingsPage } from './settings-modal-handler';
+import CustomizePromptsView from './customize-prompts-view';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useApiClient } from "@/providers/api-client-provider";
 import { usePrivy } from "@privy-io/react-auth";
 import { useChatStore } from "@/store";
 
 interface SettingsModalProps {
   open: boolean;
-  currentPage: SettingsPage | null; // Added prop
+  currentPage: SettingsPage | null;
   onClose: () => void;
 }
 
-// ActiveSettingSection is for the left nav, not the overall page
 type ActiveSettingSection = "general" | "faq";
 
 export default function SettingsModal({ open, currentPage, onClose }: SettingsModalProps) {
   const [activeNavSection, setActiveNavSection] =
     useState<ActiveSettingSection>("general");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [isPromptsModalOpen, setIsPromptsModalOpen] = useState(false); // New state for prompts modal
+  const [isPromptsModalOpen, setIsPromptsModalOpen] = useState(false);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -69,7 +66,7 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
   };
 
   const handleCloseModal = () => {
-    onClose(); // This will clear the hash via SettingsModalHandler
+    onClose();
   };
 
   const handleLogOut = () => {
@@ -90,7 +87,6 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
     setDeleteConfirmOpen(false);
   };
 
-  // Mock data and handlers for general settings
   const [theme, setTheme] = useState("light");
   const handleThemeChange = (event: any) => {
     setTheme(event.target.value);
@@ -122,7 +118,7 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
           variant="text"
           endIcon={<ChevronRightIcon />}
           className={styles.actionButtonText}
-          onClick={() => setIsPromptsModalOpen(true)} // Open the new modal
+          onClick={() => setIsPromptsModalOpen(true)}
         >
           On
         </Button>
@@ -181,7 +177,7 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
   const renderContent = () => {
     switch (currentPage) {
       case 'general':
-      default: // Default to general settings if currentPage is null or unexpected
+      default:
         return (
           <Box className={styles.generalSettings}>
             {generalSettingsItems.map((item, index) => (
@@ -202,8 +198,8 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
   return (
     <>
       <Modal
-        open={open} // Controlled by SettingsModalHandler
-        onClose={handleCloseModal} // This calls props.onClose which clears hash
+        open={open}
+        onClose={handleCloseModal}
         aria-labelledby="settings-modal-title"
         aria-describedby="settings-modal-description"
         className={styles.modalBackdrop}
@@ -216,7 +212,7 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
               component="h2"
               className={styles.title}
             >
-              Settings {/* Title is always Settings now */}
+              Settings
             </Typography>
             <IconButton
               aria-label="close settings"
@@ -229,7 +225,6 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
 
           <Divider className={styles.divider} />
 
-          {/* Main area for general settings with left nav and right panel */}
           <Box className={styles.mainArea}>
             <Box className={styles.leftNav}>
               <List component="nav">
@@ -246,7 +241,6 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
                 <ListItemButton
                   selected={activeNavSection === "faq"}
                   onClick={() => setActiveNavSection("faq")}
-                  // disabled // FAQ section not implemented yet
                   className={clsx(styles.navItem, activeNavSection === "faq" && styles.navItemActive)}
                 >
                   <ListItemIcon className={styles.navItemIcon}>
@@ -257,7 +251,6 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
               </List>
             </Box>
             <Box className={styles.rightPanel}>
-              {/* Render general settings items directly for now, FAQ would be another case here based on activeNavSection */}
               {activeNavSection === 'general' && renderContent()} 
               {activeNavSection === 'faq' && (
                  <Box>
@@ -270,36 +263,32 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
         </Box>
       </Modal>
 
-      {/* New Modal for CustomizePromptsView */}
       <Modal
         open={isPromptsModalOpen}
-        onClose={() => setIsPromptsModalOpen(false)} // Close on backdrop click
+        onClose={() => setIsPromptsModalOpen(false)}
         aria-labelledby="customize-prompts-modal-title"
-        className={styles.modalBackdrop} // Can reuse or define a new one if different styling is needed
+        className={styles.modalBackdrop}
       >
         <Box sx={{ 
           position: 'absolute',
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: 'clamp(300px, 80vw, 750px)', // Responsive width: min 300px, 80% of viewport, max 650px
+          width: 'clamp(300px, 80vw, 750px)',
           bgcolor: 'background.paper',
           boxShadow: 24,
           p: 0, 
           borderRadius: '16px', 
           outline: 'none',
-          maxHeight: '90vh', // Ensure it doesn't exceed viewport height
+          maxHeight: '90vh',
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'hidden' // The CustomizePromptsView will handle its own scrolling
+          overflow: 'hidden'
         }}>
-          {/* We can add a header to this modal if needed, or rely on CustomizePromptsView's header */}
-          {/* For simplicity, directly rendering CustomizePromptsView */}
           <CustomizePromptsView onCloseRequest={() => setIsPromptsModalOpen(false)} />
         </Box>
       </Modal>
 
-      {/* Confirmation Dialog for Deleting Chats */}
       <Dialog
         open={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
@@ -327,7 +316,6 @@ export default function SettingsModal({ open, currentPage, onClose }: SettingsMo
   );
 }
 
-// Helper clsx function (can be moved to a utils file if used elsewhere)
 function clsx(...classes: (string | boolean | undefined | null)[]) {
   return classes.filter(Boolean).join(" ");
 } 

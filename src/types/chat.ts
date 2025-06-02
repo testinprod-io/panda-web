@@ -1,5 +1,4 @@
 import { ServiceProvider, ModelType } from './constant';
-// import { ModelType } from '../store/config';
 import { nanoid } from 'nanoid';
 import { MultimodalContent } from "@/client/api";
 import { UUID } from "crypto";
@@ -122,7 +121,6 @@ export type EncryptedMessage = {
 * @returns A new EncryptedMessage
 */
 export function createEncryptedMessage(override: Partial<EncryptedMessage> & { content: string }): EncryptedMessage {
-  // Ensure required fields are present or defaulted
   const date = override.date instanceof Date ? override.date : new Date();
 
   return {
@@ -130,9 +128,9 @@ export function createEncryptedMessage(override: Partial<EncryptedMessage> & { c
     role: override.role ?? Role.USER,
     date: date,
     syncState: override.syncState ?? MessageSyncState.PENDING_CREATE,
-    content: override.content, // Mandatory
+    content: override.content,
     model: override.model,
-    streaming: override.streaming ?? false, // Default transient states
+    streaming: override.streaming ?? false,
     isError: override.isError ?? false,
   };
 }
@@ -151,13 +149,13 @@ export function createMessage(override: Partial<ChatMessage>): ChatMessage { // 
    streaming: false,
    isError: false,
    syncState: MessageSyncState.PENDING_CREATE,
-   isReasoning: false, // Initialize isReasoning
+   isReasoning: false,
    content: override.content ?? "",
    visibleContent: override.content ?? "",
    reasoning: override.reasoning ?? "",
    visibleReasoning: override.reasoning ?? "",
    useSearch: override.useSearch ?? false,
-   ...override, // Use override directly
+   ...override,
  };
 }
 

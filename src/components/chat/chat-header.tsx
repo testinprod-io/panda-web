@@ -20,8 +20,7 @@ import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import { usePrivy } from "@privy-io/react-auth";
 import { useAuthStatus } from "@/hooks/use-auth-status";
 import { useAppConfig, useChatStore } from "@/store";
-import { ServiceProvider } from "@/types/constant";
-import { ModelConfig, DEFAULT_MODELS, ModelType } from "@/types/constant";
+import { DEFAULT_MODELS, ModelType } from "@/types/constant";
 import LoginSignupPopup from "../login/login-signup-popup";
 import styles from "./chat-header.module.scss";
 import clsx from "clsx";
@@ -33,7 +32,6 @@ interface ChatHeaderProps {
   isMobile?: boolean;
 }
 
-// Define Encryption Status Type
 type EncryptionStatus = "SUCCESSFUL" | "FAILED" | "IN_PROGRESS";
 
 export default function ChatHeader({
@@ -70,7 +68,6 @@ export default function ChatHeader({
 
   const [isLoginPopupOpen, setIsLoginPopupOpen] = useState(false);
 
-  // Encryption Status State
   const [encryptionStatus, setEncryptionStatus] =
     useState<EncryptionStatus>("SUCCESSFUL");
 
@@ -140,7 +137,6 @@ export default function ChatHeader({
 
   const modelsToDisplay = availableModels;
 
-  // Cycle through encryption states for demo
   const cycleEncryptionStatus = () => {
     setEncryptionStatus((prevStatus) => {
       if (prevStatus === "SUCCESSFUL") return "IN_PROGRESS";
@@ -296,7 +292,6 @@ export default function ChatHeader({
                 );
               })}
             </Menu>
-            {/* Encryption Status Display */}
             {isAuthenticated && (
                  <Tooltip title="Click to cycle status (Dev only)">
                     <Box
@@ -384,17 +379,12 @@ export default function ChatHeader({
                     "test@example.com"
                   }
                   className={styles.profileMenuText}
-                  primaryTypographyProps={{
-                    style: {
-                      /* overflow: 'hidden', textOverflow: 'ellipsis' */
-                    },
-                  }}
                 />
               </Box>
               <Divider className={styles.profileMenuDivider} />
               <MenuItem
                 onClick={() => {
-                  /* Placeholder for Help & FAQ */ handleProfileClose();
+                  handleProfileClose();
                 }}
                 className={styles.profileMenuItem}
               >
@@ -452,7 +442,7 @@ export default function ChatHeader({
               variant="contained"
               onClick={handleOpenLoginPopup}
               size="small"
-              className={styles.loginButtonNew}
+              className={styles.loginButton}
             >
               Log in/Sign up
             </Button>

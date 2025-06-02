@@ -18,8 +18,6 @@ import {
 import { UUID } from "crypto";
 import { RequestMessage } from '@/client/api';
 import { DEFAULT_TOPIC } from '@/store/chat';
-import { getMessageTextContent, trimTopic } from "@/utils/utils";
-// import { ModelType } from "@/store/config";
 import { EncryptionService } from '@/services/encryption-service';
 import { generateSystemPrompt } from '@/types/chat';
 

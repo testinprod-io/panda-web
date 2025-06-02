@@ -1,7 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
-import { Role } from '@/types'; // Assuming MessageRole is defined here
-import styles from './chat.module.scss'; // Reuse existing chat styles if applicable
+import { Role } from '@/types';
+import styles from './chat.module.scss';
 
 interface ChatMessageCellSkeletonProps {
   role: Role;

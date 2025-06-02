@@ -121,7 +121,7 @@
   flex-direction: column;
   align-items: flex-start;
   width: 100%;
-  
+    
   &:hover {
     // .chat-message-edit {
     //   opacity: 0.9;
@@ -195,10 +195,10 @@
   background-color: red;
 }
 
-/* Date/time stamp below message - push below actions */
+
 .chat-message-action-date {
   font-size: 12px;
-  opacity: 0.5; // Increase visibility slightly
+  opacity: 0.5;
   white-space: nowrap;
   transition: all ease 0.6s;
   color: var(--black);
@@ -206,20 +206,19 @@
   width: 100%;
   box-sizing: border-box;
   padding-right: 10px;
-  padding-top: 4px; /* Space above date */
+  padding-top: 4px;
   pointer-events: none;
   z-index: 1;
-  margin-top: 4px; // Add margin to push below actions
+  margin-top: 4px;
 }
 
-/* Image styling within messages */
 .chat-message-item-image {
   width: 100%;
   margin-top: 10px;
-  display: block; /* Ensure it behaves like a block */
+  display: block;
 }
 
-.chat-message-item-images { /* Grid layout for multiple images */
+.chat-message-item-images {
   width: 100%;
   display: grid;
   justify-content: left;
@@ -240,10 +239,9 @@
   box-sizing: border-box;
   border-radius: 10px;
   border: rgba($color: #888, $alpha: 0.2) 1px solid;
-  background-color: var(--white); /* Background for transparent images */
+  background-color: var(--white);
 }
 
-/* Responsive image sizing */
 @media only screen and (max-width: 600px) {
   $calc-image-width: calc(100vw / 3 * 2 / var(--image-count));
 
@@ -278,7 +276,6 @@
   }
 }
 
-/* Less common message elements */
 .chat-message-status {
   font-size: 12px;
   color: #aaa;
@@ -311,7 +308,7 @@
   position: relative;
   transition: all ease 0.3s;
   margin-top: 10px;
-  padding: 5px 10px; /* Add padding */
+  padding: 5px 10px;
   font-size: 14px;
   user-select: text;
   word-break: break-word;
@@ -326,182 +323,153 @@
 /* ===== Chat Input Panel ===== */
 /* ========================= */
 
-/* Container pushed to bottom by .chat-body's flex-grow - NOW STYLED */
 .chat-input-panel {
-  padding: 1rem; // Figma: padding 16
-  background-color: #ffffff; // Figma: background white
-  border: 1px solid #CACACA; // Figma: outline: 1px #CACACA solid
-  outline-offset: -1px; // Figma
-  border-radius: 24px; // Figma
-  box-shadow: 0px 2px 7px rgba(0, 0, 0, 0.10); // Figma
-  // margin: 32px auto; // Center horizontally, keep vertical margin
-  // width: 70%; // Default width, same as chat content
+  padding: 1rem;
+  background-color: #ffffff;
+  border: 1px solid #CACACA;
+  outline-offset: -1px;
+  border-radius: 24px;
+  box-shadow: 0px 2px 7px rgba(0, 0, 0, 0.10);
   box-sizing: border-box;
   position: relative;
   bottom: 0;
   z-index: 1;
-  display: flex; // New
-  flex-direction: column; // New
-  gap: 10px; // Figma: parent gap 10
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 
   @media (max-width: 1024px) {
-    width: 80%; /* Increase width for medium screens */
+    width: 80%;
   }
 
   @media (max-width: 768px) {
-    width: 95%; /* Further increase width for small screens */
+    width: 95%;
   }
 }
 
-/* Attached files preview styles - adjust if needed */
 .attach-files-preview {
   display: flex;
   gap: 10px;
-  // padding: 0px 0px 8px 0px; // Adjusted to have no horizontal padding directly, panel has it.
   flex-wrap: wrap;
-  // No specific height mentioned, let it be determined by content
 }
 
-/* Main area for the text input */
 .chat-input-main-area {
-  align-self: stretch; // Figma
-  display: flex; // To potentially add the vertical bar later if desired
-  align-items: center; // To align bar and textarea
-  gap: 8px; // Space for the bar if it was added
-  min-height: 32px; // Default height for the area
-  // margin-bottom: 16px; // Space to the controls-row below
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
 }
 
-.chat-input-label { // New class to wrap textarea, if needed for styling like the vertical bar
+.chat-input-label {
   display: flex;
   flex-grow: 1;
-  align-items: center; // Align items to bottom if textarea grows
+  align-items: center;
 }
 
-/* Textarea */
 .chat-input {
-  flex: 1; /* Takes available horizontal space */
-  width: min(80vw, 60rem); /* Responsive width that scales down on smaller screens */
+  flex: 1;
+  width: min(80vw, 60rem);
   border: none;
   background: transparent;
   outline: none;
-  font-size: 16px; // Figma
-  font-family: 'Inter', sans-serif; // Figma, with fallback
-  font-weight: 400; // Figma
-  color: var(--black); // Input text color
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  color: var(--black);
   resize: none;
-  padding: 0; // Remove default padding
-  min-height: 32px; /* Minimum height for one line based on Figma line-height */
-  max-height: 200px; /* Limit auto-grow height */
-  line-height: 32px; // Figma
+  padding: 0;
+  min-height: 32px;
+  max-height: 200px;
+  line-height: 32px;
 
   &::placeholder {
-    color: #CACACA; // Figma placeholder color
-    font-family: 'Inter', sans-serif; // Ensure placeholder also uses Inter
-    font-weight: 400; // Figma
-    font-size: 16px; // Figma
-    line-height: 32px; // Figma
+    color: #CACACA;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 32px;
   }
 }
 
-/* Controls row for buttons */
 .chat-input-controls-row {
-  align-self: stretch; // Figma
+  align-self: stretch;
   display: flex;
-  justify-content: space-between; // Figma
-  align-items: center; // Figma
-  // gap: 6px; // Figma gap within button groups, not between left/right
-  // height: 40px; // Max height of the send button
+  justify-content: space-between;
+  align-items: center;
 }
 
 .chat-input-controls-left {
   display: flex;
   align-items: center;
-  gap: 6px; // Figma
+  gap: 6px;
 }
 
 .chat-input-controls-right {
   display: flex;
   align-items: center;
-  gap: 6px; // Figma
+  gap: 6px;
 }
 
-/* New Plus Button Style - using ChatAction */
-.chat-input-action-plus-new {
-  // This targets the ChatAction component wrapper.
-  // ChatAction default styles might apply, we override as needed.
-  // The Figma plus button: 32x32, padding 8, round, 1px #CACACA border
-  width: 2rem !important; // Figma
-  height: 2rem !important; // Figma
-  padding: 0 !important; // Reset padding, icon size and its sx prop will handle inner spacing
-  border-radius: 48px !important; // Figma (effectively circular)
-  border: 1px solid #CACACA !important; // Figma (outline is border here)
-  // outline-offset: -1px; // Handled by border directly
+.chat-input-action-plus {
+  width: 2rem !important;
+  height: 2rem !important;
+  padding: 0 !important;
+  border-radius: 48px !important;
+  border: 1px solid #CACACA !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  background-color: transparent !important; // Ensure no bg from ChatAction default
+  background-color: transparent !important;
 
-  svg { // Target icon within
-    font-size: 16px !important; // Figma data-size="16" for icon container
-    color: #757575 !important; // Figma icon color (var(--Icon-Default-Secondary, #757575))
-    transition: fill 0.2s ease-in-out, stroke 0.2s ease-in-out, opacity 0.2s ease-in-out; // Refined transition
-    // The Figma shows a square outline for the plus, AddCircleOutlineIcon is circular.
-    // To get a square plus, we'd need a different icon or custom SVG.
-    // For now, using AddCircleOutlineIcon and styling its size/color.
+  svg {
+    font-size: 16px !important;
+    color: #757575 !important;
+    transition: fill 0.2s ease-in-out, stroke 0.2s ease-in-out, opacity 0.2s ease-in-out;
   }
 
-  img { // Target the custom SVG image
-    display: block; // Helps with precise centering by removing inline characteristics
-    transition: opacity 0.2s ease-in-out; // Added to prevent flicker
-    // Width and height are set via inline styles in the TSX (16px)
+  img {
+    display: block;
+    transition: opacity 0.2s ease-in-out;
   }
 
   &:hover:not(:disabled) {
-    background-color: rgba(0, 0, 0, 0.05) !important; // Subtle hover
+    background-color: rgba(0, 0, 0, 0.05) !important;
     border-color: #A0A0A0 !important;
   }
 
   &:disabled {
-    // background-color: rgba(0, 0, 0, 0.05) !important; // Disabled state
-    background: #F0F0F0 !important; // Lighter for disabled
-
+    background: #F0F0F0 !important;
     border-color: #CACACA !important;
-    pointer-events: none !important; // Prevent hover effects
-    opacity: 0.5 !important; // Reduce opacity to indicate disabled
+    pointer-events: none !important;
+    opacity: 0.5 !important;
   }
 }
 
 
-/* New Send button / Stop button Style */
-.chat-input-send-new {
-  // MUI Button overrides
-  min-width: 2.5rem !important; // Figma
-  width: 2.5rem !important; // Figma
-  height: 2.5rem !important; // Figma
-  // padding: 0.5rem !important; // Figma
-  background: #1E1E1E !important; // Figma
-  border-radius: 48px !important; // Figma (circular)
-  box-shadow: none !important; // No shadow from MUI default
+.chat-input-send {
+  min-width: 2.5rem !important;
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  background: #1E1E1E !important;
+  border-radius: 48px !important;
+  box-shadow: none !important;
 
-  svg { // Target the SVG icon inside the button
-    // Figma: icon container data-size="32", icon itself looks like 18.67x18.67
-    // ArrowUpwardRoundedIcon and StopRoundedIcon should scale appropriately.
-    // We need to ensure their color is #CACACA as per Figma's "outline" for the arrow.
-    color: #F3F3F3 !important; // Figma send arrow "outline" color
-    fill: #F3F3F3 !important; // Ensure fill for some icons
-    stroke: #F3F3F3 !important; // Ensure stroke for outline icons like ArrowUpward
-    stroke-width: 1.5; // Make icon a bit bolder if needed
+  svg {
+    color: #F3F3F3 !important;
+    fill: #F3F3F3 !important;
+    stroke: #F3F3F3 !important;
+    stroke-width: 1.5;
     transition: color 0.2s ease-in-out, fill 0.2s ease-in-out, stroke 0.2s ease-in-out, opacity 0.2s ease-in-out; // Added to prevent flicker
   }
 
   &:hover:not(:disabled) {
-    background: #E0E0E0 !important; // Slightly darker shade for hover
+    background: #E0E0E0 !important;
     box-shadow: none !important;
   }
 
   &:disabled {
-    background: #F0F0F0 !important; // Lighter for disabled
+    background: #F0F0F0 !important;
     svg {
       color: #BDBDBD !important;
       fill: #BDBDBD !important;
@@ -509,47 +477,34 @@
     }
   }
 
-  /* Hide text label within the button if any MUI default adds it */
   .MuiButton-label, span:not([class*="MuiSvgIcon"]) {
     display: none !important;
   }
 }
 
-/* New Search Button Style */
-.chat-input-action-search-new {
+.chat-input-action-search {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 12px; // Figma: paddingLeft: 12, paddingRight: 12
-  height: 32px; // Match plus button height for consistency
-  border-radius: 48px !important; // Figma
-  border: 1px solid #CACACA !important; // Figma: outline: 1px #CACACA solid
-  // outline-offset: -1px; // Figma - border handles this
+  padding: 0 12px;
+  height: 32px;
+  border-radius: 48px !important;
+  border: 1px solid #CACACA !important;
   background-color: transparent !important;
   cursor: pointer;
-  gap: 6px; // Figma: gap: 6
-  // transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
-
+  gap: 6px; 
   .search-button-icon {
-    // data-size="16" style={{width: 16, height: 16, position: 'relative', overflow: 'hidden'}}
-    // The globe icon itself from MUI is targeted.
-    // color is for the icon itself, not the outline mentioned in the div
-    color: #757575 !important; // Figma: var(--Icon-Default-Secondary, #757575)
+    color: #757575 !important;
     display: flex;
     align-items: center;
-    // transition: color 0.2s ease-in-out, opacity 0.2s ease-in-out; // Transition for the container
-    // svg { // Explicitly target SVG within the icon container
-    //   transition: fill 0.2s ease-in-out, stroke 0.2s ease-in-out, opacity 0.2s ease-in-out; // Refined transition for the SVG itself
-    // }
   }
 
   .search-button-text {
-    // color: '#646464', fontSize: 16, fontFamily: 'Inter', fontWeight: '400', lineHeight: 32
     color: #646464;
     font-family: 'Inter', sans-serif;
     font-size: 16px;
     font-weight: 400;
-    line-height: 32px; // Figma
+    line-height: 32px;
     white-space: nowrap;
   }
 
@@ -559,13 +514,13 @@
   }
 
   &.active {
-    background-color: #C1FF83 !important; // Changed to new tint
-    border-color: #A0D468 !important; // Adjusted border for new tint
+    background-color: #C1FF83 !important;
+    border-color: #A0D468 !important;
     .search-button-icon {
-      color: #203D00 !important; // Darker icon for new tint
+      color: #203D00 !important;
     }
     .search-button-text {
-      color: #203D00; // Darker text for new tint
+      color: #203D00;
     }
   }
 
@@ -580,76 +535,42 @@
     }
   }
 
-  // Responsive adjustments for smaller screens
-  @media (max-width: 768px) { // Or your preferred breakpoint
-    width: 32px; // Make it circular, same as plus button
+  @media (max-width: 768px) {
+    width: 32px;
     height: 32px;
-    padding: 0 !important; // Remove padding to make it circular
+    padding: 0 !important;
 
     .search-button-text {
-      display: none; // Hide text
-    }
-    .search-button-icon {
-      // Ensure icon is centered if needed, but flex properties on parent should handle it.
+      display: none;
     }
   }
 }
 
-
-/* Remove or comment out old/conflicting styles */
-
-/* Inner container holding textarea, actions, etc. */
 .chat-input-panel-inner-container {
-  /* This class was wrapping the textarea and send button before. */
-  /* Now textarea is in chat-input-main-area and buttons in chat-input-controls-row */
-  /* Keep if still used for other purposes, or remove if redundant */
-  position: relative; /* For positioning buttons like scroll-to-bottom if they are still inside */
-  // display: flex; // Removed, new structure handles flex
-  // align-items: flex-end; // Removed
-  // gap: 0.75rem; // Removed
-}
-
-/* The actual input bar with text area and button - LARGELY REPLACED */
-.chat-input-panel-inner {
-  /* This class was on the <label> wrapping the textarea. Replaced by chat-input-label or similar */
-  /* display: flex; */
-  /* background-color: transparent; */
-  /* border: none; */
-  /* padding: 8px 12px; */
-  /* padding-right: 48px; */ /* Space for send button - Handled by new layout */
-  /* align-items: flex-end; */
-  /* gap: 0.75rem; */
-}
-
-.chat-input-panel-inner-attach { // Style when images are attached
-  /* Add specific styles if needed when images are present */
-  /* This might not be needed if panel structure handles spacing correctly */
+  position: relative;
 }
 
 .attach-file-item {
   cursor: default;
   position: relative;
-  display: flex; // Changed from inline-flex to flex for consistency
+  display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  // Common styling ends, specific styling below:
 }
 
-/* Styles for Document File Previews */
 .attach-file-item-doc {
   padding: 16px;
   background: white;
   border-radius: 8px;
-  border: 1px solid #CACACA; // Figma uses outline, border is more common for this
-  // outline-offset: -1px; // Usually paired with outline
-  gap: 8px; // Gap between icon area, info, and delete button
-  align-items: flex-start; // Align items to the top
-  width: auto; // Let width be determined by content up to a max
-  min-width: 200px; // Ensure it's not too small
-  max-width: 300px; // Prevent it from becoming too wide
-  height: 80px; // Height based on content (icon is 48px + padding)
-  justify-content: flex-start; // Align content to the start
+  border: 1px solid #CACACA;
+  gap: 8px;
+  align-items: flex-start;
+  width: auto;
+  min-width: 200px;
+  max-width: 300px;
+  height: 80px;
+  justify-content: flex-start;
 
   .doc-file-icon-bg {
     width: 48px;
@@ -659,18 +580,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0; // Prevent shrinking
-    // SVG icon inside is styled via its own attributes or can be targeted if needed
+    flex-shrink: 0;
   }
 
   .doc-file-info {
-    flex: 1 1 0; // Allow shrinking and growing
+    flex: 1 1 0;
     display: flex;
     flex-direction: column;
-    justify-content: center; // Vertically center text within the 48px effective height
+    justify-content: center;
     gap: 4px;
-    min-width: 0; // Important for text truncation in flex children
-    // height: 48px; // To match icon height, or let it be natural
+    min-width: 0;
   }
 
   .doc-file-name {
@@ -678,11 +597,10 @@
     font-size: 16px;
     font-family: 'Inter', sans-serif;
     font-weight: 600;
-    word-wrap: break-word; // Should be default for divs, but explicit
-    white-space: nowrap; // Prevent wrapping
-    overflow: hidden; // Hide overflow
-    text-overflow: ellipsis; // Add ...
-    // max-width: 220px; // Figma specific, but flex should handle it with min-width on parent
+    word-wrap: break-word;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .doc-file-type {
@@ -703,64 +621,47 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #757575; // Icon color from Figma for the 'x'
+    color: #757575;
     flex-shrink: 0;
 
     &:hover {
       color: #333;
     }
 
-    svg { // Targeting MUI CloseIcon
-      font-size: 16px !important; // Ensure icon size matches button
+    svg {
+      font-size: 16px !important;
     }
   }
 }
 
-/* Styles for Image File Previews */
 .attach-file-item-image {
-  width: 80px; // Keeping the old fixed size for images for now
+  width: 80px;
   height: 80px;
   border-radius: 8px;
   background-size: cover;
   background-position: center;
-  background-color: var(--bg-subtle, #f0f0f0); // Fallback if image is transparent/broken
+  background-color: var(--bg-subtle, #f0f0f0);
   border: 1px solid var(--border-color, #e0e0e0);
 
   .attach-file-mask-image {
     width: 100%;
     height: 100%;
-    padding: 8px; // Figma
-    background: rgba(0, 0, 0, 0.20); // Figma
-    border-radius: इन्हेरिट; // Inherit from parent
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.20);
+    border-radius: 8px;
     display: flex;
-    justify-content: flex-end; // Align delete button to top-right
+    justify-content: flex-end;
     align-items: flex-start;
-    opacity: 0; // Hidden by default, show on hover of .attach-file-item-image
+    opacity: 0;
     transition: opacity 0.2s ease-in-out;
 
-    // Styling for the DeleteImageButton (assuming it's a button with an icon)
-    // The DeleteImageButton component might have its own classes for the icon, adjust as needed.
-    // This targets the button element directly if it's the child.
-    .delete-image-button-wrapper { // Assuming DeleteImageButton creates a wrapper or style the button directly
-      width: 28px; // Figma container for delete icon
+    .delete-image-button-wrapper {
+      width: 28px;
       height: 28px;
-      padding: 6px; // Figma
-      // background: #757575; // Figma - this is for the icon's direct circular background
-      // box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25); // Figma
-      // border-radius: 24px; // Figma - for the icon's circular background
-      // outline: 1px #D9D9D9 solid; // Figma - for the icon's circular background
+      padding: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      // The actual icon (e.g. <CloseIcon /> from MUI) inside DeleteImageButton needs styling
-      // If DeleteImageButton uses an SVG or specific element, target that.
-      // For now, let's assume DeleteImageButton's default style is acceptable or will be made to fit.
-      // The Figma design for this delete button is very specific and might require changes to DeleteImageButton itself.
-      // For simplicity here, we're styling the mask. The actual button inside will use its default.
-      // To achieve the Figma look for the delete button itself (circular, dark bg, white X):
-      // 1. Modify DeleteImageButton component OR
-      // 2. Use a completely different button here and style it.
-      // Let's assume current DeleteImageButton is fine for now, and only mask is styled.
     }
   }
 
@@ -769,48 +670,21 @@
   }
 }
 
-// Style for ActionButton when used as a delete image button
 .deleteImageActionButton {
-  width: 16px; // Match Figma wrapper size
-  height: 16px; // Match Figma wrapper size
-  padding: 0; // Reset padding, icon is centered by ActionButton's own .icon style
-  background-color: rgba(117, 117, 117, 0.7); // Dark semi-transparent background from Figma (approximated)
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  background-color: rgba(117, 117, 117, 0.7);
   color: white;
-  // border-radius: 50%; // Circular button
-  // border: 1px solid #D9D9D9; // Optional: if a border is desired like Figma's outline
-  // box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25); // Subtle shadow from Figma
-
-  // Override default ActionButton icon styling if needed
+  
   .icon {
-    // The icon passed to ActionButton already uses fontSize="small"
-    // We might need to adjust color or ensure it fits the small circular button
     svg {
-      color: white !important; // White icon color
+      color: white !important;
     }
   }
 
-  // No text for this button, so text styles are not critical here
   .text {
     display: none;
-  }
-
-  // &:hover {
-  //   background-color: rgba(80, 80, 80, 0.8); // Slightly darker on hover
-  // }
-}
-
-.file-icon-placeholder { // Old style, potentially still used or can be removed if GenericFileIcon covers all non-image cases
-  padding: 4px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--text-secondary, #555);
-  word-break: break-all; // Prevent long names from breaking layout
-  span {
-    display: -webkit-box;
-    -webkit-line-clamp: 3; // Show max 3 lines of text
-    -webkit-box-orient: vertical;  
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 }
 
@@ -818,307 +692,34 @@
 /* ===== Other UI Components ===== */
 /* ============================== */
 
-/* Toast notification for showing prompts */
-.prompt-toast {
-  position: absolute;
-  bottom: -50px; /* Adjust position if needed */
-  left: 0;
-  right: 0;
-  z-index: 999;
-  display: flex;
-  justify-content: center;
-  width: calc(100% - 40px); /* Centered width */
-  margin: 0 auto; /* Center horizontally */
-  pointer-events: none; /* Allow clicks through */
-
-  .prompt-toast-inner {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 12px;
-    background-color: var(--white);
-    color: var(--black);
-
-    border: var(--border-in-light);
-    box-shadow: var(--card-shadow);
-    padding: 10px 20px;
-    border-radius: 100px;
-
-    animation: slide-in-from-top ease 0.3s;
-    pointer-events: auto; /* Re-enable pointer events for the toast itself */
-
-    .prompt-toast-content {
-      margin-left: 10px;
-    }
-  }
-}
-
-/* Generic section title style */
-.section-title {
-  font-size: 12px;
-  font-weight: bold;
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  .section-title-action {
-    display: flex;
-    align-items: center;
-  }
-}
-
-/* Context prompt editing UI (in modal or sidebar?) */
-.context-prompt {
-  .context-prompt-insert {
-    display: flex;
-    justify-content: center;
-    padding: 4px;
-    opacity: 0.2;
-    transition: all ease 0.3s;
-    background-color: rgba(0, 0, 0, 0);
-    cursor: pointer;
-    border-radius: 4px;
-    margin-top: 4px;
-    margin-bottom: 4px;
-
-    &:hover {
-      opacity: 1;
-      background-color: rgba(0, 0, 0, 0.05);
-    }
-  }
-
-  .context-prompt-row {
-    display: flex;
-    justify-content: center;
-    align-items: center; /* Vertically align items */
-    width: 100%;
-    gap: 10px; /* Add gap between elements */
-
-    &:hover {
-      .context-drag {
-        opacity: 1;
-      }
-    }
-
-    .context-drag {
-      display: flex;
-      align-items: center;
-      opacity: 0.5;
-      transition: all ease 0.3s;
-      cursor: grab;
-    }
-
-    .context-role {
-      /* margin-right: 10px; */ /* Replaced by gap */
-      font-weight: bold;
-    }
-
-    .context-content {
-      flex: 1;
-      max-width: 100%;
-      text-align: left;
-    }
-
-    .context-delete-button {
-      /* margin-left: 10px; */ /* Replaced by gap */
-    }
-  }
-
-  .context-prompt-button {
-    flex: 1;
-  }
-}
-
-/* Display for memory prompt (if used) */
-.memory-prompt {
-  margin: 20px 0;
-
-  .memory-prompt-content {
-    background-color: var(--white);
-    color: var(--black);
-    border: var(--border-in-light);
-    border-radius: 10px;
-    padding: 10px;
-    font-size: 12px;
-    user-select: text;
-  }
-}
-
-/* Divider/button for clearing context */
-.clear-context {
-  margin: 20px 0 0 0;
-  padding: 4px 0;
-
-  border-top: var(--border-in-light);
-  border-bottom: var(--border-in-light);
-  box-shadow: var(--card-shadow) inset;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
-  color: var(--black);
-  transition: all ease 0.3s;
-  cursor: pointer;
-  overflow: hidden;
-  position: relative;
-  font-size: 12px;
-
-  animation: slide-in ease 0.3s;
-
-  $linear: linear-gradient(
-    to right,
-    rgba(0, 0, 0, 0),
-    rgba(0, 0, 0, 1),
-    rgba(0, 0, 0, 0)
-  );
-  mask-image: $linear;
-
-  /* Mixins for show/hide animation */
-  @mixin show {
-    transform: translateY(0);
-    position: relative;
-    transition: all ease 0.3s;
-    opacity: 1;
-  }
-
-  @mixin hide {
-    transform: translateY(-50%);
-    position: absolute;
-    transition: all ease 0.1s;
-    opacity: 0;
-  }
-
-  &-tips {
-    @include show;
-    opacity: 0.5;
-  }
-
-  &-revert-btn {
-    color: var(--primary);
-    @include hide;
-  }
-
-  &:hover {
-    opacity: 1;
-    border-color: var(--primary);
-
-    .clear-context-tips {
-      @include hide;
-    }
-
-    .clear-context-revert-btn {
-      @include show;
-    }
-  }
-}
-
-/* Shortcut key display modal */
-.shortcut-key-container {
-  padding: 10px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-}
-
-.shortcut-key-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 16px;
-}
-
-.shortcut-key-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  overflow: hidden;
-  padding: 10px;
-  background-color: var(--white);
-}
-
-.shortcut-key-title {
-  font-size: 14px;
-  color: var(--black);
-}
-
-.shortcut-key-keys {
-  display: flex;
-  gap: 8px;
-}
-
-.shortcut-key {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: var(--border-in-light);
-  border-radius: 8px;
-  padding: 4px;
-  background-color: var(--gray);
-  min-width: 32px;
-}
-
-.shortcut-key span {
-  font-size: 12px;
-  color: var(--black);
-}
-
-/* Scroll to bottom button positioned in the chat view (original class) */
-.scroll-to-bottom-chatview {
-  /* Inherits .chat-input-action base styles (circular, hover etc.) */
-  /* Fixed positioning removed, handled by wrapper */
-}
-
-/* Wrapper div for the scroll-to-bottom button to handle dynamic positioning */
 .scroll-to-bottom-chatview-wrapper {
-  position: absolute; /* Position relative to chat-body-container */
-  left: 50%; /* Center horizontally */
-  transform: translateX(-50%); /* Adjust for button width */
-  z-index: 10; /* Ensure it's above messages */
-  /* bottom property is set dynamically via inline style */
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
 }
-
-/* Add some basic styling for the layout if not reusing chat.module.scss directly for layout structure */
-/* For example, in your scss file: */
-/* .chat-layout-container { */
-/*   display: flex; */
-/*   flex-direction: column; */
-/*   height: 100vh; // Or 100% if parent has height */
-/* } */
-/* .chat-layout-main-content { */
-/*   flex-grow: 1; */
-/*   overflow-y: auto; // If content scrolls independently */
-/* } */
-/* .chat-layout-input-panel-wrapper { */
-/*   flex-shrink: 0; // Prevent input panel from shrinking */
-/* } */
 
 .chat-layout-container {
   display: flex;
   flex-direction: column;
-  height: 100%; // Assuming parent like <main> or <body> provides height context
-  // or use 100vh if it's meant to be full viewport height always
+  height: 100%;
 }
 
 .chat-layout-main-content {
   flex-grow: 1;
-  overflow-y: hidden; // Changed from auto to hidden
-  position: relative; // For potential absolute positioned elements within
-  min-height: 0; // Added to allow shrinking in flex layout
-  padding-bottom: -24px; /* To extend background behind the input panel. Approx. height of input panel. */
-  margin-bottom: -24px; /* To pull the input panel up over the extended background. */
+  overflow-y: hidden;
+  position: relative;
+  min-height: 0;
+  padding-bottom: -24px;
+  margin-bottom: -24px;
 }
 
 
 .chat-layout-input-panel-wrapper {
   background-color: transparent !important;
   color: transparent !important;
-  // border-color: transparent !important; // Make the border color transparent
-  border-radius: 24px; // Add border-radius to match the child panel
-  // overflow: hidden; // Clip content to the border-radius
-  flex-shrink: 0; // Prevent input panel from shrinking when content grows
-  // Add any specific styling for the wrapper if needed, e.g., padding, border-top
-  // border-top: 1px solid var(--border-color); // Example
+  border-radius: 24px;
+  flex-shrink: 0;
 }
 
 .chat-message-error-bubble {
@@ -1140,7 +741,6 @@
   max-width: 100%;
 }
 
-// Remove or override any full-width error container styles if present
 .chat-message-error {
   width: auto;
   background: none;
@@ -1168,10 +768,9 @@
     opacity: 0.5;
   }
 
-  // Target MUI SvgIcon components directly if they are children
   .MuiSvgIcon-root {
-    font-size: 20px !important; // Override MUI default if needed
-    color: #757575 !important; // Icon color
+    font-size: 20px !important;
+    color: #757575 !important;
   }
 }
 
@@ -1181,7 +780,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.65); /* Slightly darker overlay for better contrast */
+  background-color: rgba(0, 0, 0, 0.65);
   color: white;
   display: flex;
   flex-direction: column; 
@@ -1189,23 +788,23 @@
   justify-content: center;
   text-align: center;
   padding: 4px;
-  font-size: 0.9em; /* Slightly larger for error text */
+  font-size: 0.9em;
   border-radius: 8px; 
 }
 
 .circular-progress-svg {
-  width: 24px; /* Adjusted size */
-  height: 24px; /* Adjusted size */
-  display: block; /* Prevents extra space below SVG */
+  width: 24px;
+  height: 24px;
+  display: block;
 }
 
 .circular-progress-track {
-  stroke: rgba(255, 255, 255, 0.325); /* Light track color */
+  stroke: rgba(255, 255, 255, 0.325);
 }
 
 .circular-progress-value {
-  stroke: #ffffff; /* White progress color */
-  transition: stroke-dashoffset 0.3s ease-in-out; /* Changed to stroke-dashoffset */
+  stroke: #ffffff;
+  transition: stroke-dashoffset 0.3s ease-in-out;
 }
 
 /* ========================= */
@@ -1217,22 +816,21 @@
 }
 
 .chat-message-item-skeleton {
-  background-color: #e0e0e0; // Placeholder background
+  background-color: #e0e0e0;
   border-radius: 10px;
   padding: 10px 12px;
-  min-height: 50px; // Ensure some height
+  min-height: 50px;
   display: flex;
   flex-direction: column;
-  gap: 8px; // Space between lines
+  gap: 8px;
 }
 
 .skeleton-line {
-  background-color: #c0c0c0; // Darker placeholder line
+  background-color: #c0c0c0;
   height: 10px;
   border-radius: 4px;
 }
 
-// Styles for attached image previews in ChatMessageCell
 .attachedFileImagePreview {
   border-radius: 8px;
   outline: 1px solid #CACACA; 
@@ -1240,31 +838,22 @@
   display: block; 
 }
 
-// Styles for file previews in ChatMessageCell / FilePreviewItem
 .chat-message-item-loading {
-  // Styles were previously inline on Box for loading state
-  // width: "160px", height: "160px", borderRadius: "8px", outline: "1px solid #CACACA", backgroundColor: "#F0F0F0"
-  // display: flex, alignItems: center, justifyContent: center are handled by MUI Box props in component
   width: 160px;
   height: 160px;
   border-radius: 8px;
-  outline: 1px solid var(--border-color, #CACACA); // Using fallback
-  background-color: var(--bg-subtle, #F0F0F0);    // Using fallback
+  outline: 1px solid var(--border-color, #CACACA);
+  background-color: var(--bg-subtle, #F0F0F0);
 }
 
 .chat-message-file-item-error {
-  // Styles were previously sx prop for error state
-  // display: flex, flexDirection: column, alignItems: center, justifyContent: center, textAlign: center
-  // padding: 10px, borderRadius: 8px, border: 1px solid #F33D4F, backgroundColor: #FFF4F4
-  // width: 160px, height: 160px, gap: 8px are handled by MUI Box props or direct style in component
-  // For class, focus on non-layout critical aspects if layout is by Box props:
   padding: 10px;
   border-radius: 8px;
   border: 1px solid var(--error-color, #F33D4F);
   background-color: var(--error-bg-color, #FFF4F4);
-  width: 160px; // Keep fixed size for consistency in grid
+  width: 160px;
   height: 160px;
-  display: flex; // Add display flex for direct children alignment
+  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -1273,9 +862,6 @@
 }
 
 .chat-message-file-item-doc {
-  // Styles were previously sx prop for PDF/other file items
-  // display: flex, alignItems: center, gap: 8px, padding: 8px, borderRadius: 8px
-  // backgroundColor: #f0f0f0, border: 1px solid #e0e0e0, width: 160px, minHeight: 60px, cursor: pointer
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1283,22 +869,21 @@
   border-radius: 8px;
   background-color: var(--bg-subtle, #f0f0f0);
   border: 1px solid var(--border-color-light, #e0e0e0);
-  width: 160px; // Fixed width for grid consistency
-  min-height: 60px; // Auto height will be determined by content
+  width: 160px;
+  min-height: 60px;
   cursor: pointer;
-  text-decoration: none; // Ensure anchor default underline is removed
-  color: inherit; // Ensure anchor default color is removed
+  text-decoration: none;
+  color: inherit;
 
   &:hover {
     background-color: var(--bg-hover, #e9e9e9);
   }
 }
 
-// Icons used within ChatInputPanel controls
 .inputActionIcon {
   width: 16px;
   height: 16px;
-  display: block; // Good for layout
+  display: block;
 }
 
 .deleteAttachmentIcon {
@@ -1308,11 +893,8 @@
   display: block;
 }
 
-// Container for the reasoning display section
 .chat-message-reasoning-container {
-  margin-bottom: var(--spacing-1, 8px); // Corresponds to mb: 1
-  padding: var(--spacing-1, 8px);       // Corresponds to p: 1
-  border-radius: var(--border-radius-medium, 4px); // Corresponds to borderRadius: 1 (assuming 4px or theme value)
-  // background-color: var(--subtle-background, transparent); // Optional subtle background
-  // Consider adding a transition for smooth collapse/expand if not handled by content visibility alone
+  margin-bottom: var(--spacing-1, 8px); 
+  padding: var(--spacing-1, 8px);
+  border-radius: var(--border-radius-medium, 4px);
 }

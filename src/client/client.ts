@@ -10,7 +10,6 @@ import {
   PaginatedMessagesResponse,
   HTTPValidationError,
   EncryptedIdResponse,
-  FileResponse,
   Summary,
   SummaryCreateRequest,
   SummaryResponse,
@@ -296,7 +295,7 @@ export class ApiClient {
     return promise.then(fileResponse => ({
       fileResponse,
       abort,
-      xhr // Optionally expose xhr
+      xhr
     }));
   }
 

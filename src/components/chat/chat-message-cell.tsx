@@ -1,38 +1,20 @@
-import React, { useState, useCallback, useEffect } from "react";
-import Image from "next/image";
+import React, { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
-import { ChatMessage, RequestMessage } from "@/types";
-import { copyToClipboard } from "@/utils/utils"; // Adjust path
-import Locale from "@/locales"; // Adjust path
+import { ChatMessage } from "@/types";
 import { MultimodalContent } from "@/client/api";
-import { EncryptionService } from "@/services/encryption-service";
-
 import { ActionButton } from "@/components/ui/action-button";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
-import { GenericFileIcon } from "@/components/common/GenericFileIcon";
-import CloseIcon from "@mui/icons-material/Close";
-// const GenericFileIcon = () => ( ... ); // This will be removed and imported
-
-// MUI Imports
-import { TextField, Button, Box, Typography, CircularProgress, IconButton } from "@mui/material"; // IconButton removed, ReplayRoundedIcon, ModeEditRoundedIcon removed
-
-import SendIcon from "@mui/icons-material/Send";
-import CancelIcon from "@mui/icons-material/Cancel";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-
+import { Box } from "@mui/material";
 import styles from "./chat.module.scss";
 import { UUID } from "crypto";
 import { useApiClient } from "@/providers/api-client-provider";
-import { AttestationService } from "@/services/attestation-service";
-import { useWallets } from "@privy-io/react-auth";
 import { useEncryption } from "@/providers/encryption-provider";
 import { useLoadedFiles, LoadedFile } from "@/hooks/use-loaded-files";
-import { FilePreviewItem } from "./FilePreviewItem";
-import { MessageActionsBar } from "./MessageActionsBar";
-import { ReasoningDisplay } from "./ReasoningDisplay";
-import { EditMessageForm } from "./EditMessageForm";
+import { FilePreviewItem } from "../ui/file-preview-item";
+import { MessageActionsBar } from "../ui/message-actions-bar";
+import { ReasoningDisplay } from "../ui/reasoning-display";
+import { EditMessageForm } from "../ui/edit-message-form";
 
 const Markdown = dynamic(async () => (await import("../ui/markdown")).Markdown, {
   loading: () => <LoadingAnimation />,
@@ -50,41 +32,7 @@ interface ChatMessageCellProps {
   scrollRef: React.RefObject<HTMLDivElement | null>;
   renderMessagesLength: number;
   onResend: (messageId: UUID) => void;
-  onUserStop: (messageId: UUID) => void;
   onEditSubmit: (messageId: UUID, newText: string) => void;
-}
-
-function getTextContent(
-  content: string | MultimodalContent[] | null | undefined
-): string {
-  if (content === null || content === undefined) return "";
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    return (
-      content.find((item) => item.type === "text")?.text || "[Non-text content]"
-    );
-  }
-  return "";
-}
-
-function getImageUrls(
-  content: string | MultimodalContent[] | null | undefined
-): string[] {
-  if (
-    content === null ||
-    content === undefined ||
-    typeof content === "string" ||
-    !Array.isArray(content)
-  ) {
-    return [];
-  }
-  return content
-    .filter((item) => item.type === "image_url" && item.image_url?.url)
-    .map((item) => item.image_url!.url);
-}
-
-function getReasoningText(reasoning: string | undefined | null): string {
-  return reasoning || "";
 }
 
 export const ChatMessageCell = React.memo(function ChatMessageCell(
@@ -102,7 +50,6 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     scrollRef,
     renderMessagesLength,
     onResend,
-    onUserStop,
     onEditSubmit,
   } = props;
 
@@ -117,7 +64,6 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     () => onResend(messageId),
     [onResend, messageId]
   );
-  const handleUserStop = useCallback(() => onUserStop(messageId), [onUserStop, messageId]);
 
   const [isEditing, setIsEditing] = useState(false);
 

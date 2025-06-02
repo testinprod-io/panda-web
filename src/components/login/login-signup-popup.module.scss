@@ -7,83 +7,83 @@
 .popupContainer {
   background: white;
   border-radius: 8px;
-  border: 1px solid #CACACA; // Figma: outline: '1px #CACACA solid', outlineOffset: '-1px' -> border is simpler
-  padding: 32px; // A general padding, can be adjusted. Figma implies gap: 24, and internal elements have widths.
+  border: 1px solid #CACACA; 
+  padding: 32px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 24px; // Figma: gap: 24
-  width: 376px; // (312px button width + 32px padding * 2) approx
+  gap: 24px;
+  width: 376px;
   max-width: 90vw;
   box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
-  outline: none; // Remove focus outline from Modal content
+  outline: none;
 }
 
 .contentWrapper {
-  width: 202px; // Figma: width: 202
+  width: 202px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 16px; // Adjusted from Figma's 24px for a tighter look, original was between title and description block
+  gap: 16px;
 }
 
 .title {
   align-self: stretch;
   text-align: center;
-  color: #131A28 !important; // Figma: color: '#131A28'
-  font-size: 24px !important; // Figma: fontSize: 24
-  font-family: 'Inter', sans-serif !important; // Figma: fontFamily: 'Inter'
-  font-weight: 600 !important; // Figma: fontWeight: '600'
+  color: #131A28 !important;
+  font-size: 24px !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 600 !important;
   line-height: normal !important;
 }
 
 .description {
   align-self: stretch;
   text-align: center;
-  color: #131A28 !important; // Figma: color: '#131A28'
-  font-size: 16px !important; // Figma: fontSize: 16
-  font-family: 'Inter', sans-serif !important; // Figma: fontFamily: 'Inter'
-  font-weight: 400 !important; // Figma: fontWeight: '400'
-  line-height: 1.5 !important; // For better readability
+  color: #131A28 !important; 
+  font-size: 16px !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
 }
 
 .buttonContainer {
-  width: 312px; // Figma: width: 312
+  width: 312px;
   display: flex;
   flex-direction: column;
-  gap: 8px; // Figma: gap: 8
+  gap: 8px;
 }
 
 .loginButton {
-  height: 48px !important; // Figma: height: 48
-  background: #131A28 !important; // Figma: background: '#131A28'
-  border-radius: 24px !important; // Figma: borderRadius: 24
-  color: white !important; // Figma: color: 'white'
-  font-size: 16px !important; // Figma: fontSize: 16
-  font-family: 'Inter', sans-serif !important; // Figma: fontFamily: 'Inter'
-  font-weight: 400 !important; // Figma: fontWeight: '400'
+  height: 48px !important;
+  background: #131A28 !important;
+  border-radius: 24px !important;
+  color: white !important;
+  font-size: 16px !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 400 !important;
   text-transform: none !important;
 
   &:hover {
-    background: #323F52 !important; // Darker shade for hover
+    background: #323F52 !important;
   }
 }
 
 .signupButton {
-  height: 48px !important; // Figma: height: 48
-  background: white !important; // Figma: background: 'white'
-  border-radius: 24px !important; // Figma: borderRadius: 24
-  border: 1px solid #B3B3B3 !important; // Figma: outline: '1px #B3B3B3 solid'
-  color: #131A28 !important; // Figma: color: '#131A28'
-  font-size: 16px !important; // Figma: fontSize: 16
-  font-family: 'Inter', sans-serif !important; // Figma: fontFamily: 'Inter'
-  font-weight: 400 !important; // Figma: fontWeight: '400'
+  height: 48px !important;
+  background: white !important;
+  border-radius: 24px !important;
+  border: 1px solid #B3B3B3 !important;
+  color: #131A28 !important;
+  font-size: 16px !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 400 !important;
   text-transform: none !important;
 
   &:hover {
-    background: #f5f5f5 !important; // Light grey for hover
+    background: #f5f5f5 !important;
     border-color: #9d9d9d !important;
   }
 } 

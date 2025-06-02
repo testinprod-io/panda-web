@@ -1,8 +1,6 @@
 "use client";
 
 import { Box, IconButton, Tooltip, Typography } from '@mui/material';
-import { useRouter } from 'next/navigation';
-import { useChatStore } from '@/store/chat';
 import styles from './sidebar.module.scss';
 import { Montserrat } from 'next/font/google';
 import clsx from 'clsx';

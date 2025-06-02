@@ -1,9 +1,8 @@
 import { UUID } from 'crypto';
-import { SessionState, SubmittedFile } from '@/types/session'; // Assuming these types are correct
+import { SessionState } from '@/types/session';
 import { UNFINISHED_INPUT } from '@/types/constant';
 import { safeLocalStorage } from '@/utils/utils';
 
-// Define and export interfaces used by utility functions and the panel
 export interface FileError {
   fileName: string;
   reason: "type" | "image_limit" | "pdf_size_limit" | "pdf_individual_size_limit" | "no_session_id" | "content_mismatch";

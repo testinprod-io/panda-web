@@ -9,17 +9,15 @@ import { usePrivy } from "@privy-io/react-auth";
 import {
   useAppConfig,
   useChatStore,
-} from "@/store"; // Adjust paths
+} from "@/store";
 import { UNFINISHED_INPUT } from "@/types/constant";
-import { autoGrowTextArea, isVisionModel, safeLocalStorage, useMobileScreen } from "@/utils/utils";
+import { autoGrowTextArea, isVisionModel, useMobileScreen } from "@/utils/utils";
 import Locale from "@/locales";
 import { useSubmitHandler } from "@/hooks/use-submit-handler";
 import { useSnackbar } from "@/providers/snackbar-provider";
 import { ChatControllerPool } from "@/client/controller";
 
 import { ActionButton } from "@/components/ui/action-button";
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-
 import ArrowUpwardRoundedIcon from '@mui/icons-material/ArrowUpwardRounded';
 import StopRoundedIcon from '@mui/icons-material/StopRounded';
 import Button from '@mui/material/Button';
@@ -31,14 +29,13 @@ import { useChatActions } from "@/hooks/use-chat-actions";
 import { GenericFileIcon } from "@/components/common/GenericFileIcon";
 import { SessionState, SubmittedFile } from "@/types/session";
 import { EncryptionService } from "@/services/encryption-service";
-import { FileCircularProgress } from "./FileCircularProgress";
+import { FileCircularProgress } from "../ui/file-circular-progress";
 import {
   loadSessionState, 
   filterValidFilesForUpload,
   MAX_IMAGE_FILES,
   MAX_PDF_AGGREGATE_SIZE, 
   ALLOWED_FILE_TYPES,
-  FileError,
   AttachedClientFile
 } from './chat-input-panel.utils';
 import { CustomizedPromptsData } from "@/types";
@@ -100,13 +97,26 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
 
   useEffect(() => {
     if (propSessionId !== activeSessionId) {
-      if (provisionalSessionIdRef.current && !isProvisionalSessionCommittedRef.current && provisionalSessionIdRef.current !== propSessionId) {
-        chatActions.deleteSession(provisionalSessionIdRef.current).catch(err => {
-        });
-        provisionalSessionIdRef.current = null;
+      if (
+        activeSessionId === provisionalSessionIdRef.current &&
+        propSessionId === undefined &&
+        provisionalSessionIdRef.current !== null &&
+        !isProvisionalSessionCommittedRef.current
+      ) {
+      } else {
+        if (
+          provisionalSessionIdRef.current &&
+          !isProvisionalSessionCommittedRef.current &&
+          provisionalSessionIdRef.current !== propSessionId
+        ) {
+          chatActions.deleteSession(provisionalSessionIdRef.current).catch(err => {
+            console.error("Error deleting provisional session:", err);
+          });
+          provisionalSessionIdRef.current = null;
+        }
+        isProvisionalSessionCommittedRef.current = false;
+        setActiveSessionId(propSessionId);
       }
-      isProvisionalSessionCommittedRef.current = false;
-      setActiveSessionId(propSessionId);
     }
   }, [propSessionId, activeSessionId, chatActions]);
 
@@ -119,12 +129,12 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
       const restoredAttachedFiles: AttachedClientFile[] = initialState.persistedAttachedFiles.map(
         (persistedFile): AttachedClientFile => ({
           clientId: typeof window !== "undefined" && window.crypto?.randomUUID ? window.crypto.randomUUID() : Date.now().toString() + Math.random().toString(),
-          originalFile: null as any, // Original file object is not persisted
+          originalFile: null as any,
           previewUrl: persistedFile.url,
           type: persistedFile.type,
           name: persistedFile.name,
           size: persistedFile.size,
-          uploadStatus: 'success', // Restored files are assumed to be successfully uploaded
+          uploadStatus: 'success',
           fileId: persistedFile.fileId as UUID,
           uploadProgress: 100,
           abortUpload: undefined,
@@ -132,7 +142,6 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
       );
       setAttachedFiles(restoredAttachedFiles);
     } else {
-      // Reset state if there's no active session ID
       setUserInput("");
       setAttachedFiles([]);
       setEnableSearch(false);
@@ -217,18 +226,21 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
     let currentSessionIdToUse = activeSessionId;
 
     if (!currentSessionIdToUse) {
+      console.log('DEBUG [executeFileUploads] No current session ID, creating a new session');
       if (provisionalSessionIdRef.current && !isProvisionalSessionCommittedRef.current) {
-        await chatActions.deleteSession(provisionalSessionIdRef.current).catch(err => {
-        });
+        await chatActions.deleteSession(provisionalSessionIdRef.current).catch(err => { });
         provisionalSessionIdRef.current = null;
+        console.log('DEBUG [executeFileUploads] Deleted provisional session');
       }
 
-      const session = await chatActions.newSession(modelConfig,   );
+      const session = await chatActions.newSession(modelConfig, customizedPrompts);
       if (session) {
+        console.log('DEBUG [executeFileUploads] Created new session', session.id);
         currentSessionIdToUse = session.id;
         provisionalSessionIdRef.current = session.id;
         isProvisionalSessionCommittedRef.current = false;
         setActiveSessionId(session.id);
+        console.log('DEBUG [executeFileUploads] Set active session ID to', currentSessionIdToUse);
       } else {
         showSnackbar("Failed to create a session for file upload.", 'error');
         return;
@@ -294,7 +306,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
 
     for (const clientFile of newClientFiles) {
       setAttachedFiles(prev => prev.map(f => f.clientId === clientFile.clientId ? { ...f, uploadStatus: 'uploading' as const } : f));
-
+      console.log('DEBUG [executeFileUploads] Uploading file with session ID', currentSessionIdToUse);
       const uploadPromise = apiClient.app.uploadFile(
         currentSessionIdToUse!,
         clientFile.originalFile,
@@ -544,7 +556,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
           <button
             onClick={uploadFile}
             disabled={!isVisionModel(modelConfig)}
-            className={styles["chat-input-action-plus-new"]}
+            className={styles["chat-input-action-plus"]}
             aria-label={Locale.Chat.InputActions.UploadImage}
           >
             <img 
@@ -556,7 +568,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
           <button
             onClick={() => setEnableSearch(!enableSearch)}
             className={clsx(
-              styles["chat-input-action-search-new"],
+              styles["chat-input-action-search"],
               { [styles.active]: enableSearch }
             )}
             disabled={!authenticated || isUploadingFiles}
@@ -571,7 +583,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>((
         </div>
         <div className={styles["chat-input-controls-right"]}>
           <Button
-            className={styles["chat-input-send-new"]}
+            className={styles["chat-input-send"]}
             variant="contained"
             onClick={isLoading ? stopGeneration : doSubmit}
             disabled={!authenticated|| isUploadingFiles }

@@ -1,25 +1,20 @@
-/* CustomizePromptsView Styles */
-
 .viewContainer {
   display: flex;
   flex-direction: column;
-  flex-grow: 1; // Fill available vertical space in the parent modal
-  min-height: 0; // Crucial for nested flex scrolling
-  overflow: hidden; // Prevent this container from scrolling; formArea will scroll
+  flex-grow: 1;
+  min-height: 0;
+  overflow: hidden;
   background-color: white; 
   padding: 32px 24px;
   border-radius: 16px;
-  // Assuming it's a direct child of a flex container (the modal box)
-  // width: 100%; // Should already be handled by the parent modal's width setting
 }
 
 .header {
-  // padding: 32px 0 18px 0; // Matches modal content padding, specific to this view
   gap: 8px;
-  .title {
+  .title {  
     padding: 6px 16px 0px 16px;
     color: #131a28;
-    font-size: 20px; // From Figma
+    font-size: 20px;
     font-family: "Inter", sans-serif;
     font-weight: 600;
     line-height: 32px;
@@ -27,16 +22,13 @@
   .subtitle {
     padding: 0px 16px 6px 16px;
     color: #757575;
-    font-size: 16px; // From Figma
+    font-size: 16px;
     font-family: "Inter", sans-serif;
-    font-weight: 500; // Figma specifies 500 for this
+    font-weight: 500;
     line-height: 32px;
   }
   flex-grow: 1;
-  overflow-y: auto; // Allow form content to scroll if it overflows
-  // min-height: 0; // Already implicitly handled by overflow-y: auto in flex children usually
-
-  // padding: 18px 16px 8px 16px;
+  overflow-y: auto;
 }
 
 .divider {
@@ -45,19 +37,19 @@
 
 .formArea {
   flex-grow: 1;
-  overflow-y: auto; // Allow form content to scroll if it overflows
+  overflow-y: auto;
 
   padding: 18px 16px 8px 16px;
   display: flex;
   flex-direction: column;
-  gap: 20px; // Gap between form sections
+  gap: 20px;
 }
 
 .formSection {
   display: flex !important;
   border-radius: 8px !important; 
   flex-direction: column !important;
-  gap: 20px !important; // Gap between label and input within a section (was 20px, adjusted for better density)
+  gap: 20px !important;
 }
 
 .textField {
@@ -96,10 +88,8 @@
 
 .textArea {
   & :global(.MuiOutlinedInput-root) {
-    // height: 100px !important; // Approximate height from Figma (160px total - padding)
     border-radius: 8px !important;
     background-color: white !important;
-    // height: 48px !important;
     font-family: "Inter", sans-serif !important;
 
     &:hover fieldset {
@@ -121,24 +111,24 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 8px; // Space above the chips
+  margin-top: 8px;
 }
 
 .traitChip {
-  border-radius: 48px !important; // Important to override MUI default
+  border-radius: 48px !important;
   border: 1px solid #cacaca !important;
   font-family: "Inter", sans-serif !important;
   font-size: 15px !important;
   font-weight: 500 !important;
-  line-height: 32px !important; // Explicit line height for chip content
-  padding: 4px 8px !important; // Reduce padding a bit
+  line-height: 32px !important;
+  padding: 4px 8px !important;
   color: #757575 !important;
   background-color: white !important;
 
   .MuiChip-icon {
     color: #757575 !important;
-    margin-left: 6px !important; // Space before icon
-    margin-right: -4px !important; // Adjust default icon spacing
+    margin-left: 6px !important;
+    margin-right: -4px !important;
     font-size: 20px !important;
   }
   .MuiChip-label {
@@ -152,8 +142,8 @@
   }
 
   &.selectedTrait {
-    border-color: #1976d2 !important; // Example: primary color for selected
-    background-color: #e3f2fd !important; // Lighter shade of primary for selected bg
+    border-color: #1976d2 !important;
+    background-color: #e3f2fd !important;
     color: #1976d2 !important;
     .MuiChip-icon {
       color: #1976d2 !important;
@@ -163,42 +153,36 @@
 
 .blackAndWhiteSwitch {
   & :global(.MuiSwitch-switchBase) {
-    // Styles for the switch when it's NOT checked
     & :global(.MuiSwitch-thumb) {
-      background-color: black !important; // Thumb color when off
+      background-color: black !important;
     }
 
-    // Styles for the switch when it IS checked
     &.Mui-checked {
-      color: white !important; // This can influence ripple and other elements if not overridden
+      color: white !important;
 
       & :global(.MuiSwitch-thumb) {
-        background-color: white !important; // Thumb color when on
+        background-color: white !important;
       }
     }
   }
 
-  // Styles for the track
   & :global(.MuiSwitch-track) {
-    background-color: #ccc !important; // Track color when off (light grey)
+    background-color: #ccc !important;
     opacity: 1 !important;
   }
 
-  // Styles for the track when the switch is checked
-  // .Mui-checked is on MuiSwitch-switchBase, and .MuiSwitch-track is a sibling
   & :global(.MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track) {
-    background-color: black !important; // Track color when on
+    background-color: black !important;
     opacity: 1 !important;
   }
 }
 
 .actionsFooter {
   display: flex;
-  // justify-content: flex-end;
   align-items: center;
   gap: 16px;
   padding: 12px 16px 8px 16px;
-  margin-top: auto; // Push to the bottom if formArea doesn't fill space
+  margin-top: auto;
 }
 
 .cancelButton {
@@ -228,12 +212,12 @@
   border-radius: 48px !important;
   padding: 4px 16px !important;
   text-transform: none !important;
-  background-color: #f3f3f3 !important; // Default disabled state from Figma
+  background-color: #f3f3f3 !important;
   color: #cacaca !important;
   border: 1px solid #f3f3f3 !important;
 
   &:not(:disabled) {
-    background-color: #131a28 !important; // Enabled state (example, use your primary color)
+    background-color: #131a28 !important;
     color: white !important;
     border-color: #131a28 !important;
     &:hover {

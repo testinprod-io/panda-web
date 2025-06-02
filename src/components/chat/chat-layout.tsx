@@ -23,13 +23,12 @@ import { usePrivy } from "@privy-io/react-auth";
 
 const localStorage = safeLocalStorage();
 
-// Custom hook to get the previous value of a prop or state
 function usePrevious<T>(value: T): T | undefined {
-  const ref = useRef<T | undefined>(undefined); // Explicitly initialize with undefined
+  const ref = useRef<T | undefined>(undefined);
   useEffect(() => {
     ref.current = value;
-  }, [value]); // Update ref when value changes
-  return ref.current; // This will return the value from the PREVIOUS render cycle
+  }, [value]);
+  return ref.current;
 }
 
 export default function ChatLayoutContent({ children }: { children: React.ReactNode }) {
@@ -39,12 +38,10 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
   const params = useParams();
   const router = useRouter();
   const appConfig = useAppConfig();
-  const prevIsMobile = usePrevious(isMobile); // Track previous isMobile state
+  const prevIsMobile = usePrevious(isMobile);
 
-  // Get Privy status
   const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
 
-  // Hooks MUST be called unconditionally at the top level.
   const { newSession } = useChatActions();
   const { showSnackbar } = useSnackbar();
 
@@ -73,12 +70,6 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
   const currentChatId = params?.chatId as UUID | undefined;
   const isNewChatPage = !currentChatId;
 
-
-  // If Privy is ready but the user is not authenticated,
-  // ChatLayoutContent will still render its basic structure.
-  // Components inside it that require auth (like Sidebar) will be conditionally rendered.
-
-  // If we've reached this point, privyReady is true. privyAuthenticated may be true or false.
 
   useEffect(() => {
     setIsSidebarCollapsed(isMobile ? true : false);
@@ -152,18 +143,13 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
 
   const handleToggleSidebar = () => setIsSidebarCollapsed(prev => !prev);
 
-  const sidebarExpandedWidth = 300; // px - Matches $sidebar-expanded-width
-  const sidebarCollapsedWidth = 125; // px - Matches $sidebar-collapsed-width
-  const sidebarTransitionDuration = "0.4s"; // Matches $sidebar-transition-duration
-  const sidebarTransitionTiming = "ease-in-out"; // Matches $sidebar-transition-timing
+  const sidebarExpandedWidth = 300;
+  const sidebarCollapsedWidth = 125;
+  const sidebarTransitionDuration = "0.4s";
+  const sidebarTransitionTiming = "ease-in-out";
 
-  // Determine the effective collapsed state for the sidebar, 
-  // especially to prevent flicker when transitioning from desktop (open) to mobile (overlay).
   let effectiveIsSidebarCollapsed = isSidebarCollapsed;
   if (isMobile && prevIsMobile === false && !isSidebarCollapsed) {
-    // Transitioning from desktop (prevIsMobile was false) to mobile (isMobile is true)
-    // AND the sidebar was open on desktop (isSidebarCollapsed was false at the start of this render).
-    // Force collapse for this specific transition render to avoid flicker.
     effectiveIsSidebarCollapsed = true;
   }
 
@@ -186,12 +172,11 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
         <Tooltip title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"} placement="right">
           <IconButton 
             onClick={handleToggleSidebar} 
-            className={sidebarStyles.sidebarToggleButton} // Use styles from sidebar.module.scss
+            className={sidebarStyles.sidebarToggleButton}
             aria-label={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
             style={{
               left: isSidebarCollapsed ? `${sidebarCollapsedWidth-20}px` : `${sidebarExpandedWidth-20}px`,
               transition: `left ${sidebarTransitionDuration} ${sidebarTransitionTiming}`,
-              // top: '50vh' and transform will be handled by SCSS
             }}
           >
             {isSidebarCollapsed ? <img src="/icons/chevron-right.svg" style={{ width: '8.75px', height: '17.5px' }} alt="Expand Sidebar" /> : <img src="/icons/chevron-left.svg" style={{ width: '8.75px', height: '17.5px' }}  alt="Collapse Sidebar" />}
@@ -199,9 +184,7 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
         </Tooltip>
       )}
 
-      {/* Logic for overlay and sidebar rendering */}
       <>
-        {/* Render overlay if mobile, control visibility/opacity with sx props for animation */}
         {isMobile && (
           <Box
             onClick={handleToggleSidebar}
@@ -214,7 +197,7 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
               backgroundColor: "rgba(0, 0, 0, 0.5)",
               opacity: !isSidebarCollapsed ? 1 : 0,
               visibility: !isSidebarCollapsed ? 'visible' : 'hidden',
-              transition: theme.transitions.create(["opacity", "visibility"], { // Apply transition to opacity and visibility
+              transition: theme.transitions.create(["opacity", "visibility"], {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.standard,
               }),
@@ -223,8 +206,8 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
           />
         )}
         <Sidebar
-          isSidebarCollapsed={isSidebarCollapsed} // Use effective state
-          onToggleSidebar={handleToggleSidebar} // Pass the new toggle handler
+          isSidebarCollapsed={isSidebarCollapsed}
+          onToggleSidebar={handleToggleSidebar}
           {...(isMobile && {
             sx: {
               position: "fixed",
@@ -232,12 +215,12 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
               left: `-${sidebarExpandedWidth}px`,
               height: "100vh",
               width: `${sidebarExpandedWidth}px`,
-              transform: isSidebarCollapsed // Use state for transform
-                ? "translateX(0)"      // Stays at -378px (hidden)
-                : "translateX(100%)",  // Moves to 0px (visible)
-              transition: theme.transitions.create("transform", { // Apply transition to transform property
+              transform: isSidebarCollapsed
+                ? "translateX(0)"
+                : "translateX(100%)",
+              transition: theme.transitions.create("transform", {
                 easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.standard, // Use standard duration for both enter and exit
+                duration: theme.transitions.duration.standard,
               }),
               zIndex: theme.zIndex.drawer + 1,
               boxShadow: theme.shadows[3],
@@ -261,8 +244,8 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
         }}
       >
         <ChatHeader
-          isSidebarCollapsed={effectiveIsSidebarCollapsed} // Use effective state
-          onToggleSidebar={handleToggleSidebar} // Pass the new toggle handler
+          isSidebarCollapsed={effectiveIsSidebarCollapsed}
+          onToggleSidebar={handleToggleSidebar}
           isMobile={isMobile}
         />
         <Box
@@ -275,7 +258,6 @@ export default function ChatLayoutContent({ children }: { children: React.ReactN
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              // paddingTop: { xs: "60px", sm: "100px", md: "140px" },
               flexShrink: 0,
             }),
             ...(!isNewChatPage && {}),

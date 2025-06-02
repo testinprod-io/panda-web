@@ -1,7 +1,6 @@
-export const OWNER = "ChatGPTNextWeb";
-export const REPO = "ChatGPT-Next-Web";
+export const OWNER = "testinprod-io";
+export const REPO = "panda-web";
 export const REPO_URL = `https://github.com/${OWNER}/${REPO}`;
-export const PLUGINS_REPO_URL = `https://github.com/${OWNER}/NextChat-Awesome-Plugins`;
 export const ISSUE_URL = `https://github.com/${OWNER}/${REPO}/issues`;
 export const UPDATE_URL = `${REPO_URL}#keep-updated`;
 export const RELEASE_URL = `${REPO_URL}/releases`;
@@ -70,7 +69,7 @@ export const ACCESS_CODE_PREFIX = "nk-";
 export const LAST_INPUT_KEY = "last-input";
 export const UNFINISHED_INPUT = (id: string) => "unfinished-input-" + id;
 
-export const STORAGE_KEY = "chatgpt-next-web";
+export const STORAGE_KEY = "panda-web";
 
 export const REQUEST_TIMEOUT_MS = 60000;
 export const REQUEST_TIMEOUT_MS_FOR_THINKING = REQUEST_TIMEOUT_MS * 5;
@@ -78,10 +77,7 @@ export const REQUEST_TIMEOUT_MS_FOR_THINKING = REQUEST_TIMEOUT_MS * 5;
 export const EXPORT_MESSAGE_CLASS_NAME = "export-markdown";
 
 export enum ServiceProvider {
-  // OpenAI = "OpenAI",
   Panda = "Panda",
-  // XAI = "XAI",
-  // DeepSeek = "DeepSeek",
 }
 
 // Google API safety settings, see https://ai.google.dev/gemini-api/docs/safety-settings
@@ -108,13 +104,7 @@ Latex inline: \\(x^2\\)
 Latex block: $$e=mc^2$$
 `;
 
-// Default model names for switching providers
-// export const DEFAULT_OPENAI_MODEL_NAME = "gpt-4o-mini";
 export const DEFAULT_PANDA_MODEL_NAME = "ig1/r1-1776-AWQ";
-
-// export const SUMMARIZE_MODEL = "gpt-4o-mini";
-// export const GEMINI_SUMMARIZE_MODEL = "gemini-pro";
-// export const DEEPSEEK_SUMMARIZE_MODEL = "deepseek-chat";
 
 export const KnowledgeCutOffDate: Record<string, string> = {
   default: "2023-10",
@@ -258,5 +248,3 @@ export const DEFAULT_MODELS: AppModelDefinition[] = [
 
 export const CHAT_PAGE_SIZE = 15;
 export const MAX_RENDER_MSG_COUNT = 45;
-
-// export type ModelType = "ig1/r1-1776-AWQ" | "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16";

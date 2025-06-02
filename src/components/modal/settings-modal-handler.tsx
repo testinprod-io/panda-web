@@ -34,7 +34,7 @@ export default function SettingsModalHandler() {
         setCurrentPage('general');
       } else {
         console.log('[SettingsModalHandler] Hash is NOT for settings.');
-        if (isModalOpen) { // Only close if it was open
+        if (isModalOpen) {
             console.log('[SettingsModalHandler] Modal was open, but hash changed. Setting modal to CLOSED.');
             setIsModalOpen(false);
             setCurrentPage(null);
@@ -42,14 +42,13 @@ export default function SettingsModalHandler() {
       }
     };
 
-    checkHash(); // Run on mount and when dependencies change
+    checkHash();
 
-    // Keep the event listener for cases where only the hash changes externally (e.g., back/forward)
     window.addEventListener('hashchange', checkHash, false);
     return () => {
       window.removeEventListener('hashchange', checkHash, false);
     };
-  }, [pathname, searchParams]); // ADDED pathname and searchParams as dependencies
+  }, [pathname, searchParams]);
 
   return <SettingsModal open={isModalOpen} currentPage={currentPage} onClose={closeModalAndClearHash} />;
 } 

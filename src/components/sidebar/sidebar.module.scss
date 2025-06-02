@@ -1,9 +1,7 @@
-// Base Sidebar Variables
 $sidebar-expanded-width: 378px;
-$sidebar-collapsed-width: 125px; // Your recent value
-$nav-menu-collapsed-width: 77px; // Your recent value for .collapsedNavMenu
+$sidebar-collapsed-width: 125px;
+$nav-menu-collapsed-width: 77px;
 
-// Animation
 $sidebar-transition-duration: 0.4s;
 $sidebar-transition-timing: ease-in-out;
 
@@ -15,12 +13,11 @@ $sidebar-transition-timing: ease-in-out;
   flex-shrink: 0;
   box-sizing: border-box;
   border-right: 1px solid #cacaca;
-  overflow-x: hidden; // CRUCIAL for clipping the slidingContainer
-  position: relative; // For any absolute children if ever needed again (like overlay toggle)
+  overflow-x: hidden;
+  position: relative;
   transition: width $sidebar-transition-duration $sidebar-transition-timing;
   overflow-y: hidden;
 
-  // Custom scrollbar styles (can remain if panes need internal scrolling)
   &::-webkit-scrollbar {
     width: 14px;
   }
@@ -47,7 +44,6 @@ $sidebar-transition-timing: ease-in-out;
 
 .slidingContainer {
   display: flex;
-  // flex-shrink: 0;
   width: calc($sidebar-expanded-width + $sidebar-collapsed-width);
   flex-grow: 1;
   min-height: 0;
@@ -55,33 +51,30 @@ $sidebar-transition-timing: ease-in-out;
   will-change: transform;
 }
 
-// Common styles for panes (excluding height and specific overflow-y)
 .paneBase {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  // flex-shrink: 0;
   overflow-x: hidden;
 }
 
 .expandedPane {
-  @extend .paneBase; // Inherit common styles
+  @extend .paneBase;
   width: $sidebar-expanded-width;
   overflow-y: auto;
-  height: 100%; // Specific to expandedPane
+  height: 100%;
 }
 
 .collapsedPane {
-  @extend .paneBase; // Inherit common styles
+  @extend .paneBase;
   width: $sidebar-collapsed-width;
   align-items: center;
   padding-top: 20px;
   padding-bottom: 20px;
   flex-shrink: 0;
-  overflow-y: hidden; // Specific to collapsedPane
+  overflow-y: hidden;
 }
 
-// Styles for SidebarHeader (used once, above panes)
 .sidebarHeaderContainer {
   display: flex;
   flex-direction: column;
@@ -92,7 +85,6 @@ $sidebar-transition-timing: ease-in-out;
   }
 }
 
-// Styles for expanded content area (within .expandedPane)
 .expandedContentArea {
   flex-grow: 1;
   display: flex;
@@ -103,14 +95,13 @@ $sidebar-transition-timing: ease-in-out;
   padding: 17px 31px;
 }
 
-.sidebarContent { // Contains ChatList
+.sidebarContent {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
   width: 100%;
 }
 
-// Styles for the new navigation menu (within .collapsedPane)
 .collapsedNavMenu {
   display: flex;
   flex-direction: column;
@@ -155,30 +146,15 @@ $sidebar-transition-timing: ease-in-out;
   }
 }
 
-// REMOVE OLD/UNUSED STYLES
-// .sidebarCollapsed class (the one applied to .sidebar) is no longer needed for these specific overrides
-// .sidebarInnerWrapper is removed
-// .sidebar.sidebarCollapsed .projectPanelContainer, etc. are removed
-// Specific .sidebar.sidebarCollapsed .sidebarHeaderContainer is removed
-
-// Keep .sidebarHeaderIconRow, .sidebarHeaderLogoRow, .logoTextBold, .logoTextNormal as they are used by SidebarHeader.tsx
-// The styling for these might need slight adjustment if their container's padding changes significantly
-// but SidebarHeader.tsx logic largely controls their appearance based on isSidebarCollapsed.
-
 .sidebarHeaderIconRow { 
   display: flex;
   justify-content: space-between;
   align-items: center;
   height: 48px;
   width: 100%;
-  /* color: white; */ /* This color was likely for an old design or icon type */
   box-sizing: border-box; 
   svg {
     color: #b3b3b3;
-  }
-  :global(.MuiIconButton-root) {
-    /* color: white; */ /* This color was likely for an old design or icon type */
-    /* If a specific color is needed for icons in IconButton, it's set directly in sx or on the icon */
   }
 }
 
@@ -191,15 +167,15 @@ $sidebar-transition-timing: ease-in-out;
   height: 48px;
   width: 100%; 
   box-sizing: border-box; 
-  transition: all 0.3s ease-in-out; // from sx
-  flex-direction: row; // default from sx
-  padding-left: 8px; // default from sx
+  transition: all 0.3s ease-in-out;
+  flex-direction: row;
+  padding-left: 8px;
 
   &.collapsed {
-    flex-direction: column; // from sx
-    gap: 6px; // from sx
-    width: fit-content; // from sx
-    padding-left: 18px; // from sx
+    flex-direction: column;
+    gap: 6px;
+    width: fit-content;
+    padding-left: 18px;
   }
 }
 
@@ -217,11 +193,11 @@ $sidebar-transition-timing: ease-in-out;
   letter-spacing: 0.80px; 
   font-weight: 600;
   line-height: 1.2;
-  transition: none; // from sx
+  transition: none;
 
   &.collapsed {
-    margin: 0; // from sx
-    text-align: center; // from sx
+    margin: 0;
+    text-align: center;
   }
 }
 
@@ -239,34 +215,24 @@ $sidebar-transition-timing: ease-in-out;
   letter-spacing: 0.80px;
 }
 
-// Icon for collapsed nav menu items
 .navMenuIcon {
   width: 24px;
   height: 24px;
-  filter: invert(0%) sepia(3%) saturate(4%) hue-rotate(324deg) brightness(100%) contrast(100%); // Makes icons appear black/dark
-  display: block; // Good practice for images in containers
+  filter: invert(0%) sepia(3%) saturate(4%) hue-rotate(324deg) brightness(100%) contrast(100%);
+  display: block;
 }
 
-// New class for the settings icon
 .settingsIcon {
   width: 24px;
   height: 24px;
   filter: invert(50%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(90%) contrast(80%);
 }
 
-// Styles for ProjectPanel, AccessPanel can remain if they are self-contained
-// or if they relied on .sidebarContent structure which is preserved.
-
-// .sidebarFooter and .sidebarToggleButton might need adjustment if their positioning
-// was relative to the old .sidebar structure. For now, assuming they are okay or handled elsewhere. 
-
-// Dedicated styles for the sidebar toggle button (used in ChatLayout.tsx)
 .sidebarToggleButton {
-  position: absolute !important; // !important to override MUI if needed, but use with caution
+  position: absolute !important;
   top: 50%; 
-  // The 'left' positioning is handled by inline styles in ChatLayout.tsx based on sidebar state
-  transform: translateY(-50%); // Vertically center the button on its 'left' edge
-  z-index: 100; // Ensure it's above sidebar, but below potential full-screen overlays
+  transform: translateY(-50%);
+  z-index: 100;
   background-color: #FFFFFF !important; 
   border: 1px solid #E0E0E0 !important; 
   border-radius: 50% !important; 
@@ -275,10 +241,9 @@ $sidebar-transition-timing: ease-in-out;
   padding: 4px !important; 
   box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
 
-  // Icon styling within the button
   svg {
-    font-size: 20px; // Adjust as needed
-    color: #5F6368; // Icon color
+    font-size: 20px;
+    color: #5F6368;
   }
 
   &:hover {

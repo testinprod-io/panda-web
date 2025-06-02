@@ -312,21 +312,6 @@ export const useChatStore = createPersistStore(
           set({ ...DEFAULT_CHAT_STATE });
       },
 
-      // updateCurrentSessionConfigForProvider(provider: ServiceProvider) {
-      //     const session = get().currentSession();
-      //     if (!session) return;
-
-      //     const defaultModelName = DEFAULT_PANDA_MODEL_NAME;
-      //     const defaultProviderName = ServiceProvider.Panda;
-
-      //     get().updateTargetSession(session, (sess) => {
-      //       sess.modelConfig = {
-      //         ...sess.modelConfig,
-      //         name: defaultModelName as ModelType,
-      //       };
-      //     });
-      // },
-
       updateCurrentSessionModel(newModelConfig: ModelConfig) {
           const session = get().currentSession();
           console.log("[Update Current Session Model - Store] ", newModelConfig);
@@ -411,7 +396,7 @@ export const useChatStore = createPersistStore(
         state.showShortcutKeyModalHandler = null;
         state.isChatComponentBusy = false;
       }
-      
+
       return state as HydratedChatState;
     },
   },

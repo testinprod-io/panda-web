@@ -7,15 +7,14 @@ import {
   TextField,
   Button,
   Chip,
-  IconButton,
   Divider,
   CircularProgress,
   Alert,
   Switch,
 } from '@mui/material';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import styles from './customize-prompts-view.module.scss'; // We'll create this SCSS file next
-import { ApiClient, CustomizedPromptsResponse } from '../../client/client';
+import styles from './customize-prompts-view.module.scss';
+import { CustomizedPromptsResponse } from '@/client/client';
 import { useApiClient } from '@/providers/api-client-provider';
 import { CustomizedPromptsData } from '@/types';
 import { useAppConfig } from '@/store/config';
@@ -40,8 +39,7 @@ const initialTraits: Trait[] = [
 ];
 
 interface CustomizePromptsViewProps {
-  // apiClient: ApiClient;
-  onCloseRequest: () => void; // Renamed from onNavigateBack
+  onCloseRequest: () => void;
 }
 
 const EMPTY_PROMPTS_DATA: CustomizedPromptsResponse = {
@@ -90,7 +88,6 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
         setIsUpdateMode(true);
       } catch (apiError: any) {
         if (apiError instanceof Error && 'status' in apiError && (apiError as any).status === 404) {
-          // No prompts found, treat as new entry
           setName('');
           setJob('');
           setTraitsText('');
@@ -348,7 +345,6 @@ export default function CustomizePromptsView({ onCloseRequest }: CustomizePrompt
   );
 }
 
-// clsx helper (can be moved to utils if available globally)
 function clsx(...classes: (string | boolean | undefined | null)[]) {
   return classes.filter(Boolean).join(' ');
 } 

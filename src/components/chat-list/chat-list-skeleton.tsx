@@ -7,17 +7,16 @@ interface ChatListSkeletonProps {
   targetHeight: number;
 }
 
-// Constants for calculating heights
-const SKELETON_HEADER_HEIGHT = 14; // px
-const SKELETON_HEADER_MARGIN_BOTTOM = 18; // px (gap before first item)
-const SKELETON_ITEM_HEIGHT = 48; // px
-const SKELETON_ITEM_MARGIN_BOTTOM = 10; // px (gap between items in a group)
-const SKELETON_GROUP_OUTER_MARGIN_BOTTOM = 28; // px (includes group specific margin + some item margin)
+const SKELETON_HEADER_HEIGHT = 14;
+const SKELETON_HEADER_MARGIN_BOTTOM = 18;
+const SKELETON_ITEM_HEIGHT = 48;
+const SKELETON_ITEM_MARGIN_BOTTOM = 10;
+const SKELETON_GROUP_OUTER_MARGIN_BOTTOM = 28;
 
 const MIN_ITEMS_PER_GROUP = 1;
 const MAX_ITEMS_PER_GROUP = 4;
-const MIN_HEADER_WIDTH = 50; // px
-const MAX_HEADER_WIDTH = 120; // px
+const MIN_HEADER_WIDTH = 50;
+const MAX_HEADER_WIDTH = 120;
 
 export function ChatListSkeleton({ targetHeight }: ChatListSkeletonProps) {
   const skeletonGroups = [];
@@ -25,7 +24,7 @@ export function ChatListSkeleton({ targetHeight }: ChatListSkeletonProps) {
   let groupKey = 0;
 
   if (targetHeight <= 0) {
-    return null; // Or a single minimal skeleton if preferred
+    return null;
   }
 
   while (accumulatedHeight < targetHeight) {
@@ -38,25 +37,24 @@ export function ChatListSkeleton({ targetHeight }: ChatListSkeletonProps) {
     let currentGroupHeight = SKELETON_HEADER_HEIGHT + SKELETON_HEADER_MARGIN_BOTTOM;
     if (numItemsInGroup > 0) {
       currentGroupHeight += numItemsInGroup * SKELETON_ITEM_HEIGHT;
-      currentGroupHeight += (numItemsInGroup -1) * SKELETON_ITEM_MARGIN_BOTTOM; // Gaps between items
+      currentGroupHeight += (numItemsInGroup -1) * SKELETON_ITEM_MARGIN_BOTTOM;
     }
-    currentGroupHeight += SKELETON_GROUP_OUTER_MARGIN_BOTTOM; // Outer margin for the group
+    currentGroupHeight += SKELETON_GROUP_OUTER_MARGIN_BOTTOM;
 
-    // Ensure at least one group is added if targetHeight is small but positive
     if (skeletonGroups.length === 0 && currentGroupHeight === 0) {
-        currentGroupHeight = SKELETON_HEADER_HEIGHT + SKELETON_HEADER_MARGIN_BOTTOM + SKELETON_ITEM_HEIGHT + SKELETON_GROUP_OUTER_MARGIN_BOTTOM; // min height for one item group
+        currentGroupHeight = SKELETON_HEADER_HEIGHT + SKELETON_HEADER_MARGIN_BOTTOM + SKELETON_ITEM_HEIGHT + SKELETON_GROUP_OUTER_MARGIN_BOTTOM;
     }
     
-    if (currentGroupHeight === 0) break; // Safety break if calculations somehow lead to zero height
+    if (currentGroupHeight === 0) break; 
 
     const items = [];
     for (let i = 0; i < numItemsInGroup; i++) {
-      const numLines = Math.random() > 0.3 ? 2 : 1; // 70% chance of 2 lines
+      const numLines = Math.random() > 0.3 ? 2 : 1;
       const lines = [];
       for (let j = 0; j < numLines; j++) {
         const lineWidthPercentage = j === 0 ? 
-            (Math.random() * (0.9 - 0.6) + 0.6) * 100 : // First line: 60-90%
-            (Math.random() * (0.7 - 0.4) + 0.4) * 100;  // Second line: 40-70%
+            (Math.random() * (0.9 - 0.6) + 0.6) * 100 :
+            (Math.random() * (0.7 - 0.4) + 0.4) * 100;
         lines.push(
           <div 
             key={j} 
@@ -80,7 +78,6 @@ export function ChatListSkeleton({ targetHeight }: ChatListSkeletonProps) {
     );
     accumulatedHeight += currentGroupHeight;
 
-    // Safety break if we are adding too many groups (e.g. if targetHeight is huge or calculation is off)
     if (groupKey > 50) break; 
   }
 

@@ -18,7 +18,7 @@ const LoginSignupPopup: React.FC<LoginSignupPopupProps> = ({ open, onClose, onLo
       onClose={onClose}
       aria-labelledby="login-signup-popup-title"
       aria-describedby="login-signup-popup-description"
-      className={styles.modalBackdrop} // For potential backdrop styling
+      className={styles.modalBackdrop}
     >
       <Box className={styles.popupContainer}>
         <Box className={styles.contentWrapper}>
@@ -34,7 +34,7 @@ const LoginSignupPopup: React.FC<LoginSignupPopupProps> = ({ open, onClose, onLo
             variant="contained"
             onClick={() => {
               onLogin();
-              onClose(); // Close popup after initiating login
+              onClose();
             }}
             className={styles.loginButton}
           >
@@ -43,8 +43,8 @@ const LoginSignupPopup: React.FC<LoginSignupPopupProps> = ({ open, onClose, onLo
           <Button
             variant="outlined"
             onClick={() => {
-              onSignup(); // Assuming onSignup might be different, or also calls login
-              onClose(); // Close popup after initiating signup
+              onSignup();
+              onClose();
             }}
             className={styles.signupButton}
           >

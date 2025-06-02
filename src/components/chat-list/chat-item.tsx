@@ -3,31 +3,26 @@ import clsx from "clsx";
 import { ListItemText, IconButton, Menu, MenuItem, TextField, Box, ListItemButton, ListItemIcon } from '@mui/material';
 
 import styles from "./chat-list.module.scss";
-import type { ChatSession } from "@/types/session"; // Adjusted path
-
-import MoreVertIcon from '@mui/icons-material/MoreVert';
+import type { ChatSession } from "@/types/session";
 import Locale from '@/locales';
-import { useEncryption } from "@/providers/encryption-provider"; // Added
-import { EncryptionService } from "@/services/encryption-service"; // Added
-
-// New Icons based on Figma
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';         // For Rename
-import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined'; // For Delete
+import { useEncryption } from "@/providers/encryption-provider";
+import { EncryptionService } from "@/services/encryption-service";
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 
 interface ChatItemProps {
   onClick?: () => void;
   onDelete?: () => void;
   onRename?: (newTitle: string) => void;
-  onShare?: () => void; // Placeholder for Share action
-  onArchive?: () => void; // Placeholder for Archive action
-  session: ChatSession; // Pass the whole session object
+  onShare?: () => void;
+  onArchive?: () => void;
+  session: ChatSession;
   selected: boolean;
   index: number;
   narrow?: boolean;
 }
 
-// Animation configuration
-const DECRYPTION_INTERVAL_MS = 50; // Speed of letter reveal (milliseconds)
+const DECRYPTION_INTERVAL_MS = 50;
 
 export function ChatItem({
   session,
@@ -35,8 +30,8 @@ export function ChatItem({
   onClick,
   onDelete,
   onRename,
-  onShare,   // Destructure new prop
-  onArchive, // Destructure new prop
+  onShare,
+  onArchive,
   narrow,
 }: ChatItemProps) {
   const itemRef = useRef<HTMLDivElement | null>(null);
@@ -46,14 +41,13 @@ export function ChatItem({
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(""); // Initialized with actualDecryptedTopic later
+  const [editValue, setEditValue] = useState("");
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   const listItemRef = useRef<HTMLDivElement | null>(null);
 
   const { isLocked } = useEncryption();
-  // const [actualDecryptedTopic, setActualDecryptedTopic] = useState(session.topic || Locale.Store.DefaultTopic);
   const [displayedTitle, setDisplayedTitle] = useState(session.visibleTopic);
   const [isAnimating, setIsAnimating] = useState(false);
   const animationIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -62,24 +56,18 @@ export function ChatItem({
   useEffect(() => {
     const topic = session.topic || Locale.Store.DefaultTopic;
     if (isLocked) {
-      // session.visibleTopic = topic;
       setVisibleTopic(topic);
     } else {
-      // session.visibleTopic = EncryptionService.decrypt(topic);
       setVisibleTopic(EncryptionService.decrypt(topic));
     }
   }, [isLocked, session.topic]);
 
-  // Update editValue when actualDecryptedTopic changes and not editing
   useEffect(() => {
     if (!isEditing) {
-      // setEditValue(session.visibleTopic);
       setEditValue(visibleTopic);
     }
-  // }, [session.visibleTopic, isEditing]);
   }, [visibleTopic, isEditing]);
 
-  // Scroll into view when selected
   useEffect(() => {
     if (selected && itemRef.current) {
       itemRef.current?.scrollIntoView({
@@ -89,7 +77,6 @@ export function ChatItem({
     }
   }, [selected]);
 
-  // Calculate menu position
   useEffect(() => {
     if (showMenu && menuRef.current) {
       const rect = menuRef.current.getBoundingClientRect();
@@ -112,14 +99,14 @@ export function ChatItem({
       handleSaveEdit();
     } else if (e.key === 'Escape') {
       setIsEditing(false);
-      setEditValue(session.visibleTopic); // Revert to actual decrypted topic
+      setEditValue(session.visibleTopic);
     }
   };
 
   const handleSaveEdit = () => {
     if (
       editValue.trim() !== '' &&
-      editValue !== session.visibleTopic && // Compare with actual decrypted topic
+      editValue !== session.visibleTopic &&
       onRename
     ) {
       onRename(editValue.trim());
@@ -133,7 +120,6 @@ export function ChatItem({
         setShowMenu(false);
       }
       if (isEditing && inputRef.current && !inputRef.current.contains(e.target as Node)) {
-        // Check if the click is outside the edit input specifically
         if (editInputRef.current && !editInputRef.current.contains(e.target as Node)) {
             handleSaveEdit();
         }

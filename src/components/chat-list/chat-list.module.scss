@@ -3,12 +3,10 @@
   padding: 0;
   margin: 0;
   overflow-y: auto;
-  flex-grow: 1; /* Allow list to take available space */
-  min-height: 0; /* Prevent flexbox overflow issues */
+  flex-grow: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  /* Add some padding if needed */
-  /* padding: 10px 0; */
   overflow-x: hidden;
   width: 100%;
 }
@@ -21,14 +19,12 @@
   height: 48px;
   border-radius: 8px !important;
   cursor: pointer;
-  position: relative; /* Needed for absolute positioning of menu */
-  user-select: none; /* Prevent text selection during drag */
-  // padding: 4px 0px !important;
+  position: relative;
+  user-select: none;
   overflow: hidden;
   transition: background-color 0.2s ease-in-out;
 }
 
-/* New style for the highlighted background container */
 .chat-item-highlight {
   display: flex;
   align-items: center;
@@ -39,22 +35,14 @@
   box-sizing: border-box;
 }
 
-/* Style for the highlighted background ONLY when selected */
 .chat-item-selected-highlight {
   background-color: #F3F3F3;
   border-radius: 8px;
 }
 
-/* Hover effect ONLY for non-selected items */
 .chat-item-highlight:hover {
   background-color: #F3F3F3 !important;
-  /* Hover style for non-selected items - Figma doesn't specify, but a subtle change is good UX */
 }
-
-/* Remove the old selected style */
-/* .chat-item-selected {
-  background-color: rgba(0, 0, 0, 0.1);
-} */
 
 .chat-item-title {
   flex-grow: 1;
@@ -69,7 +57,7 @@
 }
 
 .chat-item-title-text {
-  display: block; /* Ensure it takes full width for ellipsis */
+  display: block;
   font-size: 16px;
   color: #1E1E1E;
 }
@@ -112,14 +100,14 @@
 }
 
 .chat-item-menu-dropdown {
-  background-color: white; /* Or theme background */
-  border: 1px solid #eee; /* Or theme border */
+  background-color: white;
+  border: 1px solid #eee;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   border-radius: 6px;
   padding: 5px 0;
   min-width: 120px;
   z-index: 1000;
-  position: absolute; /* Should be handled by inline style */
+  position: absolute;
 }
 
 .chat-item-menu-option {
@@ -128,11 +116,11 @@
   padding: 8px 12px;
   cursor: pointer;
   font-size: 14px;
-  color: #333; /* Or theme text color */
+  color: #333;
 }
 
 .chat-item-menu-option:hover {
-  background-color: rgba(0, 0, 0, 0.05); /* Or theme hover color */
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
 .chat-item-menu-option svg {
@@ -142,11 +130,9 @@
   opacity: 0.7;
 }
 
-/* New styles for Date Group Headers */
 .chat-date-group {
   display: flex;
   flex-direction: column;
-  // gap: 8px;
 }
 
 .chat-date-group + .chat-date-group {
@@ -159,18 +145,6 @@
   font-family: 'Inter', sans-serif;
   font-weight: 400;
   padding-bottom: 6px;
-}
-
-.chat-item-info {
-  /* Existing code */
-}
-
-.chat-item-actions {
-  /* Existing code */
-}
-
-.chat-item-delete {
-  /* Existing code */
 }
 
 .chat-item-skeleton {
@@ -191,42 +165,38 @@
   }
 }
 
-// Styles for the Chat Item Action Menu (MoreVertIcon menu)
 .chatActionMenuPaper {
-  padding: 16px !important; // Figma spec
+  padding: 16px !important;
   background: white !important;
   box-shadow: 0px 2px 20px rgba(0, 0, 0, 0.10) !important;
   border-radius: 16px !important;
   border: 1px solid #CACACA !important;
-  // min-width as per figma spec for items, let menu itself be flexible
 }
 
 .chatActionMenuItem {
   width: 100%;
-  max-width: 160px; // Figma spec
-  min-width: 120px; // Figma spec
-  padding: 6px 16px !important; // Figma spec
+  max-width: 160px;
+  min-width: 120px;
+  padding: 6px 16px !important;
   border-radius: 8px !important;
-  // margin-bottom: 10px; // Removed: Figma: gap: 10 is now handled by parent MenuListProps flex gap
 
   display: flex !important; 
-  justify-content: flex-start !important; // Figma: justifyContent: 'flex-start'
+  justify-content: flex-start !important;
   align-items: center !important;
-  gap: 8px; // Figma: gap: 8 (between icon and text) - this is correct here
+  gap: 8px;
 
   &:last-child {
-    margin-bottom: 0; // This is no longer needed due to parent gap
+    margin-bottom: 0;
   }
 
   &:hover {
-    background-color: #f0f0f0 !important; // A light hover state, similar to previous design
+    background-color: #f0f0f0 !important;
   }
 }
 
 .chatActionMenuItemIcon {
-  min-width: auto !important; // Override MUI default min-width for ListItemIcon
-  color: #1E1E1E !important; // Default icon color from Figma (--Icon-Default-Default)
-  // Icons are 16x16, MUI small is typically 20px, fontSize="small" with direct style better
+  min-width: auto !important;
+  color: #1E1E1E !important;
   svg {
     width: 16px !important;
     height: 16px !important;
@@ -234,25 +204,17 @@
 }
 
 .chatActionMenuItemText {
-  :global(.MuiListItemText-primary) { // Target the primary text span
-    color: #131A28 !important; // Figma spec
-    font-size: 16px !important; // Figma spec
-    font-family: 'Inter', sans-serif !important; // Figma spec
-    font-weight: 400 !important; // Figma spec
-    line-height: 32px !important; // Figma spec
-    // flex: '1 1 0' and wordWrap handled by default text behavior or parent flex
+  :global(.MuiListItemText-primary) {
+    color: #131A28 !important;
+    font-size: 16px !important;
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 400 !important;
+    line-height: 32px !important;
   }
 }
 
-// Specific styles for the Delete action item
-.deleteAction {
-  // This class is on the MenuItem itself
-  // Hover state is generic, no special delete hover defined in figma other than text/icon color
-}
-
 .deleteActionIcon {
-  // This class is on the ListItemIcon for Delete
-  color: #F33D4F !important; // Red color for delete icon
+  color: #F33D4F !important;
   svg {
     width: 16px !important;
     height: 16px !important;
@@ -260,8 +222,7 @@
 }
 
 .deleteActionText {
-  // This class is on the ListItemText for Delete
   :global(.MuiListItemText-primary) {
-    color: #F33D4F !important; // Red color for delete text
+    color: #F33D4F !important;
   }
 } 

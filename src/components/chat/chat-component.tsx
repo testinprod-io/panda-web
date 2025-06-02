@@ -5,27 +5,20 @@ import React, {
   useCallback,
   useEffect,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
-import { useDebouncedCallback } from "use-debounce"; // Added import
-
+import { useDebouncedCallback } from "use-debounce";
 import { useAppConfig, useChatStore } from "@/store";
-
 import { ChatControllerPool } from "@/client/controller";
-
-import Locale from "@/locales"; // Adjust path
-import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom"; // Adjust path
-import { useSnackbar } from "@/providers/snackbar-provider"; // Added Snackbar hook
-
-import { ChatMessageCell } from "@/components/chat/chat-message-cell"; // Import the new cell component
-
+import Locale from "@/locales";
+import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom"; 
+import { useSnackbar } from "@/providers/snackbar-provider";
+import { ChatMessageCell } from "@/components/chat/chat-message-cell";
 import ArrowDownwardRoundedIcon from "@mui/icons-material/ArrowDownwardRounded";
-import CircularProgress from "@mui/material/CircularProgress"; // Assuming MUI is used
-
+import CircularProgress from "@mui/material/CircularProgress";
 import styles from "./chat.module.scss";
-import { ActionButton } from "@/components/ui/action-button"; // Import ChatAction
+import { ActionButton } from "@/components/ui/action-button";
 import { useChatSessionManager } from "@/hooks/use-chat-session-manager";
 import { UUID } from "crypto";
 import { ChatSession, SessionState } from "@/types/session";
@@ -46,8 +39,6 @@ export function ChatComponent(props: ChatComponentProps) {
     setHitBottom,
     setScrollToBottomHandler,
     setIsChatComponentBusy,
-    // Modal handlers are not directly set by ChatComponent into store for ChatInputPanel,
-    // but ChatInputPanel will read them from store (set by Chat.tsx or RootChatGroupLayout)
   } = chatStore;
 
   const config = useAppConfig();
@@ -153,7 +144,6 @@ export function ChatComponent(props: ChatComponentProps) {
     }
   }, [sessionId, doSubmit]); // doSubmit dependency is important here
 
-  // onUserStop, onResend, onEditSubmit need to use setIsChatComponentBusy
   const onUserStop = useCallback(
     (messageId: string) => {
       ChatControllerPool.stop(sessionId, messageId);
@@ -286,7 +276,6 @@ export function ChatComponent(props: ChatComponentProps) {
               scrollRef={scrollRef}
               renderMessagesLength={displayedMessages.length}
               onResend={onResend}
-              onUserStop={onUserStop}
               onEditSubmit={onEditSubmit}
             />
           </Fragment>

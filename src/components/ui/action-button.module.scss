@@ -6,10 +6,6 @@
   position: relative;
   transition: background-color 0.2s ease, border-color 0.2s ease;
 
-  &.clickable {
-    // No specific styles here, acts as a marker or for external CSS.
-  }
-
   &[aria-disabled="true"] {
     opacity: 0.5;
     cursor: not-allowed;
@@ -20,7 +16,7 @@
     align-items: center;
     justify-content: center;
     position: relative; 
-    flex-shrink: 0; // Prevent icon from shrinking
+    flex-shrink: 0;
   }
 
   .text {
@@ -28,22 +24,21 @@
     align-items: center;
     justify-content: center;
     white-space: nowrap;
-    padding-left: 8px; // Default spacing between icon and text
+    padding-left: 8px;
     
-    opacity: 0; // Hidden by default for animation
-    transform: translateX(-10px); // Shifted left for slide-in effect
-    transition: opacity 0.2s ease-out, transform 0.2s ease-out; // Smooth transition
-    pointer-events: none; // Not interactive when hidden or transitioning out
-    will-change: opacity, transform; // Performance hint for animations
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+    pointer-events: none;
+    will-change: opacity, transform;
   }
 
-  // Show and animate text on hover or when the button or its children have focus
   &:hover:not([aria-disabled="true"]),
   &:focus-within:not([aria-disabled="true"]) {
     .text {
       opacity: 1;
       transform: translateX(0);
-      pointer-events: auto; // Text can be interacted with (e.g., selected) when visible
+      pointer-events: auto;
     }
   }
 } 

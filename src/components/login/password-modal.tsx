@@ -104,7 +104,7 @@ export function PasswordModal({
     const newPassword = event.target.value;
     setPassword(newPassword);
     const dynamicError = currentConfig.getDynamicError(newPassword);
-    setError(dynamicError); // Set error if dynamic error exists, clear if not
+    setError(dynamicError);
   };
 
   const handleSubmit = useCallback(async (event: React.FormEvent) => {

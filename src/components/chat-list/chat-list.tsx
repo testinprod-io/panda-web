@@ -12,7 +12,6 @@ import { ChatListSkeleton } from "./chat-list-skeleton";
 import styles from "./chat-list.module.scss";
 import { EncryptionService } from "@/services/encryption-service";
 
-// Constants for calculating paging skeleton height, mirroring ChatListSkeleton.tsx logic
 const PAGING_SK_HEADER_HEIGHT = 14;
 const PAGING_SK_HEADER_MARGIN_BOTTOM = 18;
 const PAGING_SK_ITEM_HEIGHT = 48;
@@ -20,7 +19,7 @@ const PAGING_SK_ITEM_MARGIN_BOTTOM = 10;
 const PAGING_SK_GROUP_OUTER_MARGIN_BOTTOM = 28;
 const PAGING_SK_MIN_ITEMS_PER_GROUP = 1;
 const PAGING_SK_MAX_ITEMS_PER_GROUP = 4;
-const ITEMS_PER_PAGE_FOR_SKELETON = 20; // We load 20 items per page
+const ITEMS_PER_PAGE_FOR_SKELETON = 20;
 
 const AVG_ITEMS_PER_SK_GROUP = (PAGING_SK_MIN_ITEMS_PER_GROUP + PAGING_SK_MAX_ITEMS_PER_GROUP) / 2;
 const H_SK_HEADER_AREA = PAGING_SK_HEADER_HEIGHT + PAGING_SK_HEADER_MARGIN_BOTTOM;
@@ -30,10 +29,8 @@ const H_SK_ITEMS_AREA_AVG =
 const AVG_SK_GROUP_HEIGHT = H_SK_HEADER_AREA + H_SK_ITEMS_AREA_AVG + PAGING_SK_GROUP_OUTER_MARGIN_BOTTOM;
 const NUM_SK_GROUPS_FOR_PAGING = ITEMS_PER_PAGE_FOR_SKELETON / AVG_ITEMS_PER_SK_GROUP;
 const PAGING_SKELETON_TARGET_HEIGHT = NUM_SK_GROUPS_FOR_PAGING * AVG_SK_GROUP_HEIGHT;
-// console.log(`[ChatList] Calculated PAGING_SKELETON_TARGET_HEIGHT: ${PAGING_SKELETON_TARGET_HEIGHT}px`);
 
-// Helper to determine date group
-const getRelativeDateGroup = (dateInput: number): string => { // Changed to number for lastUpdate
+const getRelativeDateGroup = (dateInput: number): string => {
   const now = new Date();
   const then = new Date(dateInput);
 
@@ -41,7 +38,6 @@ const getRelativeDateGroup = (dateInput: number): string => { // Changed to numb
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
   if (now.toDateString() === then.toDateString()) return "Today";
-  // Ensure it was actually yesterday by comparing date part, not just diffDays === 1
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
   if (yesterday.toDateString() === then.toDateString()) return "Yesterday";
@@ -65,10 +61,8 @@ const groupOrder = [
   "Yesterday",
   "Previous 7 Days",
   "Previous 30 Days",
-  // Months and years will be added dynamically and sorted if necessary
 ];
 
-// Function to get a sortable key for month/year groups
 const getMonthYearSortKey = (groupName: string, currentYear: number): string => {
   const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   if (months.includes(groupName)) {
@@ -87,30 +81,25 @@ interface ChatListProps {
 }
 
 export function ChatList(props: ChatListProps) {
-  // Local state for sessions and pagination
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [isInitialLoading, setIsInitialLoading] = useState<boolean>(false);
   const [isPagingLoading, setIsPagingLoading] = useState<boolean>(false);
   const [skeletonContainerHeight, setSkeletonContainerHeight] = useState<number>(0);
 
-  // Get actions and store state needed for selection/deletion
   const { deleteSession, selectSession, updateConversation, loadSessionsFromServer } = useChatActions();
-  const store = useChatStore(); // Use the store directly
+  const store = useChatStore();
   const sessionsFromStore = store.sessions;
   const currentSessionFromStore = store.currentSession();
   const setCurrentSessionIndex = store.setCurrentSessionIndex;
 
   const router = useRouter();
   
-  // Ref for the scrollable element (observer target)
   const observerRef = useRef<HTMLDivElement | null>(null);
   const listContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Helper for random delay
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-  // Function to load sessions (initial or next page)
   const loadMoreSessions = useCallback(async (options?: { cursor?: string | null, limit?: number }) => {
     const currentCursor = options?.cursor;
     const currentLimit = options?.limit; 
@@ -127,14 +116,12 @@ export function ChatList(props: ChatListProps) {
     }
 
     try {
-      // Add random backoff delay, but not for the very first initial load if desired (optional)
-      if (currentCursor !== undefined || sessionsFromStore.length > 0) { // Apply delay for pagination or subsequent loads
+      if (currentCursor !== undefined || sessionsFromStore.length > 0) {
         const randomDelay = Math.floor(Math.random() * (1500 - 1000 + 1)) + 1000; // Delay between 1000ms and 1500ms
         console.log(`[ChatList] Adding random delay: ${randomDelay}ms`);
         await sleep(randomDelay);
       }
 
-      // loadSessionsFromServer is expected to update the store internally
       const result = await loadSessionsFromServer({ cursor: currentCursor, limit: currentLimit });
       if (result) {
         setNextCursor(result.nextCursor);
@@ -144,14 +131,12 @@ export function ChatList(props: ChatListProps) {
       console.error("[ChatList] Failed to load sessions:", error);
     } finally {
       setIsPagingLoading(false);
-      // Only turn off initial loading if it was an initial load (no cursor)
       if (currentCursor === undefined) { 
         setIsInitialLoading(false);
       }
     }
   }, [loadSessionsFromServer, hasMore, isPagingLoading, sessionsFromStore, store]); // Added store for sessionsFromStore dependency & stability of store methods
 
-  // Initial load
   useEffect(() => {
     if (sessionsFromStore.length === 0 && hasMore && !isInitialLoading) { 
       console.log("[ChatList] Triggering initial load (limit 20 by user change).");
@@ -159,7 +144,6 @@ export function ChatList(props: ChatListProps) {
     }
   }, [loadMoreSessions, sessionsFromStore.length, hasMore, isInitialLoading]); // Use sessionsFromStore.length
 
-  // Infinite scroll observer
   useEffect(() => {
     const currentObserverRef = observerRef.current; 
     const observer = new IntersectionObserver(
@@ -184,7 +168,6 @@ export function ChatList(props: ChatListProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMore, nextCursor, isPagingLoading, isInitialLoading, loadMoreSessions]); // Added loadMoreSessions to deps as it's used
 
-  // Effect to calculate skeleton count for initial load
   useEffect(() => {
     const calculateHeight = () => {
       if (listContainerRef.current) {
@@ -207,7 +190,6 @@ export function ChatList(props: ChatListProps) {
     }
   }, [isInitialLoading, isPagingLoading, sessionsFromStore.length]); // Use sessionsFromStore.length
 
-  // Optimistically add/update current session in the list
   useEffect(() => {
     if (currentSessionFromStore) {
       const sessionInStoreList = sessionsFromStore.find(s => s.id === currentSessionFromStore.id);
@@ -254,9 +236,7 @@ export function ChatList(props: ChatListProps) {
         }
       }
     }
-    // sessionsFromStore is a dependency because we read from it (find) and map over it.
-    // currentSessionFromStore is the primary trigger for this effect.
-  }, [currentSessionFromStore, sessionsFromStore, store]); // Added store for its methods (addSession, updateTargetSession)
+  }, [currentSessionFromStore, sessionsFromStore, store]);
 
   const handleSelectItem = (session: ChatSession) => {
     selectSession(session.id);
@@ -267,20 +247,18 @@ export function ChatList(props: ChatListProps) {
     if (window.confirm(Locale.Home.DeleteChat)) {
       const globallyCurrentSession = store.currentSession();
       const wasGloballyCurrent = globallyCurrentSession ? globallyCurrentSession.id === session.id : false;
-      const isLastSessionInList = sessionsFromStore.length === 1; // Use sessionsFromStore
+      const isLastSessionInList = sessionsFromStore.length === 1;
 
       if (wasGloballyCurrent || isLastSessionInList) {
-        setCurrentSessionIndex(-1); // Set current session to none BEFORE navigating
-        router.push("/");       // Navigation starts
+        setCurrentSessionIndex(-1);
+        router.push("/");
 
-        // Delay deletion operations if navigation occurred
         setTimeout(() => {
-          deleteSession(session.id); // This action should update the store
-        }, 1000); // 1-second delay
+          deleteSession(session.id);
+        }, 1000);
       } else {
-        // If not navigating, delete immediately
-        deleteSession(session.id); // This action should update the store
-        setCurrentSessionIndex(-1); // Reset index if no navigation happened
+        deleteSession(session.id);
+        setCurrentSessionIndex(-1);
       }
     }
   };
@@ -289,13 +267,11 @@ export function ChatList(props: ChatListProps) {
     const trimmedName = newName.trim();
     if (trimmedName && session.id) {
       const optimisticUpdateTime = Date.now();
-      // Optimistically update store state first for immediate re-sorting
       store.updateTargetSession({ id: session.id }, s => {
-        s.visibleTopic = trimmedName; // Assuming ChatSession type supports visibleTopic
+        s.visibleTopic = trimmedName;
         s.topic = EncryptionService.encrypt(trimmedName);
         s.lastUpdate = optimisticUpdateTime;
       });
-      // Then, call the actual update operation
       updateConversation(session.id, { title: EncryptionService.encrypt(trimmedName) });
     } else {
       console.error("[ChatList] Cannot rename session - missing identifier or empty name");
@@ -303,8 +279,7 @@ export function ChatList(props: ChatListProps) {
   };
 
   const groupedSessions = sessionsFromStore.reduce<GroupedSessions>((acc, session) => { // Use sessionsFromStore
-    // Use `lastUpdate` which is a number (timestamp)
-    const dateToGroup = session.lastUpdate; // Default to now if undefined for safety, though lastUpdate should exist
+    const dateToGroup = session.lastUpdate;
     const groupName = getRelativeDateGroup(dateToGroup);
     if (!acc[groupName]) {
       acc[groupName] = [];
@@ -313,7 +288,6 @@ export function ChatList(props: ChatListProps) {
     return acc;
   }, {});
 
-  // Sort group names: predefined first, then by month/year (recent first)
   const currentYear = new Date().getFullYear();
   const sortedGroupNames = Object.keys(groupedSessions).sort((a, b) => {
     const aIsPredefined = groupOrder.includes(a);
@@ -329,8 +303,7 @@ export function ChatList(props: ChatListProps) {
     const sortKeyA = getMonthYearSortKey(a, currentYear);
     const sortKeyB = getMonthYearSortKey(b, currentYear);
 
-    // Assuming keys like YYYY-MM or YYYY for sorting
-    if (sortKeyA > sortKeyB) return -1; // Newer dates first
+    if (sortKeyA > sortKeyB) return -1;
     if (sortKeyA < sortKeyB) return 1;
     return 0;
   });
@@ -345,13 +318,12 @@ export function ChatList(props: ChatListProps) {
         <div key={groupName} className={styles["chat-date-group"]}>
           <div className={styles["chat-date-header"]}>{groupName}</div>
           {groupedSessions[groupName]
-            // Sort sessions within each group by lastActivity date, most recent first
             .sort((a, b) => b.lastUpdate - a.lastUpdate)
             .map((item, i) => (
               <ChatItem
                 session={item}
                 key={item.id}
-                index={i} // Index within its own group, might not be globally unique for selection logic if needed
+                index={i}
                 selected={item.id === store.currentSession()?.id}
                 onClick={() => handleSelectItem(item)}
                 onDelete={() => handleDeleteItem(item)}

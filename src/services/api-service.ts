@@ -13,18 +13,15 @@ import {
 import { UUID } from "crypto";
 import { ChatMessage, createMessage, Role } from "@/types/chat";
 import { ChatSession, createNewSession } from "@/types/session";
-import { CustomizedPromptsData } from "@/types";
-import { ModelConfig, ModelType } from "@/types/constant";
+import { ModelConfig } from "@/types/constant";
 import { DEFAULT_TOPIC } from "@/store/chat"; 
 import { trimTopic } from "@/utils/utils";
 import { EncryptionService } from "@/services/encryption-service";
 import { LLMConfig } from "@/client/api";
 
 function decryptConversationData(conversation: Conversation): Conversation {
-  // Make a copy to avoid mutating the original
   const decryptedConvo = { ...conversation };
 
-  // Decrypt title if it exists
   if (decryptedConvo.title) {
     try {
       decryptedConvo.title = EncryptionService.decrypt(decryptedConvo.title);
@@ -34,14 +31,12 @@ function decryptConversationData(conversation: Conversation): Conversation {
         "[ChatApiService] Error decrypting conversation title:",
         err
       );
-      // Keep the encrypted title if decryption fails
     }
   }
 
   return decryptedConvo;
 }
 
-// Type that can handle both ApiMessage and MessageCreateRequest
 type MessageWithContent = {
   content: string;
   reasoning_content?: string;
@@ -50,16 +45,13 @@ type MessageWithContent = {
 };
 
 function decryptMessageData<T extends MessageWithContent>(message: T): T {
-  // Make a copy to avoid mutating the original
   const decryptedMsg = { ...message };
 
-  // Decrypt content if it exists
   if (decryptedMsg.content) {
     try {
       decryptedMsg.content = EncryptionService.decrypt(decryptedMsg.content);
     } catch (err) {
       console.error("[ChatApiService] Error decrypting message content:", err);
-      // Keep the encrypted content if decryption fails
     }
   }
 
@@ -81,7 +73,6 @@ function decryptMessageData<T extends MessageWithContent>(message: T): T {
 export function mapConversationToSession(
   conversation: Conversation
 ): ChatSession {
-  // Decrypt the conversation first
   const decryptedConvo = decryptConversationData(conversation);
 
   const session = createNewSession(decryptedConvo.conversation_id);
@@ -99,7 +90,6 @@ export function mapApiMessagesToChatMessages(
 }
 
 export function mapApiMessageToChatMessage(message: ApiMessage): ChatMessage {
-  // Decrypt the message first
   const decryptedMsg = decryptMessageData(message);
 
   return createMessage({
@@ -297,16 +287,15 @@ export const ChatApiService = {
       config: args.config,
     });
     try {
-      // Prepare the LLMConfig for api.llm.chat, including the targetEndpoint
       const llmChatConfig: LLMConfig = {
-        model: args.config.name, // ModelConfig (app/constant) uses 'name' for model identifier
+        model: args.config.name,
         temperature: args.config.temperature,
         top_p: args.config.top_p,
         stream: args.config.stream ?? true,
         presence_penalty: args.config.presence_penalty,
         frequency_penalty: args.config.frequency_penalty,
         reasoning: args.config.reasoning ?? false,
-        targetEndpoint: args.config.endpoint, // Pass the endpoint from ModelConfig
+        targetEndpoint: args.config.endpoint,
         useSearch: args.config.useSearch ?? false,
         customizedPrompts: args.config.customizedPrompts,
       };
@@ -328,9 +317,7 @@ export const ChatApiService = {
         "[ChatApiService] Failed to initiate LLM chat call:",
         error
       );
-      // We might call onError here directly if the initial call setup fails
       args.onError(error as Error);
-      // Re-throwing might not be necessary if onError handles it
     }
   },
 
@@ -346,14 +333,14 @@ export const ChatApiService = {
     });
     return new Promise((resolve, reject) => {
       const llmSummarizeConfig: LLMConfig = {
-        model: config.name, // Use name from ModelConfig for model identifier
+        model: config.name,
         temperature: config.temperature,
         top_p: config.top_p,
         presence_penalty: config.presence_penalty,
         frequency_penalty: config.frequency_penalty,
         reasoning: config.reasoning ?? false,
-        stream: false, // Ensure stream is false for summarize
-        targetEndpoint: config.endpoint, // Pass the endpoint
+        stream: false,
+        targetEndpoint: config.endpoint,
       };
       api.llm
         .summary(llmSummarizeConfig, messages, 1000)
@@ -368,7 +355,6 @@ export const ChatApiService = {
     });
   },
 
-  // Wrapper for LLM chat specifically for generating titles (non-streaming)
   async callLlmGenerateTitle(
     api: ClientApi,
     prompt: string,
@@ -377,14 +363,14 @@ export const ChatApiService = {
     console.log("[ChatApiService] Calling LLM generate title:", { config });
     return new Promise((resolve, reject) => {
       const llmTitleConfig: LLMConfig = {
-        model: config.name, // Use name from ModelConfig for model identifier
+        model: config.name,
         temperature: config.temperature,
         top_p: config.top_p,
         presence_penalty: config.presence_penalty,
         frequency_penalty: config.frequency_penalty,
         reasoning: config.reasoning ?? false,
-        stream: false, // Ensure stream is false for title generation
-        targetEndpoint: config.endpoint, // Pass the endpoint
+        stream: false,
+        targetEndpoint: config.endpoint,
       };
       api.llm.chat({
         messages: [

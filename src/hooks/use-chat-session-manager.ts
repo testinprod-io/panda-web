@@ -5,16 +5,15 @@ import {
   createMessage,
   MessageSyncState,
   Role,
-} from "@/types/chat"; // Adjust path as needed
+} from "@/types/chat";
 import { useChatActions } from "./use-chat-actions";
 import { useApiClient } from "@/providers/api-client-provider";
 import { ChatApiService } from "@/services/api-service";
-import { MultimodalContent, RequestMessage } from "@/client/api"; // Import MultimodalContent and RequestMessage
+import { MultimodalContent, RequestMessage } from "@/client/api";
 import { ModelConfig } from '@/types/constant';
 import { ChatControllerPool } from "@/client/controller";
-import { useChatStore } from '@/store/chat'; // Corrected import
-import { ChatSession, SessionState } from '@/types/session'; // Added import for ChatSession
-import { FileInfo, Summary } from "@/client/types"; // Import Summary type
+import {  SessionState } from '@/types/session';
+import { FileInfo, Summary } from "@/client/types";
 import { useEncryption } from "@/providers/encryption-provider";
 import { EncryptionService } from "@/services/encryption-service";
 import { useAppConfig } from "@/store";

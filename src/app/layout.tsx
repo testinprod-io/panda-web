@@ -1,8 +1,8 @@
-import React from 'react'; // Keep React for JSX
+import React from 'react';
 import { Inter } from 'next/font/google';
 import { Providers } from './providers';
 import SettingsModalHandler from '../components/modal/settings-modal-handler';
-import ChatLayoutContent from '@/components/chat/chat-layout'; // Import the new client component
+import ChatLayoutContent from '@/components/chat/chat-layout';
 import '@/styles/globals.scss';
 import "@/styles/markdown.scss";
 

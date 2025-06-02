@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './chat.module.scss'; // Assuming styles are needed and path is correct relative to this new component
+import styles from '@/components/chat/chat.module.scss'; // Assuming styles are needed and path is correct relative to this new component
 
 interface FileCircularProgressProps {
   progress: number; // Value from 0 to 100

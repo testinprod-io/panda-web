@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import { LoadedFile } from '@/hooks/use-loaded-files';
 import { GenericFileIcon } from '@/components/common/GenericFileIcon'; // Assuming path from src/components/chat/
-import styles from './chat.module.scss'; // Reusing chat styles
+import styles from '@/components/chat/chat.module.scss'; // Reusing chat styles
 import clsx from 'clsx';
 
 interface FilePreviewItemProps {

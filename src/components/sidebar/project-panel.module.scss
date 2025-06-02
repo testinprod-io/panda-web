@@ -1,7 +1,7 @@
 .container {
   width: 100%;
   flex-direction: column;
-  justify-content: flex-start; /* Ensuring content aligns to top */
+  justify-content: flex-start;
   align-items: flex-start;
   display: inline-flex;
 }
@@ -26,7 +26,6 @@
   word-wrap: break-word;
 }
 
-/* Styles for the clickable New Chat row */
 .newChatRow {
   align-self: stretch; 
   height: 48px;
@@ -60,7 +59,6 @@
   justify-content: center;
 }
 
-/* Styles for the new_chat icon img tag */
 .newChatIcon {
   width: 20px;
   height: 20px;
