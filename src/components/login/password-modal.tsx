@@ -242,7 +242,7 @@ export function PasswordModal({
               width: "64px !important",
               height: "64px",
               // borderRadius: "50%",
-              backgroundColor: currentConfig.iconBackgroundColor,
+              // backgroundColor: currentConfig.iconBackgroundColor,
               display: "flex",
               alignItems: "flex-start",
               justifyContent: "center",

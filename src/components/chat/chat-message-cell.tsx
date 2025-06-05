@@ -5,7 +5,7 @@ import { ChatMessage } from "@/types";
 import { MultimodalContent } from "@/client/api";
 import { ActionButton } from "@/components/ui/action-button";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
-import { Box } from "@mui/material";
+import { Box, CircularProgress } from "@mui/material";
 import styles from "./chat.module.scss";
 import { UUID } from "crypto";
 import { useApiClient } from "@/providers/api-client-provider";
@@ -146,6 +146,17 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
         (streaming || isReasoning) && styles["chat-message-streaming"],
       )}
     >
+      <div className={styles["chat-message-header"]}>
+          {!isUser && (streaming ? (
+            <div className={styles["chat-message-avatar"]}>
+              <CircularProgress size={32} sx={{ color: "black" }} />
+            </div>
+          ) : (
+            <div className={styles["chat-message-avatar"]} style={{ backgroundColor: "#020202", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "16px" }}>
+              <img src="/icons/lock-avatar.svg" alt="Panda" style={{ width: "14px", height: "18px", marginTop: "-1px" }}/>
+            </div>
+          ))}
+        </div>
       <Box
         className={styles["chat-message-container"]}
         sx={
@@ -164,13 +175,15 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
               }
         }
       >
-        <div className={styles["chat-message-header"]}>
-          {!isUser && (
-            <div className={styles["chat-message-avatar"]}>
-              <img src="/icons/panda.svg" alt="Panda" />
-            </div>
+        {showActions && !isEditing && !(streaming || isReasoning) && (
+            <MessageActionsBar
+              isUser={isUser}
+              isChatLoading={isChatLoading}
+              messageContent={content}
+              reasoningText={reasoning}
+              onResend={handleResend}
+            />
           )}
-        </div>
 
         {loadedFiles.length > 0 && (
           <Box
@@ -214,9 +227,10 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
                 <Markdown
                   key={`${messageId}-${streaming ? "streaming" : "done"}-${isReasoning ? "reasoning" : "content"}`}
                   content={content as string}
-                  loading={
-                    streaming && !isUser && content.length === 0 && !isReasoning
-                  }
+                  loading={false}
+                  // loading={
+                  //   streaming && !isUser && content.length === 0 && !isReasoning
+                  // }
                   fontSize={fontSize}
                   fontFamily={fontFamily}
                   parentRef={scrollRef as React.RefObject<HTMLDivElement>}
@@ -226,16 +240,6 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
             </>
           )}
         </Box>
-          {showActions && !isEditing && !(streaming || isReasoning) && (
-            <MessageActionsBar
-              isUser={isUser}
-              isChatLoading={isChatLoading}
-              messageContent={content}
-              reasoningText={reasoning}
-              onResend={handleResend}
-            />
-          )}
-
       </Box>
     </div>
   );

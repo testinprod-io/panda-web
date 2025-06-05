@@ -105,9 +105,9 @@
 .chat-message-header {
   margin-top: 0px;
   display: flex;
-  align-items: center;
+  align-items: top;
   flex-direction: row;
-  gap: 16px;
+  // gap: 16px;
 
   .chat-model-name {
     font-size: 12px;
@@ -161,7 +161,7 @@
 }
 
 .chat-message-system > .chat-message-container > .chat-message-item {
-  padding: 0px 0px 0px 48px;
+  padding: 0px 0px 0px 16px;
   border-radius: 0px;
 }
 
@@ -179,7 +179,7 @@
   align-items: center;
   justify-content: flex-start;
   transition: all ease 0.3s;
-  padding: 0px 0px 0px 48px;
+  padding: 0px 0px 0px 16px;
   margin: 0;
   height: 2rem;
   width: 2rem;
