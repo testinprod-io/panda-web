@@ -33,7 +33,6 @@ import { UUID } from "crypto";
 import CloseIcon from "@mui/icons-material/Close";
 import { useApiClient } from "@/providers/api-client-provider";
 import { useChatActions } from "@/hooks/use-chat-actions";
-import { GenericFileIcon } from "@/components/common/GenericFileIcon";
 import { SessionState, SubmittedFile } from "@/types/session";
 import { EncryptionService } from "@/services/encryption-service";
 import { FileCircularProgress } from "../ui/file-circular-progress";
@@ -352,14 +351,12 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
             reader.readAsDataURL(file);
           });
 
-          const encryptedFile = await EncryptionService.encryptFile(file);
-          const encryptedFileName = EncryptionService.encrypt(file.name);
           return {
             clientId,
-            originalFile: encryptedFile,
+            originalFile: file,
             previewUrl,
             type: file.type,
-            name: encryptedFileName,
+            name: file.name,
             size: file.size,
             uploadStatus: "pending" as const,
             uploadProgress: 0,
@@ -383,8 +380,8 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
           );
           const uploadPromise = apiClient.app.uploadFile(
             currentSessionIdToUse!,
-            clientFile.originalFile,
-            clientFile.name,
+            await EncryptionService.encryptFile(clientFile.originalFile),
+            EncryptionService.encrypt(clientFile.name),
             clientFile.size,
             (progress) => {
               setAttachedFiles((prev) =>
@@ -700,7 +697,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
                   ) : (
                     <>
                       <div className={styles["doc-file-icon-bg"]}>
-                        <GenericFileIcon />
+                        <img src="/icons/file.svg" alt="File" style={{ width: "21px", height: "26px" }} />
                       </div>
                       <div className={styles["doc-file-info"]}>
                         <div className={styles["doc-file-name"]}>
@@ -756,10 +753,22 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
               onClick={uploadFile}
               disabled={!isVisionModel(modelConfig)}
               className={styles["chat-input-action-plus"]}
-              aria-label={Locale.Chat.InputActions.UploadImage}
+              aria-label={Locale.Chat.InputActions.UploadFile}
             >
               <img
                 src="/icons/plus.svg"
+                alt={Locale.Chat.InputActions.UploadFile}
+                className={styles.inputActionIcon}
+              />
+            </button>
+            <button
+              onClick={uploadFile}
+              disabled={!isVisionModel(modelConfig)}
+              className={styles["chat-input-action-plus"]}
+              aria-label={Locale.Chat.InputActions.UploadImage}
+            >
+              <img
+                src="/icons/photo.svg"
                 alt={Locale.Chat.InputActions.UploadImage}
                 className={styles.inputActionIcon}
               />

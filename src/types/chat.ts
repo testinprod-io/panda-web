@@ -1,6 +1,6 @@
 import { ServiceProvider, ModelType } from "./constant";
 import { nanoid } from "nanoid";
-import { MultimodalContent } from "@/client/api";
+import { MultimodalContent, RequestMessage } from "@/client/api";
 import { UUID } from "crypto";
 import { FileInfo } from "@/client/types";
 import { EncryptionService } from "../services/encryption-service";
@@ -14,11 +14,6 @@ export enum Role {
 export interface Message {
   role: Role;
   text: string;
-}
-
-export interface RequestMessage {
-  role: Role;
-  content: string | MultimodalContent[];
 }
 
 export interface ChatConfig {

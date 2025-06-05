@@ -1,177 +1,152 @@
 import React from "react";
-import Image from "next/image";
-import { Box, Typography, CircularProgress } from "@mui/material";
+// import Image from "next/image"; // Unused
+// import { Box, Typography, CircularProgress } from "@mui/material"; // Box, CircularProgress unused
+import { Typography } from "@mui/material";
 import { LoadedFile } from "@/hooks/use-loaded-files";
-import { GenericFileIcon } from "@/components/common/GenericFileIcon"; // Assuming path from src/components/chat/
-import styles from "@/components/chat/chat.module.scss"; // Reusing chat styles
+import styles from "@/components/chat/chat.module.scss";
 import clsx from "clsx";
+import { FileCircularProgress } from "./file-circular-progress";
+import { ActionButton } from "./action-button";
+import CloseIcon from "@mui/icons-material/Close";
 
 interface FilePreviewItemProps {
   file: LoadedFile;
+  onRemove?: (file: LoadedFile) => void;
 }
 
-export const FilePreviewItem: React.FC<FilePreviewItemProps> = ({ file }) => {
+export const FilePreviewItem: React.FC<FilePreviewItemProps> = ({
+  file,
+  onRemove,
+}) => {
+  const isImage = file.type.startsWith("image");
+  const fileTypeDisplay =
+    file.type.split("/")[1]?.toUpperCase() || "File";
+
+  // Loading State
   if (file.isLoading) {
     return (
-      <Box
-        key={`${file.id}-loading`}
-        className={styles["chat-message-item-loading"]} // Ensure this class exists and is styled
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        style={{
-          borderRadius: "8px",
-          outline: "1px solid #CACACA", // Consider theme variables
-          backgroundColor: "#F0F0F0", // Consider theme variables
-          // objectFit: "cover", // Not directly applicable to Box, but for image inside if any
-          width: "160px", // Consistent preview item size
-          height: "160px", // Consistent preview item size
-        }}
+      <div
+        key={`${file.id}-loading-preview`}
+        className={clsx(
+          styles["attach-file-item"],
+          isImage
+            ? styles["attach-file-item-image"]
+            : styles["attach-file-item-doc"],
+        )}
+        style={
+          isImage && file.url
+            ? { backgroundImage: `url(${file.url})` }
+            : {}
+        }
       >
-        <CircularProgress size={24} color="inherit" />
-      </Box>
+        <div className={styles["file-status-overlay"]}>
+          {/* Assuming LoadedFile might have progress in the future, or a default can be shown */}
+          {/* For now, if file.progress is not available, defaulting to 0 or a generic loading indicator */}
+          <FileCircularProgress progress={0} /> {/* Default to 0 or handle missing progress */}
+        </div>
+      </div>
     );
   }
 
+  // Error State
   if (file.error) {
     return (
-      <Box
-        key={`${file.id}-error`}
-        className={styles["chat-message-file-item-error"]} // Ensure this class exists
-        sx={{
-          display: "flex",
-          flexDirection: "column", // Align icon and text vertically
-          alignItems: "center",
-          justifyContent: "center",
-          textAlign: "center",
-          padding: "10px",
-          borderRadius: "8px",
-          border: "1px solid #F33D4F", // Error color, consider theme variable
-          backgroundColor: "#FFF4F4", // Light error background, consider theme variable
-          width: "160px",
-          height: "160px",
-          gap: "8px",
-        }}
+      <div
+        key={`${file.id}-error-preview`}
+        className={clsx(
+          styles["attach-file-item"],
+          styles["attach-file-item-doc"],
+        )}
       >
-        <GenericFileIcon />{" "}
-        {/* Or a specific error icon like ReportProblemIcon */}
-        <Typography
-          variant="caption"
-          color="error"
-          sx={{ wordBreak: "break-word" }}
-        >
-          {file.name}
-          <br />({file.error})
-        </Typography>
-      </Box>
+        <div className={styles["file-status-overlay"]}>
+          <Typography variant="caption" color="error" sx={{ padding: "4px" }}>
+            Error: {file.error}
+          </Typography>
+        </div>
+        <div className={styles["doc-file-icon-bg"]} style={{ backgroundColor: "#F33D4F" }}>
+          <img src="/icons/file.svg" alt="Error" style={{ width: "21px", height: "26px" }} />
+        </div>
+        <div className={styles["doc-file-info"]}>
+          <div className={styles["doc-file-name"]} style={{ color: "#F33D4F" }}>
+            {file.name || "File error"}
+          </div>
+          <div className={styles["doc-file-type"]}>Error</div>
+        </div>
+        {onRemove && (
+          <button
+            className={styles["doc-file-delete-button"]}
+            onClick={() => onRemove(file)}
+            aria-label="Remove errored file"
+          >
+            <CloseIcon sx={{ fontSize: 14 }} />
+          </button>
+        )}
+      </div>
     );
   }
 
-  // Common anchor tag props
-  const anchorProps = {
-    href: file.url,
-    download: file.name,
-    target: "_blank",
-    rel: "noopener noreferrer",
-    style: { textDecoration: "none", display: "block" }, // display:block helps anchor fill Box
+  // Successfully loaded file
+  const commonDivProps = {
+    key: file.id || file.name, // Removed file.clientId as it may not exist
+    className: clsx(
+      styles["attach-file-item"],
+      isImage
+        ? styles["attach-file-item-image"]
+        : styles["attach-file-item-doc"],
+    ),
+    style: isImage ? { backgroundImage: `url(${file.url})` } : {},
   };
 
-  if (file.type.startsWith("image")) {
-    return (
-      <a key={`${file.id}-anchor`} {...anchorProps}>
-        <Image
-          className={clsx(
-            styles["chat-message-item-image-outside"],
-            styles.attachedFileImagePreview,
-          )} // Use existing classes
-          src={file.url}
-          alt={file.name || `attached image ${file.id}`}
-          width={160}
-          height={160}
-          // Styles are now in .attachedFileImagePreview
-        />
-      </a>
-    );
-  }
-
-  if (file.type.startsWith("application/pdf") || file.type.startsWith("pdf")) {
-    return (
-      <a key={`${file.id}-anchor`} {...anchorProps}>
-        <Box
-          className={styles["chat-message-file-item-doc"]} // Generic doc item style
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "8px",
-            borderRadius: "8px",
-            backgroundColor: "#f0f0f0", // Consider theme variables
-            border: "1px solid #e0e0e0", // Consider theme variables
-            width: "160px", // Fixed width for consistency in a grid
-            height: "auto", // Auto height based on content
-            minHeight: "60px", // Ensure a minimum height
-            cursor: "pointer",
-          }}
-        >
-          <GenericFileIcon />
-          <Box sx={{ overflow: "hidden", flexGrow: 1 }}>
-            <Typography
-              variant="body2"
-              sx={{
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                fontWeight: 500,
-              }}
-            >
-              {file.name}
-            </Typography>
-            <Typography variant="caption" color="textSecondary">
-              PDF Document {file.originalType ? `(${file.originalType})` : ""}
-            </Typography>
-          </Box>
-        </Box>
-      </a>
-    );
-  }
-
-  // Fallback for 'other' file types
   return (
-    <a key={`${file.id}-anchor`} {...anchorProps}>
-      <Box
-        className={styles["chat-message-file-item-doc"]} // Re-use generic doc item style
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          padding: "8px",
-          borderRadius: "8px",
-          backgroundColor: "#f0f0f0", // Consider theme variables
-          border: "1px solid #e0e0e0", // Consider theme variables
-          width: "160px", // Fixed width
-          height: "auto", // Auto height
-          minHeight: "60px",
-          cursor: "pointer",
-        }}
-      >
-        <GenericFileIcon />
-        <Box sx={{ overflow: "hidden", flexGrow: 1 }}>
-          <Typography
-            variant="body2"
-            sx={{
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              fontWeight: 500,
-            }}
-          >
-            {file.name}
-          </Typography>
-          <Typography variant="caption" color="textSecondary">
-            {file.originalType || "File"}
-          </Typography>
-        </Box>
-      </Box>
-    </a>
+    <div {...commonDivProps}>
+      {/* Progress overlay: Conditional rendering based on a progress property if it exists and is less than 100 */}
+      {/* This part needs LoadedFile to have a 'progress' property */}
+      {/* For now, this block will not render if file.progress is not available */}
+      {/* 'file.progress' might need to be added to LoadedFile type or handled differently */}
+      {/* {file.progress !== undefined && file.progress < 100 && !file.isLoading && ( */}
+      {/*  <div className={styles["file-status-overlay"]}> */}
+      {/*    <FileCircularProgress progress={file.progress} /> */}
+      {/*  </div> */}
+      {/* )} */}
+
+      {isImage ? (
+        <div className={styles["attach-file-mask-image"]}>
+          {onRemove && (
+            <ActionButton
+              icon={
+                <img
+                  src="/icons/delete.svg"
+                  className={styles.deleteAttachmentIcon}
+                  alt="Delete attached image"
+                />
+              }
+              onClick={() => onRemove(file)}
+              className={styles.deleteImageActionButton}
+              ariaLabel="Delete attached image"
+              title="Delete image"
+            />
+          )}
+        </div>
+      ) : (
+        <>
+          <div className={styles["doc-file-icon-bg"]}>
+            <img src="/icons/file.svg" alt="File" style={{ width: "21px", height: "26px" }} />
+          </div>
+          <div className={styles["doc-file-info"]}>
+            <div className={styles["doc-file-name"]}>{file.name}</div>
+            <div className={styles["doc-file-type"]}>{fileTypeDisplay}</div>
+          </div>
+          {onRemove && (
+            <button
+              className={styles["doc-file-delete-button"]}
+              onClick={() => onRemove(file)}
+              aria-label="Remove file"
+            >
+              <CloseIcon sx={{ fontSize: 14 }} />
+            </button>
+          )}
+        </>
+      )}
+    </div>
   );
 };

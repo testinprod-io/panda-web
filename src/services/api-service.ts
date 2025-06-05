@@ -11,7 +11,7 @@ import {
   GetConversationsParams,
 } from "@/client/types";
 import { UUID } from "crypto";
-import { ChatMessage, createMessage, Role } from "@/types/chat";
+import { ChatMessage, createMessage, MessageSyncState, Role } from "@/types/chat";
 import { ChatSession, createNewSession } from "@/types/session";
 import { ModelConfig } from "@/types/constant";
 import { DEFAULT_TOPIC } from "@/store/chat";
@@ -105,6 +105,7 @@ export function mapApiMessageToChatMessage(message: ApiMessage): ChatMessage {
       ? parseInt(message.reasoning_time)
       : undefined,
     useSearch: message.custom_data?.useSearch ?? false,
+    syncState: MessageSyncState.SYNCED,
   });
 }
 

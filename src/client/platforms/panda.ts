@@ -5,8 +5,9 @@ import {
   LLMUsage,
   MultimodalContent,
   LLMConfig,
+  RequestMessage,
 } from "@/client/api";
-import { RequestMessage, Role } from "@/types";
+import { Role } from "@/types";
 
 // Type for the Privy getAccessToken function
 export type GetAccessTokenFn = () => Promise<string | null>;
@@ -254,6 +255,13 @@ export class PandaApi implements LLMApi {
       }
       const bearerToken = `Bearer ${accessToken}`;
 
+      const messagesToSummarize = messages.map((v) => ({
+        role: v.role,
+        content: v.attachments
+          ? [...v.attachments, { type: "text", text: v.content }]
+          : v.content,
+      }));
+
       const requestUrl = this.path(
         PandaPath.SummaryPath,
         config.targetEndpoint,
@@ -261,7 +269,7 @@ export class PandaApi implements LLMApi {
 
       const requestBody = {
         model: DEFAULT_PANDA_MODEL_NAME,
-        messages,
+        messages: messagesToSummarize,
         temperature: 0.2, // Hard-coded as specified
         max_tokens: maxTokens,
         stream: false, // Summary endpoint doesn't support streaming

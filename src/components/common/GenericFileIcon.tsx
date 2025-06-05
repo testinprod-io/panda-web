@@ -20,14 +20,14 @@ export const GenericFileIcon: React.FC<GenericFileIconProps> = (props) => {
       <rect width="32" height="32" rx="5.33333" fill="none" />
       <path
         d="M21.3333 24H10.6666C9.92778 24 9.33325 23.4055 9.33325 22.6667V9.33333C9.33325 8.5945 9.92778 8 10.6666 8H16L22.6666 12.6667V22.6667C22.6666 23.4055 22.0721 24 21.3333 24Z"
-        stroke="currentColor"
+        stroke="white"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M22.6666 12.6667H17.3333C16.5944 12.6667 16 12.0722 16 11.3333V8"
-        stroke="currentColor"
+        stroke="white"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"

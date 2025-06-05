@@ -228,9 +228,8 @@ export default function ChatHeader({
               aria-haspopup="true"
               aria-expanded={modelMenuOpen ? "true" : undefined}
               onClick={handleModelClick}
-              size="small"
               variant="text"
-              endIcon={<ExpandMoreIcon />}
+              endIcon={<img src="/icons/chevron-down.svg" alt="Expand Sidebar" style={{width: "12px", height: "7px", filter: "invert(52%) sepia(0%) saturate(23%) hue-rotate(153deg) brightness(88%) contrast(85%)"}}/>}
               className={styles.modelSelectorButton}
             >
               {displayModelName}

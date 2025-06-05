@@ -44,13 +44,13 @@ export const SnackbarProvider: React.FC<SnackbarProviderProps> = ({
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [severity, setSeverity] = useState<AlertColor>("info"); // Default severity
-  const [autoHideDuration, setAutoHideDuration] = useState<number | null>(6000); // Default duration
+  const [autoHideDuration, setAutoHideDuration] = useState<number | null>(2000); // Default duration
 
   const showSnackbar = useCallback(
     (
       newMessage: string,
       newSeverity: AlertColor = "info",
-      duration: number | null = 6000,
+      duration: number | null = 2000,
     ) => {
       setMessage(newMessage);
       setSeverity(newSeverity);
@@ -89,9 +89,9 @@ export const SnackbarProvider: React.FC<SnackbarProviderProps> = ({
         open={open}
         autoHideDuration={autoHideDuration}
         onClose={handleClose}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }} // Position can be adjusted
+        anchorOrigin={{ vertical: "top", horizontal: "center" }} // Position can be adjusted
       >
-        <Alert onClose={handleClose} severity={severity} sx={{ width: "100%" }}>
+        <Alert onClose={handleClose} severity={severity} sx={{ width: "100%", borderRadius: "12px" }}>
           {message}
         </Alert>
       </Snackbar>

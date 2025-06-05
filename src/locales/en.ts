@@ -70,6 +70,7 @@ const en = {
       Clear: "Clear Context",
       Settings: "Settings",
       UploadImage: "Upload Images",
+      UploadFile: "Upload Files",
     },
     Rename: "Rename Chat",
     Typing: "Typing…",
@@ -78,7 +79,7 @@ const en = {
       // if (submitKey === String(SubmitKey.Enter)) {
       //   inputHints += ", Shift + Enter to wrap";
       // }
-      return "Ask me anything";
+      return "🔒 Rest assured that everything we say is encrypted. Ask me anything!";
     },
     Send: "Send",
     StartSpeak: "Start Speak",

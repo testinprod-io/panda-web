@@ -17,11 +17,11 @@ const MAX_PASSWORD_LENGTH = 20;
 
 const MODAL_CONFIG = {
   create: {
-    iconSrc: "/icons/lock.svg",
+    iconSrc: "/icons/rounded-logo.svg",
     iconAlt: "Lock Icon",
-    iconBackgroundColor: "#C1FF83",
-    iconFilter:
-      "invert(0%) sepia(0%) saturate(23%) hue-rotate(67deg) brightness(104%) contrast(103%)",
+    // iconBackgroundColor: "#C1FF83",
+    // iconFilter:
+    //   "invert(0%) sepia(0%) saturate(23%) hue-rotate(67deg) brightness(104%) contrast(103%)",
     title: "Create Encryption Password",
     description:
       "To protect your chat data, set a password. If you forget it, you'll need to reset the service, which will permanently delete all data",
@@ -57,13 +57,13 @@ const MODAL_CONFIG = {
     },
   },
   unlock: {
-    iconSrc: "/icons/lock.svg",
+    iconSrc: "/icons/rounded-logo.svg",
     iconAlt: "Lock Icon",
-    iconBackgroundColor: "#F33D4F",
-    iconFilter:
-      "invert(100%) sepia(0%) saturate(7500%) hue-rotate(137deg) brightness(118%) contrast(91%)",
+    // iconBackgroundColor: "#F33D4F",
+    // iconFilter:
+    //   "invert(100%) sepia(0%) saturate(7500%) hue-rotate(137deg) brightness(118%) contrast(91%)",
     title: "Unlock Panda",
-    description: "Please enter your password to decrypt your chat data.",
+    description: "Unlock and experience encrypted chat that fully protects your privacy.",
     submitButtonText: "Unlock",
     textFieldPlaceholder: "Password",
     getDynamicError: (_password: string) => "",
@@ -233,15 +233,15 @@ export function PasswordModal({
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: "24px",
-            marginBottom: "24px",
+            gap: "12px",
+            marginBottom: "20px",
           }}
         >
           <Box
             sx={{
-              width: "48px !important",
-              height: "48px",
-              borderRadius: "50%",
+              width: "64px !important",
+              height: "64px",
+              // borderRadius: "50%",
               backgroundColor: currentConfig.iconBackgroundColor,
               display: "flex",
               alignItems: "flex-start",
@@ -253,10 +253,10 @@ export function PasswordModal({
               src={currentConfig.iconSrc}
               alt={currentConfig.iconAlt}
               style={{
-                width: "24px",
-                height: "30px",
-                marginTop: "6px",
-                filter: currentConfig.iconFilter,
+                width: "64px",
+                height: "64px",
+                // marginTop: "6px",
+                // filter: currentConfig.iconFilter,
               }}
             />
           </Box>
@@ -332,7 +332,7 @@ export function PasswordModal({
               "& .MuiOutlinedInput-root": {
                 borderRadius: "8px",
                 backgroundColor: "white",
-                height: "56px",
+                height: "40px",
                 fontFamily: "Inter, sans-serif",
                 "& fieldset": {
                   borderColor: "#CACACA",
@@ -387,7 +387,7 @@ export function PasswordModal({
                   background: "#F3F3F3",
                   color: "#CACACA",
                 },
-                marginTop: "8px",
+                marginTop: "12px",
               }}
             >
               {currentConfig.submitButtonText}
@@ -411,7 +411,6 @@ export function PasswordModal({
                 fontFamily: "Inter, sans-serif",
                 fontWeight: "400",
                 boxShadow: "none",
-                marginTop: "8px",
               }}
               onClick={handleLogOut}
             >

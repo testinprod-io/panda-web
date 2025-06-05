@@ -352,8 +352,14 @@ export function useChatSessionManager(
   // Effect for triggering summarization
   useEffect(() => {
     if (!sessionId || !actionSummarize || localIsSummarizing) {
+      console.log(
+        `[useChatSessionManager] Summarization not triggered: sessionId: ${sessionId}, actionSummarize: ${actionSummarize}, localIsSummarizing: ${localIsSummarizing}`,
+      );
       return;
     }
+    console.log(
+      `[useChatSessionManager] Summarization triggered: sessionId: ${sessionId}, actionSummarize: ${actionSummarize}, localIsSummarizing: ${localIsSummarizing}`,
+    );
     // No longer directly accessing store.sessions for currentSessionFromStore.messages here.
     // We operate on displayedMessages.
 
@@ -383,13 +389,20 @@ export function useChatSessionManager(
     } else {
       messagesToConsiderForSummarization = displayedMessages; // No summaries yet for this session instance
     }
-
+    console.log(
+      `[useChatSessionManager] Messages to consider for summarization:`,
+      messagesToConsiderForSummarization,
+    );
     const finalMessagesToConsider = messagesToConsiderForSummarization.filter(
       (msg: ChatMessage) =>
         msg.syncState === MessageSyncState.SYNCED && !msg.isError,
     );
 
     if (finalMessagesToConsider.length >= SUMMARIZE_INTERVAL) {
+      console.log(
+        `[useChatSessionManager] Final messages to consider for summarization:`,
+        finalMessagesToConsider,
+      );
       const batchToSummarize = finalMessagesToConsider.slice(
         0,
         SUMMARIZE_INTERVAL,
@@ -467,9 +480,20 @@ export function useChatSessionManager(
       const serverMessages = newMessages.slice().reverse();
       setDisplayedMessages((prevMessages) => {
         const optimisticMessagesToShow = prevMessages.filter(
-          (pm) =>
-            pm.syncState === MessageSyncState.PENDING_CREATE &&
-            !serverMessages.some((sm) => sm.id === pm.id), // Avoid dupes if server returns it
+          (pm) => {
+            if (pm.syncState === MessageSyncState.PENDING_CREATE) {
+              return !serverMessages.some((sm) => sm.id === pm.id); // Avoid dupes if server returns it
+            }
+            return true;
+          },
+        );
+        console.log(
+          `[useChatSessionManager] Optimistic messages to show:`,
+          optimisticMessagesToShow,
+        );
+        console.log(
+          `[useChatSessionManager] Server messages:`,
+          serverMessages,
         );
         // Combine server messages with still-pending optimistic messages
         const updatedMessages = [
@@ -497,7 +521,7 @@ export function useChatSessionManager(
       setIsLoading(false);
       loadInProgress.current = false;
     }
-  }, [sessionId, isLoading, hasMoreServerMessages, nextServerMessageCursor]);
+  }, [sessionId, displayedMessages, isLoading, hasMoreServerMessages, nextServerMessageCursor]);
 
   const addOptimisticMessage = useCallback(
     (message: ChatMessage) => {
@@ -895,24 +919,22 @@ export function useChatSessionManager(
             console.log(
               `[useChatSessionManager] onError: AbortError. Ignoring.`,
             );
-            let finalContent: string = "";
             setDisplayedMessages((prev) =>
               prev.map((msg) => {
                 if (msg.id === localBotMessageId) {
                   console.log(
-                    `[useChatSessionManager] onError: Finalizing last bot message. ID: ${localBotMessageId}, Content: ${msg.content}`,
+                    `[useChatSessionManager] onError: Finalizing last bot message. ID: ${localBotMessageId}, Content: ${msg.visibleContent}`,
                   );
                   finalizeStreamedBotMessage(
                     localBotMessageId,
-                    msg.content as string,
+                    msg.visibleContent,
                     new Date(),
                   );
                   callbacks?.onSuccess?.(
                     localBotMessageId,
-                    msg.content as string,
+                    msg.visibleContent,
                     new Date(),
                   );
-                  finalContent = msg.content as string;
                 }
                 return msg;
               }),

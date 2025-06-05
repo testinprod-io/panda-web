@@ -216,13 +216,13 @@ export default function ChatLayoutContent({
                 {isSidebarCollapsed ? (
                   <img
                     src="/icons/chevron-right.svg"
-                    style={{ width: "8.75px", height: "17.5px" }}
+                    style={{ width: "8.75px", height: "17.5px", filter: "invert(88%) sepia(27%) saturate(0%) hue-rotate(150deg) brightness(92%) contrast(83%)"}}
                     alt="Expand Sidebar"
                   />
                 ) : (
                   <img
                     src="/icons/chevron-left.svg"
-                    style={{ width: "8.75px", height: "17.5px" }}
+                    style={{ width: "8.75px", height: "17.5px", filter: "invert(88%) sepia(27%) saturate(0%) hue-rotate(150deg) brightness(92%) contrast(83%)" }}
                     alt="Collapse Sidebar"
                   />
                 )}

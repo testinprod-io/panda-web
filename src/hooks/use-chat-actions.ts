@@ -594,7 +594,11 @@ export function useChatActions() {
       );
 
       try {
-        const apiMessages: RequestMessage[] = messagesToSummarize;
+        const apiMessages: RequestMessage[] = messagesToSummarize.map((msg) => ({
+          role: msg.role,
+          content: msg.visibleContent,
+          attachments: msg.attachments,
+        }));
 
         const summaryText = await ChatApiService.callLlmSummarize(
           apiClient,
