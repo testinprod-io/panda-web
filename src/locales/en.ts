@@ -79,7 +79,7 @@ const en = {
       // if (submitKey === String(SubmitKey.Enter)) {
       //   inputHints += ", Shift + Enter to wrap";
       // }
-      return "🔒 Rest assured that everything we say is encrypted. Ask me anything!";
+      return "🔒 Ask me anything. Encrypted by default.";
     },
     Send: "Send",
     StartSpeak: "Start Speak",

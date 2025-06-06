@@ -76,9 +76,19 @@ export default function ChatLayoutContent({
   );
 
   const [internalIsSubmitting, setInternalIsSubmitting] = useState(false);
+  const [contentOpacity, setContentOpacity] = useState(1);
+  const [isNavigatingAway, setIsNavigatingAway] = useState(false);
 
   const currentChatId = params?.chatId as UUID | undefined;
   const isNewChatPage = !currentChatId;
+
+  useEffect(() => {
+    setContentOpacity(1);
+    if (isNavigatingAway) {
+      setIsNavigatingAway(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChatId]);
 
   useEffect(() => {
     setIsSidebarCollapsed(isMobile ? true : false);
@@ -119,7 +129,16 @@ export default function ChatLayoutContent({
             const newUserMessage = { sessionState };
             localStorage.setItem(session.id, JSON.stringify(newUserMessage));
             localStorage.removeItem(UNFINISHED_INPUT(session.id));
-            router.replace(`/chat/${session.id}`);
+            setContentOpacity(0);
+            setTimeout(() => {
+              if (typeof window !== "undefined") {
+                window.sessionStorage.setItem(
+                  "is_navigating_from_new_chat",
+                  "true",
+                );
+              }
+              router.replace(`/chat/${session.id}`);
+            }, 400);
           } else {
             showSnackbar("Failed to start new chat", "error");
           }
@@ -135,7 +154,13 @@ export default function ChatLayoutContent({
               JSON.stringify(newUserMessage),
             );
             localStorage.removeItem(UNFINISHED_INPUT(createdSession.id));
-            router.replace(`/chat/${createdSession.id}`);
+
+            setIsNavigatingAway(true);
+            setContentOpacity(0);
+
+            setTimeout(() => {
+              router.replace(`/chat/${createdSession.id}`);
+            }, 400);
           } else {
             showSnackbar("Failed to start new chat", "error");
           }
@@ -285,7 +310,10 @@ export default function ChatLayoutContent({
           flexGrow: 1,
           height: "100%",
           display: "flex",
+          overflow: "hidden",
           flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
           ...(isNewChatPage && {
             background:
               "linear-gradient(177deg, white 0%, #FEFEFE 27%, #F6FFFC 75%, #DAF7EF 100%)",
@@ -298,18 +326,35 @@ export default function ChatLayoutContent({
           isMobile={isMobile}
         />
         <Box
+          sx={{
+            height: "100%",
+            width: { xs: "90%", sm: "clamp(540px, 70%, 1200px)" },
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+        <Box
           className={
             !isNewChatPage ? styles["chat-layout-main-content"] : undefined
           }
           sx={{
+            transition: isNavigatingAway ? "all 0.4s ease-in" : "none",
+            opacity: contentOpacity,
             width: "100%",
-            ...(isNewChatPage && {
+            ...((isNewChatPage && !isNavigatingAway) && {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               flexShrink: 0,
+              height: "20vh",
+              // height: "35vh",
+              marginBottom: { xs: "24px", md: "48px" },
+              marginTop: "15vh",
             }),
-            ...(!isNewChatPage && {}),
+            ...((!isNewChatPage || isNavigatingAway) && {
+              height: "100%",
+              marginTop: "0px",
+            }),
           }}
         >
           {children}
@@ -319,11 +364,12 @@ export default function ChatLayoutContent({
           sx={{
             width: "100%",
             display: "flex",
+            flexDirection: "column",
             justifyContent: "center",
             ...(isNewChatPage && {
-              marginTop: { xs: "24px", md: "48px" },
             }),
             ...(!isNewChatPage && {
+              marginBottom: "0px",
               flexShrink: 0,
             }),
           }}
@@ -348,8 +394,6 @@ export default function ChatLayoutContent({
                 console.warn("ShowShortcutKeyModal handler not set in store"))
             }
           />
-        </Box>
-
         <Typography
           sx={{
             minWidth: { xs: "auto", md: "460px" },
@@ -370,6 +414,8 @@ export default function ChatLayoutContent({
           By messaging Panda AI, you agree to our Terms and have read our
           Privacy Policy.
         </Typography>
+        </Box>
+      </Box>
       </Box>
     </Box>
   );

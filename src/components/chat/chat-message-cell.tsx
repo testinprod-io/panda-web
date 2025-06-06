@@ -153,7 +153,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
             </div>
           ) : (
             <div className={styles["chat-message-avatar"]} style={{ backgroundColor: "#020202", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "16px" }}>
-              <img src="/icons/lock-avatar.svg" alt="Panda" style={{ width: "14px", height: "18px", marginTop: "-1px" }}/>
+              <img src="/icons/rounded-logo.svg" alt="Panda" style={{ width: "24px", height: "24px" }}/>
             </div>
           ))}
         </div>

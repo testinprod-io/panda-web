@@ -11,16 +11,16 @@ export default function NewChatPage() {
         flexDirection: "column",
         alignItems: "center",
         textAlign: "center",
-        marginTop: "26.34vh",
+        // marginTop: "26.34vh",
         paddingTop: "0px",
       }}
     >
       <Image
-        src="/icons/panda.svg"
+        src="/icons/rounded-logo.svg"
         alt="Panda AI Logo"
-        width={32}
-        height={32}
-        style={{ width: "9.26vh", height: "9.26vh" }}
+        width={100}
+        height={100}
+        // style={{ width: "9.26vh", height: "9.26vh" }}
       />
       <Typography
         gutterBottom
@@ -33,7 +33,7 @@ export default function NewChatPage() {
           margin: "0px",
         }}
       >
-        Welcome 🐼
+        Panda – AI that never watches back.
       </Typography>
       <Typography
         sx={{
@@ -43,7 +43,7 @@ export default function NewChatPage() {
           lineHeight: "38.74px",
         }}
       >
-        What can I help with?
+        How can I help you today?
       </Typography>
     </Box>
   );
