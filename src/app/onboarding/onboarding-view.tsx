@@ -9,17 +9,19 @@ import {
   encryptSystemPrompt,
   decryptSystemPrompt,
 } from "@/types";
-import { Box, CircularProgress, Typography } from "@mui/material";
+import { Box, Button, CircularProgress, Typography } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import TextInputStep from "./components/TextInputStep";
 import TraitsStepView from "./components/TraitsStepView";
 import StreamingText from "./components/StreamingText";
 import styles from "./onboarding.module.scss";
 
-const STEPS = ["name", "role", "traits", "knowledge"];
+const STEPS = ["intro", "name", "role", "traits", "knowledge"];
 
 const getQuestion = (step: string, name: string): string => {
   switch (step) {
+    case "intro":
+      return "Welcome to Panda AI! Let's get you set up.";
     case "name":
       return "First, what should Panda AI call you?";
     case "role":
@@ -43,6 +45,7 @@ const PLACEHOLDERS: Record<string, string> = {
 export default function OnboardingView() {
   const [step, setStep] = useState(0);
   const [data, setData] = useState({
+    intro: "",
     name: "",
     job: "",
     traits: "",
@@ -55,6 +58,7 @@ export default function OnboardingView() {
 
   const handleNext = (value: string) => {
     const keys: (keyof typeof data)[] = [
+      "intro",
       "name",
       "job",
       "traits",
@@ -145,6 +149,26 @@ export default function OnboardingView() {
         >
           {(() => {
             switch (currentStepKey) {
+              case "intro":
+                return (
+                  <Button
+              type="submit" 
+              variant="contained"
+              onClick={() => handleNext("")}
+              sx={{
+                alignSelf: "flex-start",
+                height: "48px",
+                backgroundColor: "#131A28",
+                color: "#C1FF83",
+                borderRadius: "8px",
+                textTransform: "none",
+                fontSize: "16px",
+              }}
+              // className={styles.sendButton}
+            >
+              Continue
+            </Button>
+                );
               case "name":
                 return (
                   <TextInputStep
@@ -239,7 +263,7 @@ export default function OnboardingView() {
             color="#131A28"
             marginLeft="12px"
           >
-            Panda AI
+            Panda
           </Typography>
         </Box>
         <Box className={styles.content}>

@@ -50,9 +50,9 @@ export default function CreatePassword() {
 
   useEffect(() => {
     // if user is not authenticated, they shouldn't be here.
-    if (ready && !authenticated) {
-      router.replace('/signup');
-    }
+    // if (ready && !authenticated) {
+    //   router.replace('/signup');
+    // }
 
     if (isFirstTimeUser === false) {
       router.replace('/');
@@ -79,7 +79,7 @@ export default function CreatePassword() {
 
       try {
         await createPassword(password);
-        router.push("/");
+        router.replace("/signup?step=password-confirmation");
       } catch (err: any) {
         setError(err.message || "Failed to process password");
       }
@@ -107,7 +107,7 @@ export default function CreatePassword() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "flex-start",
-        minHeight: '100vh',
+        height: '100vh',
         py: 4,
         px: 2,
         background: "linear-gradient(177deg, white 0%, #FEFEFE 27%, #F6FFFC 75%, #DAF7EF 100%)"
@@ -116,13 +116,13 @@ export default function CreatePassword() {
       <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', maxWidth: '410px', marginRight: 'auto', mb: 10 }}>
         <img src="/icons/inverse-icon.png" alt="Panda AI Logo" width={40} height={40} />
         <Typography fontSize="24px" fontWeight="600" color="#131A28" marginLeft="12px">
-          Panda AI
+          Panda
         </Typography>
       </Box>
       <Box
         sx={{
           width: "100%",
-          maxWidth: "410px",
+          maxWidth: "500px",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -165,7 +165,7 @@ export default function CreatePassword() {
               color: "#131A28",
               fontSize: "16px",
               fontFamily: "Inter, sans-serif",
-              fontWeight: "400",
+              fontWeight: "500",
               textAlign: "left",
               marginTop: "24px"
             }}
@@ -212,15 +212,23 @@ export default function CreatePassword() {
             error={!!displayedError}
             placeholder={`Enter ${MIN_PASSWORD_LENGTH}–${MAX_PASSWORD_LENGTH} characters.`}
             sx={{
+              "& .MuiOutlinedInput-input": {
+                border: "none",
+              },
+
               "& .MuiOutlinedInput-root": {
                 borderRadius: "8px",
                 backgroundColor: "white",
                 height: "40px",
                 fontFamily: "Inter, sans-serif",
-                "& fieldset": { borderColor: "#CACACA" },
-                "&:hover fieldset": { borderColor: "#A0A0A0" },
-                "&.Mui-focused fieldset": { borderColor: "#007AFF" },
+                border: "none",
+                // "& fieldset": { borderColor: "#CACACA" },
+                // "&:hover fieldset": { borderColor: "#A0A0A0" },
+                "&.Mui-focused fieldset": { 
+                  // boxShadow: "0 2px 5px rgba(0, 0, 0, 0.2), 0 0 0 2px #000000",
+                 },
                 "&.Mui-error fieldset": { borderColor: "#F33D4F" },
+                boxShadow: "0 2px 5px rgba(0, 0, 0, 0.2)",
               },
               "& .MuiInputBase-input": {
                 width: "100% !important",
@@ -230,6 +238,7 @@ export default function CreatePassword() {
                 fontSize: "16px",
                 fontFamily: "Inter, sans-serif",
                 fontWeight: "400",
+                border: "none",
                 "&::placeholder": { opacity: 1, color: "#CACACA" },
               },
             }}
@@ -238,8 +247,8 @@ export default function CreatePassword() {
             type="submit"
             variant="contained"
             disabled={isButtonDisabled}
-            fullWidth
             sx={{
+              alignSelf: "flex-start",
               height: "48px",
               background: !isButtonDisabled ? "#131A28" : "#F3F3F3",
               color: !isButtonDisabled ? "#C1FF83" : "#CACACA",

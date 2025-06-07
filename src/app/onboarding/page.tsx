@@ -10,7 +10,7 @@ export default function OnboardingPage() {
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
   const apiClient = useApiClient();
   const router = useRouter();
-  const { authenticated } = usePrivy();
+  const { ready, authenticated } = usePrivy();
 
   useEffect(() => {
     const checkOnboardingStatus = async () => {
@@ -26,16 +26,20 @@ export default function OnboardingPage() {
         }
       }
     };
-    if (authenticated) {
+    if (ready && authenticated) {
       checkOnboardingStatus();
     }
   }, [apiClient, authenticated]);
 
   useEffect(() => {
+    if (ready && !authenticated) {
+      router.push("/");
+    }
+
     if (needsOnboarding === false) {
       router.push("/");
     }
-  }, [needsOnboarding, router]);
+  }, [ready, needsOnboarding, authenticated, router]);
 
   if (needsOnboarding === null) {
     return (

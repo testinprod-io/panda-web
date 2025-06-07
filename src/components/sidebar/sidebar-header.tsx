@@ -6,10 +6,12 @@ import clsx from "clsx";
 import Image from "next/image";
 interface SidebarHeaderProps {
   isSidebarCollapsed: boolean;
+  handleNewChat: () => void;
 }
 
 export default function SidebarHeader({
   isSidebarCollapsed,
+  handleNewChat,
 }: SidebarHeaderProps) {
   const handleSettings = () => {
     window.location.hash = "settings";
@@ -27,9 +29,10 @@ export default function SidebarHeader({
           styles.sidebarHeaderLogoRow,
           isSidebarCollapsed && styles.collapsed,
         )}
+        onClick={handleNewChat}
       >
         <Image
-          src="/icons/logo.png"
+          src="/icons/inverse-icon.png"
           alt="Panda Logo"
           className={clsx(styles.sidebarHeaderLogoImage, isSidebarCollapsed && styles.collapsed)}
           width={32}

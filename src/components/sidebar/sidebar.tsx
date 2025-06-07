@@ -144,7 +144,7 @@ export default function Sidebar({
           className={styles.expandedPane}
           style={{ width: expandedPaneWidth }}
         >
-          <SidebarHeader isSidebarCollapsed={false} />
+          <SidebarHeader isSidebarCollapsed={false} handleNewChat={handleNewChat} />
           <Box
             className={styles.expandedContentArea}
             sx={{ flexGrow: 1, minHeight: 0 }}
@@ -161,7 +161,7 @@ export default function Sidebar({
           className={styles.collapsedPane}
           style={{ width: collapsedPaneWidth }}
         >
-          <SidebarHeader isSidebarCollapsed={true} />
+          <SidebarHeader isSidebarCollapsed={true} handleNewChat={handleNewChat} />
           <Box className={styles.collapsedNavMenu}>
             {navItems.map((item) => (
               <Tooltip
@@ -175,6 +175,7 @@ export default function Sidebar({
                 key={item.id}
                 componentsProps={{
                   tooltip: {
+                    color: "#FFFFFF",
                     sx: {
                       border: "none",
                       backgroundColor: "transparent",

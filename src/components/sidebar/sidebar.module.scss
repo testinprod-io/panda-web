@@ -141,7 +141,7 @@ $sidebar-transition-timing: ease-in-out;
   align-items: center;
   gap: 8px;
   padding: 8px;
-  background: #f3f3f3;
+  background: #FFFFFF;
   border-radius: 12px;
   outline: 1px #cacaca solid;
   outline-offset: -1px;
@@ -198,8 +198,14 @@ $sidebar-transition-timing: ease-in-out;
   width: 100%; 
   box-sizing: border-box; 
   // transition: all 0.3s ease-in-out;
+  transition: background-color 0.2s ease-in-out;
+  cursor: pointer;
   flex-direction: row;
   padding-left: 8px;
+
+  &:hover {
+    background-color: #F3F3F3;
+  }
 
   &.collapsed {
     justify-content: center;

@@ -11,7 +11,8 @@ import { SnackbarProvider } from "@/providers/snackbar-provider";
 import { AuthChatListener } from "@/providers/auth-chat-listener";
 import { ApiClientProvider } from "@/providers/api-client-provider";
 import { EncryptionProvider } from "@/providers/encryption-provider";
-import { optimism } from "viem/chains";
+// import { optimism } from "viem/chains";
+
 
 function AuthenticatedContentWrapper({
   children,
@@ -55,7 +56,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 theme: "light",
                 accentColor: "#676FFF",
               },
-              defaultChain: optimism,
               loginMethods: ["email", "google", "github", "wallet"],
               embeddedWallets: { createOnLogin: "users-without-wallets" },
             }}

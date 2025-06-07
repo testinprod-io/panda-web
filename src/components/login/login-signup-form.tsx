@@ -55,7 +55,7 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
     loginMethod: string | null;
     loginAccount: LinkedAccountWithMetadata | null;
   }) => {
-    if (isNewUser && isFirstTimeUser === true) {
+    if (isNewUser) {
       router.push("/signup?step=password");
     } else {
       router.push("/");
@@ -90,7 +90,12 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
   console.log("isFirstTimeUser", isFirstTimeUser);
   useEffect(() => {
     console.log("isFirstTimeUser", isFirstTimeUser);
+    
     if (ready && authenticated) {
+      if (isFirstTimeUser === undefined) { 
+        return;
+      }
+      
       if (window.location.pathname.includes("signup") && isFirstTimeUser === true) {
         router.push("/signup?step=password");
       } else {

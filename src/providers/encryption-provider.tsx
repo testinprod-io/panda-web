@@ -14,6 +14,7 @@ import { PasswordModal } from "@/components/login/password-modal";
 import { useApiClient } from "@/providers/api-client-provider";
 import { usePrivy } from "@privy-io/react-auth";
 import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 // Define the inactivity timeout (e.g., 15 minutes) in milliseconds
 const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
@@ -52,7 +53,8 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   const apiClient = useApiClient();
   const { user, authenticated } = usePrivy();
   const pathname = usePathname();
-
+  const router = useRouter();
+  
   // Set up error handling for encryption-related operations
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
@@ -281,9 +283,13 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     );
   }
 
+    if (router && isFirstTimeUser === true) { 
+      router.push("/signup?step=create-password");
+    }
+
   const isSignupPage = pathname.startsWith("/signup");
   const isOnboardingPage = pathname.startsWith("/onboarding");
-  const showUnlockModal = isLocked && !isSignupPage && !isOnboardingPage && isFirstTimeUser === false;
+  const showUnlockModal = isLocked && !isSignupPage && isFirstTimeUser === false;
 
   return (
     <EncryptionContext.Provider value={contextValue}>
