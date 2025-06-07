@@ -1,9 +1,9 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import CreateAccount from "./create-account";
 import CreatePassword from "./create-password";
 import { Suspense } from "react";
+import LoginSignupForm from "@/components/login/login-signup-form";
 
 function SignUpPageContent() {
   const searchParams = useSearchParams();
@@ -13,7 +13,7 @@ function SignUpPageContent() {
     return <CreatePassword />;
   }
 
-  return <CreateAccount />;
+  return <LoginSignupForm mode="signup" />;
 }
 
 export default function SignUpPage() {
