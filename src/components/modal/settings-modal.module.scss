@@ -224,6 +224,7 @@
   padding: 4px 16px !important;
   border-radius: 48px !important;
   line-height: 32px !important;
+  box-shadow: 0px !important;
 
   &:hover {
     background-color: #d03140 !important; // Darker shade for hover
@@ -347,3 +348,15 @@
     background: #d03140 !important; // Darker shade for hover
   }
 } 
+
+.FAQText { 
+  font-family: "Inter", sans-serif;
+  font-weight: 600;
+  text-decoration: inherit;
+  color: inherit;
+  
+
+  &:hover {
+    font-weight: 800;
+  }
+}

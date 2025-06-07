@@ -2,6 +2,7 @@
 
 import { Box, Typography } from "@mui/material";
 import Image from "next/image";
+import Locale from "@/locales";
 
 export default function NewChatPage() {
   return (
@@ -43,7 +44,7 @@ export default function NewChatPage() {
           lineHeight: "38.74px",
         }}
       >
-        How can I help you today?
+        {Locale.NewChat.Title()}
       </Typography>
     </Box>
   );

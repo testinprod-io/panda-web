@@ -117,9 +117,7 @@ export default function SettingsModal({
           endIcon={<ChevronRightIcon />}
           className={styles.actionButtonText}
           onClick={() => setIsPromptsModalOpen(true)}
-        >
-          On
-        </Button>
+        />
       ),
     },
     // {
@@ -154,6 +152,7 @@ export default function SettingsModal({
           className={styles.deleteButton}
           onClick={handleDeleteAllChats}
           sx={{ boxShadow: "0px" }}
+          disableElevation={true}
         >
           Delete
         </Button>
@@ -257,9 +256,12 @@ export default function SettingsModal({
               {activeNavSection === "general" && renderContent()}
               {activeNavSection === "faq" && (
                 <Box>
-                  <Typography variant="h6">Help & FAQ</Typography>
+                  <Typography variant="h5" fontFamily={"Inter"}>Help & FAQ</Typography>
                   <Typography>
-                    This is where help and FAQ content will go.
+                    <a href="https://testinprod.notion.site/Private-Alpha-One-Pager-1ff8fc57f54680d0aa08ce7b8013948a" className={styles.FAQText}>Private Alpha One Pager</a>
+                  </Typography>
+                  <Typography>
+                    <a href="https://testinprod.notion.site/Panda-Technical-FAQ-2018fc57f5468023bac3c5380179a272" className={styles.FAQText}>Panda Technical FAQ</a>
                   </Typography>
                 </Box>
               )}

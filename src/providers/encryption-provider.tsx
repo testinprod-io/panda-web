@@ -42,7 +42,7 @@ interface EncryptionProviderProps {
 export function EncryptionProvider({ children }: EncryptionProviderProps) {
   // Always start locked
   const [isLocked, setIsLocked] = useState<boolean>(true);
-  const [isFirstTimeUser, setIsFirstTimeUser] = useState<boolean>(false);
+  const [isFirstTimeUser, setIsFirstTimeUser] = useState<boolean | undefined>(undefined);
   const [hasError, setHasError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -85,6 +85,10 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
 
   // Check for first-time user on mount
   useEffect(() => {
+    if (!authenticated) {
+      return;
+    }
+
     const verifyFirstTimeUser = async () => {
       try {
         const verificationToken = await apiClient.app.getEncryptedId();
@@ -262,7 +266,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     lockApp,
   };
 
-  if (!authenticated) {
+  if (!authenticated || isFirstTimeUser === undefined) {
     return (
       <EncryptionContext.Provider value={contextValue}>
         {children}

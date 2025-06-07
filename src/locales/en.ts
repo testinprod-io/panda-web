@@ -75,11 +75,15 @@ const en = {
     Rename: "Rename Chat",
     Typing: "Typing…",
     Input: (submitKey: string) => {
-      // var inputHints = `${submitKey} to send`;
-      // if (submitKey === String(SubmitKey.Enter)) {
-      //   inputHints += ", Shift + Enter to wrap";
-      // }
-      return "🔒 Ask me anything. Encrypted by default.";
+      const placeholders = [
+        "Ask me anything. Encrypted by default.",
+        "Private by design. Ask anything.",
+        "Panda's listening. You are safe here",
+      ];
+      const selectedPlaceholder =
+        placeholders[Math.floor(Math.random() * placeholders.length)];
+
+      return `🔒 ${selectedPlaceholder}`;
     },
     Send: "Send",
     StartSpeak: "Start Speak",
@@ -762,7 +766,18 @@ const en = {
   NewChat: {
     Return: "Return",
     Skip: "Just Start",
-    Title: "How can I help you?",
+    Title: () => {
+       const titles = [
+        "How can I help you today?",
+        "Where should we begin?",
+        "What's on the agenda today?",
+        "What's on your mind today?",
+      ];
+      const selectedTitle =
+        titles[Math.floor(Math.random() * titles.length)];
+
+      return selectedTitle;
+    },
     SubTitle: "Chat with the Soul behind the Mask",
     More: "Find More",
     NotShow: "Never Show Again",

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
 import { ChatMessage } from "@/types";
@@ -15,7 +15,12 @@ import { FilePreviewItem } from "../ui/file-preview-item";
 import { MessageActionsBar } from "../ui/message-actions-bar";
 import { ReasoningDisplay } from "../ui/reasoning-display";
 import { EditMessageForm } from "../ui/edit-message-form";
-import { useAttestationManager } from "@/hooks/use-attestation-manager";
+import {
+  useAttestationManager,
+  VerificationStatus,
+  VerificationResult,
+} from "@/hooks/use-attestation-manager";
+import { AttestationResult } from "@/types/attestation";
 const Markdown = dynamic(
   async () => (await import("../ui/markdown")).Markdown,
   {
@@ -65,14 +70,45 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     visibleContent: content,
     visibleReasoning: reasoning,
     reasoningTime,
-    publicCertKey,
+    challengeResponse,
   } = message;
   const { isLocked } = useEncryption();
   const apiClient = useApiClient();
 
   const loadedFiles = useLoadedFiles(files, sessionId, apiClient, isLocked);
-  const { attestationResults, verifyAttestation } = useAttestationManager();
+  const { verifyAttestation, verifyContract } = useAttestationManager();
+  
+  const [verificationResult, setVerificationResult] = useState<VerificationResult | undefined>(undefined);
+  // const [attestationStatus, setAttestationStatus] = useState<
+  //   VerificationStatus | undefined
+  // >(undefined);
+  // const [attestationResult, setAttestationResult] =
+  //   useState<AttestationResult>();
 
+  useEffect(() => {
+    const doVerify = async (key: string) => {
+      setVerificationResult({
+        status: VerificationStatus.Pending,
+        attestationResult: undefined,
+        publicKey: key,
+      });
+      try {
+        const attestationResult = await verifyAttestation(key);
+        const verificationResult = await verifyContract(key, attestationResult);
+        setVerificationResult(verificationResult);
+      } catch {
+        setVerificationResult({
+          status: VerificationStatus.Pending,
+          attestationResult: undefined,
+          publicKey: key,
+        });
+      }
+    };
+
+    if (challengeResponse) {
+      doVerify(challengeResponse.publicKey);
+    }
+  }, [challengeResponse, verifyAttestation, verifyContract]);
 
   const handleResend = useCallback(
     () => onResend(messageId),
@@ -140,6 +176,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
   }
 
   const shouldShowReasoning = !isUser && (reasoning || isReasoning);
+
   return (
     <div
       className={clsx(
@@ -234,14 +271,16 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
           )}
         </Box>
         {showActions && !isEditing && !(streaming || isReasoning) && (
-            <MessageActionsBar
-              isUser={isUser}
-              isChatLoading={isChatLoading}
-              messageContent={content}
-              reasoningText={reasoning}
-              onResend={handleResend}
-            />
-          )}
+          <MessageActionsBar
+            isUser={isUser}
+            isChatLoading={isChatLoading}
+            messageContent={content}
+            reasoningText={reasoning}
+            verificationResult={verificationResult}
+            challengeResponse={challengeResponse}
+            onResend={handleResend}
+          />
+        )}
       </Box>
     </div>
   );

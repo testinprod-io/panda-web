@@ -2,7 +2,8 @@ import { ModelType } from "@/types/constant";
 import { Role } from "@/types";
 import { PandaApi, GetAccessTokenFn } from "@/client/platforms/panda";
 import { ApiClient } from "@/client/client";
-import { SummaryResponse } from "@/client/platforms/panda";
+import {  SummaryResponse } from "@/client/platforms/panda";
+import { ChallengeResponse } from "@/client/platforms/panda-challenge";
 
 export type ChatModel = ModelType;
 
@@ -44,7 +45,7 @@ export interface ChatOptions {
   onReasoningChunk?: (messageId: string | undefined, chunk: string) => void;
   onReasoningEnd?: (messageId?: string) => void;
   onContentChunk?: (messageId: string | undefined, chunk: string) => void;
-  onFinish: (message: string, date: Date, responseRes: Response, publicCertKey: string) => void;
+  onFinish: (message: string, date: Date, responseRes: Response, challengeResponse: ChallengeResponse) => void;
   onError?: (err: Error) => void;
   onController?: (controller: AbortController) => void;
 }

@@ -18,6 +18,7 @@ import { DEFAULT_TOPIC } from "@/store/chat";
 import { trimTopic } from "@/utils/utils";
 import { EncryptionService } from "@/services/encryption-service";
 import { LLMConfig } from "@/client/api";
+import { ChallengeResponse } from "@/client/platforms/panda-challenge";
 
 function decryptConversationData(conversation: Conversation): Conversation {
   const decryptedConvo = { ...conversation };
@@ -277,7 +278,7 @@ export const ChatApiService = {
       onReasoningChunk?: (messageId: string | undefined, chunk: string) => void;
       onReasoningEnd?: (messageId?: string) => void;
       onContentChunk?: (messageId: string | undefined, chunk: string) => void;
-      onFinish: (message: string, date: Date, responseRes: any, publicCertKey: string) => void;
+      onFinish: (message: string, date: Date, responseRes: any, challengeResponse?: ChallengeResponse) => void;
       onError: (error: Error) => void;
       onController?: (controller: AbortController) => void;
     },

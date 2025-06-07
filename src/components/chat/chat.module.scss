@@ -182,7 +182,7 @@
   padding: 0px 0px 0px 16px;
   margin: 0;
   height: 2rem;
-  width: 2rem;
+  // width: 2rem;
 
   .chat-input-actions { 
     display: flex;
@@ -192,7 +192,7 @@
 
 .chat-message-action-button {
   margin: 6px;
-  background-color: red;
+  // background-color: red;
 }
 
 
@@ -896,6 +896,6 @@
 
 .chat-message-reasoning-container {
   margin-bottom: var(--spacing-1, 8px); 
-  padding: var(--spacing-1, 8px);
+  // padding: var(--spacing-1, 8px);
   border-radius: var(--border-radius-medium, 4px);
 }

@@ -94,6 +94,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
     const [isUploadingFiles, setIsUploadingFiles] = useState(false);
     const [inputRows, setInputRows] = useState(1);
     const [enableSearch, setEnableSearch] = useState(false);
+    const [placeholder] = useState(() => Locale.Chat.Input(submitKey));
     const autoFocus = !isMobileScreen;
     const activeUploadsRef = useRef<Map<string, () => void>>(new Map());
 
@@ -730,7 +731,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
               className={styles["chat-input"]}
               placeholder={
                 authenticated
-                  ? Locale.Chat.Input(submitKey)
+                  ? placeholder
                   : "Please login to chat"
               }
               onInput={(e) => setUserInput(e.currentTarget.value)}
@@ -742,7 +743,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
               rows={inputRows}
               autoFocus={autoFocus}
               disabled={!authenticated}
-              aria-label={Locale.Chat.Input(submitKey)}
+              aria-label={authenticated ? placeholder : "Please login to chat"}
             />
           </label>
         </div>
@@ -758,6 +759,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
               <img
                 src="/icons/plus.svg"
                 alt={Locale.Chat.InputActions.UploadFile}
+                style={{filter: "invert(51%) sepia(0%) saturate(0%) hue-rotate(189deg) brightness(90%) contrast(89%)" }}
                 className={styles.inputActionIcon}
               />
             </button>
@@ -770,6 +772,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
               <img
                 src="/icons/photo.svg"
                 alt={Locale.Chat.InputActions.UploadImage}
+                style={{filter: "invert(51%) sepia(0%) saturate(0%) hue-rotate(189deg) brightness(90%) contrast(89%)" }}
                 className={styles.inputActionIcon}
               />
             </button>
@@ -788,6 +791,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
                 <img
                   src="/icons/search.svg"
                   alt="Search"
+                  style={{filter: "invert(51%) sepia(0%) saturate(0%) hue-rotate(189deg) brightness(90%) contrast(89%)" }}
                   className={styles.inputActionIcon}
                 />
               </span>

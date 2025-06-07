@@ -10,6 +10,12 @@
 import { createVerify, randomBytes } from "crypto";
 import { ec as EC } from "elliptic";
 
+export interface ChallengeResponse { 
+  publicKey: string;
+  challenge: string;
+  signature: string;
+}
+
 /**
  * Converts a P-256 public key from hex to PEM format.
  * @param hex The public key in hex format.
@@ -37,17 +43,15 @@ function publicKeyFromHex(hex: string): string {
  * @returns True if the signature is valid, otherwise it throws an error.
  */
 function verifyChallengeSignature(
-  publicKeyHex: string,
-  challenge: string,
-  signatureHex: string,
+  challenge: ChallengeResponse,
 ): boolean {
   const verify = createVerify("RSA-SHA256");
-  verify.update(challenge, "utf8");
+  verify.update(challenge.challenge, "utf8");
   verify.end();
 
-  const publicKeyPem = publicKeyFromHex(publicKeyHex);
+  const publicKeyPem = publicKeyFromHex(challenge.publicKey);
   try {
-    return verify.verify(publicKeyPem, Buffer.from(signatureHex, "hex"));
+    return verify.verify(publicKeyPem, Buffer.from(challenge.signature, "hex"));
   } catch (err) {
     console.error("Error verifying signature:", err);
     throw err;
@@ -62,7 +66,7 @@ export function generateChallengeHeaders(): {
   challenge: string;
   headers: Record<string, string>;
 } {
-  const challenge = "cb6f7e72d52aaba79c5757c2a67dfeada60f7c3121e9fe513bcdb013d1ea7bd4"; //randomBytes(32).toString("hex");
+  const challenge = randomBytes(32).toString("hex");
   return {
     challenge,
     headers: {
@@ -77,25 +81,26 @@ export function generateChallengeHeaders(): {
  * @param response The fetch response object.
  * @param challenge The challenge string that was sent.
  */
-export function verifyChallenge(response: Response, challenge: string): string {
-  const publicKeyHex = "04b4e21611be6ea53d5ea647922eca60c869906ae3be4c12a5928ea50097d48cbb6d72c18213572b1c8f9ffa56aaab6a519e918e05157fec328241ca19f1cdea62"; //response.headers.get("Panda-Public_key");
-  const signatureHex = "3046022100b40df7a5e43f072f3ad73bc37a2e948244c138137c9ceb6d3bbacf8851e80a04022100c0561f3773c1ab8e8c5aab0acf44bd77a03419b3fb82e5151539e7aa74dcfa50"; //response.headers.get("Panda-Signature");
+export function verifyChallenge(response: Response, challenge: string): ChallengeResponse {
+  const publicKeyHex = response.headers.get("Panda-Public-key");
+  const signatureHex = response.headers.get("Panda-Signature");
 
   if (!publicKeyHex || !signatureHex) {
     throw new Error(
-      "Panda Challenge verification failed: Missing 'Panda-Public_key' or 'Panda-Signature' headers., response.headers: " + JSON.stringify(response.headers),
+      "Panda Challenge verification failed: Missing 'Panda-Public-key' or 'Panda-Signature' headers., response.headers: " + JSON.stringify(response.headers),
     );
   }
 
-  const isValid = verifyChallengeSignature(
-    publicKeyHex,
+  const challengeResponse = {
+    publicKey: publicKeyHex,
     challenge,
-    signatureHex,
-  );
+    signature: signatureHex,
+  }
+  const isValid = verifyChallengeSignature(challengeResponse);
 
   if (!isValid) {
     throw new Error("Panda Challenge verification failed: Invalid signature.");
   }
   console.log("[Panda Challenge] Verification successful.");
-  return publicKeyHex;
+  return challengeResponse;
 } 

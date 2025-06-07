@@ -110,7 +110,9 @@ export class ApiClient {
     if (requiresAuth) {
       const token = await this.getAuthToken();
       if (!token) {
-        throw new ApiError(401, "Authentication token not available");
+        throw new ApiError(401, "Authentication token not available", {
+          message: `Authentication token not available, path: ${path}`,
+        });
       }
       headers["Authorization"] = `Bearer ${token}`;
     }

@@ -73,7 +73,7 @@ export const ReasoningDisplay: React.FC<ReasoningDisplayProps> = ({
       className={styles["chat-message-reasoning-container"]} // Ensure this class exists or create it
       sx={{
         mb: 1,
-        p: 1,
+        // p: 1,
         borderRadius: 1,
         backgroundColor: "transparent" /* Or a subtle background */,
       }}

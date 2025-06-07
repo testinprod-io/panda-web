@@ -11,6 +11,7 @@ import { Role } from "@/types";
 import {
   generateChallengeHeaders,
   verifyChallenge,
+  ChallengeResponse,
 } from "./panda-challenge";
 // Type for the Privy getAccessToken function
 export type GetAccessTokenFn = () => Promise<string | null>;
@@ -32,7 +33,7 @@ export interface RequestPayload {
 
 export interface SummaryResponse {
   summary: string;
-  publicCertKey: string;
+  challengeResponse: ChallengeResponse;
 }
 
 export class PandaApi implements LLMApi {
@@ -207,8 +208,8 @@ export class PandaApi implements LLMApi {
         if (inReasoningPhase) {
           options.onReasoningEnd?.(undefined);
         }
-        const publicCertKey = verifyChallenge(response, challenge);
-        options.onFinish(mainContentText, timestamp, response, publicCertKey);
+        const challengeResponse = verifyChallenge(response, challenge);
+        options.onFinish(mainContentText, timestamp, response, challengeResponse);
       } else {
         const jsonResponse = await response.json();
         timestamp = jsonResponse.created
@@ -229,8 +230,8 @@ export class PandaApi implements LLMApi {
 
         const mainMessageToFinish = finalContent || "";
         options.onContentChunk?.(undefined, mainMessageToFinish);
-        const publicCertKey = verifyChallenge(response, challenge);
-        options.onFinish(mainMessageToFinish, timestamp, response, publicCertKey);
+        const challengeResponse = verifyChallenge(response, challenge);
+        options.onFinish(mainMessageToFinish, timestamp, response, challengeResponse);
       }
     } catch (error: any) {
       if (error.name !== "AbortError") {
@@ -297,7 +298,7 @@ export class PandaApi implements LLMApi {
         body: JSON.stringify(requestBody),
       });
 
-      const publicCertKey = verifyChallenge(response, challenge);
+      const challengeResponse = verifyChallenge(response, challenge);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -315,7 +316,7 @@ export class PandaApi implements LLMApi {
       const data = (await response.json()) as SummaryResponse;
       return {
         ...data,
-        publicCertKey,
+        challengeResponse,
       };
     } catch (error) {
       console.error("[Panda Request] Summary failed", error);

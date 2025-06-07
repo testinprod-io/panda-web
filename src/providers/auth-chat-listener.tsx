@@ -43,7 +43,7 @@ export function AuthChatListener() {
       actions.loadSessionsFromServer();
       setInitialLoadDone(true); // Mark initial load attempt as done
       try {
-      handleAttestation3("04b4e21611be6ea53d5ea647922eca60c869906ae3be4c12a5928ea50097d48cbb6d72c18213572b1c8f9ffa56aaab6a519e918e05157fec328241ca19f1cdea62");
+      // handleAttestation3("04b4e21611be6ea53d5ea647922eca60c869906ae3be4c12a5928ea50097d48cbb6d72c18213572b1c8f9ffa56aaab6a519e918e05157fec328241ca19f1cdea62");
       } catch (error) {
         console.error(error);
       }

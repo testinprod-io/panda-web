@@ -314,10 +314,20 @@ export default function ChatLayoutContent({
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
-          ...(isNewChatPage && {
+          position: "relative",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             background:
               "linear-gradient(177deg, white 0%, #FEFEFE 27%, #F6FFFC 75%, #DAF7EF 100%)",
-          }),
+            opacity: isNewChatPage && !isNavigatingAway ? 1 : 0,
+            transition: isNavigatingAway ? "opacity 0.4s ease-in" : "none",
+            zIndex: -1,
+          },
         }}
       >
         <ChatHeader
@@ -411,8 +421,8 @@ export default function ChatLayoutContent({
             boxSizing: "border-box",
           }}
         >
-          By messaging Panda AI, you agree to our Terms and have read our
-          Privacy Policy.
+          By messaging Panda AI, you agree to <a href="https://testinprod.notion.site/Panda-Alpha-Terms-of-Service-Privacy-Notice-2078fc57f54680349183dde6f0224da8?source=copy_link" style={{color: "inherit", textDecoration: "inherit", fontWeight: "500"}}>our Terms</a> and 
+          have read <a href="https://testinprod.notion.site/Panda-Alpha-Terms-of-Service-Privacy-Notice-2078fc57f54680349183dde6f0224da8?source=copy_link" style={{color: "inherit", textDecoration: "inherit", fontWeight: "500"}}>our Privacy Policy</a>
         </Typography>
         </Box>
       </Box>

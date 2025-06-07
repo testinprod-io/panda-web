@@ -4,6 +4,7 @@ import { MultimodalContent, RequestMessage } from "@/client/api";
 import { UUID } from "crypto";
 import { FileInfo } from "@/client/types";
 import { EncryptionService } from "../services/encryption-service";
+import { ChallengeResponse } from "@/client/platforms/panda-challenge";
 
 export enum Role {
   USER = "user",
@@ -159,7 +160,7 @@ export type ChatMessage = Omit<RequestMessage, "content"> & {
   reasoningTime?: number; // Add reasoning duration field
   isReasoning?: boolean; // To track if the message is currently in reasoning phase
   useSearch: boolean; // To track if the message is using search
-  publicCertKey?: string;
+  challengeResponse?: ChallengeResponse;
 };
 
 /**

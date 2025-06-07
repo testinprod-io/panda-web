@@ -25,7 +25,8 @@ import LoginSignupPopup from "../login/login-signup-popup";
 import styles from "./chat-header.module.scss";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
-import { useAttestationManager, VerificationStatus } from "@/hooks/use-attestation-manager";
+import { useAttestationManager, VerificationResult, VerificationStatus } from "@/hooks/use-attestation-manager";
+import { AttestationResult } from "@/types/attestation";
 
 interface ChatHeaderProps {
   isSidebarCollapsed: boolean;
@@ -43,7 +44,7 @@ export default function ChatHeader({
   const { login, logout, user } = usePrivy();
   const { isReady, isAuthenticated } = useAuthStatus();
   const { models: availableModels, setApiProvider } = useAppConfig();
-  const { verificationStatuses } = useAttestationManager();
+  const { verificationResults } = useAttestationManager();
 
   const activeSessionModelName = useChatStore(
     (state) => state.currentSession()?.modelConfig?.name,
@@ -148,36 +149,40 @@ export default function ChatHeader({
   // };
 
   const getEncryptionStatusInfo = useCallback(() => {
-    console.log("MININININ verificationStatuses:", verificationStatuses);
-    const firstStatus = Object.values(verificationStatuses)[0];
-    switch (firstStatus) {
+    console.log("MININININ verificationResults:", verificationResults);
+    const firstStatus = Object.values(verificationResults)[0];
+    switch (firstStatus && firstStatus.status) {
       case VerificationStatus.AttestationVerified:
       case VerificationStatus.ContractVerified:
         return {
+          ...firstStatus,
           text: "Encryption Activated",
           statusClass: styles.encryptionStatusSuccessful,
           icon: "/icons/lock.svg",
         };
       case VerificationStatus.Failed:
         return {
+          ...firstStatus,
           text: "Encryption Failed",
           statusClass: styles.encryptionStatusFailed,
           icon: "/icons/lock.svg",
         };
       case VerificationStatus.Pending:
         return {
+          ...firstStatus,
           text: "Encryption Activating",
           statusClass: styles.encryptionStatusInProgress,
           icon: "/icons/lock.svg",
         };
       default:
         return {
-          text: "Encryption Status Unknown",
+          ...firstStatus,
+          text: "Waiting for First Input",
           statusClass: styles.encryptionStatusUnknown,
           icon: "/icons/lock.svg",
         };
     }
-  }, [verificationStatuses]);
+  }, [verificationResults]);
 
   const currentStatusInfo = getEncryptionStatusInfo();
 
@@ -299,8 +304,16 @@ export default function ChatHeader({
 
       <Box className={styles.headerRight}>
         {isAuthenticated && (
-              <Tooltip title="Click to cycle status (Dev only)">
-                <Box
+              <Tooltip title={<CertificateInfoPopup publicKey={currentStatusInfo.publicKey} verificationResult={currentStatusInfo} />} componentsProps={{
+                tooltip: {
+                  sx: {
+                    backgroundColor: "white",
+                    borderRadius: "8px",
+                    border: "1px solid #e0e0e0",
+                  }
+                }
+              }}>
+                <Box  
                   // onClick={cycleEncryptionStatus}
                   className={clsx(
                     styles.encryptionStatus,
@@ -378,7 +391,7 @@ export default function ChatHeader({
                   primary={
                     user?.wallet?.address ||
                     user?.email?.address ||
-                    "test@example.com"
+                    "Anonymous"
                   }
                   className={styles.profileMenuText}
                 />
@@ -387,6 +400,7 @@ export default function ChatHeader({
               <MenuItem
                 onClick={() => {
                   handleProfileClose();
+                  window.open("https://testinprod.notion.site/Help-FAQs-2098fc57f546805382f0da77fcdf07d5", "_blank");
                 }}
                 className={styles.profileMenuItem}
               >
@@ -460,3 +474,50 @@ export default function ChatHeader({
     </Box>
   );
 }
+
+const CertificateInfoPopup: React.FC<{
+  publicKey: string;
+  verificationResult: VerificationResult;
+}> = ({ publicKey, verificationResult }) => {
+  return (
+    <Box sx={{ p: 1, maxWidth: 300 }}>
+      <Typography variant="subtitle2" gutterBottom sx={{ color: "black" }}>
+        🔒 Verified secure execution <a href="https://www.youtube.com/watch?v=xvFZjo5PgG0" target="_blank" rel="noopener noreferrer" style={{ color: "black" }}>Learn more</a>
+      </Typography>
+      <Typography
+        variant="body2"
+        key={"AppID"}
+        sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
+      >
+        <strong>Currently connected certificate:</strong> <a href={`https://www.youtube.com/watch?v=xvFZjo5PgG0`} target="_blank" rel="noopener noreferrer" style={{ color: "black" }}>{publicKey}</a>
+      </Typography>
+      {/* <Typography
+        variant="body2"
+        key={"AppHash"}
+        sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
+      >
+        <strong>AppHash:</strong> <a href={`https://www.youtube.com/watch?v=xvFZjo5PgG0`} target="_blank" rel="noopener noreferrer" style={{ color: "black" }}>{attestationResult.composeHash}</a>
+      </Typography>
+
+      <Typography
+        variant="body2"
+        key={"Help"}
+        sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
+      >
+        <a href="https://www.youtube.com/watch?v=xvFZjo5PgG0" target="_blank" rel="noopener noreferrer" style={{ color: "black" }}><strong>Help?</strong></a>
+      </Typography> */}
+
+      {/* {Object.entries(attestationResult).map(([key, value]) => (
+        <Typography
+          variant="body2"
+          key={key}
+          sx={{ wordBreak: "break-all", p: "2px" }}
+        >
+          <strong>{key}:</strong>{" "}
+          {Array.isArray(value) ? value.join(", ") : value}
+        </Typography>
+      ))} */}
+    </Box>
+  );
+};
+

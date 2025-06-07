@@ -23,6 +23,11 @@ export enum VerificationStatus {
     ContractVerified = "ContractVerified",
     AttestationVerified = "AttestationVerified",
 }
+export interface VerificationResult { 
+    status: VerificationStatus;
+    attestationResult?: AttestationResult;
+    publicKey: string;
+}
 
 export function useAttestationManager() {
   const apiClient = useApiClient();
@@ -31,42 +36,38 @@ export function useAttestationManager() {
 
   const {
     attestationResults,
-    verificationStatuses,
+    verificationResults,
     setAttestationResult,
-    setVerificationStatus,
+    setVerificationResult,
   } = useAttestationStore();
 
-  // Cert PublicKey -> AttestationResult
-  // const [attestationResults, setAttestationResults] = useState<
-  //   Record<string, AttestationResult>
-  // >({});
-
-  // AppId -> VerificationStatus
-  // const [verificationStatuses, setVerificationStatuses] = useState<
-  //   Record<string, VerificationStatus>
-  // >({});
-//   const [contractResults, setContractResults] = useState<
-//     Record<string, boolean>
-//   >({});
-
-  // const [attestationStatus, setAttestationStatus] = useState<AttestationStatus>('pending');
-  // const [attestationError, setAttestationError] = useState<Error | null>(null);
-
-  // return {
-  //     attestationStatus,
-  //     attestationError,
-  // };
-
-  const isAppAllowed = useCallback(
-    async (attestationResult: AttestationResult): Promise<boolean> => {
-
-      if (verificationStatuses.hasOwnProperty(attestationResult.appId) && verificationStatuses[attestationResult.appId] == VerificationStatus.ContractVerified) {
-        console.log("Contract already verified");
-        return verificationStatuses[attestationResult.appId] === VerificationStatus.ContractVerified;
+  const verifyContract = useCallback(
+    async (publicKeyHex: string, attestationResult: AttestationResult): Promise<VerificationResult> => {
+      if (verificationResults.hasOwnProperty(attestationResult.appId)) {
+        if (verificationResults[attestationResult.appId].status === VerificationStatus.ContractVerified) {
+          console.log("Contract already verified, returning true");
+          return verificationResults[attestationResult.appId];
+        } else if (verificationResults[attestationResult.appId].status === VerificationStatus.Pending) {
+          console.log("Contract already pending");
+          return verificationResults[attestationResult.appId];
+        }
       }
+      
+      setVerificationResult(attestationResult.appId, {
+        status: VerificationStatus.Pending,
+        attestationResult,
+        publicKey: publicKeyHex,
+      });
+
       if (wallets.length === 0) {
         console.log("No wallets found");
-        return false;
+        const verificationResult: VerificationResult = {
+          status: VerificationStatus.Failed,
+          attestationResult,
+          publicKey: publicKeyHex
+        };
+        setVerificationResult(attestationResult.appId, verificationResult);
+        return verificationResult;
       }
 
       const wallet = wallets[0];
@@ -99,20 +100,26 @@ export function useAttestationManager() {
           advisoryIds: attestationResult.advisoryIds
         }],
       })) as [boolean, string];
-      setVerificationStatus(
+      
+      const verificationResult = {
+        status: isAllowed ? VerificationStatus.ContractVerified : VerificationStatus.Failed,
+        attestationResult,
+        publicKey: publicKeyHex,
+      }
+      setVerificationResult(
         attestationResult.appId,
-        isAllowed ? VerificationStatus.ContractVerified : VerificationStatus.Failed,
+        verificationResult
       );
-    console.log("isAllowed:", isAllowed, "reason:", reason);
-      return isAllowed as boolean;
+      console.log("isAllowed:", isAllowed, "reason:", reason);
+      return verificationResult;
     },
-    [wallets, verificationStatuses, setVerificationStatus]
+    [wallets, verificationResults, setVerificationResult]
   );
 
   const verifyAttestation = useCallback(
     async (publicKeyHex: string): Promise<AttestationResult> => {
       if (attestationResults[publicKeyHex]) {
-        isAppAllowed(attestationResults[publicKeyHex]);
+        verifyContract(publicKeyHex, attestationResults[publicKeyHex]);
         return attestationResults[publicKeyHex];
       }
 
@@ -326,9 +333,13 @@ export function useAttestationManager() {
 
       setAttestationResult(publicKeyHex, attestationResult);
 
-      setVerificationStatus(appId, VerificationStatus.AttestationVerified);
+      setVerificationResult(appId, {
+        status: VerificationStatus.AttestationVerified,
+        attestationResult,
+        publicKey: publicKeyHex,
+      });
 
-      isAppAllowed(attestationResult);
+      verifyContract(publicKeyHex, attestationResult);
       
       return attestationResult;
       // const { payload } = await jwtVerify(attestationToken.token, keyForVerification, {
@@ -336,13 +347,13 @@ export function useAttestationManager() {
       // });
       // return attestationToken;
     },
-    [apiClient, attestationResults, isAppAllowed, setAttestationResult, setVerificationStatus]
+    [apiClient, attestationResults, verifyContract, setAttestationResult, setVerificationResult]
   );
 
   return {
     verifyAttestation,
-    isAppAllowed,
+    verifyContract,
     attestationResults,
-    verificationStatuses,
+    verificationResults,
   };
 }
