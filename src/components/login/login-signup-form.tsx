@@ -12,8 +12,8 @@ import {
 import {
   useLoginWithEmail,
   usePrivy,
-  useLoginWithGoogle,
-  useLoginWithWallet,
+  useLoginWithOAuth,
+  useLogin,
 } from "@privy-io/react-auth";
 import Image from "next/image";
 import Link from "next/link";
@@ -42,35 +42,28 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
     }
   };
 
+  const onError = (error: any) => {
+    console.error(error);
+    // You can add user-facing error handling here
+  };
+
   const {
     state: emailState,
     sendCode,
     loginWithCode,
-  } = useLoginWithEmail({
-    onComplete,
-    onError: (error) => {
-      console.error(error);
-      // You can add user-facing error handling here
-    },
-  });
+  } = useLoginWithEmail({ onComplete, onError });
 
-  const { login: loginWithGoogle } = useLoginWithGoogle({
-    onComplete,
-    onError: (error) => console.error(error),
-  });
+  const { initOAuth, state: oauthState } = useLoginWithOAuth({ onComplete, onError });
+  const { login } = useLogin({ onComplete, onError });
 
-  const { login: loginWithWallet } = useLoginWithWallet({
-    onComplete,
-    onError: (error) => console.error(error),
-  });
 
   useEffect(() => {
     if (ready && authenticated) {
-        if(window.location.pathname.includes('signup')) {
-            router.push('/signup?step=password');
-        } else {
-            router.push("/");
-        }
+      if (window.location.pathname.includes("signup")) {
+        router.push("/signup?step=password");
+      } else {
+        router.push("/");
+      }
     }
   }, [ready, authenticated, router]);
 
@@ -86,9 +79,26 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
     [email, code, emailState.status, sendCode, loginWithCode],
   );
 
+  const handleGoogleLogin = useCallback(async () => {
+    try {
+      await initOAuth({ provider: "google" });
+    } catch (err) {
+      console.error(err);
+    }
+  }, [initOAuth]);
+
+  const handleWalletLogin = useCallback(() => {
+    login({
+      loginMethods: ["wallet"],
+      walletChainType: "ethereum-and-solana",
+      disableSignup: mode === 'login',
+    });
+  }, [login, mode]);
+
   const isSendingCode = emailState.status === "sending-code";
   const isSubmittingCode = emailState.status === "submitting-code";
   const isCodeEntryVisible = emailState.status === "awaiting-code-input";
+  const isOauthLoading = oauthState.status === 'loading';
 
   const title = mode === "login" ? "Log In to Panda" : "Create your account";
   const switchLinkHref = mode === "login" ? "/signup" : "/login";
@@ -194,8 +204,10 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
           <Button
             variant="outlined"
             fullWidth
-            onClick={() => loginWithGoogle()}
+            onClick={handleGoogleLogin}
+            disabled={isOauthLoading}
             startIcon={
+              isOauthLoading ? <CircularProgress size={20} /> :
               <Image
                 src="/icons/google-logo.svg"
                 alt="Google"
@@ -209,7 +221,7 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
           <Button
             variant="outlined"
             fullWidth
-            onClick={() => loginWithWallet()}
+            onClick={handleWalletLogin}
             startIcon={
               <Image
                 src="/icons/wallet-logo.svg"
