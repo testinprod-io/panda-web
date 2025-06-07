@@ -2,7 +2,6 @@ import React from "react";
 import { Inter, Montserrat } from "next/font/google";
 import { Providers } from "./providers";
 import SettingsModalHandler from "../components/modal/settings-modal-handler";
-import ChatLayoutContent from "@/components/chat/chat-layout";
 import "@/styles/globals.scss";
 import "@/styles/markdown.scss";
 import { clsx } from "clsx";
@@ -34,7 +33,7 @@ export default function RootLayout({
           <React.Suspense fallback={<div></div>}>
             <SettingsModalHandler />
           </React.Suspense>
-          <ChatLayoutContent>{children}</ChatLayoutContent>
+          {children}
         </Providers>
       </body>
     </html>
