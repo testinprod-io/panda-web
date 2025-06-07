@@ -20,6 +20,7 @@
     "clsx": "^2.1.1",
     "crypto-js": "^4.2.0",
     "elliptic": "^6.6.1",
+    "framer-motion": "^12.16.0",
     "heic2any": "^0.0.4",
     "jose": "^6.0.11",
     "lodash-es": "^4.17.21",

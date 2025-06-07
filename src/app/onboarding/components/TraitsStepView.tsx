@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Box, TextField, Button, Chip } from "@mui/material";
+import { motion } from "framer-motion";
 import styles from "../onboarding.module.scss";
 
 function clsx(...classes: (string | boolean | undefined | null)[]) {
@@ -40,6 +41,8 @@ export default function TraitsStepView({
   initialValue,
 }: TraitsStepViewProps) {
   const [traitsText, setTraitsText] = useState(initialValue);
+  const [isFocused, setIsFocused] = useState(false);
+
   const [selectedTraits, setSelectedTraits] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -71,60 +74,86 @@ export default function TraitsStepView({
   };
 
   return (
-    <>
-      <Box className={styles.inputContainer}>
-        <Box className={styles.avatar}>{avatarInitial}</Box>
-        <TextField
-          fullWidth
-          variant="standard"
-          placeholder={placeholder}
-          value={traitsText}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setTraitsText(e.target.value)
-          }
-          onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              onNextClick();
-            }
-          }}
-          sx={{
-            "& .MuiInput-root": {
-              color: "#1E1E1E",
-              fontSize: "1rem",
-            },
-            "& .MuiInput-input::placeholder": {
-              color: "#8a8a8a",
-            },
-            "& .MuiInput-input": {
-              border: "none",
-            },
-          }}
-          autoFocus
-        />
-        <Button
-          onClick={onNextClick}
-          className={styles.sendButton}
-          disabled={!traitsText.trim()}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5, delay: 0.2 }}
+    >
+      <Box className={styles.content}>
+        <Box
+          className={`${styles.inputContainer} ${
+            isFocused ? styles.inputContainerFocused : ""
+          }`}
         >
-          <img src="/icons/arrow-up.svg" alt="Arrow Up" width={24} height={24} />
+          <Box className={styles.avatar}>{avatarInitial}</Box>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder={placeholder}
+            value={traitsText}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setTraitsText(e.target.value)
+            }
+            onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                onNextClick();
+              }
+            }}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                color: "#1E1E1E",
+                fontSize: "1rem",
+                "& fieldset": {
+                  border: "none",
+                },
+              },
+              "& .MuiOutlinedInput-input::placeholder": {
+                color: "#8a8a8a",
+              },
+              "& .MuiOutlinedInput-input": {
+                border: "none",
+              },
+            }}
+            autoFocus
+          />
+        </Box>
+        <Box className={styles.traitsContainer}>
+          {initialTraits.map((trait) => (
+            <Chip
+              key={trait.id}
+              label={trait.label}
+              onClick={() => handleTraitToggle(trait.label)}
+              className={clsx(
+                styles.traitChip,
+                selectedTraits.has(trait.label) && styles.selectedTrait,
+              )}
+              variant={selectedTraits.has(trait.label) ? "filled" : "outlined"}
+              clickable
+            />
+          ))}
+        </Box>
+        <Button
+          type="submit"
+          variant="contained"
+          onClick={onNextClick}
+          disabled={!traitsText.trim()}
+          sx={{
+            alignSelf: "flex-start",
+            height: "48px",
+            backgroundColor: "#131A28",
+            color: "#C1FF83",
+            borderRadius: "8px",
+            textTransform: "none",
+            fontSize: "16px",
+          }}
+          // className={styles.sendButton}
+        >
+          Continue
         </Button>
       </Box>
-      <Box className={styles.traitsContainer}>
-        {initialTraits.map((trait) => (
-          <Chip
-            key={trait.id}
-            label={trait.label}
-            onClick={() => handleTraitToggle(trait.label)}
-            className={clsx(
-              styles.traitChip,
-              selectedTraits.has(trait.label) && styles.selectedTrait,
-            )}
-            variant={selectedTraits.has(trait.label) ? "filled" : "outlined"}
-            clickable
-          />
-        ))}
-      </Box>
-    </>
+    </motion.div>
   );
 }

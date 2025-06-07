@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import OnboardingView from "./onboarding-view";
 import { Box, CircularProgress } from "@mui/material";
 import styles from "./onboarding.module.scss";
-
+import { usePrivy } from "@privy-io/react-auth";
 export default function OnboardingPage() {
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
   const apiClient = useApiClient();
   const router = useRouter();
+  const { authenticated } = usePrivy();
 
   useEffect(() => {
     const checkOnboardingStatus = async () => {
@@ -25,8 +26,10 @@ export default function OnboardingPage() {
         }
       }
     };
-    checkOnboardingStatus();
-  }, [apiClient]);
+    if (authenticated) {
+      checkOnboardingStatus();
+    }
+  }, [apiClient, authenticated]);
 
   useEffect(() => {
     if (needsOnboarding === false) {
@@ -36,7 +39,12 @@ export default function OnboardingPage() {
 
   if (needsOnboarding === null) {
     return (
-      <Box className={styles.container}>
+      <Box className={styles.container} style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100vh",
+      }}>
         <CircularProgress color="inherit" />
       </Box>
     );

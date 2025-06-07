@@ -274,7 +274,7 @@ export default function CustomizePromptsView({
       )}
       <Box className={styles.header}>
         <Typography variant="h5" className={styles.title}>
-          Customize Panda AI
+          Customize Panda
         </Typography>
         <Typography className={styles.subtitle}>
           Introduce yourself to get better, more personalized responses
@@ -286,7 +286,7 @@ export default function CustomizePromptsView({
       <Box className={styles.formArea}>
         <Box className={styles.formSection}>
           <Typography className={styles.label}>
-            What should Panda AI call you?
+            What should Panda call you?
           </Typography>
           <TextField
             fullWidth
@@ -314,7 +314,7 @@ export default function CustomizePromptsView({
 
         <Box className={styles.formSection}>
           <Typography className={styles.label}>
-            What traits should Panda AI have?
+            What traits should Panda have?
           </Typography>
           <TextField
             fullWidth
@@ -360,7 +360,7 @@ export default function CustomizePromptsView({
 
         <Box className={styles.formSection}>
           <Typography className={styles.label}>
-            Anything else Panda AI should know about you?
+            Anything else Panda should know about you?
           </Typography>
           <TextField
             fullWidth

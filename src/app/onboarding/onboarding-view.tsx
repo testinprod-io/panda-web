@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useApiClient } from "@/providers/api-client-provider";
 import { useAppConfig } from "@/store/config";
@@ -10,8 +10,10 @@ import {
   decryptSystemPrompt,
 } from "@/types";
 import { Box, CircularProgress, Typography } from "@mui/material";
+import { motion, AnimatePresence } from "framer-motion";
 import TextInputStep from "./components/TextInputStep";
 import TraitsStepView from "./components/TraitsStepView";
+import StreamingText from "./components/StreamingText";
 import styles from "./onboarding.module.scss";
 
 const STEPS = ["name", "role", "traits", "knowledge"];
@@ -66,7 +68,7 @@ export default function OnboardingView() {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setIsSaving(true);
     const payload: CustomizedPromptsData = {
       personal_info: {},
@@ -97,22 +99,33 @@ export default function OnboardingView() {
       // Optional: Show an error message to the user
       router.push("/"); // For now, just navigate away
     }
-  };
+  }, [apiClient.app, data, router, setCustomizedPrompts]);
 
   useEffect(() => {
     if (step === STEPS.length && !isSaving) {
       handleSave();
     }
-  }, [step, isSaving]);
+  }, [step, isSaving, handleSave]);
 
   if (step === STEPS.length || isSaving) {
     return (
-      <Box className={styles.container}>
+      <Box className={styles.container} style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100vh",
+      }}>
         <Box className={styles.content}>
           <CircularProgress color="inherit" />
-          <Typography sx={{ color: "white", mt: 2 }}>
-            Personalizing your experience...
-          </Typography>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            {/* <Typography sx={{ color: "black", mt: 2 }}>
+              Personalizing your experience...
+            </Typography> */}
+          </motion.div>
         </Box>
       </Box>
     );
@@ -121,47 +134,69 @@ export default function OnboardingView() {
   const currentStepKey = STEPS[step];
 
   const renderStepContent = () => {
-    switch (currentStepKey) {
-      case "name":
-        return (
-          <TextInputStep
-            placeholder={PLACEHOLDERS[currentStepKey]}
-            onNext={handleNext}
-            avatarInitial={data.name ? data.name.charAt(0).toUpperCase() : "🐼"}
-            initialValue={data.name}
-          />
-        );
-      case "role":
-        return (
-          <TextInputStep
-            placeholder={PLACEHOLDERS[currentStepKey]}
-            onNext={handleNext}
-            avatarInitial={data.name ? data.name.charAt(0).toUpperCase() : "🐼"}
-            initialValue={data.job}
-          />
-        );
-      case "knowledge":
-        return (
-          <TextInputStep
-            placeholder={PLACEHOLDERS[currentStepKey]}
-            onNext={handleNext}
-            avatarInitial={data.name ? data.name.charAt(0).toUpperCase() : "🐼"}
-            multiline
-            initialValue={data.extra_params}
-          />
-        );
-      case "traits":
-        return (
-          <TraitsStepView
-            placeholder={PLACEHOLDERS.traits}
-            onNext={handleNext}
-            avatarInitial={data.name ? data.name.charAt(0).toUpperCase() : "🐼"}
-            initialValue={data.traits}
-          />
-        );
-      default:
-        return null;
-    }
+    const key = currentStepKey || "loading";
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={key}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          {(() => {
+            switch (currentStepKey) {
+              case "name":
+                return (
+                  <TextInputStep
+                    placeholder={PLACEHOLDERS[currentStepKey]}
+                    onNext={handleNext}
+                    avatarInitial={
+                      data.name ? data.name.charAt(0).toUpperCase() : "🐼"
+                    }
+                    initialValue={data.name}
+                  />
+                );
+              case "role":
+                return (
+                  <TextInputStep
+                    placeholder={PLACEHOLDERS[currentStepKey]}
+                    onNext={handleNext}
+                    avatarInitial={
+                      data.name ? data.name.charAt(0).toUpperCase() : "🐼"
+                    }
+                    initialValue={data.job}
+                  />
+                );
+              case "knowledge":
+                return (
+                  <TextInputStep
+                    placeholder={PLACEHOLDERS[currentStepKey]}
+                    onNext={handleNext}
+                    avatarInitial={
+                      data.name ? data.name.charAt(0).toUpperCase() : "🐼"
+                    }
+                    multiline
+                    initialValue={data.extra_params}
+                  />
+                );
+              case "traits":
+                return (
+                  <TraitsStepView
+                    placeholder={PLACEHOLDERS.traits}
+                    onNext={handleNext}
+                    avatarInitial={
+                      data.name ? data.name.charAt(0).toUpperCase() : "🐼"
+                    }
+                    initialValue={data.traits}
+                  />
+                );
+              default:
+                return null;
+            }
+          })()}
+        </motion.div>
+      </AnimatePresence>
+    );
   };
 
   return (
@@ -179,14 +214,17 @@ export default function OnboardingView() {
         }}
       >
         <Box
-          sx={{
+          // initial={{ opacity: 0, y: -20 }}
+          // animate={{ opacity: 1, y: 0 }}
+          // transition={{ duration: 0.5 }}
+          style={{
             display: "flex",
             flexDirection: "row",
             alignItems: "center",
             width: "100%",
             maxWidth: "410px",
             marginRight: "auto",
-            mb: 10,
+            marginBottom: "80px",
           }}
         >
           <img
@@ -205,10 +243,21 @@ export default function OnboardingView() {
           </Typography>
         </Box>
         <Box className={styles.content}>
-          <img src="/icons/panda.svg" alt="Panda" width={60} height={60} />
-          <Typography variant="h6" align="left" className={styles.question}>
-            {getQuestion(currentStepKey, data.name)}
-          </Typography>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{
+              duration: 0.5,
+              delay: 0.2,
+              ease: [0, 0.71, 0.2, 1.01],
+            }}
+          >
+            <img src="/icons/panda.svg" alt="Panda" width={60} height={60} />
+          </motion.div>
+          <StreamingText
+            text={getQuestion(currentStepKey, data.name)}
+            className={styles.question}
+          />
           {renderStepContent()}
         </Box>
       </Box>

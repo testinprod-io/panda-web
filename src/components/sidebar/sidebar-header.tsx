@@ -30,7 +30,7 @@ export default function SidebarHeader({
       >
         <Image
           src="/icons/logo.png"
-          alt="Panda AI Logo"
+          alt="Panda Logo"
           className={clsx(styles.sidebarHeaderLogoImage, isSidebarCollapsed && styles.collapsed)}
           width={32}
           height={32}
