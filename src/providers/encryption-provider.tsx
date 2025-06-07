@@ -282,7 +282,8 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   }
 
   const isSignupPage = pathname.startsWith("/signup");
-  const showUnlockModal = isLocked && !isSignupPage && isFirstTimeUser === false;
+  const isOnboardingPage = pathname.startsWith("/onboarding");
+  const showUnlockModal = isLocked && !isSignupPage && !isOnboardingPage && isFirstTimeUser === false;
 
   return (
     <EncryptionContext.Provider value={contextValue}>

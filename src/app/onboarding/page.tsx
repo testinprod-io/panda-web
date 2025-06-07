@@ -15,13 +15,13 @@ export default function OnboardingPage() {
     const checkOnboardingStatus = async () => {
       try {
         await apiClient.app.getCustomizedPrompts();
-        setNeedsOnboarding(false);
+        setNeedsOnboarding(true);
       } catch (error: any) {
         if (error && typeof error === "object" && "status" in error && error.status === 404) {
           setNeedsOnboarding(true);
         } else {
           console.error("Failed to check onboarding status:", error);
-          setNeedsOnboarding(false);
+          setNeedsOnboarding(true);
         }
       }
     };

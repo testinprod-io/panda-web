@@ -27,11 +27,29 @@ export default function OnboardingStepView({
   };
 
   return (
+    <Box
+    sx={{
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "flex-start",
+      minHeight: "100vh",
+      width: "100%",
+      // bgcolor: 'background.paper',
+      py: 4,
+      px: 2,
+    }}
+  >
+          <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', maxWidth: '410px', marginRight: 'auto', mb: 10 }}>
+        <img src="/icons/inverse-icon.png" alt="Panda AI Logo" width={40} height={40} />
+        <Typography fontSize="24px" fontWeight="600" color="#131A28" marginLeft="12px">
+            Panda AI
+          </Typography>
+        </Box>
+
     <Box className={styles.content}>
-      <Typography variant="h1" className={styles.asterisk}>
-        *
-      </Typography>
-      <Typography variant="h2" className={styles.question}>
+      <img src="/icons/panda.svg" alt="Panda" width={60} height={60} />
+      <Typography variant="h6" align="left" className={styles.question}>
         {question}
       </Typography>
       <Box className={styles.inputContainer}>
@@ -58,10 +76,13 @@ export default function OnboardingStepView({
             "& .MuiInput-input::placeholder": {
               color: "#8a8a8a",
             },
+            "& .MuiInput-input": {
+              border: "none",
+            },
           }}
-          InputProps={{
-            disableUnderline: true,
-          }}
+          // InputProps={{
+          //   disableUnderline: true,
+          // }}
           autoFocus
         />
         <Button
@@ -69,8 +90,9 @@ export default function OnboardingStepView({
           disabled={!inputValue.trim()}
           className={styles.sendButton}
         >
-          <ArrowUpwardIcon />
+          <img src="/icons/arrow-up.svg" alt="Arrow Up" width={24} height={24} />
         </Button>
+      </Box>
       </Box>
     </Box>
   );

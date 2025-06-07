@@ -1,29 +1,30 @@
 .container {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  // align-items: center;
+  // justify-content: center;
   height: 100vh;
-  background-color: #2c2c2c;
-  color: #e6e0dc;
-  font-family: serif;
+  background-color: #FFFFFF;
+  color: #1E1E1E;
+  // font-family: serif;
 }
 
 .content {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+  // align-items: center;
+  // justify-content: center;
+  text-align: left;
   width: 100%;
   max-width: 600px;
   padding: 20px;
+  gap: 1.5rem;
 }
 
 .asterisk {
   color: #e88c7d;
   font-size: 2.5rem;
-  margin-bottom: 2rem;
+  // margin-bottom: 2rem;
   font-weight: bold;
 }
 
@@ -36,22 +37,22 @@
 .inputContainer {
   display: flex;
   align-items: center;
-  background-color: #3a3a3a;
-  border-radius: 30px;
+  background-color: #FFFFFF;
+  border-radius: 16px;
   padding: 8px 12px;
   width: 100%;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .avatar {
-  width: 32px;
-  height: 32px;
+  width: 32px !important;
+  height: 32px !important;
   border-radius: 50%;
-  background-color: #505050;
+  // background-color: #505050 !important;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 12px;
+  margin-right: 12px !important;
   font-weight: bold;
   font-size: 1rem;
   color: #e6e0dc;
@@ -61,15 +62,15 @@
   width: 44px;
   height: 44px;
   min-width: 44px !important;
-  border-radius: 50% !important;
-  background-color: #e6e0dc !important;
-  color: #2c2c2c !important;
+  // border-radius: 50% !important;
+  // background-color: #e6e0dc !important;
+  // color: #2c2c2c !important;
   font-size: 1.8rem !important;
   font-weight: bold !important;
   line-height: 1;
 }
 
 .sendButton:disabled {
-  background-color: #555 !important;
+  // background-color: #555 !important;
   color: #888 !important;
 }

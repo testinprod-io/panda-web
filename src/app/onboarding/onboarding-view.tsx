@@ -117,7 +117,7 @@ export default function OnboardingView() {
         question={QUESTIONS[currentStepKey]}
         placeholder={PLACEHOLDERS[currentStepKey]}
         onNext={handleNext}
-        avatarInitial={data.name ? data.name.charAt(0).toUpperCase() : "👤"}
+        avatarInitial={data.name ? data.name.charAt(0).toUpperCase() : "🐼"}
       />
     </Box>
   );
