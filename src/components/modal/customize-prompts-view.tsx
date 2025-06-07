@@ -343,7 +343,7 @@ export default function CustomizePromptsView({
             {traits.map((trait) => (
               <Chip
                 key={trait.id}
-                icon={<AddCircleOutlineIcon />}
+                icon={<img src="/icons/plus.svg" alt="Add" />}
                 label={trait.label}
                 onClick={() => !isSaving && handleTraitToggle(trait.id)}
                 className={clsx(

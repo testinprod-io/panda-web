@@ -27,6 +27,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import toast from "react-hot-toast";
+import { useEncryption } from "@/providers/encryption-provider";
 
 interface LoginSignupFormProps {
   mode: "login" | "signup";
@@ -45,6 +46,7 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
 
 
   const { ready, authenticated } = usePrivy();
+  const { isFirstTimeUser } = useEncryption();
 
   const onComplete = ({ isNewUser }: {
     user: User;
@@ -53,7 +55,7 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
     loginMethod: string | null;
     loginAccount: LinkedAccountWithMetadata | null;
   }) => {
-    if (isNewUser) {
+    if (isNewUser && isFirstTimeUser === true) {
       router.push("/signup?step=password");
     } else {
       router.push("/");
@@ -85,15 +87,17 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
   const { login } = useLogin({ onComplete, onError });
 
 
+  console.log("isFirstTimeUser", isFirstTimeUser);
   useEffect(() => {
+    console.log("isFirstTimeUser", isFirstTimeUser);
     if (ready && authenticated) {
-      if (window.location.pathname.includes("signup")) {
+      if (window.location.pathname.includes("signup") && isFirstTimeUser === true) {
         router.push("/signup?step=password");
       } else {
         router.push("/");
       }
     }
-  }, [ready, authenticated, router]);
+  }, [ready, authenticated, router, isFirstTimeUser]);
 
   const handleEmailSubmit = useCallback(
     async (e: React.FormEvent) => {

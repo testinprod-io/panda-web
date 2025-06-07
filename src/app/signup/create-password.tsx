@@ -46,14 +46,18 @@ export default function CreatePassword() {
   const [error, setError] = useState("");
   const router = useRouter();
   const { user, logout, ready, authenticated } = usePrivy();
-  const { createPassword } = useEncryption();
+  const { isFirstTimeUser, createPassword } = useEncryption();
 
   useEffect(() => {
     // if user is not authenticated, they shouldn't be here.
     if (ready && !authenticated) {
       router.replace('/signup');
     }
-  }, [ready, authenticated, router]);
+
+    if (isFirstTimeUser === false) {
+      router.replace('/');
+    }
+  }, [ready, authenticated, router, isFirstTimeUser]);
 
   const handlePasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newPassword = event.target.value;
@@ -92,7 +96,7 @@ export default function CreatePassword() {
   const isButtonDisabled = isSubmitDisabled(password, error);
   const displayedError = getDynamicError(password) || error;
   
-  if (!ready || !authenticated) {
+  if (!ready || !authenticated || isFirstTimeUser === undefined) {
       return <div></div>
   }
 

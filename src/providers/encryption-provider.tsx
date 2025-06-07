@@ -20,6 +20,7 @@ const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
 
 interface EncryptionContextType {
   isLocked: boolean;
+  isFirstTimeUser: boolean | undefined;
   unlockApp: (password: string) => Promise<boolean>;
   lockApp: () => void;
   createPassword: (password: string) => Promise<void>;
@@ -266,6 +267,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
 
   const contextValue: EncryptionContextType = {
     isLocked,
+    isFirstTimeUser,
     unlockApp: contextUnlockApp,
     lockApp,
     createPassword: handleCreatePassword,
