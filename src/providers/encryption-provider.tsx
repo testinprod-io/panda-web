@@ -280,43 +280,29 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   }
 
   const isSignupPage = pathname.startsWith("/signup");
+  const showUnlockModal = isLocked && !isSignupPage && isFirstTimeUser === false;
 
   return (
     <EncryptionContext.Provider value={contextValue}>
-      {isLocked && !isSignupPage && (
-        <>
-          {isFirstTimeUser ? (
-            <PasswordModal
-              open={true}
-              modalType="create"
-              onCreateSubmit={handleCreatePassword}
-              onClose={() => {
-                console.log(
-                  "[EncryptionProvider] CreatePasswordModal onClose called - app should remain locked if password not set.",
-                );
-              }}
-            />
-          ) : (
-            <PasswordModal
-              open={isLocked}
-              modalType="unlock"
-              onUnlockSubmit={contextUnlockApp}
-              onClose={() => {
-                console.log(
-                  "[EncryptionProvider] Unlock PasswordModal onClose triggered. App state (isLocked):",
-                  isLocked,
-                );
-              }}
-            />
-          )}
-        </>
+      {showUnlockModal && (
+        <PasswordModal
+          open={true}
+          modalType="unlock"
+          onUnlockSubmit={contextUnlockApp}
+          onClose={() => {
+            console.log(
+              "[EncryptionProvider] Unlock PasswordModal onClose triggered. App state (isLocked):",
+              isLocked,
+            );
+          }}
+        />
       )}
 
       <div
         style={{
-          filter: isLocked ? "blur(3px) brightness(0.8)" : "none",
+          filter: showUnlockModal ? "blur(3px) brightness(0.8)" : "none",
           transition: "filter 0.5s ease-in-out",
-          pointerEvents: isLocked ? "none" : "auto",
+          pointerEvents: showUnlockModal ? "none" : "auto",
         }}
       >
         {children}
