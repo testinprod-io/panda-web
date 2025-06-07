@@ -331,6 +331,7 @@ export default function ChatLayoutContent({
         }}
       >
         <ChatHeader
+          currentChatId={currentChatId}
           isSidebarCollapsed={effectiveIsSidebarCollapsed}
           onToggleSidebar={handleToggleSidebar}
           isMobile={isMobile}

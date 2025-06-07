@@ -12,6 +12,7 @@ import ProjectPanel from "@/components/sidebar/project-panel";
 import { useRouter } from "next/navigation";
 import { useEncryption } from "@/providers/encryption-provider";
 import { usePrivy } from "@privy-io/react-auth";
+import { Tooltip } from "@mui/material";
 
 interface SidebarProps {
   isSidebarCollapsed: boolean;
@@ -163,12 +164,34 @@ export default function Sidebar({
           <SidebarHeader isSidebarCollapsed={true} />
           <Box className={styles.collapsedNavMenu}>
             {navItems.map((item) => (
-              // <Tooltip title={item.text} placement="right" key={item.id}>
-                <Box className={styles.collapsedNavItem} onClick={item.action} key={item.id}>
-                  {/* <Box className={styles.navItemText}>{item.text}</Box> */}
-                   <Box className={styles.navItemIcon}>{item.icon}</Box>
+              <Tooltip
+                title={
+                  <div className={styles.tooltip}>
+                    {/* <div className={styles.tooltipIcon}>{item.icon}</div> */}
+                    <div className={styles.tooltipText}>{item.text}</div>
+                  </div>
+                }
+                placement="right"
+                key={item.id}
+                componentsProps={{
+                  tooltip: {
+                    sx: {
+                      border: "none",
+                      backgroundColor: "transparent",
+                      padding: 0,
+                      marginLeft: "10px !important",
+                    },
+                  },
+                }}
+              >
+                <Box
+                  className={styles.collapsedNavItem}
+                  onClick={item.action}
+                  key={item.id}
+                >
+                  <Box className={styles.navItemIcon}>{item.icon}</Box>
                 </Box>
-              // </Tooltip>
+              </Tooltip>
             ))}
           </Box>
         </Box>

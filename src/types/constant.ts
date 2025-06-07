@@ -172,6 +172,7 @@ export const BASE_MODEL_CONFIG: ModelConfig = {
 export interface AppModelDefinition {
   name: string;
   displayName?: string;
+  description?: string;
   available: boolean;
   provider: {
     id: string;
@@ -193,12 +194,15 @@ export const DEFAULT_MODELS: AppModelDefinition[] = [
 
     // Default endpoint, can be overridden by environment variables
     let defaultEndpoint = "";
+    let description = "";
     if (name === "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B") {
       defaultEndpoint = process.env.NEXT_PUBLIC_LLM_SERVER_ENDPOINT || "";
+      description = "Great for most tasks";
     } else if (
       name === "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16"
     ) {
       defaultEndpoint = process.env.NEXT_PUBLIC_LLM_OMNI_SERVER_ENDPOINT || "";
+      description = "Great for handling files and photos";
     }
 
     if (name === "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B") {
@@ -239,6 +243,7 @@ export const DEFAULT_MODELS: AppModelDefinition[] = [
       displayName: name.split("/")[0],
       available: true, // Assuming Panda models are available by default
       sorted: seq++,
+      description: description,
       provider: {
         id: "panda",
         providerName: "Panda",

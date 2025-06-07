@@ -17,6 +17,7 @@ import {
 import Person2RoundedIcon from "@mui/icons-material/Person2Rounded";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { usePrivy } from "@privy-io/react-auth";
 import { useAuthStatus } from "@/hooks/use-auth-status";
 import { useAppConfig, useChatStore } from "@/store";
@@ -29,6 +30,7 @@ import { useAttestationManager, VerificationResult, VerificationStatus } from "@
 import { AttestationResult } from "@/types/attestation";
 
 interface ChatHeaderProps {
+  currentChatId?: string; 
   isSidebarCollapsed: boolean;
   onToggleSidebar: () => void;
   isMobile?: boolean;
@@ -37,6 +39,7 @@ interface ChatHeaderProps {
 type EncryptionStatus = "SUCCESSFUL" | "FAILED" | "IN_PROGRESS";
 
 export default function ChatHeader({
+  currentChatId,
   isSidebarCollapsed,
   onToggleSidebar,
   isMobile,
@@ -156,9 +159,9 @@ export default function ChatHeader({
       case VerificationStatus.ContractVerified:
         return {
           ...firstStatus,
-          text: "Encryption Activated",
+          text: "Conversation encrypted",
           statusClass: styles.encryptionStatusSuccessful,
-          icon: "/icons/lock.svg",
+          icon: "/icons/shield-fill.svg",
         };
       case VerificationStatus.Failed:
         return {
@@ -170,7 +173,7 @@ export default function ChatHeader({
       case VerificationStatus.Pending:
         return {
           ...firstStatus,
-          text: "Encryption Activating",
+          text: "Verifying...",
           statusClass: styles.encryptionStatusInProgress,
           icon: "/icons/lock.svg",
         };
@@ -179,7 +182,7 @@ export default function ChatHeader({
           ...firstStatus,
           text: "Waiting for First Input",
           statusClass: styles.encryptionStatusUnknown,
-          icon: "/icons/lock.svg",
+          icon: "/icons/lock-icon.svg",
         };
     }
   }, [verificationResults]);
@@ -282,7 +285,9 @@ export default function ChatHeader({
                   >
                     <ListItemText
                       primary={model.displayName || model.name}
+                      secondary={model.description}
                       className={styles.modelMenuItemText}
+                      classes={{ secondary: styles.modelMenuItemDescription }}
                     />
                     <Box className={styles.iconContainer}>
                       {isSelected && isActuallyAvailable && (
@@ -303,7 +308,7 @@ export default function ChatHeader({
       </Box>
 
       <Box className={styles.headerRight}>
-        {isAuthenticated && (
+        {isAuthenticated && currentChatId && (
               <Tooltip title={<CertificateInfoPopup publicKey={currentStatusInfo.publicKey} verificationResult={currentStatusInfo} />} componentsProps={{
                 tooltip: {
                   sx: {

@@ -226,7 +226,7 @@ export const MessageActionsBar: React.FC<MessageActionsBarProps> = ({
         <img
           alt="Verified"
           src="/icons/shield.svg"
-          style={{ width: 16, height: 16, cursor: "pointer" }}
+          style={{ width: 20, height: 20, cursor: "pointer" }}
         />
       );
     } else if (verificationResult.status === VerificationStatus.Failed) {
@@ -289,7 +289,7 @@ export const MessageActionsBar: React.FC<MessageActionsBarProps> = ({
           aria-label="Copy message"
           title="Copy message"
         >
-          <img src="/icons/copy.svg" alt="Copy message" />
+          <img src="/icons/copy.svg" alt="Copy message" style={{filter: "invert(51%) sepia(0%) saturate(0%) hue-rotate(189deg) brightness(90%) contrast(89%)" }} />
         </button>
         {attestationIcon}
         {/* Add Edit button here if re-enabled, calling onEdit */}
@@ -309,7 +309,7 @@ export const MessageActionsBar: React.FC<MessageActionsBarProps> = ({
         aria-label="Copy message and reasoning"
         title="Copy message and reasoning"
       >
-        <img src="/icons/copy.svg" alt="Copy message and reasoning" />
+        <img src="/icons/copy.svg" alt="Copy message and reasoning" style={{filter: "invert(51%) sepia(0%) saturate(0%) hue-rotate(189deg) brightness(90%) contrast(89%)" }}/>
       </button>
       <button
         onClick={onResend}
@@ -318,7 +318,7 @@ export const MessageActionsBar: React.FC<MessageActionsBarProps> = ({
         aria-label="Resend message"
         title="Resend message"
       >
-        <img src="/icons/refresh.svg" alt="Resend message" />
+        <img src="/icons/refresh.svg" alt="Resend message" style={{filter: "invert(51%) sepia(0%) saturate(0%) hue-rotate(189deg) brightness(90%) contrast(89%)" }}/>
       </button>
       {attestationIcon}
     </Box>

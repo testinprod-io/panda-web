@@ -51,15 +51,35 @@
     min-width: 250px;
     box-shadow: 0px 2px 20px rgba(0, 0, 0, 0.10);
     border: 1px solid #CACACA;
-    padding: 16px;
+    padding: 8px;
   }
+}
+
+.modelMenuHeader {
+  display: flex;
+  align-items: center;
+  padding: 0 16px 12px;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 12px;
+}
+
+.modelMenuTitle {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: #131A28;
+  flex-grow: 1;
+}
+
+.modelMenuInfoIcon {
+  color: #6B7280;
+  font-size: 20px !important;
+  cursor: pointer;
 }
 
 .modelMenuItem {
   font-family: 'Inter', sans-serif;
   font-size: 16px !important;
   font-weight: 400;
-  line-height: 32px;
   padding: 6px 16px !important;
   border-radius: 8px;
   color: #131A28;
@@ -89,21 +109,27 @@
   margin-right: 16px;
   overflow: hidden;
 
-  :global(span) {
-    font-size: 16px !important; 
-    font-weight: 400 !important;
+  :global(.MuiListItemText-primary) {
+    font-size: 16px !important;
+    font-weight: 500 !important;
     font-family: 'Inter', sans-serif !important;
-    line-height: 32px !important;
-    display: block;
-    overflow-wrap: break-word;
-    word-break: break-all;
-    white-space: normal;
+    line-height: 1.2 !important;
+    color: #131A28;
   }
+}
+
+.modelMenuItemDescription {
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  font-family: 'Inter', sans-serif !important;
+  line-height: 1.4 !important;
+  color: #6B7280;
+  margin-top: 4px !important;
 }
 
 .encryptionStatus {       
   padding-left: 10px;
-  padding-right: 10px;
+  padding-right: 12px;
   padding-top: 6px;
   padding-bottom: 6px;
   border-radius: 24px;
@@ -129,9 +155,9 @@
 }
 
 .encryptionStatusSuccessful {
-  background-color: #C1FF83;
+  background-color: #EEFFDE;
   .encryptionStatusText {
-    color: #131A28;
+    color: #34A853;
   }
 }
 
@@ -143,16 +169,19 @@
 }
 
 .encryptionStatusInProgress {
-  background-color: #ADD8E6;
+  background-color: #FFFFFF;
   .encryptionStatusText {
-    color: #00008B;
+    color: #757575;
   }
 }
 
 .encryptionStatusUnknown {
   background-color: #D3D3D3;
   .encryptionStatusText {
-    color: black;
+    color: #757575;
+  }
+  .encryptionStatusIconImg { 
+    filter: invert(51%) sepia(0%) saturate(0%) hue-rotate(189deg) brightness(90%) contrast(89%);
   }
 }
 
