@@ -8,33 +8,51 @@ import {
   Typography,
   Divider,
   CircularProgress,
+  Checkbox,
+  FormControlLabel,
+  Link as MuiLink,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
 import {
   useLoginWithEmail,
   usePrivy,
   useLoginWithOAuth,
   useLogin,
+  User,
+  LinkedAccountWithMetadata,
 } from "@privy-io/react-auth";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Visibility, VisibilityOff } from '@mui/icons-material';
+import toast from "react-hot-toast";
 
 interface LoginSignupFormProps {
   mode: "login" | "signup";
 }
 
+const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
 export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+
 
   const { ready, authenticated } = usePrivy();
 
-  const onComplete = (
-    user: any,
-    isNewUser: boolean,
-    wasAlreadyAuthenticated: boolean,
-  ) => {
+  const onComplete = ({ isNewUser }: {
+    user: User;
+    isNewUser: boolean;
+    wasAlreadyAuthenticated: boolean;
+    loginMethod: string | null;
+    loginAccount: LinkedAccountWithMetadata | null;
+  }) => {
     if (isNewUser) {
       router.push("/signup?step=password");
     } else {
@@ -43,8 +61,15 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
   };
 
   const onError = (error: any) => {
-    console.error(error);
-    // You can add user-facing error handling here
+    if (!error) { return; }
+    if (error.includes("invalid_credentials")) {
+      setCode("");
+      toast.dismiss();
+      toast.error("Please try again.");
+    } else if (!error.includes("exited_auth_flow")) {
+      toast.dismiss();
+      toast.error(error);
+    }
   };
 
   const {
@@ -53,7 +78,10 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
     loginWithCode,
   } = useLoginWithEmail({ onComplete, onError });
 
-  const { initOAuth, state: oauthState } = useLoginWithOAuth({ onComplete, onError });
+  const {
+    initOAuth,
+    state: oauthState,
+  } = useLoginWithOAuth({ onComplete, onError });
   const { login } = useLogin({ onComplete, onError });
 
 
@@ -71,7 +99,7 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
     async (e: React.FormEvent) => {
       e.preventDefault();
       if (emailState.status === "initial" || emailState.status === "error") {
-        sendCode({ email });
+        sendCode({ email, disableSignup: mode !== "signup" });
       } else if (emailState.status === "awaiting-code-input") {
         loginWithCode({ code });
       }
@@ -80,32 +108,20 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
   );
 
   const handleGoogleLogin = useCallback(async () => {
-    try {
-      await initOAuth({ provider: "google" });
-    } catch (err) {
-      console.error(err);
-    }
+    initOAuth({ provider: "google" });
   }, [initOAuth]);
 
-  const handleWalletLogin = useCallback(() => {
-    login({
-      loginMethods: ["wallet"],
-      walletChainType: "ethereum-and-solana",
-      disableSignup: mode === 'login',
-    });
-  }, [login, mode]);
+  const handleWalletLogin = useCallback(async () => {
+    login({ loginMethods: ["wallet"] });
+  }, [login]);
 
   const isSendingCode = emailState.status === "sending-code";
   const isSubmittingCode = emailState.status === "submitting-code";
   const isCodeEntryVisible = emailState.status === "awaiting-code-input";
-  const isOauthLoading = oauthState.status === 'loading';
+  const isOauthLoading = oauthState.status === "loading";
 
-  const title = mode === "login" ? "Log In to Panda" : "Create your account";
+  const title = mode === "signup" ? "Create an account" : "Sign in";
   const switchLinkHref = mode === "login" ? "/signup" : "/login";
-  const switchLinkText =
-    mode === "login"
-      ? "Don't have an account? Sign Up"
-      : "Already have an account? Log In";
 
   if (!ready) {
     return (
@@ -128,55 +144,78 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
+        justifyContent: "flex-start",
         minHeight: "100vh",
-        padding: 2,
-        background:
-          "linear-gradient(177deg, white 0%, #FEFEFE 27%, #F6FFFC 75%, #DAF7EF 100%)",
+        bgcolor: 'background.paper',
+        py: 4,
+        px: 2,
       }}
     >
-      <Box
-        sx={{
-          width: "100%",
-          maxWidth: "400px",
-          p: 4,
-          boxShadow: 3,
-          borderRadius: 2,
-          bgcolor: "background.paper",
-        }}
-      >
-        <Box sx={{ textAlign: "center", mb: 3 }}>
-          <Image
-            src="/icons/rounded-logo.svg"
-            alt="Panda AI Logo"
-            width={64}
-            height={64}
-          />
-          <Typography variant="h5" component="h1" sx={{ mt: 2 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', maxWidth: '410px', marginRight: 'auto', mb: 10 }}>
+        <img src="/icons/inverse-icon.png" alt="Panda AI Logo" width={40} height={40} />
+        <Typography fontSize="24px" fontWeight="600" color="#131A28" marginLeft="12px">
+            Panda AI
+          </Typography>
+        </Box>
+      <Box sx={{ width: '100%', maxWidth: '410px', marginTop: '10vh' }}>
+        <Box sx={{ textAlign: "left", mb: 3 }}>
+          <Typography variant="h5" component="h1" sx={{ fontWeight: '600' }}>
             {title}
           </Typography>
         </Box>
 
         <form onSubmit={handleEmailSubmit}>
+          <Typography variant="body2" sx={{ fontWeight: '500', mb: 1 }}>Email address</Typography>
           <TextField
-            label="Email"
             type="email"
             fullWidth
-            margin="normal"
+            placeholder="name@work-email.com"
             value={email}
+            size="medium"
             onChange={(e) => setEmail(e.target.value)}
-            disabled={isCodeEntryVisible || isSendingCode || isSubmittingCode}
+            disabled={isCodeEntryVisible || isSendingCode || isSubmittingCode || isOauthLoading}
+            inputProps={{ style: { fontSize: '14px', height: '40px', padding: '0px 10px' } }}
+            sx={{ mb: 2, alignItems: 'left', '& .MuiInputBase-input': { textAlign: 'left', border: 'none' } }}
           />
 
           {isCodeEntryVisible && (
-            <TextField
-              label="Verification Code"
-              type="text"
-              fullWidth
-              margin="normal"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              disabled={isSubmittingCode}
+            <>
+              <Typography variant="body2" sx={{ fontWeight: '500', mb: 1 }}>Verification Code</Typography>
+              <TextField
+                type="text"
+                fullWidth
+                placeholder="Enter the code sent to your email"
+                value={code}
+                size="medium"
+                inputProps={{ style: { fontSize: '14px', height: '40px' } }}
+                onChange={(e) => setCode(e.target.value)}
+                disabled={isSubmittingCode || isOauthLoading}
+                sx={{ mb: 2, alignItems: 'left', '& .MuiInputBase-input': { backgroundColor: 'transparent', textAlign: 'left', height: '20px', border: 'none' } }}
+              />
+            </>
+          )}
+          
+          {mode === "signup" && isCodeEntryVisible && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                />
+              }
+              label={
+                <Typography variant="body2" color="text.secondary">
+                  I agree to the{" "}
+                  <MuiLink component={Link} href="/terms" sx={{textDecoration: 'underline', color: 'text.primary'}}>
+                    Terms of Service
+                  </MuiLink>
+                  {" and "}
+                  <MuiLink component={Link} href="/privacy" sx={{textDecoration: 'underline', color: 'text.primary'}}>
+                    Privacy Policy
+                  </MuiLink>
+                </Typography>
+              }
+              sx={{ mt: 2, alignItems: 'center' }}
             />
           )}
 
@@ -185,64 +224,73 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
             variant="contained"
             fullWidth
             size="large"
-            sx={{ mt: 2 }}
-            disabled={isSendingCode || isSubmittingCode}
+            sx={{ mt: 2, py: 1.5, textTransform: 'none', fontSize: '1rem', backgroundColor: '#FFFFFF', color: '#000000', borderRadius: 2, '&:hover': { color: '#FFFFFF',backgroundColor: '#1E1E1E' } }}
+            disabled={
+              isSendingCode ||
+              isSubmittingCode ||
+              isOauthLoading ||
+              (isCodeEntryVisible
+                ? mode === "signup" && (!agreedToTerms || code.length !== 6)
+                : !isValidEmail(email))
+            }
           >
             {isSendingCode || isSubmittingCode ? (
               <CircularProgress size={24} color="inherit" />
             ) : isCodeEntryVisible ? (
-              "Verify Code"
+              mode === 'signup' ? 'Sign Up' : 'Log In'
             ) : (
-              "Continue with Email"
+              "Continue"
             )}
           </Button>
         </form>
 
-        <Divider sx={{ my: 3 }}>OR</Divider>
+        <Divider sx={{ my: 4, '&::before, &::after': { borderColor: 'grey.300' } }}>
+            <Typography variant="body2" color="text.secondary">Or continue with</Typography>
+        </Divider>
 
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+        <Box sx={{ display: "flex", flexDirection: "row", gap: 1.5 }}>
           <Button
             variant="outlined"
             fullWidth
             onClick={handleGoogleLogin}
-            disabled={isOauthLoading}
+            disabled={isOauthLoading || isSendingCode || isSubmittingCode}
             startIcon={
-              isOauthLoading ? <CircularProgress size={20} /> :
-              <Image
-                src="/icons/google-logo.svg"
-                alt="Google"
-                width={20}
-                height={20}
-              />
+                <Image
+                  src="/icons/google.svg"
+                  alt="Google"
+                  width={18}
+                  height={18}
+                />
             }
+            sx={{ textTransform: 'none', justifyContent: 'center', py: 1.5, fontSize: '1rem', borderColor: 'grey.300', color: 'text.primary', borderRadius: 2 }}
           >
-            Continue with Google
+            Google
           </Button>
           <Button
             variant="outlined"
             fullWidth
             onClick={handleWalletLogin}
+            disabled={isOauthLoading || isSendingCode || isSubmittingCode}
             startIcon={
-              <Image
-                src="/icons/wallet-logo.svg"
-                alt="Wallet"
-                width={20}
-                height={20}
-              />
+                <Image
+                  src="/icons/placeholder.svg"
+                  alt="Wallet"
+                  width={20}
+                  height={20}
+                />
             }
+            sx={{ textTransform: 'none', justifyContent: 'center', py: 1.5, fontSize: '1rem', borderColor: 'grey.300', color: 'text.primary', borderRadius: 2 }}
           >
-            Continue with Wallet
+            Wallet
           </Button>
         </Box>
-        <Box sx={{ mt: 3, textAlign: "center" }}>
-          <Link href={switchLinkHref} passHref>
-            <Typography
-              component="a"
-              sx={{ textDecoration: "none", color: "primary.main" }}
-            >
-              {switchLinkText}
-            </Typography>
-          </Link>
+        <Box sx={{ mt: 4, textAlign: "center" }}>
+          <Typography variant="body2" color="text.secondary">
+            {mode === 'signup' ? 'Already have an account? ' : "Don't have an account? "}
+            <MuiLink component={Link} href={switchLinkHref} sx={{textDecoration: 'underline', color: 'text.primary', fontWeight: 500}}>
+              {mode === 'signup' ? 'Sign in' : "Sign up"}
+            </MuiLink>
+          </Typography>
         </Box>
       </Box>
     </Box>

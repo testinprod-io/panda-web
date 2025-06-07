@@ -93,7 +93,7 @@ export default function CreatePassword() {
   const displayedError = getDynamicError(password) || error;
   
   if (!ready || !authenticated) {
-      return <div>Loading...</div>
+      return <div></div>
   }
 
   return (
@@ -102,19 +102,27 @@ export default function CreatePassword() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: 'center',
-        height: '100vh',
-        padding: '2rem',
+        justifyContent: "flex-start",
+        minHeight: '100vh',
+        py: 4,
+        px: 2,
         background: "linear-gradient(177deg, white 0%, #FEFEFE 27%, #F6FFFC 75%, #DAF7EF 100%)"
       }}
     >
+      <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', maxWidth: '410px', marginRight: 'auto', mb: 10 }}>
+        <img src="/icons/inverse-icon.png" alt="Panda AI Logo" width={40} height={40} />
+        <Typography fontSize="24px" fontWeight="600" color="#131A28" marginLeft="12px">
+          Panda AI
+        </Typography>
+      </Box>
       <Box
         sx={{
-          width: "372px",
-          margin: "0 auto",
+          width: "100%",
+          maxWidth: "410px",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          gap: "24px",
         }}
       >
         <Box
@@ -122,17 +130,18 @@ export default function CreatePassword() {
             width: "100%",
             display: "flex",
             flexDirection: "column",
-            alignItems: "center",
+            alignItems: "left",
             gap: "12px",
-            marginBottom: "20px",
+            marginTop: "15vh",
+            // marginBottom: "20px",
           }}
         >
-          <Image
+          {/* <Image
             src="/icons/rounded-logo.svg"
             alt="Panda AI Logo"
             width={64}
             height={64}
-          />
+          /> */}
           <Typography
             variant="h5"
             component="div"
@@ -141,7 +150,7 @@ export default function CreatePassword() {
               fontSize: "24px",
               fontFamily: "Inter, sans-serif",
               fontWeight: "600",
-              textAlign: "center"
+              textAlign: "left"
             }}
           >
             Create Encryption Password
@@ -153,7 +162,8 @@ export default function CreatePassword() {
               fontSize: "16px",
               fontFamily: "Inter, sans-serif",
               fontWeight: "400",
-              textAlign: "center"
+              textAlign: "left",
+              marginTop: "24px"
             }}
           >
             To protect your chat data, set a password. If you forget it, you'll need to reset the service, which will permanently delete all data.
@@ -229,7 +239,7 @@ export default function CreatePassword() {
               height: "48px",
               background: !isButtonDisabled ? "#131A28" : "#F3F3F3",
               color: !isButtonDisabled ? "#C1FF83" : "#CACACA",
-              borderRadius: "24px",
+              borderRadius: "8px",
               textTransform: "none",
               fontSize: "16px",
               fontFamily: "Inter, sans-serif",
@@ -249,7 +259,7 @@ export default function CreatePassword() {
             Confirm
           </Button>
 
-          <Button
+          {/* <Button
             variant="outlined"
             fullWidth
             sx={{
@@ -267,7 +277,7 @@ export default function CreatePassword() {
             onClick={handleLogOut}
           >
             Log out
-          </Button>
+          </Button> */}
         </Box>
       </Box>
     </Box>

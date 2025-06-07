@@ -108,7 +108,11 @@ export default function ChatHeader({
   };
 
   const handleOpenLoginPopup = () => {
-    setIsLoginPopupOpen(true);
+    router.push("/login");
+  };
+
+  const handleOpenSignupPopup = () => {
+    router.push("/signup");
   };
 
   const handleCloseLoginPopup = () => {
@@ -465,7 +469,15 @@ export default function ChatHeader({
               size="small"
               className={styles.loginButton}
             >
-              Log in/Sign up
+              Log in
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleOpenSignupPopup}
+              size="small"
+              className={styles.signUpButton}
+            >
+              Sign up
             </Button>
           </>
         )}

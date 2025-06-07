@@ -17,7 +17,7 @@ export default function NewChatPage() {
       }}
     >
       <Image
-        src="/icons/rounded-logo.svg"
+        src="/icons/inverse-icon.png"
         alt="Panda AI Logo"
         width={100}
         height={100}
