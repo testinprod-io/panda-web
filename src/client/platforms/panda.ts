@@ -8,7 +8,10 @@ import {
   RequestMessage,
 } from "@/client/api";
 import { Role } from "@/types";
-
+import {
+  generateChallengeHeaders,
+  verifyChallenge,
+} from "./panda-challenge";
 // Type for the Privy getAccessToken function
 export type GetAccessTokenFn = () => Promise<string | null>;
 
@@ -29,6 +32,7 @@ export interface RequestPayload {
 
 export interface SummaryResponse {
   summary: string;
+  publicCertKey: string;
 }
 
 export class PandaApi implements LLMApi {
@@ -110,12 +114,15 @@ export class PandaApi implements LLMApi {
         use_search: options.config.useSearch ?? false,
       };
 
+      const { challenge, headers: challengeHeaders } = generateChallengeHeaders();
+
       const response = await fetch(requestUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: bearerToken,
           Accept: requestBody.stream ? "text/event-stream" : "application/json",
+          ...challengeHeaders,
         },
         body: JSON.stringify(requestBody),
         signal: controller.signal,
@@ -200,7 +207,8 @@ export class PandaApi implements LLMApi {
         if (inReasoningPhase) {
           options.onReasoningEnd?.(undefined);
         }
-        options.onFinish(mainContentText, timestamp, response);
+        const publicCertKey = verifyChallenge(response, challenge);
+        options.onFinish(mainContentText, timestamp, response, publicCertKey);
       } else {
         const jsonResponse = await response.json();
         timestamp = jsonResponse.created
@@ -221,7 +229,8 @@ export class PandaApi implements LLMApi {
 
         const mainMessageToFinish = finalContent || "";
         options.onContentChunk?.(undefined, mainMessageToFinish);
-        options.onFinish(mainMessageToFinish, timestamp, response);
+        const publicCertKey = verifyChallenge(response, challenge);
+        options.onFinish(mainMessageToFinish, timestamp, response, publicCertKey);
       }
     } catch (error: any) {
       if (error.name !== "AbortError") {
@@ -275,15 +284,20 @@ export class PandaApi implements LLMApi {
         stream: false, // Summary endpoint doesn't support streaming
       };
 
+      const { challenge, headers: challengeHeaders } = generateChallengeHeaders();
+
       const response = await fetch(requestUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: bearerToken,
           Accept: "application/json",
+          ...challengeHeaders,
         },
         body: JSON.stringify(requestBody),
       });
+
+      const publicCertKey = verifyChallenge(response, challenge);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -299,7 +313,10 @@ export class PandaApi implements LLMApi {
       }
 
       const data = (await response.json()) as SummaryResponse;
-      return data;
+      return {
+        ...data,
+        publicCertKey,
+      };
     } catch (error) {
       console.error("[Panda Request] Summary failed", error);
       throw error;

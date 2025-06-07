@@ -159,6 +159,7 @@ export type ChatMessage = Omit<RequestMessage, "content"> & {
   reasoningTime?: number; // Add reasoning duration field
   isReasoning?: boolean; // To track if the message is currently in reasoning phase
   useSearch: boolean; // To track if the message is using search
+  publicCertKey?: string;
 };
 
 /**

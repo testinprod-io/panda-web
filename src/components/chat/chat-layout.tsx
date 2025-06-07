@@ -307,7 +307,7 @@ export default function ChatLayoutContent({
       <Box
         component="main"
         sx={{
-          flexGrow: 1,
+          // flexGrow: 1,
           height: "100%",
           display: "flex",
           overflow: "hidden",
@@ -327,7 +327,7 @@ export default function ChatLayoutContent({
         />
         <Box
           sx={{
-            height: "100%",
+            height: "calc(100% - 112px)",
             width: { xs: "90%", sm: "clamp(540px, 70%, 1200px)" },
             display: "flex",
             flexDirection: "column",

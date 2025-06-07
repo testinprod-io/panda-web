@@ -17,6 +17,7 @@ import { FileInfo, Summary } from "@/client/types";
 import { useEncryption } from "@/providers/encryption-provider";
 import { EncryptionService } from "@/services/encryption-service";
 import { useAppConfig } from "@/store";
+import { useAttestationManager } from "@/hooks/use-attestation-manager";
 
 interface ChatSessionManagerResult {
   displayedMessages: ChatMessage[];
@@ -88,7 +89,7 @@ export function useChatSessionManager(
   } = useChatActions();
   const apiClient = useApiClient();
   const appConfig = useAppConfig();
-
+  const { verifyAttestation, isAppAllowed, attestationResults, verificationStatuses } = useAttestationManager();
   const [displayedMessages, setDisplayedMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMoreServerMessages, setHasMoreServerMessages] = useState(true);
@@ -661,13 +662,14 @@ export function useChatSessionManager(
   );
 
   const finalizeStreamedBotMessage = useCallback(
-    (botMessageId: UUID, finalContent: string, date: Date) => {
+    (botMessageId: UUID, finalContent: string, date: Date, publicCertKey?: string) => {
       setDisplayedMessages((prevMessages) => {
         let messageToSave: ChatMessage | undefined;
         const updatedMessages = prevMessages.map((msg) => {
           if (msg.id === botMessageId) {
             msg.streaming = false;
             msg.content = EncryptionService.encrypt(finalContent);
+            msg.publicCertKey = publicCertKey;
             messageToSave = msg;
             // This is the message that should have been updated by onReasoningChunk, etc.
             // const completeReasoning = msg.reasoning || "";
@@ -900,11 +902,13 @@ export function useChatSessionManager(
           finalMainContent: string,
           timestamp: Date,
           response: Response,
+          publicCertKey: string,
         ) {
           finalizeStreamedBotMessage(
             localBotMessageId,
             finalMainContent,
             new Date(timestamp),
+            publicCertKey
           );
           callbacks?.onSuccess?.(
             localBotMessageId,
@@ -912,6 +916,7 @@ export function useChatSessionManager(
             new Date(timestamp),
           );
           ChatControllerPool.remove(sessionId, localBotMessageId);
+          // const attestationResult = await verifyAttestation(publicCertKey);
         },
         onError(error: Error) {
           console.log(`[useChatSessionManager] onError:`, error);

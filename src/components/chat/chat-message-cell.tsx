@@ -15,7 +15,7 @@ import { FilePreviewItem } from "../ui/file-preview-item";
 import { MessageActionsBar } from "../ui/message-actions-bar";
 import { ReasoningDisplay } from "../ui/reasoning-display";
 import { EditMessageForm } from "../ui/edit-message-form";
-
+import { useAttestationManager } from "@/hooks/use-attestation-manager";
 const Markdown = dynamic(
   async () => (await import("../ui/markdown")).Markdown,
   {
@@ -65,11 +65,14 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     visibleContent: content,
     visibleReasoning: reasoning,
     reasoningTime,
+    publicCertKey,
   } = message;
   const { isLocked } = useEncryption();
   const apiClient = useApiClient();
 
   const loadedFiles = useLoadedFiles(files, sessionId, apiClient, isLocked);
+  const { attestationResults, verifyAttestation } = useAttestationManager();
+
 
   const handleResend = useCallback(
     () => onResend(messageId),
@@ -175,16 +178,6 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
               }
         }
       >
-        {showActions && !isEditing && !(streaming || isReasoning) && (
-            <MessageActionsBar
-              isUser={isUser}
-              isChatLoading={isChatLoading}
-              messageContent={content}
-              reasoningText={reasoning}
-              onResend={handleResend}
-            />
-          )}
-
         {loadedFiles.length > 0 && (
           <Box
             sx={{
@@ -240,6 +233,15 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
             </>
           )}
         </Box>
+        {showActions && !isEditing && !(streaming || isReasoning) && (
+            <MessageActionsBar
+              isUser={isUser}
+              isChatLoading={isChatLoading}
+              messageContent={content}
+              reasoningText={reasoning}
+              onResend={handleResend}
+            />
+          )}
       </Box>
     </div>
   );

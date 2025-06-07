@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Box,
   IconButton,
@@ -25,6 +25,7 @@ import LoginSignupPopup from "../login/login-signup-popup";
 import styles from "./chat-header.module.scss";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
+import { useAttestationManager, VerificationStatus } from "@/hooks/use-attestation-manager";
 
 interface ChatHeaderProps {
   isSidebarCollapsed: boolean;
@@ -42,6 +43,7 @@ export default function ChatHeader({
   const { login, logout, user } = usePrivy();
   const { isReady, isAuthenticated } = useAuthStatus();
   const { models: availableModels, setApiProvider } = useAppConfig();
+  const { verificationStatuses } = useAttestationManager();
 
   const activeSessionModelName = useChatStore(
     (state) => state.currentSession()?.modelConfig?.name,
@@ -68,8 +70,8 @@ export default function ChatHeader({
 
   const [isLoginPopupOpen, setIsLoginPopupOpen] = useState(false);
 
-  const [encryptionStatus, setEncryptionStatus] =
-    useState<EncryptionStatus>("SUCCESSFUL");
+  // const [encryptionStatus, setEncryptionStatus] =
+  //   useState<EncryptionStatus>("SUCCESSFUL");
 
   const handleProfileClick = (event: React.MouseEvent<HTMLElement>) => {
     setProfileAnchorEl(event.currentTarget);
@@ -137,29 +139,32 @@ export default function ChatHeader({
 
   const modelsToDisplay = availableModels;
 
-  const cycleEncryptionStatus = () => {
-    setEncryptionStatus((prevStatus) => {
-      if (prevStatus === "SUCCESSFUL") return "IN_PROGRESS";
-      if (prevStatus === "IN_PROGRESS") return "FAILED";
-      return "SUCCESSFUL";
-    });
-  };
+  // const cycleEncryptionStatus = () => {
+  //   setEncryptionStatus((prevStatus) => {
+  //     if (prevStatus === "SUCCESSFUL") return "IN_PROGRESS";
+  //     if (prevStatus === "IN_PROGRESS") return "FAILED";
+  //     return "SUCCESSFUL";
+  //   });
+  // };
 
-  const getEncryptionStatusInfo = () => {
-    switch (encryptionStatus) {
-      case "SUCCESSFUL":
+  const getEncryptionStatusInfo = useCallback(() => {
+    console.log("MININININ verificationStatuses:", verificationStatuses);
+    const firstStatus = Object.values(verificationStatuses)[0];
+    switch (firstStatus) {
+      case VerificationStatus.AttestationVerified:
+      case VerificationStatus.ContractVerified:
         return {
           text: "Encryption Activated",
           statusClass: styles.encryptionStatusSuccessful,
           icon: "/icons/lock.svg",
         };
-      case "FAILED":
+      case VerificationStatus.Failed:
         return {
           text: "Encryption Failed",
           statusClass: styles.encryptionStatusFailed,
           icon: "/icons/lock.svg",
         };
-      case "IN_PROGRESS":
+      case VerificationStatus.Pending:
         return {
           text: "Encryption Activating",
           statusClass: styles.encryptionStatusInProgress,
@@ -167,12 +172,12 @@ export default function ChatHeader({
         };
       default:
         return {
-          text: "Status Unknown",
+          text: "Encryption Status Unknown",
           statusClass: styles.encryptionStatusUnknown,
           icon: "/icons/lock.svg",
         };
     }
-  };
+  }, [verificationStatuses]);
 
   const currentStatusInfo = getEncryptionStatusInfo();
 
@@ -296,7 +301,7 @@ export default function ChatHeader({
         {isAuthenticated && (
               <Tooltip title="Click to cycle status (Dev only)">
                 <Box
-                  onClick={cycleEncryptionStatus}
+                  // onClick={cycleEncryptionStatus}
                   className={clsx(
                     styles.encryptionStatus,
                     currentStatusInfo.statusClass,

@@ -44,7 +44,7 @@ export interface ChatOptions {
   onReasoningChunk?: (messageId: string | undefined, chunk: string) => void;
   onReasoningEnd?: (messageId?: string) => void;
   onContentChunk?: (messageId: string | undefined, chunk: string) => void;
-  onFinish: (message: string, date: Date, responseRes: Response) => void;
+  onFinish: (message: string, date: Date, responseRes: Response, publicCertKey: string) => void;
   onError?: (err: Error) => void;
   onController?: (controller: AbortController) => void;
 }

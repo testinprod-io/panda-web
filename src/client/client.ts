@@ -59,6 +59,20 @@ export interface UploadFileResponse {
   xhr?: XMLHttpRequest; // Exposed for direct manipulation if needed, though abort() is preferred
 }
 
+export interface EventRecord {
+  imr: number;
+  event_type: number;
+  digest: string;
+  event: string;
+  event_payload: string;
+}
+
+export interface AttestationResponse {
+  quote: string;
+  token: string;
+  event_log: string;
+}
+
 export class ApiClient {
   private baseUrl: string;
   private getAuthToken: () => Promise<string | null>;
@@ -440,5 +454,12 @@ export class ApiClient {
 
   async deleteCustomizedPrompts(): Promise<void> {
     await this.request<void>("DELETE", "/me/customized-prompts");
+  }
+
+  async getAttestation(publicKey: string): Promise<AttestationResponse> {
+    return this.request<AttestationResponse>(
+      "GET",
+      `/attestationTokens/${publicKey}`,
+    );
   }
 }

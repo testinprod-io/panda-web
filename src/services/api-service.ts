@@ -277,7 +277,7 @@ export const ChatApiService = {
       onReasoningChunk?: (messageId: string | undefined, chunk: string) => void;
       onReasoningEnd?: (messageId?: string) => void;
       onContentChunk?: (messageId: string | undefined, chunk: string) => void;
-      onFinish: (message: string, date: Date, responseRes?: any) => void;
+      onFinish: (message: string, date: Date, responseRes: any, publicCertKey: string) => void;
       onError: (error: Error) => void;
       onController?: (controller: AbortController) => void;
     },
