@@ -13,6 +13,7 @@ import { EncryptionService } from "@/services/encryption-service";
 import { PasswordModal } from "@/components/login/password-modal";
 import { useApiClient } from "@/providers/api-client-provider";
 import { usePrivy } from "@privy-io/react-auth";
+import { usePathname } from "next/navigation";
 
 // Define the inactivity timeout (e.g., 15 minutes) in milliseconds
 const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
@@ -21,6 +22,7 @@ interface EncryptionContextType {
   isLocked: boolean;
   unlockApp: (password: string) => Promise<boolean>;
   lockApp: () => void;
+  createPassword: (password: string) => Promise<void>;
 }
 
 const EncryptionContext = createContext<EncryptionContextType | undefined>(
@@ -48,6 +50,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const apiClient = useApiClient();
   const { user, authenticated } = usePrivy();
+  const pathname = usePathname();
 
   // Set up error handling for encryption-related operations
   useEffect(() => {
@@ -108,7 +111,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
       setIsFirstTimeUser(true);
     };
     verifyFirstTimeUser();
-  }, [apiClient]);
+  }, [apiClient, authenticated]);
 
   const resetInactivityTimer = useCallback(() => {
     if (inactivityTimerRef.current) {
@@ -218,6 +221,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         }
         // Ensure app remains locked or in a clear error state
         setIsLocked(true);
+        throw error;
       }
     },
     [apiClient, user?.id, handleUnlockSuccess, handleEncryptionError],
@@ -264,6 +268,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     isLocked,
     unlockApp: contextUnlockApp,
     lockApp,
+    createPassword: handleCreatePassword,
   };
 
   if (!authenticated || isFirstTimeUser === undefined) {
@@ -274,9 +279,11 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     );
   }
 
+  const isSignupPage = pathname.startsWith("/signup");
+
   return (
     <EncryptionContext.Provider value={contextValue}>
-      {isLocked && (
+      {isLocked && !isSignupPage && (
         <>
           {isFirstTimeUser ? (
             <PasswordModal
