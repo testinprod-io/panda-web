@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Modal,
   Box,
@@ -33,6 +33,8 @@ import { useRouter } from "next/navigation";
 import { useApiClient } from "@/providers/api-client-provider";
 import { usePrivy } from "@privy-io/react-auth";
 import { useChatStore } from "@/store";
+import { useAppConfig, useAppConfig as useAppConfigStore } from "@/store/config";
+import { AuthService } from "@/services/auth-service";
 
 interface SettingsModalProps {
   open: boolean;
@@ -68,10 +70,9 @@ export default function SettingsModal({
   };
 
   const handleLogOut = () => {
-    router.replace("/");
-    logout();
-    console.log("Log out on this device clicked");
+    AuthService.handleLogout(logout);
     setDeleteConfirmOpen(false);
+    router.replace("/");
   };
 
   const handleDeleteAllChats = () => {

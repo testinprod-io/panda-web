@@ -1,6 +1,15 @@
 "use client";
 
-import { Box } from "@mui/material";
+import {
+  Box,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+} from "@mui/material";
+import { useState } from "react";
 import { ChatList } from "@/components/chat-list/chat-list";
 import SidebarHeader from "@/components/sidebar/sidebar-header";
 import { useAuthStatus } from "@/hooks/use-auth-status";
@@ -13,6 +22,9 @@ import { useRouter } from "next/navigation";
 import { useEncryption } from "@/providers/encryption-provider";
 import { usePrivy } from "@privy-io/react-auth";
 import { Tooltip } from "@mui/material";
+import { useChatStore } from "@/store/chat";
+import { useAppConfig } from "@/store/config";
+import { AuthService } from "@/services/auth-service";
 
 interface SidebarProps {
   isSidebarCollapsed: boolean;
@@ -29,6 +41,10 @@ export default function Sidebar({
   const router = useRouter();
   const { lockApp } = useEncryption();
   const { logout } = usePrivy();
+  const { authenticated } = usePrivy();
+  const [showConfirm, setShowConfirm] = useState(false);
+  const { sessions, currentSessionIndex, removeSession } = useChatStore();
+  const { models, setApiProvider } = useAppConfig();
 
   if (!isReady || !isAuthenticated) {
     return null;
@@ -47,8 +63,7 @@ export default function Sidebar({
   };
 
   const handleLogout = () => {
-    logout();
-    lockApp();
+    AuthService.handleLogout(logout);
   };
 
   const handleLockServiceClick = () => {

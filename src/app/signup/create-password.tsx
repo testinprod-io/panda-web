@@ -6,6 +6,9 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEncryption } from "@/providers/encryption-provider";
+import { useSnackbar } from "@/providers/snackbar-provider";
+import { AuthService } from "@/services/auth-service";
+import { useForm } from "react-hook-form";
 
 const MIN_PASSWORD_LENGTH = 10;
 const MAX_PASSWORD_LENGTH = 20;
@@ -47,12 +50,18 @@ export default function CreatePassword() {
   const router = useRouter();
   const { user, logout, ready, authenticated } = usePrivy();
   const { isFirstTimeUser, createPassword } = useEncryption();
+  const { showSnackbar } = useSnackbar();
+  const {
+    control,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting, isValid },
+  } = useForm({ mode: "onChange" });
 
   useEffect(() => {
-    // if user is not authenticated, they shouldn't be here.
-    // if (ready && !authenticated) {
-    //   router.replace('/signup');
-    // }
+    if (ready && !authenticated) {
+      router.replace('/signup');
+    }
 
     if (isFirstTimeUser === false) {
       router.replace('/');
@@ -66,7 +75,7 @@ export default function CreatePassword() {
     setError(dynamicError);
   };
 
-  const handleSubmit = useCallback(
+  const handleSubmitForm = useCallback(
     async (event: React.FormEvent) => {
       event.preventDefault();
 
@@ -88,10 +97,19 @@ export default function CreatePassword() {
   );
 
   const handleLogOut = useCallback(() => {
-    logout().then(() => {
-        router.replace("/");
+    AuthService.handleLogout(logout).then(() => {
+      router.push("/");
+    }).catch((error) => {
+      if (error) {
+        console.error("Error creating password:", error);
+        let errorMessage = "An unexpected error occurred.";
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+        showSnackbar(errorMessage, "error");
+      }
     });
-  }, [logout, router]);
+  }, [logout, router, showSnackbar]);
 
   const isButtonDisabled = isSubmitDisabled(password, error);
   const displayedError = getDynamicError(password) || error;
@@ -176,7 +194,7 @@ export default function CreatePassword() {
 
         <Box
           component="form"
-          onSubmit={handleSubmit}
+          onSubmit={handleSubmit(handleSubmitForm)}
           sx={{
             width: "100%",
             display: "flex",

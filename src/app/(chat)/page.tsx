@@ -12,7 +12,6 @@ export default function NewChatPage() {
         flexDirection: "column",
         alignItems: "center",
         textAlign: "center",
-        // marginTop: "26.34vh",
         paddingTop: "0px",
       }}
     >
@@ -21,7 +20,6 @@ export default function NewChatPage() {
         alt="Panda AI Logo"
         width={100}
         height={100}
-        // style={{ width: "9.26vh", height: "9.26vh" }}
       />
       <Typography
         gutterBottom

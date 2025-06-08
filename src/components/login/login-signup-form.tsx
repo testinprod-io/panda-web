@@ -11,8 +11,6 @@ import {
   Checkbox,
   FormControlLabel,
   Link as MuiLink,
-  InputAdornment,
-  IconButton,
 } from "@mui/material";
 import {
   useLoginWithEmail,
@@ -25,7 +23,6 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Visibility, VisibilityOff } from '@mui/icons-material';
 import toast from "react-hot-toast";
 import { useEncryption } from "@/providers/encryption-provider";
 
@@ -44,7 +41,6 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
   const [code, setCode] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
-
   const { ready, authenticated } = usePrivy();
   const { isFirstTimeUser } = useEncryption();
 
@@ -58,12 +54,13 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
     if (isNewUser) {
       router.push("/signup?step=password");
     } else {
-      router.push("/");
+      router.replace("/");
     }
   };
 
   const onError = (error: any) => {
     if (!error) { return; }
+    
     if (error.includes("invalid_credentials")) {
       setCode("");
       toast.dismiss();
@@ -86,11 +83,7 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
   } = useLoginWithOAuth({ onComplete, onError });
   const { login } = useLogin({ onComplete, onError });
 
-
-  console.log("isFirstTimeUser", isFirstTimeUser);
   useEffect(() => {
-    console.log("isFirstTimeUser", isFirstTimeUser);
-    
     if (ready && authenticated) {
       if (isFirstTimeUser === undefined) { 
         return;
@@ -99,7 +92,7 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
       if (window.location.pathname.includes("signup") && isFirstTimeUser === true) {
         router.push("/signup?step=password");
       } else {
-        router.push("/");
+        router.replace("/");
       }
     }
   }, [ready, authenticated, router, isFirstTimeUser]);

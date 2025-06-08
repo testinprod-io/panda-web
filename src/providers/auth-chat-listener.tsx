@@ -7,14 +7,12 @@ import { useChatStore } from "@/store/chat";
 import { useChatActions } from "@/hooks/use-chat-actions";
 import { useState } from "react";
 import { jwtVerify, importSPKI, JWTPayload, importJWK, JWK } from "jose";
+import { AuthService } from "@/services/auth-service";
 
 // Uses the action hook to trigger data loading/clearing based on auth state.
 export function AuthChatListener() {
   const { ready, authenticated } = usePrivy();
   const apiClient = useApiClient();
-
-  // Direct store access for synchronous state clearing on logout
-  const clearState = useChatStore((state) => state.clearCurrentStateToDefault);
 
   // Get actions from the hook
   const actions = useChatActions();
@@ -52,14 +50,14 @@ export function AuthChatListener() {
       console.log(
         `[AuthChatListener] Auth state changed: ${prevAuthState} -> ${authenticated}. Clearing local state.`,
       );
-      clearState();
+      AuthService.clearAllStores();
       setInitialLoadDone(false); // Reset initial load flag
     } else if (!authenticated && !isInitialCheck && initialLoadDone) {
       // Edge case: Logged out state detected after initial load was marked done
       console.log(
         "[AuthChatListener] State inconsistency detected (logged out but initialLoadDone=true). Clearing data.",
       );
-      clearState();
+      AuthService.clearAllStores();
       setInitialLoadDone(false); // Reset flag
     }
 
@@ -74,7 +72,6 @@ export function AuthChatListener() {
     initialLoadDone,
     apiClient,
     actions,
-    clearState,
   ]);
 
   const handleAttestation = async (publicKey: string) => {

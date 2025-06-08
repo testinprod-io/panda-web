@@ -338,10 +338,11 @@ export default function ChatLayoutContent({
         />
         <Box
           sx={{
-            height: "calc(100% - 112px)",
+            height: { xs: "calc(100% - 80px)", sm: "calc(100% - 112px)" },
             width: { xs: "90%", sm: "clamp(540px, 70%, 1200px)" },
             display: "flex",
             flexDirection: "column",
+            gap: "1rem",
           }}
         >
         <Box
@@ -378,6 +379,7 @@ export default function ChatLayoutContent({
             flexDirection: "column",
             justifyContent: "center",
             ...(isNewChatPage && {
+              marginTop: { xs: "auto", sm: "0px" },
             }),
             ...(!isNewChatPage && {
               marginBottom: "0px",

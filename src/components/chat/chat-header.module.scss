@@ -6,6 +6,11 @@
   height: 112px;
   flex-shrink: 0;
   width: 100%;
+
+  @media (max-width: 600px) {
+    padding: 24px 16px;
+    height: 80px;
+  }
 }
 
 .headerLeft {

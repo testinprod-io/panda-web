@@ -9,8 +9,13 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivy, useLogin } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { AuthService } from "@/services/auth-service";
+import CloseIcon from "@mui/icons-material/Close";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { useSnackbar } from "@/providers/snackbar-provider";
 
 const MIN_PASSWORD_LENGTH = 10;
 const MAX_PASSWORD_LENGTH = 20;
@@ -161,8 +166,9 @@ export function PasswordModal({
   );
 
   const handleLogOut = useCallback(() => {
-    router.replace("/");
-    logout();
+    AuthService.handleLogout(logout).then(() => {
+      router.push("/");
+    });
   }, [logout, router]);
 
   useEffect(() => {
@@ -208,19 +214,19 @@ export function PasswordModal({
         },
       }}
       PaperProps={{
-        style: {
+        sx: {
           backgroundColor: "#FFFFFF",
           borderRadius: "8px",
           paddingTop: "40px",
           paddingBottom: "40px",
-          paddingLeft: "86px",
-          paddingRight: "86px",
+          paddingLeft: { xs: "24px", sm: "86px" },
+          paddingRight: { xs: "24px", sm: "86px" },
         },
       }}
     >
       <Box
         sx={{
-          width: "372px",
+          width: "min(372px, 90%)",
           margin: "0 auto",
           display: "flex",
           flexDirection: "column",

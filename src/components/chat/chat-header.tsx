@@ -28,6 +28,7 @@ import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import { useAttestationManager, VerificationResult, VerificationStatus } from "@/hooks/use-attestation-manager";
 import { AttestationResult } from "@/types/attestation";
+import { AuthService } from "@/services/auth-service";
 
 interface ChatHeaderProps {
   currentChatId?: string; 
@@ -93,8 +94,7 @@ export default function ChatHeader({
   };
 
   const handleLogout = () => {
-    handleProfileClose();
-    logout();
+    AuthService.handleLogout(logout);
   };
 
   const handleModelSelect = (modelName: ModelType) => {
@@ -229,6 +229,7 @@ export default function ChatHeader({
               >
                 <img
                   src="/icons/new-chat.svg"
+                  // style={{ filter: "invert(100%) sepia(0%) saturate(7500%) hue-rotate(137deg) brightness(118%) contrast(91%)" }}
                   alt="New Chat"
                   className={styles.headerActionIconImg}
                 />
