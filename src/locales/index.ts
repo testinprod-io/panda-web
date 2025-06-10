@@ -1,5 +1,5 @@
 import en from "./en";
-import ko from "./ko";
+// import ko from "./ko";
 import { merge } from "@/utils/merge";
 import { safeLocalStorage } from "@/utils/utils";
 
@@ -10,7 +10,7 @@ const localStorage = safeLocalStorage();
 
 const ALL_LANGS = {
   en,
-  ko,
+  // ko,
 };
 
 export type Lang = keyof typeof ALL_LANGS;
@@ -19,7 +19,7 @@ export const AllLangs = Object.keys(ALL_LANGS) as Lang[];
 
 export const ALL_LANG_OPTIONS: Record<Lang, string> = {
   en: "English",
-  ko: "한국어",
+  // ko: "한국어",
 };
 
 const LANG_KEY = "lang";

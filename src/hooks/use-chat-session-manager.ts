@@ -323,10 +323,6 @@ export function useChatSessionManager(
         (m.role === Role.USER || m.role === Role.ASSISTANT) &&
         !m.streaming,
     );
-    console.log(
-      `[useChatSessionManager] Non-error messages:`,
-      nonErrorMessages,
-    );
     if (
       nonErrorMessages.length === 2 &&
       nonErrorMessages[0].role === Role.USER &&
@@ -388,10 +384,7 @@ export function useChatSessionManager(
     } else {
       messagesToConsiderForSummarization = displayedMessages; // No summaries yet for this session instance
     }
-    console.log(
-      `[useChatSessionManager] Messages to consider for summarization:`,
-      messagesToConsiderForSummarization,
-    );
+    
     const finalMessagesToConsider = messagesToConsiderForSummarization.filter(
       (msg: ChatMessage) =>
         msg.syncState === MessageSyncState.SYNCED && !msg.isError,

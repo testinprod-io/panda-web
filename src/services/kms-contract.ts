@@ -37,25 +37,37 @@ export const ABI = [
     inputs: [
       {
         indexed: false,
-        internalType: "bytes32",
-        name: "osImageHash",
-        type: "bytes32",
+        internalType: "address",
+        name: "implementation",
+        type: "address",
       },
     ],
-    name: "AppImageMrAdded",
+    name: "AppAuthImplementationSet",
     type: "event",
   },
   {
     anonymous: false,
     inputs: [
       {
-        indexed: false,
-        internalType: "bytes32",
-        name: "osImageHash",
-        type: "bytes32",
+        indexed: true,
+        internalType: "address",
+        name: "appId",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "proxyAddress",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "deployer",
+        type: "address",
       },
     ],
-    name: "AppImageMrRemoved",
+    name: "AppDeployedViaFactory",
     type: "event",
   },
   {
@@ -69,32 +81,6 @@ export const ABI = [
       },
     ],
     name: "AppRegistered",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: false,
-        internalType: "bytes32",
-        name: "mrSystem",
-        type: "bytes32",
-      },
-    ],
-    name: "AppSystemMrAdded",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: false,
-        internalType: "bytes32",
-        name: "mrSystem",
-        type: "bytes32",
-      },
-    ],
-    name: "AppSystemMrRemoved",
     type: "event",
   },
   {
@@ -192,6 +178,32 @@ export const ABI = [
     anonymous: false,
     inputs: [
       {
+        indexed: false,
+        internalType: "bytes32",
+        name: "osImageHash",
+        type: "bytes32",
+      },
+    ],
+    name: "OsImageHashAdded",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: "bytes32",
+        name: "osImageHash",
+        type: "bytes32",
+      },
+    ],
+    name: "OsImageHashRemoved",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
         indexed: true,
         internalType: "address",
         name: "previousOwner",
@@ -228,20 +240,6 @@ export const ABI = [
     type: "function",
   },
   {
-    inputs: [{ internalType: "bytes32", name: "osImageHash", type: "bytes32" }],
-    name: "addAppImageMr",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "bytes32", name: "mrSystem", type: "bytes32" }],
-    name: "addAppSystemMr",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
     inputs: [
       { internalType: "bytes32", name: "mrAggregated", type: "bytes32" },
     ],
@@ -258,16 +256,23 @@ export const ABI = [
     type: "function",
   },
   {
+    inputs: [{ internalType: "bytes32", name: "osImageHash", type: "bytes32" }],
+    name: "addOsImageHash",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
     inputs: [{ internalType: "bytes32", name: "", type: "bytes32" }],
-    name: "appAllowedImages",
+    name: "allowedOsImages",
     outputs: [{ internalType: "bool", name: "", type: "bool" }],
     stateMutability: "view",
     type: "function",
   },
   {
-    inputs: [{ internalType: "bytes32", name: "", type: "bytes32" }],
-    name: "appAllowedSystemMrs",
-    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    inputs: [],
+    name: "appAuthImplementation",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
     stateMutability: "view",
     type: "function",
   },
@@ -282,6 +287,22 @@ export const ABI = [
     type: "function",
   },
   {
+    inputs: [
+      { internalType: "address", name: "initialOwner", type: "address" },
+      { internalType: "bool", name: "disableUpgrades", type: "bool" },
+      { internalType: "bool", name: "allowAnyDevice", type: "bool" },
+      { internalType: "bytes32", name: "initialDeviceId", type: "bytes32" },
+      { internalType: "bytes32", name: "initialComposeHash", type: "bytes32" },
+    ],
+    name: "deployAndRegisterApp",
+    outputs: [
+      { internalType: "address", name: "appId", type: "address" },
+      { internalType: "address", name: "proxyAddress", type: "address" },
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
     inputs: [],
     name: "gatewayAppId",
     outputs: [{ internalType: "string", name: "", type: "string" }],
@@ -291,6 +312,11 @@ export const ABI = [
   {
     inputs: [
       { internalType: "address", name: "initialOwner", type: "address" },
+      {
+        internalType: "address",
+        name: "_appAuthImplementation",
+        type: "address",
+      },
     ],
     name: "initialize",
     outputs: [],
@@ -413,20 +439,6 @@ export const ABI = [
     type: "function",
   },
   {
-    inputs: [{ internalType: "bytes32", name: "osImageHash", type: "bytes32" }],
-    name: "removeAppImageMr",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "bytes32", name: "mrSystem", type: "bytes32" }],
-    name: "removeAppSystemMr",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
     inputs: [
       { internalType: "bytes32", name: "mrAggregated", type: "bytes32" },
     ],
@@ -443,8 +455,24 @@ export const ABI = [
     type: "function",
   },
   {
+    inputs: [{ internalType: "bytes32", name: "osImageHash", type: "bytes32" }],
+    name: "removeOsImageHash",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
     inputs: [],
     name: "renounceOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "_implementation", type: "address" },
+    ],
+    name: "setAppAuthImplementation",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -508,4 +536,6 @@ export const ABI = [
   },
 ];
 
-export const ADDRESS = process.env.NEXT_PUBLIC_KMS_CONTRACT_ADDRESS || "0x3366E906D7C2362cE4C336f43933Cccf76509B23";
+export const ADDRESS =
+  process.env.NEXT_PUBLIC_KMS_CONTRACT_ADDRESS ||
+  "0x3366E906D7C2362cE4C336f43933Cccf76509B23";

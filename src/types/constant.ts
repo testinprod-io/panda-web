@@ -209,7 +209,7 @@ export const DEFAULT_MODELS: AppModelDefinition[] = [
       config = {
         ...BASE_MODEL_CONFIG,
         name: name,
-        displayName: name.split("/")[0],
+        displayName: "Deepseek R1",
         max_tokens: 8000, // Example
         reasoning: true,
         endpoint: defaultEndpoint,
@@ -221,7 +221,7 @@ export const DEFAULT_MODELS: AppModelDefinition[] = [
       config = {
         ...BASE_MODEL_CONFIG,
         name: name,
-        displayName: name.split("/")[0],
+        displayName: "Llama 4 Scout",
         max_tokens: 16000, // Example for vision model
         reasoning: true,
         endpoint: defaultEndpoint,

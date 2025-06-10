@@ -169,7 +169,7 @@ export default function ChatHeader({
       case VerificationStatus.Failed:
         return {
           ...firstStatus,
-          text: "Encryption Failed",
+          text: "Verification Failed",
           statusClass: styles.encryptionStatusFailed,
           icon: "/icons/lock.svg",
         };

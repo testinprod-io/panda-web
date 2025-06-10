@@ -179,7 +179,7 @@ export const EncryptionService = {
 
   decrypt(encryptedText: string): string {
     if (!this.isKeySet()) {
-      console.warn(
+      console.info(
         "[EncryptionService] decrypt called but no key set. Returning plain text.",
       );
       return encryptedText;

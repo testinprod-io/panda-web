@@ -171,9 +171,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
         provisionalSessionIdRef.current = null;
         isProvisionalSessionCommittedRef.current = false;
       }
-    }, [activeSessionId, chatActions]);
-
-    useEffect(() => {}, [attachedFiles]);
+    }, [activeSessionId]);
 
     const debouncedSaveInput = useDebouncedCallback(
       (
