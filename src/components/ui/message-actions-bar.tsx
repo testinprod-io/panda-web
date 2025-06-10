@@ -45,7 +45,7 @@ const AttestationInfoPopup: React.FC<{
       >
         <strong>Challenge Text:</strong>{" "}
         <a
-          href={`https://www.youtube.com/watch?v=xvFZjo5PgG0`}
+          href={`https://etherscan.io/`}
           target="_blank"
           rel="noopener noreferrer"
           style={{ color: "black" }}
@@ -60,7 +60,7 @@ const AttestationInfoPopup: React.FC<{
         >
           <strong>Certificate Key:</strong>{" "}
           <a
-            href={`https://www.youtube.com/watch?v=xvFZjo5PgG0`}
+            href={`https://etherscan.io/`}
             target="_blank"
             rel="noopener noreferrer"
             style={{ color: "black" }}
@@ -92,7 +92,7 @@ const AttestationInfoPopup: React.FC<{
       >
         <strong>Challenge Text:</strong>{" "}
         <a
-          href={`https://www.youtube.com/watch?v=xvFZjo5PgG0`}
+          href={`https://etherscan.io/`}
           target="_blank"
           rel="noopener noreferrer"
           style={{ color: "black" }}
@@ -107,7 +107,7 @@ const AttestationInfoPopup: React.FC<{
         >
           <strong>Certificate Key:</strong>{" "}
           <a
-            href={`https://www.youtube.com/watch?v=xvFZjo5PgG0`}
+            href={`https://etherscan.io/`}
             target="_blank"
             rel="noopener noreferrer"
             style={{ color: "black" }}
@@ -131,7 +131,7 @@ const AttestationInfoPopup: React.FC<{
       >
         <strong>AppID:</strong>{" "}
         <a
-          href={`https://www.youtube.com/watch?v=xvFZjo5PgG0`}
+          href={`https://etherscan.io/`}
           target="_blank"
           rel="noopener noreferrer"
           style={{ color: "black" }}
@@ -146,7 +146,7 @@ const AttestationInfoPopup: React.FC<{
       >
         <strong>AppHash:</strong>{" "}
         <a
-          href={`https://www.youtube.com/watch?v=xvFZjo5PgG0`}
+          href={`https://etherscan.io/`}
           target="_blank"
           rel="noopener noreferrer"
           style={{ color: "black" }}
@@ -161,7 +161,7 @@ const AttestationInfoPopup: React.FC<{
       >
         <strong>Challenge Text:</strong>{" "}
         <a
-          href={`https://www.youtube.com/watch?v=xvFZjo5PgG0`}
+          href={`https://etherscan.io/`}
           target="_blank"
           rel="noopener noreferrer"
           style={{ color: "black" }}
@@ -176,7 +176,7 @@ const AttestationInfoPopup: React.FC<{
         sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
       >
         <a
-          href="https://www.youtube.com/watch?v=xvFZjo5PgG0"
+          href="https://etherscan.io/"
           target="_blank"
           rel="noopener noreferrer"
           style={{ color: "black" }}
@@ -203,15 +203,10 @@ export const MessageActionsBar: React.FC<MessageActionsBarProps> = ({
     : contentToCopy;
 
   let attestationIcon: React.ReactNode = null;
-  console.log("MININININ verificationResult:", verificationResult);
   if (verificationResult && challengeResponse) {
     let icon: React.ReactNode = null;
 
     if (verificationResult.status === VerificationStatus.Pending) {
-      console.log(
-        "MININININ verificationResult.status:",
-        verificationResult.status
-      );
       icon = (
         <CircularProgress
           size={16}

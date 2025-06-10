@@ -52,7 +52,7 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
     loginAccount: LinkedAccountWithMetadata | null;
   }) => {
     if (isNewUser) {
-      router.push("/signup?step=password");
+      router.push("/signup?step=create-password");
     } else {
       router.replace("/");
     }
@@ -90,7 +90,7 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
       }
       
       if (window.location.pathname.includes("signup") && isFirstTimeUser === true) {
-        router.push("/signup?step=password");
+        router.push("/signup?step=create-password");
       } else {
         router.replace("/");
       }

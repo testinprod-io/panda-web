@@ -267,6 +267,12 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     }
   }, [user, isLocked, lockApp]);
 
+  useEffect(() => {
+    if (router && isFirstTimeUser === true) {
+      router.push("/signup?step=create-password");
+    }
+  }, [isFirstTimeUser, router]);
+
   const contextValue: EncryptionContextType = {
     isLocked,
     isFirstTimeUser,
@@ -283,10 +289,6 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     );
   }
 
-    if (router && isFirstTimeUser === true) { 
-      router.push("/signup?step=create-password");
-    }
-
   const isSignupPage = pathname.startsWith("/signup");
   const isOnboardingPage = pathname.startsWith("/onboarding");
   const showUnlockModal = isLocked && !isSignupPage && isFirstTimeUser === false;
@@ -296,7 +298,6 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
       {showUnlockModal && (
         <PasswordModal
           open={true}
-          modalType="unlock"
           onUnlockSubmit={contextUnlockApp}
           onClose={() => {
             console.log(

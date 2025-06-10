@@ -102,11 +102,11 @@ Latex inline: \\(x^2\\)
 Latex block: $$e=mc^2$$
 `;
 
-export const DEFAULT_PANDA_MODEL_NAME = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B";
+export const DEFAULT_PANDA_MODEL_NAME = "ig1/r1-1776-AWQ";
 
 export const KnowledgeCutOffDate: Record<string, string> = {
   default: "2023-10",
-  "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B": "2023-10",
+  "ig1/r1-1776-AWQ": "2023-10",
   "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16": "2024-01", // Example, adjust if needed
 };
 
@@ -122,7 +122,7 @@ function getModelEndpointEnvVarName(modelName: string): string {
 }
 
 const PandaModels = [
-  "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+  "ig1/r1-1776-AWQ",
   "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16",
 ];
 
@@ -195,7 +195,7 @@ export const DEFAULT_MODELS: AppModelDefinition[] = [
     // Default endpoint, can be overridden by environment variables
     let defaultEndpoint = "";
     let description = "";
-    if (name === "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B") {
+    if (name === "ig1/r1-1776-AWQ") {
       defaultEndpoint = process.env.NEXT_PUBLIC_LLM_SERVER_ENDPOINT || "";
       description = "Great for most tasks";
     } else if (
@@ -205,7 +205,7 @@ export const DEFAULT_MODELS: AppModelDefinition[] = [
       description = "Great for handling files and photos";
     }
 
-    if (name === "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B") {
+    if (name === "ig1/r1-1776-AWQ") {
       config = {
         ...BASE_MODEL_CONFIG,
         name: name,

@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useEffect, FC } from "react";
+import { useState, useEffect, FC, CSSProperties } from "react";
 import { Typography } from "@mui/material";
 
 interface StreamingTextProps {
   text: string;
-  className?: string;
+  style?: CSSProperties;
   streamSpeed?: number;
 }
 
 const StreamingText: FC<StreamingTextProps> = ({
   text,
-  className,
+  style,
   streamSpeed = 20,
 }) => {
   const [displayedText, setDisplayedText] = useState("");
@@ -36,7 +36,7 @@ const StreamingText: FC<StreamingTextProps> = ({
   }, [text, streamSpeed]);
 
   return (
-    <Typography variant="h6" align="left" className={className}>
+    <Typography variant="h6" align="left" style={style}>
       {displayedText}
     </Typography>
   );

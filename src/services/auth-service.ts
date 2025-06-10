@@ -14,11 +14,18 @@ const clearAllStores = () => {
   console.log("[AuthService] All stores cleared.");
 };
 
-const handleLogout = async (privyLogout: () => Promise<void>) => {
+const handleLogout = async (privyLogout: () => Promise<void>, lockApp: () => void) => {
   console.log("[AuthService] Logging out...");
   try {
     await privyLogout();
-    useEncryption().lockApp();
+    lockApp();
+    useChatStore.getState().clearCurrentStateToDefault();
+    useAppConfig.getState().reset();
+  // Reset attestation store
+    useAttestationStore.setState({
+    attestationResults: {},
+    verificationResults: {},
+  });
     clearAllStores();
     // The listener will handle the clearing now
   } catch (error) {

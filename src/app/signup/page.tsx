@@ -10,7 +10,7 @@ function SignUpPageContent() {
   const searchParams = useSearchParams();
   const step = searchParams.get("step");
 
-  if (step === "password") {
+  if (step === "create-password") {
     return <CreatePassword />;
   }
 

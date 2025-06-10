@@ -11,10 +11,9 @@ import {
 } from "@/types";
 import { Box, Button, CircularProgress, Typography } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
-import TextInputStep from "./components/TextInputStep";
-import TraitsStepView from "./components/TraitsStepView";
-import StreamingText from "./components/StreamingText";
-import styles from "./onboarding.module.scss";
+import TextInputStep from "@/components/onboarding/TextInputStep";
+import TraitsStepView from "@/components/onboarding/TraitsStepView";
+import StreamingText from "@/components/onboarding/StreamingText";
 
 const STEPS = ["intro", "name", "role", "traits", "knowledge"];
 
@@ -93,7 +92,7 @@ export default function OnboardingView() {
     try {
       const encryptedPayload = encryptSystemPrompt(payload);
       const responseData = decryptSystemPrompt(
-        await apiClient.app.createCustomizedPrompts(encryptedPayload),
+        await apiClient.app.createCustomizedPrompts(encryptedPayload)
       );
       setCustomizedPrompts(responseData);
       router.push("/");
@@ -113,23 +112,34 @@ export default function OnboardingView() {
 
   if (step === STEPS.length || isSaving) {
     return (
-      <Box className={styles.container} style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh",
-      }}>
-        <Box className={styles.content}>
+      <Box
+        key="container"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          backgroundColor: "#FFFFFF",
+          color: "#1E1E1E",
+        }}
+      >
+        <Box
+          key="content"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            width: "100vh",
+            maxWidth: "500px",
+            gap: "1.5rem",
+          }}
+        >
           <CircularProgress color="inherit" />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-          >
-            {/* <Typography sx={{ color: "black", mt: 2 }}>
-              Personalizing your experience...
-            </Typography> */}
-          </motion.div>
+          ></motion.div>
         </Box>
       </Box>
     );
@@ -152,22 +162,21 @@ export default function OnboardingView() {
               case "intro":
                 return (
                   <Button
-              type="submit" 
-              variant="contained"
-              onClick={() => handleNext("")}
-              sx={{
-                alignSelf: "flex-start",
-                height: "48px",
-                backgroundColor: "#131A28",
-                color: "#C1FF83",
-                borderRadius: "8px",
-                textTransform: "none",
-                fontSize: "16px",
-              }}
-              // className={styles.sendButton}
-            >
-              Continue
-            </Button>
+                    type="submit"
+                    variant="contained"
+                    onClick={() => handleNext("")}
+                    sx={{
+                      alignSelf: "flex-start",
+                      height: "48px",
+                      backgroundColor: "#131A28",
+                      color: "#C1FF83",
+                      borderRadius: "8px",
+                      textTransform: "none",
+                      fontSize: "16px",
+                    }}
+                  >
+                    Continue
+                  </Button>
                 );
               case "name":
                 return (
@@ -224,7 +233,14 @@ export default function OnboardingView() {
   };
 
   return (
-    <Box className={styles.container}>
+    <Box key="container" style={{
+      display: "flex",
+      flexDirection: "column",
+      height: "100vh",
+      backgroundColor: "#FFFFFF",
+      color: "#1E1E1E",
+    }}
+    >
       <Box
         sx={{
           display: "flex",
@@ -266,7 +282,13 @@ export default function OnboardingView() {
             Panda
           </Typography>
         </Box>
-        <Box className={styles.content}>
+        <Box key="content" style={{
+          display: "flex", 
+          flexDirection:"column",
+          width: "100vh", 
+          maxWidth: "500px",
+          gap:"1.5rem",
+        }}>
           <motion.div
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -280,7 +302,11 @@ export default function OnboardingView() {
           </motion.div>
           <StreamingText
             text={getQuestion(currentStepKey, data.name)}
-            className={styles.question}
+            style={{
+              fontSize: "2rem",
+              marginBottom: "2.5rem",
+              maxWidth: "80%",
+            }}
           />
           {renderStepContent()}
         </Box>

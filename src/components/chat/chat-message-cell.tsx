@@ -96,7 +96,9 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
         const attestationResult = await verifyAttestation(key);
         const verificationResult = await verifyContract(key, attestationResult);
         setVerificationResult(verificationResult);
-      } catch {
+      } catch (error) {
+        console.log("error verifying attestation for publicKeyHex:", key);
+        console.log("error:", error);
         setVerificationResult({
           status: VerificationStatus.Pending,
           attestationResult: undefined,

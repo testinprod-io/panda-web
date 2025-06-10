@@ -11,26 +11,18 @@ import { SnackbarProvider } from "@/providers/snackbar-provider";
 import { AuthChatListener } from "@/providers/auth-chat-listener";
 import { ApiClientProvider } from "@/providers/api-client-provider";
 import { EncryptionProvider } from "@/providers/encryption-provider";
-// import { optimism } from "viem/chains";
-
 
 function AuthenticatedContentWrapper({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // const { authenticated } = usePrivy();
-
   return (
     <>
-      {/* {authenticated ? ( */}
         <EncryptionProvider>
           <AuthChatListener />
           <SnackbarProvider>{children}</SnackbarProvider>
         </EncryptionProvider>
-      {/* ) : (
-        <SnackbarProvider>{children}</SnackbarProvider>
-      )} */}
     </>
   );
 }

@@ -87,7 +87,6 @@ export const FilePreviewItem: React.FC<FilePreviewItemProps> = ({
 
   // Successfully loaded file
   const commonDivProps = {
-    key: file.id || file.name, // Removed file.clientId as it may not exist
     className: clsx(
       styles["attach-file-item"],
       isImage

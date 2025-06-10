@@ -76,7 +76,7 @@ export default function ChatPage() {
         toast.error(`Chat session not found: ${chatId || "Invalid ID"}`);
         router.replace("/");
       } else if (isAuthReady && !isAuthenticated) {
-        toast.error("Please log in to access chat sessions.");
+        // toast.error("Please log in to access chat sessions.");
         router.replace("/");
       }
     }

@@ -22,14 +22,13 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useAuthStatus } from "@/hooks/use-auth-status";
 import { useAppConfig, useChatStore } from "@/store";
 import { DEFAULT_MODELS, ModelType } from "@/types/constant";
-import LoginSignupPopup from "../login/login-signup-popup";
 import styles from "./chat-header.module.scss";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import { useAttestationManager, VerificationResult, VerificationStatus } from "@/hooks/use-attestation-manager";
 import { AttestationResult } from "@/types/attestation";
 import { AuthService } from "@/services/auth-service";
-
+import { useEncryption } from "@/providers/encryption-provider";
 interface ChatHeaderProps {
   currentChatId?: string; 
   isSidebarCollapsed: boolean;
@@ -49,6 +48,7 @@ export default function ChatHeader({
   const { isReady, isAuthenticated } = useAuthStatus();
   const { models: availableModels, setApiProvider } = useAppConfig();
   const { verificationResults } = useAttestationManager();
+  const { lockApp } = useEncryption();
 
   const activeSessionModelName = useChatStore(
     (state) => state.currentSession()?.modelConfig?.name,
@@ -94,7 +94,7 @@ export default function ChatHeader({
   };
 
   const handleLogout = () => {
-    AuthService.handleLogout(logout);
+    AuthService.handleLogout(logout, lockApp);
   };
 
   const handleModelSelect = (modelName: ModelType) => {
@@ -156,7 +156,7 @@ export default function ChatHeader({
   // };
 
   const getEncryptionStatusInfo = useCallback(() => {
-    console.log("MININININ verificationResults:", verificationResults);
+    console.log("verificationResults:", verificationResults);
     const firstStatus = Object.values(verificationResults)[0];
     switch (firstStatus && firstStatus.status) {
       case VerificationStatus.AttestationVerified:
@@ -483,12 +483,12 @@ export default function ChatHeader({
           </>
         )}
       </Box>
-      <LoginSignupPopup
+      {/* <LoginSignupPopup
         open={isLoginPopupOpen}
         onClose={handleCloseLoginPopup}
         onLogin={handlePopupLogin}
         onSignup={handlePopupSignup}
-      />
+      /> */}
     </Box>
   );
 }
@@ -500,21 +500,21 @@ const CertificateInfoPopup: React.FC<{
   return (
     <Box sx={{ p: 1, maxWidth: 300 }}>
       <Typography variant="subtitle2" gutterBottom sx={{ color: "black" }}>
-        🔒 Verified secure execution <a href="https://www.youtube.com/watch?v=xvFZjo5PgG0" target="_blank" rel="noopener noreferrer" style={{ color: "black" }}>Learn more</a>
+        🔒 Verified secure execution <a href="https://etherscan.io/" target="_blank" rel="noopener noreferrer" style={{ color: "black" }}>Learn more</a>
       </Typography>
       <Typography
         variant="body2"
         key={"AppID"}
         sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
       >
-        <strong>Currently connected certificate:</strong> <a href={`https://www.youtube.com/watch?v=xvFZjo5PgG0`} target="_blank" rel="noopener noreferrer" style={{ color: "black" }}>{publicKey}</a>
+        <strong>Currently connected certificate:</strong> <a href={`https://etherscan.io/`} target="_blank" rel="noopener noreferrer" style={{ color: "black" }}>{publicKey}</a>
       </Typography>
       {/* <Typography
         variant="body2"
         key={"AppHash"}
         sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
       >
-        <strong>AppHash:</strong> <a href={`https://www.youtube.com/watch?v=xvFZjo5PgG0`} target="_blank" rel="noopener noreferrer" style={{ color: "black" }}>{attestationResult.composeHash}</a>
+        <strong>AppHash:</strong> <a href={`https://etherscan.io/`} target="_blank" rel="noopener noreferrer" style={{ color: "black" }}>{attestationResult.composeHash}</a>
       </Typography>
 
       <Typography
@@ -522,7 +522,7 @@ const CertificateInfoPopup: React.FC<{
         key={"Help"}
         sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
       >
-        <a href="https://www.youtube.com/watch?v=xvFZjo5PgG0" target="_blank" rel="noopener noreferrer" style={{ color: "black" }}><strong>Help?</strong></a>
+        <a href="https://etherscan.io/" target="_blank" rel="noopener noreferrer" style={{ color: "black" }}><strong>Help?</strong></a>
       </Typography> */}
 
       {/* {Object.entries(attestationResult).map(([key, value]) => (

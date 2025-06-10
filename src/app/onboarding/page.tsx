@@ -4,7 +4,6 @@ import { useApiClient } from "@/providers/api-client-provider";
 import { useRouter } from "next/navigation";
 import OnboardingView from "./onboarding-view";
 import { Box, CircularProgress } from "@mui/material";
-import styles from "./onboarding.module.scss";
 import { usePrivy } from "@privy-io/react-auth";
 export default function OnboardingPage() {
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
@@ -43,11 +42,14 @@ export default function OnboardingPage() {
 
   if (needsOnboarding === null) {
     return (
-      <Box className={styles.container} style={{
+      <Box style={{
         display: "flex",
+        flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
         height: "100vh",
+        backgroundColor: "#FFFFFF",
+        color: "#1E1E1E",
       }}>
         <CircularProgress color="inherit" />
       </Box>

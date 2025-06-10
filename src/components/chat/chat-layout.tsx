@@ -44,7 +44,7 @@ export default function ChatLayoutContent({
   children: React.ReactNode;
 }) {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
     isMobile ? true : false,
   );
@@ -207,9 +207,6 @@ export default function ChatLayoutContent({
     );
   }
 
-  console.log(
-    `isChatComponentBusyFromStore || internalIsSubmitting: ${isChatComponentBusyFromStore} || ${internalIsSubmitting}`,
-  );
   return (
     <Box
       sx={{
@@ -338,8 +335,8 @@ export default function ChatLayoutContent({
         />
         <Box
           sx={{
-            height: { xs: "calc(100% - 80px)", sm: "calc(100% - 112px)" },
-            width: { xs: "90%", sm: "clamp(540px, 70%, 1200px)" },
+            height: { xs: "calc(100% - 80px)", md: "calc(100% - 112px)" },
+            width: { xs: "90%", md: "clamp(540px, 70%, 1200px)" },
             display: "flex",
             flexDirection: "column",
             gap: "1rem",
@@ -385,6 +382,7 @@ export default function ChatLayoutContent({
               marginBottom: "0px",
               flexShrink: 0,
             }),
+            marginBottom: "8px",
           }}
         >
           <ChatInputPanel
@@ -408,6 +406,7 @@ export default function ChatLayoutContent({
             }
           />
         <Typography
+          hidden={isMobile}
           sx={{
             minWidth: { xs: "auto", md: "460px" },
             textAlign: "center",
@@ -417,7 +416,6 @@ export default function ChatLayoutContent({
             fontWeight: "400",
             lineHeight: "32px",
             wordWrap: "break-word",
-            marginTop: "8px",
             marginBottom: "16px",
             paddingLeft: "16px",
             paddingRight: "16px",

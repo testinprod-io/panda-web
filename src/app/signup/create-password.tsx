@@ -4,11 +4,10 @@ import React, { useState, useCallback, useEffect } from "react";
 import { TextField, Button, Box, Typography } from "@mui/material";
 import { usePrivy } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { useEncryption } from "@/providers/encryption-provider";
 import { useSnackbar } from "@/providers/snackbar-provider";
 import { AuthService } from "@/services/auth-service";
-import { useForm } from "react-hook-form";
+// import { useForm } from "react-hook-form";
 
 const MIN_PASSWORD_LENGTH = 10;
 const MAX_PASSWORD_LENGTH = 20;
@@ -51,12 +50,12 @@ export default function CreatePassword() {
   const { user, logout, ready, authenticated } = usePrivy();
   const { isFirstTimeUser, createPassword } = useEncryption();
   const { showSnackbar } = useSnackbar();
-  const {
-    control,
-    handleSubmit,
-    watch,
-    formState: { errors, isSubmitting, isValid },
-  } = useForm({ mode: "onChange" });
+  // const {
+  //   control,
+  //   handleSubmit,
+  //   watch,
+  //   formState: { errors, isSubmitting, isValid },
+  // } = useForm({ mode: "onChange" });
 
   useEffect(() => {
     if (ready && !authenticated) {
@@ -97,18 +96,6 @@ export default function CreatePassword() {
   );
 
   const handleLogOut = useCallback(() => {
-    AuthService.handleLogout(logout).then(() => {
-      router.push("/");
-    }).catch((error) => {
-      if (error) {
-        console.error("Error creating password:", error);
-        let errorMessage = "An unexpected error occurred.";
-        if (error instanceof Error) {
-          errorMessage = error.message;
-        }
-        showSnackbar(errorMessage, "error");
-      }
-    });
   }, [logout, router, showSnackbar]);
 
   const isButtonDisabled = isSubmitDisabled(password, error);
@@ -194,7 +181,7 @@ export default function CreatePassword() {
 
         <Box
           component="form"
-          onSubmit={handleSubmit(handleSubmitForm)}
+          onSubmit={handleSubmitForm}
           sx={{
             width: "100%",
             display: "flex",

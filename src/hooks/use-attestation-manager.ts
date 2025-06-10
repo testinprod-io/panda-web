@@ -5,13 +5,10 @@ import {
   EventLogEntry,
   AttestationResult,
 } from "@/types/attestation";
-import { useCallback, useEffect } from "react";
+import { useCallback} from "react";
 
 import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { useChatStore } from "@/store/chat";
-import { useChatActions } from "@/hooks/use-chat-actions";
-import { useState } from "react";
-import { jwtVerify, importSPKI, JWTPayload, importJWK, JWK } from "jose";
+import { jwtVerify,  JWTPayload, importJWK, JWK } from "jose";
 import { ADDRESS, ABI } from "@/services/kms-contract";
 import { sepolia } from "viem/chains";
 import { createPublicClient, Hex, custom } from "viem";
@@ -31,7 +28,6 @@ export interface VerificationResult {
 
 export function useAttestationManager() {
   const apiClient = useApiClient();
-  const { ready, authenticated } = usePrivy();
   const { wallets } = useWallets();
 
   const {
@@ -118,7 +114,9 @@ export function useAttestationManager() {
 
   const verifyAttestation = useCallback(
     async (publicKeyHex: string): Promise<AttestationResult> => {
+      console.log("verifying attestation for publicKeyHex:", publicKeyHex);
       if (attestationResults[publicKeyHex]) {
+        console.log("attestation already verified, returning true");
         verifyContract(publicKeyHex, attestationResults[publicKeyHex]);
         return attestationResults[publicKeyHex];
       }
@@ -176,7 +174,7 @@ export function useAttestationManager() {
       );
       const deviceId = bufferToHex(deviceIdBuffer);
 
-      console.log(attestationResponse);
+      console.log("attestationResponse:", attestationResponse);
 
       // 8) Replay event_log to recompute RTMR[] values
       const eventLog: EventLogEntry[] = JSON.parse(
@@ -299,21 +297,18 @@ export function useAttestationManager() {
       const mrImage = bufferToHex(mrImageBuffer);
 
       // 13) (Optional) Verify a hardcoded expected mr_image:
-      const expectedMrImage =
-        "36ac6151fcd827d0d78822c57db7c98ff0da2218c12e11f76ac15399b1c193ee";
+      const expectedMrImage = process.env.NEXT_PUBLIC_OS_IMAGE_HASH;
       if (mrImage !== expectedMrImage) {
         throw new Error(
-          `mr_image mismatch:\n  expected ${expectedMrImage}\n  got      ${mrImage}`
+          `mr_image mismatch: expected ${expectedMrImage}, got ${mrImage}`
         );
       }
 
       // 14) Log or return the fields needed for KmsAuth.isAppAllowed():
-      //     { appId, mrSystem, mrImage, composeHash, deviceId }
       console.log("appId:", appId);
       console.log("composeHash:", composeHash);
       console.log("instanceId:", instanceId);
       console.log("deviceId:", deviceId);
-      //mraggre
       console.log("mrAggregated:", mrAggregated);
       console.log("mrSystem:", mrSystem);
       console.log("mrImage:", mrImage);
@@ -342,10 +337,6 @@ export function useAttestationManager() {
       verifyContract(publicKeyHex, attestationResult);
       
       return attestationResult;
-      // const { payload } = await jwtVerify(attestationToken.token, keyForVerification, {
-      //   algorithms: ["RS256"],
-      // });
-      // return attestationToken;
     },
     [apiClient, attestationResults, verifyContract, setAttestationResult, setVerificationResult]
   );

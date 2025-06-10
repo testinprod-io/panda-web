@@ -85,10 +85,8 @@ export class PandaApi implements LLMApi {
     let reasoningStartedForThisMessage = false;
     let mainContentText = "";
     let timestamp = new Date();
-    const usePdf = messages.some(
-      (v) =>
-        Array.isArray(v.content) && v.content.some((c) => c.type === "pdf_url"),
-    );
+    const lastMessage = messages[messages.length - 1];
+    const usePdf = Array.isArray(lastMessage.content) && lastMessage.content.some((c) => c.type === "pdf_url");
 
     try {
       const accessToken = await this.getAccessToken();

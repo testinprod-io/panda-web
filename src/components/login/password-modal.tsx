@@ -9,59 +9,12 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import { usePrivy, useLogin } from "@privy-io/react-auth";
+import { usePrivy } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
 import { AuthService } from "@/services/auth-service";
-import CloseIcon from "@mui/icons-material/Close";
-import { Visibility, VisibilityOff } from "@mui/icons-material";
-import { useSnackbar } from "@/providers/snackbar-provider";
-
-const MIN_PASSWORD_LENGTH = 10;
-const MAX_PASSWORD_LENGTH = 20;
+import { useEncryption } from "@/providers/encryption-provider";
 
 const MODAL_CONFIG = {
-  create: {
-    iconSrc: "/icons/rounded-logo.svg",
-    iconAlt: "Lock Icon",
-    // iconBackgroundColor: "#C1FF83",
-    // iconFilter:
-    //   "invert(0%) sepia(0%) saturate(23%) hue-rotate(67deg) brightness(104%) contrast(103%)",
-    title: "Create Encryption Password",
-    description:
-      "To protect your chat data, set a password. If you forget it, you'll need to reset the service, which will permanently delete all data",
-    submitButtonText: "Confirm",
-    textFieldPlaceholder: `Enter ${MIN_PASSWORD_LENGTH}–${MAX_PASSWORD_LENGTH} characters.`,
-    getDynamicError: (password: string) => {
-      if (
-        password &&
-        (password.length < MIN_PASSWORD_LENGTH ||
-          password.length > MAX_PASSWORD_LENGTH)
-      ) {
-        return `*Password must be ${MIN_PASSWORD_LENGTH}-${MAX_PASSWORD_LENGTH} characters.`;
-      }
-      return "";
-    },
-    validateSubmit: (password: string) => {
-      if (!password) return "Password cannot be empty.";
-      if (
-        password.length < MIN_PASSWORD_LENGTH ||
-        password.length > MAX_PASSWORD_LENGTH
-      ) {
-        return `Password must be between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters.`;
-      }
-      return null;
-    },
-    isSubmitDisabled: (password: string, error: string) => {
-      return (
-        !password ||
-        password.length < MIN_PASSWORD_LENGTH ||
-        password.length > MAX_PASSWORD_LENGTH ||
-        !!error
-      );
-    },
-  },
-  unlock: {
     iconSrc: "/icons/rounded-logo.svg",
     iconAlt: "Lock Icon",
     // iconBackgroundColor: "#F33D4F",
@@ -80,45 +33,37 @@ const MODAL_CONFIG = {
     },
     isSubmitDisabled: (password: string, _error: string) => {
       return !password;
-    },
   },
 };
 
 interface PasswordModalProps {
   open: boolean;
-  modalType: "create" | "unlock";
   onUnlockSubmit?: (password: string) => Promise<boolean>;
   onCreateSubmit?: (password: string) => void;
   onClose?: () => void;
   initialPassword?: string;
-  enableKeydownDebugToggle?: boolean;
 }
 
 export function PasswordModal({
   open,
-  modalType,
   onUnlockSubmit,
   onCreateSubmit,
   onClose,
   initialPassword = "",
-  enableKeydownDebugToggle,
 }: PasswordModalProps) {
   const [password, setPassword] = useState(initialPassword);
   const [error, setError] = useState("");
-  const [debugMode, setDebugMode] = useState(false);
   const router = useRouter();
   const { logout } = usePrivy();
-  const currentConfig = MODAL_CONFIG[modalType];
-
-  const actualEnableKeydownDebugToggle =
-    enableKeydownDebugToggle ?? modalType === "unlock";
+  const { lockApp } = useEncryption();
+  const currentConfig = MODAL_CONFIG;
 
   useEffect(() => {
     if (open) {
       setPassword(initialPassword);
       setError(currentConfig.getDynamicError(initialPassword));
     }
-  }, [open, modalType, initialPassword, currentConfig]);
+  }, [open, initialPassword, currentConfig]);
 
   const handlePasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newPassword = event.target.value;
@@ -139,7 +84,6 @@ export function PasswordModal({
       setError("");
 
       try {
-        if (modalType === "unlock") {
           if (!onUnlockSubmit) {
             setError("Configuration error: Unlock callback missing.");
             return;
@@ -151,37 +95,19 @@ export function PasswordModal({
           } else {
             setError("*Incorrect password");
           }
-        } else if (modalType === "create") {
-          if (!onCreateSubmit) {
-            setError("Configuration error: Create callback missing.");
-            return;
-          }
-          onCreateSubmit(password);
-        }
+      
       } catch (err: any) {
         setError(`Error: ${err.message || "Failed to process password"}`);
       }
     },
-    [password, modalType, onUnlockSubmit, onCreateSubmit, currentConfig],
+    [password, onUnlockSubmit, onCreateSubmit, currentConfig],
   );
 
   const handleLogOut = useCallback(() => {
-    AuthService.handleLogout(logout).then(() => {
+    AuthService.handleLogout(logout, lockApp).then(() => {
       router.push("/");
     });
   }, [logout, router]);
-
-  useEffect(() => {
-    if (actualEnableKeydownDebugToggle) {
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.shiftKey && e.altKey && e.key === "D") {
-          setDebugMode((prev) => !prev);
-        }
-      };
-      window.addEventListener("keydown", handleKeyDown);
-      return () => window.removeEventListener("keydown", handleKeyDown);
-    }
-  }, [actualEnableKeydownDebugToggle]);
 
   useEffect(() => {
     if (!open) {
@@ -194,12 +120,7 @@ export function PasswordModal({
     password,
     error,
   );
-  // For 'create' mode, we want to show dynamic error during typing OR the submit validation error.
-  // For 'unlock' mode, we just show the error (which is usually '*Incorrect password').
-  const displayedError =
-    modalType === "create"
-      ? currentConfig.getDynamicError(password) || error
-      : error;
+  const displayedError = error;
 
   return (
     <Dialog
@@ -326,7 +247,7 @@ export function PasswordModal({
             autoFocus
             required
             margin="none"
-            id={`${modalType}-password`}
+            id={`unlock-password`}
             type="password"
             fullWidth
             variant="outlined"

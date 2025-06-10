@@ -130,14 +130,6 @@ export class ApiClient {
       }
     }
 
-    // --- Log Request Details ---
-    console.log(`[API Request] ${method} ${url.toString()}`);
-    console.log("[API Request Headers]", JSON.stringify(headers, null, 2));
-    if (options.body && !(body instanceof FormData)) {
-      console.log("[API Request Body]", options.body);
-    }
-    // --- End Log Request Details ---
-
     try {
       const response = await fetch(url.toString(), options);
 

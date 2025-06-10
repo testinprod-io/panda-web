@@ -23,8 +23,7 @@ export function useScrollToBottom(
     if (autoScroll && !detach) {
       scrollDomToBottom();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoScroll, detach]); // Removed scrollDomToBottom dependency as it's stable
+  }, [autoScroll, detach]);
 
   // auto scroll when messages length changes
   const lastMessagesLength = useRef(messages.length);

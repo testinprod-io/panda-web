@@ -63,7 +63,7 @@ export default function Sidebar({
   };
 
   const handleLogout = () => {
-    AuthService.handleLogout(logout);
+    AuthService.handleLogout(logout, lockApp);
   };
 
   const handleLockServiceClick = () => {

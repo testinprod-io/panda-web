@@ -20,68 +20,67 @@ import { EncryptionService } from "@/services/encryption-service";
 import { LLMConfig } from "@/client/api";
 import { ChallengeResponse } from "@/client/platforms/panda-challenge";
 
-function decryptConversationData(conversation: Conversation): Conversation {
-  const decryptedConvo = { ...conversation };
+// function decryptConversationData(conversation: Conversation): Conversation {
+//   const decryptedConvo = { ...conversation };
 
-  if (decryptedConvo.title) {
-    try {
-      decryptedConvo.title = EncryptionService.decrypt(decryptedConvo.title);
-    } catch (err) {
-      decryptedConvo.title = "Invalid password";
-      console.error(
-        "[ChatApiService] Error decrypting conversation title:",
-        err,
-      );
-    }
-  }
+//   if (decryptedConvo.title) {
+//     try {
+//       decryptedConvo.title = EncryptionService.decrypt(decryptedConvo.title);
+//     } catch (err) {
+//       decryptedConvo.title = "Invalid password";
+//       console.error(
+//         "[ChatApiService] Error decrypting conversation title:",
+//         err,
+//       );
+//     }
+//   }
 
-  return decryptedConvo;
-}
+//   return decryptedConvo;
+// }
 
-type MessageWithContent = {
-  content: string;
-  reasoning_content?: string;
-  reasoning_time?: string;
-  [key: string]: any;
-};
+// type MessageWithContent = {
+//   content: string;
+//   reasoning_content?: string;
+//   reasoning_time?: string;
+//   [key: string]: any;
+// };
 
-function decryptMessageData<T extends MessageWithContent>(message: T): T {
-  const decryptedMsg = { ...message };
+// function decryptMessageData<T extends MessageWithContent>(message: T): T {
+//   const decryptedMsg = { ...message };
 
-  if (decryptedMsg.content) {
-    try {
-      decryptedMsg.content = EncryptionService.decrypt(decryptedMsg.content);
-    } catch (err) {
-      console.error("[ChatApiService] Error decrypting message content:", err);
-    }
-  }
+//   if (decryptedMsg.content) {
+//     try {
+//       decryptedMsg.content = EncryptionService.decrypt(decryptedMsg.content);
+//     } catch (err) {
+//       console.error("[ChatApiService] Error decrypting message content:", err);
+//     }
+//   }
 
-  if (decryptedMsg.reasoning_content) {
-    try {
-      decryptedMsg.reasoning_content = EncryptionService.decrypt(
-        decryptedMsg.reasoning_content,
-      );
-    } catch (err) {
-      console.error(
-        "[ChatApiService] Error decrypting message reasoning content:",
-        err,
-      );
-    }
-  }
+//   if (decryptedMsg.reasoning_content) {
+//     try {
+//       decryptedMsg.reasoning_content = EncryptionService.decrypt(
+//         decryptedMsg.reasoning_content,
+//       );
+//     } catch (err) {
+//       console.error(
+//         "[ChatApiService] Error decrypting message reasoning content:",
+//         err,
+//       );
+//     }
+//   }
 
-  return decryptedMsg;
-}
+//   return decryptedMsg;
+// }
 
 export function mapConversationToSession(
   conversation: Conversation,
 ): ChatSession {
-  const decryptedConvo = decryptConversationData(conversation);
-
-  const session = createNewSession(decryptedConvo.conversation_id);
-  session.topic = conversation.title || DEFAULT_TOPIC;
-  session.visibleTopic = decryptedConvo.title || DEFAULT_TOPIC;
-  session.lastUpdate = new Date(decryptedConvo.updated_at).getTime();
-  session.customizedPrompts = EncryptionService.decrypt(decryptedConvo.custom_data?.customized_prompts);
+  const title = conversation.title || DEFAULT_TOPIC;
+  const session = createNewSession(conversation.conversation_id);
+  session.topic = title;
+  session.visibleTopic = EncryptionService.decrypt(title);
+  session.lastUpdate = new Date(conversation.updated_at).getTime();
+  session.customizedPrompts = EncryptionService.decrypt(conversation.custom_data?.customized_prompts);
   return session;
 }
 
@@ -92,16 +91,15 @@ export function mapApiMessagesToChatMessages(
 }
 
 export function mapApiMessageToChatMessage(message: ApiMessage): ChatMessage {
-  const decryptedMsg = decryptMessageData(message);
-
   return createMessage({
     id: message.message_id,
     role: message.sender_type,
     content: message.content,
-    visibleContent: message.content,
+    visibleContent: EncryptionService.decrypt(message.content),
     files: message.files,
     date: new Date(message.timestamp),
     reasoning: message.reasoning_content,
+    visibleReasoning: message.reasoning_content ? EncryptionService.decrypt(message.reasoning_content) : undefined,
     reasoningTime: message.reasoning_time
       ? parseInt(message.reasoning_time)
       : undefined,
@@ -121,19 +119,20 @@ export const ChatApiService = {
       console.log(
         `[ChatApiService] Received ${response.data.length} conversations.`,
       );
+      return response;
+      
+      // // Decrypt conversation data
+      // const decryptedData = response.data.map((convo) =>
+      //   decryptConversationData(convo),
+      // );
 
-      // Decrypt conversation data
-      const decryptedData = response.data.map((convo) =>
-        decryptConversationData(convo),
-      );
+      // // Create a new response with decrypted data
+      // const decryptedResponse = {
+      //   ...response,
+      //   data: decryptedData,
+      // };
 
-      // Create a new response with decrypted data
-      const decryptedResponse = {
-        ...response,
-        data: decryptedData,
-      };
-
-      return decryptedResponse;
+      // return decryptedResponse;
     } catch (error) {
       console.error("[ChatApiService] Failed to fetch conversations:", error);
       throw error; // Re-throw to be handled by the caller
@@ -214,17 +213,18 @@ export const ChatApiService = {
       console.log(
         `[ChatApiService] Received ${response.data.length} messages for ${id}.`,
       );
+      return response;
 
       // Decrypt the message data
-      const decryptedData = response.data.map((msg) => decryptMessageData(msg));
+      // const decryptedData = response.data.map((msg) => decryptMessageData(msg));
 
-      // Create a new response with decrypted data
-      const decryptedResponse = {
-        ...response,
-        data: decryptedData,
-      };
+      // // Create a new response with decrypted data
+      // const decryptedResponse = {
+      //   ...response,
+      //   data: decryptedData,
+      // };
 
-      return decryptedResponse;
+      // return decryptedResponse;
     } catch (error) {
       console.error(
         `[ChatApiService] Failed to fetch messages for ${id}:`,

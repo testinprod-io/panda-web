@@ -35,6 +35,8 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useChatStore } from "@/store";
 import { useAppConfig, useAppConfig as useAppConfigStore } from "@/store/config";
 import { AuthService } from "@/services/auth-service";
+import { useEncryption } from "@/providers/encryption-provider";
+import { useAttestationStore } from "@/store/attestation";
 
 interface SettingsModalProps {
   open: boolean;
@@ -59,7 +61,7 @@ export default function SettingsModal({
   const { clearSessions } = useChatStore();
   const apiClient = useApiClient();
   const [theme, setTheme] = useState("light");
-
+  const { lockApp } = useEncryption();
   if (!authenticated) {
     return <div></div>;
   }
@@ -69,8 +71,8 @@ export default function SettingsModal({
     setDeleteConfirmOpen(false);
   };
 
-  const handleLogOut = () => {
-    AuthService.handleLogout(logout);
+  const handleLogOut = async () => {
+    AuthService.handleLogout(logout, lockApp);
     setDeleteConfirmOpen(false);
     router.replace("/");
   };
@@ -236,7 +238,7 @@ export default function SettingsModal({
                   <ListItemIcon className={styles.navItemIcon}>
                     <SettingsIcon fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText primary="General" />
+                  <ListItemText className={styles.navItemText} primary="General" />
                 </ListItemButton>
                 <ListItemButton
                   selected={activeNavSection === "faq"}
@@ -249,7 +251,7 @@ export default function SettingsModal({
                   <ListItemIcon className={styles.navItemIcon}>
                     <HelpOutlineIcon fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText primary="Help & FAQ" />
+                  <ListItemText className={styles.navItemText} primary="Help & FAQ" />
                 </ListItemButton>
               </List>
             </Box>

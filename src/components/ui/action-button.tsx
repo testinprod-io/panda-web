@@ -34,12 +34,57 @@ export function ActionButton(props: ActionButtonProps) {
       aria-label={
         ariaLabel || title || (typeof text === "string" ? text : undefined)
       }
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        cursor: "pointer",
+        overflow: "hidden",
+        position: "relative",
+        transition: "background-color 0.2s ease, border-color 0.2s ease",
+
+      // "&[aria-disabled='true']": {
+      //   opacity: 0.5,
+      //   cursor: "not-allowed",
+      // },
+      // "&:hover:not([aria-disabled='true'])": {
+      // "&:focus-within:not([aria-disabled='true'])": {
+      //   ".text": {
+      //     opacity: 1,
+      //     transform: "translateX(0)",
+      //     pointerEvents: "auto",
+      //   },
+      // },
+
+      }}
     >
-      <div ref={iconRef} className={styles.icon}>
+      <div
+        ref={iconRef}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          flexShrink: "0",
+        }}
+      >
         {icon}
       </div>
       {text && (
-        <div className={styles.text} ref={textRef}>
+        <div
+          ref={textRef}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            whiteSpace: "nowrap",
+            paddingLeft: "8px",
+            opacity: "0",
+            transform: "translateX(-10px)",
+            transition: "opacity 0.2s ease-out, transform 0.2s ease-out",
+            pointerEvents: "none",
+            willChange: "opacity, transform",
+          }}
+        >
           {text}
         </div>
       )}

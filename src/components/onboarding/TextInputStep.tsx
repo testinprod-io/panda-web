@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { Box, TextField, Button } from "@mui/material";
 import { motion } from "framer-motion";
-import styles from "../onboarding.module.scss";
 
 interface TextInputStepProps {
   placeholder: string;
@@ -36,13 +35,37 @@ export default function TextInputStep({
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5, delay: 0.2 }}
     >
-      <Box className={styles.content}>
+      <Box style={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        maxWidth: "500px",
+        gap: "1.5rem",
+      }}>
         <Box
-          className={`${styles.inputContainer} ${
-            isFocused ? styles.inputContainerFocused : ""
-          }`}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          backgroundColor: "#FFFFFF",
+          borderRadius: "16px",
+          padding: "8px 12px",
+          width: "100%",
+          boxShadow: isFocused ? "0 2px 5px rgba(0, 0, 0, 0.2), 0 0 0 2px #000000" : "0 2px 5px rgba(0, 0, 0, 0.2)",
+          transition: "box-shadow 0.2s ease-in-out",
+        }}
         >
-          <Box className={styles.avatar}>{avatarInitial}</Box>
+          <Box style={{
+            width: "32px",
+            height: "32px",
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginRight: "12px",
+            fontWeight: "bold",
+            fontSize: "1rem",
+            color: "#1E1E1E",
+          }}>{avatarInitial}</Box>
           <TextField
             fullWidth
             variant="outlined"
@@ -93,7 +116,6 @@ export default function TextInputStep({
             textTransform: "none",
             fontSize: "16px",
           }}
-          // className={styles.sendButton}
         >
           Continue
         </Button>

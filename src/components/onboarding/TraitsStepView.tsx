@@ -3,11 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { Box, TextField, Button, Chip } from "@mui/material";
 import { motion } from "framer-motion";
-import styles from "../onboarding.module.scss";
-
-function clsx(...classes: (string | boolean | undefined | null)[]) {
-  return classes.filter(Boolean).join(" ");
-}
 
 interface Trait {
   id: string;
@@ -54,7 +49,7 @@ export default function TraitsStepView({
       traitsText
         .split(",")
         .map((s: string) => s.trim())
-        .filter(Boolean),
+        .filter(Boolean)
     );
     setSelectedTraits(currentTextTraits);
   }, [traitsText]);
@@ -79,13 +74,47 @@ export default function TraitsStepView({
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5, delay: 0.2 }}
     >
-      <Box className={styles.content}>
+      <Box
+        key="content"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          width: "100%",
+          maxWidth: "500px",
+          gap: "1.5rem",
+        }}
+      >
         <Box
-          className={`${styles.inputContainer} ${
-            isFocused ? styles.inputContainerFocused : ""
-          }`}
+          key="input_container"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            backgroundColor: "#FFFFFF",
+            borderRadius: "16px",
+            padding: "8px 12px",
+            width: "100%",
+            boxShadow: isFocused
+              ? "0 2px 5px rgba(0, 0, 0, 0.2), 0 0 0 2px #000000"
+              : "0 2px 5px rgba(0, 0, 0, 0.2)",
+            transition: "box-shadow 0.2s ease-in-out",
+          }}
         >
-          <Box className={styles.avatar}>{avatarInitial}</Box>
+          <Box
+            style={{
+              width: "32px",
+              height: "32px",
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginRight: "12px",
+              fontWeight: "bold",
+              fontSize: "1rem",
+              color: "#1E1E1E",
+            }}
+          >
+            {avatarInitial}
+          </Box>
           <TextField
             fullWidth
             variant="outlined"
@@ -120,16 +149,34 @@ export default function TraitsStepView({
             autoFocus
           />
         </Box>
-        <Box className={styles.traitsContainer}>
+        <Box
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "8px",
+            width: "100%",
+          }}
+        >
           {initialTraits.map((trait) => (
             <Chip
               key={trait.id}
               label={trait.label}
               onClick={() => handleTraitToggle(trait.label)}
-              className={clsx(
-                styles.traitChip,
-                selectedTraits.has(trait.label) && styles.selectedTrait,
-              )}
+              sx={{
+                borderRadius: "48px",
+                border: "1px solid #cacaca",
+                borderColor: selectedTraits.has(trait.label) ? "#1976d2" : "#cacaca",
+                fontSize: "15px",
+                fontWeight: "500",
+                lineHeight: "32px",
+                padding: "4px 8px",
+                backgroundColor: selectedTraits.has(trait.label) ? "#e3f2fd" : "white",
+                color: selectedTraits.has(trait.label) ? "#1976d2" : "#1e1e1e",
+                "&:hover": {
+                  borderColor: "#757575",
+                  backgroundColor: "#f5f5f5",
+                },
+              }}
               variant={selectedTraits.has(trait.label) ? "filled" : "outlined"}
               clickable
             />
