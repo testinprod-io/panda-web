@@ -38,7 +38,7 @@ export const ABI = [
       {
         indexed: false,
         internalType: "bytes32",
-        name: "mrImage",
+        name: "osImageHash",
         type: "bytes32",
       },
     ],
@@ -51,7 +51,7 @@ export const ABI = [
       {
         indexed: false,
         internalType: "bytes32",
-        name: "mrImage",
+        name: "osImageHash",
         type: "bytes32",
       },
     ],
@@ -228,7 +228,7 @@ export const ABI = [
     type: "function",
   },
   {
-    inputs: [{ internalType: "bytes32", name: "mrImage", type: "bytes32" }],
+    inputs: [{ internalType: "bytes32", name: "osImageHash", type: "bytes32" }],
     name: "addAppImageMr",
     outputs: [],
     stateMutability: "nonpayable",
@@ -307,7 +307,7 @@ export const ABI = [
           { internalType: "bytes32", name: "deviceId", type: "bytes32" },
           { internalType: "bytes32", name: "mrAggregated", type: "bytes32" },
           { internalType: "bytes32", name: "mrSystem", type: "bytes32" },
-          { internalType: "bytes32", name: "mrImage", type: "bytes32" },
+          { internalType: "bytes32", name: "osImageHash", type: "bytes32" },
           { internalType: "string", name: "tcbStatus", type: "string" },
           { internalType: "string[]", name: "advisoryIds", type: "string[]" },
         ],
@@ -334,7 +334,7 @@ export const ABI = [
           { internalType: "bytes32", name: "deviceId", type: "bytes32" },
           { internalType: "bytes32", name: "mrAggregated", type: "bytes32" },
           { internalType: "bytes32", name: "mrSystem", type: "bytes32" },
-          { internalType: "bytes32", name: "mrImage", type: "bytes32" },
+          { internalType: "bytes32", name: "osImageHash", type: "bytes32" },
           { internalType: "string", name: "tcbStatus", type: "string" },
           { internalType: "string[]", name: "advisoryIds", type: "string[]" },
         ],
@@ -413,7 +413,7 @@ export const ABI = [
     type: "function",
   },
   {
-    inputs: [{ internalType: "bytes32", name: "mrImage", type: "bytes32" }],
+    inputs: [{ internalType: "bytes32", name: "osImageHash", type: "bytes32" }],
     name: "removeAppImageMr",
     outputs: [],
     stateMutability: "nonpayable",

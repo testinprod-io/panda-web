@@ -38,7 +38,7 @@ export interface AttestationResult {
   deviceId: string;
   mrAggregated: string;
   mrSystem: string;
-  mrImage: string;
+  osImageHash: string;
   tcbStatus: string;
   advisoryIds: string[];
 }

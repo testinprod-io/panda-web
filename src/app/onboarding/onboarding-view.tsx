@@ -130,7 +130,7 @@ export default function OnboardingView() {
             display: "flex",
             flexDirection: "column",
             width: "100vh",
-            maxWidth: "500px",
+            maxWidth: "min(500px, 90%)",
             gap: "1.5rem",
           }}
         >

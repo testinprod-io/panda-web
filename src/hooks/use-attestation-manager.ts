@@ -91,7 +91,7 @@ export function useAttestationManager() {
           deviceId: toHex(attestationResult.deviceId),
           mrAggregated: toHex(attestationResult.mrAggregated),
           mrSystem: toHex(attestationResult.mrSystem),
-          mrImage: toHex(attestationResult.mrImage),
+          osImageHash: toHex(attestationResult.osImageHash),
           tcbStatus: attestationResult.tcbStatus,
           advisoryIds: attestationResult.advisoryIds
         }],
@@ -210,6 +210,7 @@ export function useAttestationManager() {
       let keyProvider = "";
       let composeHash = "";
       let instanceId = "0x0000000000000000000000000000000000000000";
+      let osImageHash = "";
       for (const event of eventLog) {
         if (event.event === "app-id") {
           appId = event.event_payload;
@@ -219,11 +220,13 @@ export function useAttestationManager() {
           composeHash = event.event_payload;
         } else if (event.event === "instance-id") {
           instanceId = event.event_payload;
+        } else if (event.event === "os-image-hash") {
+          osImageHash = event.event_payload;
         }
       }
-      if (!appId || !keyProvider || !composeHash) {
+      if (!appId || !keyProvider || !composeHash || !osImageHash) {
         throw new Error(
-          "Missing one of app-id, key-provider, or compose-hash in event_log"
+          "Missing one of app-id, key-provider, or compose-hash, or os-image-hash in event_log"
         );
       }
 
@@ -286,21 +289,21 @@ export function useAttestationManager() {
       //      + tdx_rtmr1
       //      + tdx_rtmr2
       //     )
-      const mrImageConcat =
-        jwtPayload.tdx.tdx_mrtd +
-        jwtPayload.tdx.tdx_rtmr1 +
-        jwtPayload.tdx.tdx_rtmr2;
-      const mrImageBuffer = await crypto.subtle.digest(
-        "SHA-256",
-        Buffer.from(mrImageConcat, "hex")
-      );
-      const mrImage = bufferToHex(mrImageBuffer);
+      // const osImageHashConcat =
+      //   jwtPayload.tdx.tdx_mrtd +
+      //   jwtPayload.tdx.tdx_rtmr1 +
+      //   jwtPayload.tdx.tdx_rtmr2;
+      // const osImageHashBuffer = await crypto.subtle.digest(
+      //   "SHA-256",
+      //   Buffer.from(osImageHashConcat, "hex")
+      // );
+      // const osImageHash = bufferToHex(osImageHashBuffer);
 
       // 13) (Optional) Verify a hardcoded expected mr_image:
-      const expectedMrImage = process.env.NEXT_PUBLIC_OS_IMAGE_HASH;
-      if (mrImage !== expectedMrImage) {
+      const expectedosImageHash = process.env.NEXT_PUBLIC_OS_IMAGE_HASH;
+      if (osImageHash !== expectedosImageHash) {
         throw new Error(
-          `mr_image mismatch: expected ${expectedMrImage}, got ${mrImage}`
+          `mr_image mismatch: expected ${expectedosImageHash}, got ${osImageHash}`
         );
       }
 
@@ -311,13 +314,13 @@ export function useAttestationManager() {
       console.log("deviceId:", deviceId);
       console.log("mrAggregated:", mrAggregated);
       console.log("mrSystem:", mrSystem);
-      console.log("mrImage:", mrImage);
+      console.log("osImageHash:", osImageHash);
 
       // If you need to return them for further processing, you could:
       const attestationResult: AttestationResult = {
         appId,
         mrSystem,
-        mrImage,
+        osImageHash,
         composeHash,
         deviceId,
         instanceId,
