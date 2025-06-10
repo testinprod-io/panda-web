@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { PrivyProvider, usePrivy } from "@privy-io/react-auth";
+import { PrivyProvider } from "@privy-io/react-auth";
 import { Toaster } from "react-hot-toast";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v14-appRouter";
 import { ThemeProvider } from "@mui/material/styles";
@@ -49,7 +49,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 accentColor: "#676FFF",
               },
               loginMethods: ["email", "google", "github", "wallet"],
-              embeddedWallets: { createOnLogin: "users-without-wallets" },
+              embeddedWallets: { ethereum: { createOnLogin: "all-users" } },
             }}
           >
             <ApiClientProvider>

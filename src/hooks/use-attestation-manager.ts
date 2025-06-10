@@ -5,9 +5,9 @@ import {
   EventLogEntry,
   AttestationResult,
 } from "@/types/attestation";
-import { useCallback} from "react";
+import { useCallback, useEffect } from "react";
 
-import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { usePrivy, useWallets, useCreateWallet } from "@privy-io/react-auth";
 import { jwtVerify,  JWTPayload, importJWK, JWK } from "jose";
 import { ADDRESS, ABI } from "@/services/kms-contract";
 import { sepolia } from "viem/chains";
@@ -28,7 +28,7 @@ export interface VerificationResult {
 
 export function useAttestationManager() {
   const apiClient = useApiClient();
-  const { wallets } = useWallets();
+  const { ready, wallets } = useWallets();
 
   const {
     attestationResults,
@@ -53,14 +53,17 @@ export function useAttestationManager() {
         status: VerificationStatus.Pending,
         attestationResult,
         publicKey: publicKeyHex,
-      });
+      });    
 
+      if (!ready) {
+        console.log("Privy not ready, cannot verify contract");
+      }
       if (wallets.length === 0) {
-        console.log("No wallets found");
+        console.log("No wallets found, cannot verify contract");
         const verificationResult: VerificationResult = {
           status: VerificationStatus.Failed,
           attestationResult,
-          publicKey: publicKeyHex
+          publicKey: publicKeyHex,
         };
         setVerificationResult(attestationResult.appId, verificationResult);
         return verificationResult;
@@ -109,7 +112,7 @@ export function useAttestationManager() {
       console.log("isAllowed:", isAllowed, "reason:", reason);
       return verificationResult;
     },
-    [wallets, verificationResults, setVerificationResult]
+    [wallets, verificationResults, setVerificationResult, ready]
   );
 
   const verifyAttestation = useCallback(

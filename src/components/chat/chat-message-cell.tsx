@@ -110,7 +110,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     if (challengeResponse) {
       doVerify(challengeResponse.publicKey);
     }
-  }, [challengeResponse, verifyAttestation, verifyContract]);
+  }, [challengeResponse]);
 
   const handleResend = useCallback(
     () => onResend(messageId),

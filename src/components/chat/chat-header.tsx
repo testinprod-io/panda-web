@@ -156,7 +156,6 @@ export default function ChatHeader({
   // };
 
   const getEncryptionStatusInfo = useCallback(() => {
-    console.log("verificationResults:", verificationResults);
     const firstStatus = Object.values(verificationResults)[0];
     switch (firstStatus && firstStatus.status) {
       case VerificationStatus.AttestationVerified:

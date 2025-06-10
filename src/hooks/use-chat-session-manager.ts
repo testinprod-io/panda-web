@@ -359,9 +359,6 @@ export function useChatSessionManager(
       );
       return;
     }
-    console.log(
-      `[useChatSessionManager] Summarization triggered: sessionId: ${sessionId}, actionSummarize: ${actionSummarize}, localIsSummarizing: ${localIsSummarizing}`,
-    );
     // No longer directly accessing store.sessions for currentSessionFromStore.messages here.
     // We operate on displayedMessages.
 
@@ -994,6 +991,7 @@ export function useChatSessionManager(
       localLastSummarizedMessageId,
       appConfig.customizedPrompts,
       finalizeStreamedBotMessage,
+      verifyAttestation,
     ],
   );
 
