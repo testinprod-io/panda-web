@@ -10,7 +10,7 @@ import { useCallback, useEffect } from "react";
 import { usePrivy, useWallets, useCreateWallet } from "@privy-io/react-auth";
 import { jwtVerify,  JWTPayload, importJWK, JWK } from "jose";
 import { ADDRESS, ABI } from "@/services/kms-contract";
-import { sepolia } from "viem/chains";
+import { optimism, sepolia } from "viem/chains";
 import { createPublicClient, Hex, custom } from "viem";
 import { useAttestationStore } from "@/store/attestation";
 
@@ -70,11 +70,15 @@ export function useAttestationManager() {
       }
 
       const wallet = wallets[0];
-      await wallet.switchChain(sepolia.id);
+      if (process.env.NEXT_PUBLIC_KMS_CONTRACT_NETWORK === "optimism") {
+        await wallet.switchChain(optimism.id);
+      } else if (process.env.NEXT_PUBLIC_KMS_CONTRACT_NETWORK === "sepolia") {
+        await wallet.switchChain(sepolia.id);
+      }
 
       const provider = await wallet.getEthereumProvider();
       const client = createPublicClient({
-        chain: sepolia,
+        chain: process.env.NEXT_PUBLIC_KMS_CONTRACT_NETWORK === "optimism" ? optimism : sepolia,
         transport: custom(provider),
       });
 
@@ -84,7 +88,7 @@ export function useAttestationManager() {
 
       const [isAllowed, reason] = (await client.readContract({
         account: wallet.address as Hex,
-        address: ADDRESS,
+        address: process.env.NEXT_PUBLIC_KMS_CONTRACT_ADDRESS as `0x${string}` || "0x3366E906D7C2362cE4C336f43933Cccf76509B23",
         abi: ABI,
         functionName: "isAppAllowed",
         args: [{

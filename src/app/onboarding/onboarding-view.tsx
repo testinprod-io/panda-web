@@ -285,8 +285,8 @@ export default function OnboardingView() {
         <Box key="content" style={{
           display: "flex", 
           flexDirection:"column",
-          width: "100vh", 
-          maxWidth: "500px",
+          width: "80%", 
+          maxWidth: "min(500px, 80%)",
           gap:"1.5rem",
         }}>
           <motion.div
