@@ -170,6 +170,8 @@ export default function OnboardingView() {
                       flexDirection: "row",
                       justifyContent: "space-between",
                       gap: "1rem",
+                      width: "80%",
+                      maxWidth: "min(500px, 80%)",                    
                     }}
                   >
                     <Button

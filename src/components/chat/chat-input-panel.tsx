@@ -301,7 +301,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
           }
         }
 
-        if (!modelConfig || !supportsImages(modelConfig.features)) {
+        if (!modelConfig || (!supportsImages(modelConfig.features) && !supportsPdf(modelConfig.features))) {
           showSnackbar(
             "Cannot upload files with the current model.",
             "warning",
@@ -583,7 +583,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
 
     const handlePaste = useCallback(
       async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
-        if (!modelConfig || !supportsImages(modelConfig.features)) return;
+        if (!modelConfig || !supportsImages(modelConfig.features) || !supportsPdf(modelConfig.features)) return;
         if (!activeSessionId && !provisionalSessionIdRef.current) {
         } else if (!activeSessionId && provisionalSessionIdRef.current) {
         }

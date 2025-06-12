@@ -253,7 +253,7 @@ export const ChatApiService = {
 
       return savedMessage;
     } catch (error) {
-      console.error(
+      console.log(
         `[ChatApiService] Failed to create message ${createRequest.message_id}:`,
         error,
       );

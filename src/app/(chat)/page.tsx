@@ -25,7 +25,7 @@ export default function NewChatPage() {
         gutterBottom
         sx={{
           color: "#131A28",
-          fontSize: "32px",
+          fontSize: "24px",
           fontWeight: "600",
           lineHeight: "38.74px",
           paddingTop: "1.1vh",
@@ -37,7 +37,7 @@ export default function NewChatPage() {
       <Typography
         sx={{
           color: "#131A28",
-          fontSize: "32px",
+          fontSize: "24px",
           fontWeight: "400",
           lineHeight: "38.74px",
         }}

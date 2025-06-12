@@ -11,7 +11,7 @@ import { usePrivy, useWallets, useCreateWallet } from "@privy-io/react-auth";
 import { jwtVerify,  JWTPayload, importJWK, JWK } from "jose";
 import { ADDRESS, ABI } from "@/services/kms-contract";
 import { optimism, sepolia } from "viem/chains";
-import { createPublicClient, Hex, custom } from "viem";
+import { createPublicClient, Hex, custom, http } from "viem";
 import { useAttestationStore } from "@/store/attestation";
 
 export enum VerificationStatus {
@@ -29,7 +29,11 @@ export interface VerificationResult {
 export function useAttestationManager() {
   const apiClient = useApiClient();
   const { ready, wallets } = useWallets();
-
+  const client = createPublicClient({
+    chain: optimism,
+    transport: http('https://mainnet.optimism.io'),
+  });
+  
   const {
     attestationResults,
     verificationResults,
@@ -55,39 +59,39 @@ export function useAttestationManager() {
         publicKey: publicKeyHex,
       });    
 
-      if (!ready) {
-        console.log("Privy not ready, cannot verify contract");
-      }
-      if (wallets.length === 0) {
-        console.log("No wallets found, cannot verify contract");
-        const verificationResult: VerificationResult = {
-          status: VerificationStatus.Failed,
-          attestationResult,
-          publicKey: publicKeyHex,
-        };
-        setVerificationResult(attestationResult.appId, verificationResult);
-        return verificationResult;
-      }
+      // if (!ready) {
+      //   console.log("Privy not ready, cannot verify contract");
+      // }
+      // if (wallets.length === 0) {
+      //   console.log("No wallets found, cannot verify contract");
+      //   const verificationResult: VerificationResult = {
+      //     status: VerificationStatus.Failed,
+      //     attestationResult,
+      //     publicKey: publicKeyHex,
+      //   };
+      //   setVerificationResult(attestationResult.appId, verificationResult);
+      //   return verificationResult;
+      // }
 
-      const wallet = wallets[0];
-      if (process.env.NEXT_PUBLIC_KMS_CONTRACT_NETWORK === "optimism") {
-        await wallet.switchChain(optimism.id);
-      } else if (process.env.NEXT_PUBLIC_KMS_CONTRACT_NETWORK === "sepolia") {
-        await wallet.switchChain(sepolia.id);
-      }
+      // const wallet = wallets[0];
+      // if (process.env.NEXT_PUBLIC_KMS_CONTRACT_NETWORK === "optimism") {
+      //   await wallet.switchChain(optimism.id);
+      // } else if (process.env.NEXT_PUBLIC_KMS_CONTRACT_NETWORK === "sepolia") {
+      //   await wallet.switchChain(sepolia.id);
+      // }
 
-      const provider = await wallet.getEthereumProvider();
-      const client = createPublicClient({
-        chain: process.env.NEXT_PUBLIC_KMS_CONTRACT_NETWORK === "optimism" ? optimism : sepolia,
-        transport: custom(provider),
-      });
+      // const provider = await wallet.getEthereumProvider();
+      // const client = createPublicClient({
+      //   chain: process.env.NEXT_PUBLIC_KMS_CONTRACT_NETWORK === "optimism" ? optimism : sepolia,
+      //   transport: custom(provider),
+      // });
 
-      console.log(`Reading contract isAppAllowed with wallet address: ${wallet.address} and contract address: ${ADDRESS}`);
+      // console.log(`Reading contract isAppAllowed with wallet address: ${wallet.address} and contract address: ${ADDRESS}`);
       
       const toHex = (value: string) => (value.startsWith("0x") ? value : `0x${value}`) as Hex;
 
       const [isAllowed, reason] = (await client.readContract({
-        account: wallet.address as Hex,
+        // account: wallet.address as Hex,
         address: process.env.NEXT_PUBLIC_KMS_CONTRACT_ADDRESS as `0x${string}` || "0x3366E906D7C2362cE4C336f43933Cccf76509B23",
         abi: ABI,
         functionName: "isAppAllowed",
