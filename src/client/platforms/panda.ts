@@ -2,7 +2,6 @@ import { PandaPath, DEFAULT_PANDA_MODEL_NAME } from "@/types/constant";
 import {
   ChatOptions,
   LLMApi,
-  LLMUsage,
   MultimodalContent,
   LLMConfig,
   RequestMessage,
@@ -24,8 +23,6 @@ export interface RequestPayload {
   stream?: boolean;
   model: string;
   temperature: number;
-  presence_penalty?: number;
-  frequency_penalty?: number;
   top_p?: number;
   max_tokens?: number;
   max_completion_tokens?: number;
@@ -240,13 +237,6 @@ export class PandaApi implements LLMApi {
       }
       options.onError?.(error);
     }
-  }
-
-  async usage(): Promise<LLMUsage> {
-    return {
-      used: 0,
-      total: 0,
-    };
   }
 
   async summary(

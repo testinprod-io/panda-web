@@ -1,4 +1,4 @@
-import { LLMModel } from "@/client/api";
+import { ServerModelInfo } from "@/client/client";
 
 import {
   DEFAULT_MODELS,
@@ -8,6 +8,9 @@ import {
   DEFAULT_PANDA_MODEL_NAME,
   AppModelDefinition,
   ModelType,
+  BASE_MODEL_CONFIG,
+  KnowledgeCutOffDate,
+  ModelConfig,
 } from "@/types/constant";
 import { createPersistStore } from "@/utils/store";
 import { useChatStore } from "./chat";
@@ -29,20 +32,34 @@ export enum Theme {
   Light = "light",
 }
 
-const defaultModelDefinition =
-  DEFAULT_MODELS.find(
-    (m) => m.name === DEFAULT_PANDA_MODEL_NAME && m.available,
-  ) ||
-  DEFAULT_MODELS.find((m) => m.available) ||
-  DEFAULT_MODELS[0];
 
-if (!defaultModelDefinition) {
-  throw new Error(
-    "No default model definition found in DEFAULT_MODELS. Ensure app/constant.ts is configured.",
-  );
-}
+export type ChatConfig = {
+  lastUpdate: number;
+  submitKey: SubmitKey;
+  avatar: string;
+  fontSize: number;
+  fontFamily: string;
+  theme: Theme;
+  tightBorder: boolean;
+  sendPreviewBubble: boolean;
+  enableAutoGenerateTitle: boolean;
+  sidebarWidth: number;
+  apiProvider: ServiceProvider;
+  enableArtifacts: boolean;
+  enableCodeFold: boolean;
+  disablePromptHint: boolean;
+  dontShowMaskSplashScreen: boolean;
+  hideBuiltinMasks: boolean;
+  customModels: string;
+  models: AppModelDefinition[];
+  modelConfig: ModelConfig & {
+    model: ModelType;
+    providerName: ServiceProvider;
+  };
+  customizedPrompts: CustomizedPromptsData;
+};
 
-export const DEFAULT_CONFIG = {
+export const DEFAULT_CONFIG: ChatConfig = {
   lastUpdate: Date.now(),
 
   submitKey: SubmitKey.Enter,
@@ -64,13 +81,12 @@ export const DEFAULT_CONFIG = {
   hideBuiltinMasks: false,
 
   customModels: "",
-  models: DEFAULT_MODELS,
+  models: [],
 
   modelConfig: {
-    ...defaultModelDefinition.config,
-    model: defaultModelDefinition.name as ModelType,
-    providerName: defaultModelDefinition.provider
-      .providerName as ServiceProvider,
+    ...BASE_MODEL_CONFIG,
+    model: "" as ModelType,
+    providerName: ServiceProvider.Panda,
   },
 
   customizedPrompts: {
@@ -79,8 +95,6 @@ export const DEFAULT_CONFIG = {
     prompts: { traits: "", extra_params: "" },
   } as CustomizedPromptsData,
 };
-
-export type ChatConfig = typeof DEFAULT_CONFIG;
 
 export function limitNumber(
   x: number,
@@ -95,53 +109,12 @@ export function limitNumber(
   return Math.min(max, Math.max(min, x));
 }
 
-export const ModalConfigValidator = {
-  model(x: string) {
-    return x as ModelType;
-  },
-  max_tokens(x: number) {
-    return limitNumber(x, 0, 512000, 1024);
-  },
-  presence_penalty(x: number) {
-    return limitNumber(x, -2, 2, 0);
-  },
-  frequency_penalty(x: number) {
-    return limitNumber(x, -2, 2, 0);
-  },
-  temperature(x: number) {
-    return limitNumber(x, 0, 2, 1);
-  },
-  top_p(x: number) {
-    return limitNumber(x, 0, 1, 1);
-  },
-};
-
 export const useAppConfig = createPersistStore(
   DEFAULT_CONFIG,
   (set, get) => ({
     reset() {
-      // When resetting, ensure it uses the potentially updated DEFAULT_CONFIG from constants
-      const currentDefaultModel =
-        DEFAULT_MODELS.find(
-          (m) => m.name === DEFAULT_PANDA_MODEL_NAME && m.available,
-        ) ||
-        DEFAULT_MODELS.find((m) => m.available) ||
-        DEFAULT_MODELS[0];
-
-      if (!currentDefaultModel) {
-        throw new Error("Failed to find a default model on reset.");
-      }
-
       set(() => ({
         ...DEFAULT_CONFIG,
-        apiProvider: ServiceProvider.Panda,
-        models: DEFAULT_MODELS,
-        modelConfig: {
-          ...currentDefaultModel.config,
-          model: currentDefaultModel.name as ModelType,
-          providerName: currentDefaultModel.provider
-            .providerName as ServiceProvider,
-        },
       }));
     },
 
@@ -190,63 +163,58 @@ export const useAppConfig = createPersistStore(
       }
     },
 
+    setModels(serverModels: ServerModelInfo[]) {
+      const newModels: AppModelDefinition[] = serverModels.map((m) => {
+        const config: ModelConfig = {
+          ...BASE_MODEL_CONFIG,
+          name: m.model_name,
+          displayName: m.name,
+          max_tokens: m.max_context_length,
+          reasoning: true, 
+          endpoint: m.url,
+          features: m.supported_features,
+        };
+
+        return {
+          name: m.model_name,
+          displayName: m.name,
+          description: m.description,
+          config: config,
+        };
+      });
+
+      set({ models: newModels });
+
+      const currentModelName = get().modelConfig.model;
+      const isCurrentModelInNewList = newModels.some(
+        (m) => m.name === currentModelName,
+      );
+
+      if (
+        (!currentModelName || !isCurrentModelInNewList) &&
+        newModels.length > 0
+      ) {
+        const defaultModel = newModels[0];
+        if (defaultModel) {
+          set((state) => ({
+            ...state,
+            modelConfig: {
+              ...defaultModel.config,
+              model: defaultModel.name as ModelType,
+              providerName: ServiceProvider.Panda,
+            },
+          }));
+          useChatStore
+            .getState()
+            .updateCurrentSessionModel(defaultModel.config);
+        }
+      }
+    },
+
     setCustomizedPrompts(data: CustomizedPromptsData) {
       set(() => ({
         customizedPrompts: data,
       }));
-    },
-
-    mergeModels(newModels: LLMModel[]) {
-      console.log("[AppConfigStore] mergeModels called with:", { newModels });
-      const oldModels = get().models;
-      console.log("[AppConfigStore] mergeModels - old models:", { oldModels });
-      const modelMap: Record<string, AppModelDefinition> = {};
-
-      for (const model of oldModels) {
-        model.available = false;
-        modelMap[`${model.name}@${model.provider.id}`] = model;
-      }
-      console.log(
-        "[AppConfigStore] mergeModels - initial modelMap (all set to unavailable):",
-        { modelMap: { ...modelMap } },
-      );
-
-      for (const newModel of newModels) {
-        // Assuming newModels from API will also have provider.id = 'panda'
-        const key = `${newModel.name}@${newModel.provider.id}`;
-        if (modelMap[key]) {
-          console.log(
-            `[AppConfigStore] mergeModels - updating existing model: ${key}`,
-            { newModelData: newModel },
-          );
-          modelMap[key].available = newModel.available;
-          if (newModel.displayName)
-            modelMap[key].displayName = newModel.displayName;
-        } else {
-          // If API returns a Panda model not in our predefined list, how to handle?
-          // For now, we only update availability of predefined models.
-          console.warn(
-            `[AppConfigStore] mergeModels - New model ${newModel.name} from Panda API not in predefined app/constant.ts models. It will be ignored for now.`,
-            { newModel },
-          );
-          // To truly support dynamic models from Panda backend not in constants, we'd need a default AppModelDefinition structure here.
-        }
-      }
-      console.log(
-        "[AppConfigStore] mergeModels - final modelMap before setting state:",
-        { modelMap: { ...modelMap } },
-      );
-
-      set(() => {
-        const updatedModels = Object.values(modelMap);
-        console.log(
-          "[AppConfigStore] mergeModels - setting new models state:",
-          { updatedModels },
-        );
-        return {
-          models: updatedModels,
-        };
-      });
     },
 
     allModels() {
@@ -264,37 +232,17 @@ export const useAppConfig = createPersistStore(
         console.log(
           `[AppConfigStore] Migrating config from version ${version} to 1.3`,
         );
-
-        const currentDefaultModelDef =
-          DEFAULT_MODELS.find(
-            (m) => m.name === DEFAULT_PANDA_MODEL_NAME && m.available,
-          ) ||
-          DEFAULT_MODELS.find((m) => m.available) ||
-          DEFAULT_MODELS[0];
-
-        if (!currentDefaultModelDef) {
-          console.error(
-            "[AppConfigStore] Migration error: Could not determine default model. Returning old state.",
-          );
-          return oldState as ChatConfig;
-        }
-
-        const migratedState: ChatConfig = {
+        return {
           ...DEFAULT_CONFIG,
           ...oldState,
-          models: DEFAULT_MODELS,
+          models: [],
           modelConfig: {
-            ...currentDefaultModelDef.config,
-            model: currentDefaultModelDef.name as ModelType,
-            providerName: currentDefaultModelDef.provider
-              .providerName as ServiceProvider,
+            ...BASE_MODEL_CONFIG,
+            model: "" as ModelType,
+            providerName: ServiceProvider.Panda,
           },
           lastUpdate: Date.now(),
         };
-        console.log(
-          "[AppConfigStore] Migration successful to version 1.3.",
-        );
-        return migratedState;
       }
       return { ...DEFAULT_CONFIG, ...oldState } as ChatConfig;
     },

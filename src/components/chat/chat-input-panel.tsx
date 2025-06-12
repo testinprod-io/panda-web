@@ -16,7 +16,6 @@ import { useChatStore } from "@/store";
 import { UNFINISHED_INPUT } from "@/types/constant";
 import {
   autoGrowTextArea,
-  isVisionModel,
   useMobileScreen,
 } from "@/utils/utils";
 import Locale from "@/locales";
@@ -36,6 +35,8 @@ import { useChatActions } from "@/hooks/use-chat-actions";
 import { SessionState, SubmittedFile } from "@/types/session";
 import { EncryptionService } from "@/services/encryption-service";
 import { FileCircularProgress } from "../ui/file-circular-progress";
+import { supportsImages, supportsPdf, supportsSearch } from "@/utils/model";
+
 import {
   loadSessionState,
   filterValidFilesForUpload,
@@ -48,7 +49,7 @@ import { CustomizedPromptsData } from "@/types";
 
 interface ChatInputPanelProps {
   sessionId: UUID | undefined;
-  modelConfig?: ModelConfig;
+  modelConfig: ModelConfig;
   customizedPrompts?: CustomizedPromptsData;
   isLoading: boolean;
   onSubmit: (
@@ -300,7 +301,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
           }
         }
 
-        if (!modelConfig || !isVisionModel(modelConfig)) {
+        if (!modelConfig || !supportsImages(modelConfig.features)) {
           showSnackbar(
             "Cannot upload files with the current model.",
             "warning",
@@ -582,7 +583,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
 
     const handlePaste = useCallback(
       async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
-        if (!modelConfig || !isVisionModel(modelConfig)) return;
+        if (!modelConfig || !supportsImages(modelConfig.features)) return;
         if (!activeSessionId && !provisionalSessionIdRef.current) {
         } else if (!activeSessionId && provisionalSessionIdRef.current) {
         }
@@ -608,11 +609,25 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
       [modelConfig, activeSessionId, executeFileUploads],
     );
 
+    const uploadImage = useCallback(async () => {
+      const fileInput = document.createElement("input");
+      fileInput.type = "file";
+      fileInput.multiple = true;
+      fileInput.accept = "image/*";
+      fileInput.onchange = async (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const files = target.files as FileList | null;
+        if (!files || files.length === 0) return;
+        await executeFileUploads(Array.from(files));
+      };
+      fileInput.click();
+    }, [executeFileUploads]);
+
     const uploadFile = useCallback(async () => {
       const fileInput = document.createElement("input");
       fileInput.type = "file";
       fileInput.multiple = true;
-      fileInput.accept = ALLOWED_FILE_TYPES.join(",");
+      fileInput.accept = "application/pdf";
       fileInput.onchange = async (event: Event) => {
         const target = event.target as HTMLInputElement;
         const files = target.files as FileList | null;
@@ -751,7 +766,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
           <div className={styles["chat-input-controls-left"]}>
             <button
               onClick={uploadFile}
-              disabled={!isVisionModel(modelConfig)}
+              disabled={!supportsPdf(modelConfig.features)}
               className={styles["chat-input-action-plus"]}
               aria-label={Locale.Chat.InputActions.UploadFile}
             >
@@ -763,8 +778,8 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
               />
             </button>
             <button
-              onClick={uploadFile}
-              disabled={!isVisionModel(modelConfig)}
+              onClick={uploadImage}
+              disabled={!supportsImages(modelConfig.features)}
               className={styles["chat-input-action-plus"]}
               aria-label={Locale.Chat.InputActions.UploadImage}
             >
@@ -780,7 +795,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
               className={clsx(styles["chat-input-action-search"], {
                 [styles.active]: enableSearch,
               })}
-              disabled={!authenticated || isUploadingFiles}
+              disabled={!authenticated || isUploadingFiles || !supportsSearch(modelConfig.features)}
               aria-pressed={enableSearch}
               aria-label={
                 enableSearch ? "Disable web search" : "Enable web search"

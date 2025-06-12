@@ -30,7 +30,7 @@ export default function CreatePassword() {
       router.replace('/signup');
     }
 
-    if (isFirstTimeUser === false && confirmPassword.length > 0) {
+    if (isFirstTimeUser === false && confirmPassword.length === 0) {
       router.replace('/');
     }
   }, [ready, authenticated, router, isFirstTimeUser]);

@@ -121,26 +121,11 @@ function getModelEndpointEnvVarName(modelName: string): string {
   return `NEXT_PUBLIC_MODEL_ENDPOINT_${slug}`;
 }
 
-const PandaModels = [
-  "ig1/r1-1776-AWQ",
-  "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16",
-];
-
-let seq = 1000;
-
 export interface ModelConfig {
   temperature: number;
   top_p: number;
   max_tokens: number;
-  presence_penalty: number;
-  frequency_penalty: number;
-  sendMemory: boolean;
-  historyMessageCount: number;
-  compressMessageLengthThreshold: number;
-  compressModel?: string;
-  compressProviderName?: string;
-  enableInjectSystemPrompts: boolean;
-  template: string;
+  features: string[];
   stream: boolean;
   reasoning?: boolean;
   name: string;
@@ -155,15 +140,7 @@ export const BASE_MODEL_CONFIG: ModelConfig = {
   temperature: 0.7,
   top_p: 1.0,
   max_tokens: 4096,
-  presence_penalty: 0,
-  frequency_penalty: 0,
-  sendMemory: true,
-  historyMessageCount: 4,
-  compressMessageLengthThreshold: 1000,
-  compressModel: "",
-  compressProviderName: "",
-  enableInjectSystemPrompts: true,
-  template: DEFAULT_INPUT_TEMPLATE,
+  features: [],
   stream: true,
   reasoning: false,
   endpoint: "",
@@ -173,89 +150,11 @@ export interface AppModelDefinition {
   name: string;
   displayName?: string;
   description?: string;
-  available: boolean;
-  provider: {
-    id: string;
-    providerName: string;
-    providerType: string;
-    sorted: number;
-  };
-  sorted: number;
-  knowledgeCutoff: string;
-  isVisionModel: boolean;
   config: ModelConfig;
 }
 export type ModelType = AppModelDefinition["name"];
 
-export const DEFAULT_MODELS: AppModelDefinition[] = [
-  ...PandaModels.map((name) => {
-    let config: ModelConfig;
-    let isVision = false;
-
-    // Default endpoint, can be overridden by environment variables
-    let defaultEndpoint = "";
-    let description = "";
-    if (name === "ig1/r1-1776-AWQ") {
-      defaultEndpoint = process.env.NEXT_PUBLIC_LLM_SERVER_ENDPOINT || "";
-      description = "Great for most tasks";
-    } else if (
-      name === "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16"
-    ) {
-      defaultEndpoint = process.env.NEXT_PUBLIC_LLM_OMNI_SERVER_ENDPOINT || "";
-      description = "Great for handling files and photos";
-    }
-
-    if (name === "ig1/r1-1776-AWQ") {
-      config = {
-        ...BASE_MODEL_CONFIG,
-        name: name,
-        displayName: "Deepseek R1",
-        max_tokens: 8000, // Example
-        reasoning: true,
-        endpoint: defaultEndpoint,
-      };
-      isVision = false;
-    } else if (
-      name === "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16"
-    ) {
-      config = {
-        ...BASE_MODEL_CONFIG,
-        name: name,
-        displayName: "Llama 4 Scout",
-        max_tokens: 16000, // Example for vision model
-        reasoning: true,
-        endpoint: defaultEndpoint,
-      };
-      isVision = true;
-    } else {
-      // Fallback, though ideally all PandaModels are handled above
-      config = {
-        ...BASE_MODEL_CONFIG,
-        name: name,
-        displayName: name,
-        reasoning: true,
-        endpoint: defaultEndpoint,
-      };
-    }
-
-    return {
-      name,
-      displayName: name.split("/")[0],
-      available: true, // Assuming Panda models are available by default
-      sorted: seq++,
-      description: description,
-      provider: {
-        id: "panda",
-        providerName: "Panda",
-        providerType: "panda",
-        sorted: 1, // Only one provider now
-      },
-      knowledgeCutoff: KnowledgeCutOffDate[name] || KnowledgeCutOffDate.default,
-      isVisionModel: isVision, // Use specific assignment
-      config: config,
-    };
-  }),
-];
+export const DEFAULT_MODELS: AppModelDefinition[] = [];
 
 export const CHAT_PAGE_SIZE = 15;
 export const MAX_RENDER_MSG_COUNT = 45;

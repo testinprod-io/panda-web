@@ -18,10 +18,10 @@ import Person2RoundedIcon from "@mui/icons-material/Person2Rounded";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import { usePrivy } from "@privy-io/react-auth";
+import { getAccessToken, usePrivy } from "@privy-io/react-auth";
 import { useAuthStatus } from "@/hooks/use-auth-status";
 import { useAppConfig, useChatStore } from "@/store";
-import { DEFAULT_MODELS, ModelType } from "@/types/constant";
+import { DEFAULT_MODELS, ModelType, ApiPath } from "@/types/constant";
 import styles from "./chat-header.module.scss";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
@@ -29,6 +29,8 @@ import { useAttestationManager, VerificationResult, VerificationStatus } from "@
 import { AttestationResult } from "@/types/attestation";
 import { AuthService } from "@/services/auth-service";
 import { useEncryption } from "@/providers/encryption-provider";
+import { useApiClient } from "@/providers/api-client-provider";
+
 interface ChatHeaderProps {
   currentChatId?: string; 
   isSidebarCollapsed: boolean;
@@ -44,12 +46,16 @@ export default function ChatHeader({
   onToggleSidebar,
   isMobile,
 }: ChatHeaderProps) {
-  const { login, logout, user } = usePrivy();
+  const { login, logout, user, getAccessToken } = usePrivy();
   const { isReady, isAuthenticated } = useAuthStatus();
-  const { models: availableModels, setApiProvider } = useAppConfig();
+  const {
+    models: availableModels,
+    setApiProvider,
+    setModels,
+  } = useAppConfig();
   const { verificationResults } = useAttestationManager();
   const { lockApp } = useEncryption();
-
+  const apiClient = useApiClient();
   const activeSessionModelName = useChatStore(
     (state) => state.currentSession()?.modelConfig?.name,
   );
@@ -74,6 +80,25 @@ export default function ChatHeader({
   const modelMenuOpen = Boolean(modelAnchorEl);
 
   const [isLoginPopupOpen, setIsLoginPopupOpen] = useState(false);
+  const [modelsFetched, setModelsFetched] = useState(false);
+
+  useEffect(() => {
+    const fetchModels = async () => {
+    if (isAuthenticated && !modelsFetched) {
+      try {
+        const info = await apiClient.app.getInfo();
+        setModels(info.models);
+        setModelsFetched(true);
+        if (!currentChatId && info.models.length > 0) {
+          setApiProvider(info.models[0].name);
+        }
+      } catch (error) {
+        console.error("Failed to fetch models:", error);
+      }
+    }
+  };
+  fetchModels();
+  }, [isAuthenticated, modelsFetched, setModels]);
 
   // const [encryptionStatus, setEncryptionStatus] =
   //   useState<EncryptionStatus>("SUCCESSFUL");
@@ -101,7 +126,7 @@ export default function ChatHeader({
     const selectedModelDetails = availableModels.find(
       (m) => m.name === modelName,
     );
-    if (selectedModelDetails && selectedModelDetails.available) {
+    if (selectedModelDetails) {
       setApiProvider(modelName);
     }
     handleModelClose();
@@ -140,7 +165,7 @@ export default function ChatHeader({
     activeSessionModelName ||
     globalModelDisplayName ||
     globalModelName ||
-    DEFAULT_MODELS[0].config.displayName;
+    (availableModels.length > 0 && availableModels[0].config.displayName);
 
   const currentModelNameForSelectionLogic =
     activeSessionModelName || globalModelIdentifier;
@@ -272,20 +297,16 @@ export default function ChatHeader({
               {modelsToDisplay.map((model) => {
                 const isSelected =
                   model.name === currentModelNameForSelectionLogic;
-                const isActuallyAvailable = model.available;
-
                 return (
                   <MenuItem
-                    key={`${model.provider.id}-${model.name}`}
+                    key={`${model.name}`}
                     onClick={() => {
                       handleModelSelect(model.name as ModelType);
                     }}
                     className={clsx(
                       styles.modelMenuItem,
-                      isSelected && isActuallyAvailable && styles.selected,
-                      !isActuallyAvailable && styles.unavailable,
+                      isSelected && styles.selected,
                     )}
-                    disabled={!isActuallyAvailable}
                   >
                     <ListItemText
                       primary={model.displayName || model.name}
@@ -294,18 +315,18 @@ export default function ChatHeader({
                       classes={{ secondary: styles.modelMenuItemDescription }}
                     />
                     <Box className={styles.iconContainer}>
-                      {isSelected && isActuallyAvailable && (
+                      {isSelected &&  (
                         <img src="/icons/check.svg" alt="Selected" />
-                      )}
-                      {!isActuallyAvailable && (
-                        <WarningAmberOutlinedIcon
-                          className={styles.warningIcon}
-                        />
                       )}
                     </Box>
                   </MenuItem>
                 );
               })}
+              {availableModels.length === 0 && (
+                <MenuItem disabled>
+                  <ListItemText primary="Loading models..." />
+                </MenuItem>
+              )}
             </Menu>
           </Box>
         )}

@@ -30,8 +30,6 @@ export interface LLMConfig {
   temperature?: number;
   top_p?: number;
   stream?: boolean;
-  presence_penalty?: number;
-  frequency_penalty?: number;
   reasoning?: boolean;
   useSearch?: boolean;
   targetEndpoint?: string;
@@ -50,29 +48,8 @@ export interface ChatOptions {
   onController?: (controller: AbortController) => void;
 }
 
-export interface LLMUsage {
-  used: number;
-  total: number;
-}
-
-export interface LLMModel {
-  name: string;
-  displayName?: string;
-  available: boolean;
-  provider: LLMModelProvider;
-  sorted: number;
-}
-
-export interface LLMModelProvider {
-  id: string;
-  providerName: string;
-  providerType: string;
-  sorted: number;
-}
-
 export abstract class LLMApi {
   abstract chat(options: ChatOptions): Promise<void>;
-  abstract usage(): Promise<LLMUsage>;
   abstract summary(
     config: LLMConfig,
     messages: RequestMessage[],

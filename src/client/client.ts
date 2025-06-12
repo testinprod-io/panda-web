@@ -73,6 +73,19 @@ export interface AttestationResponse {
   event_log: string;
 }
 
+export interface ServerModelInfo {
+  name: string;
+  model_name: string;
+  description: string;
+  url: string;
+  supported_features: string[];
+  max_context_length: number;
+}
+
+export interface InfoResponse {
+  models: ServerModelInfo[];
+}
+
 export class ApiClient {
   private baseUrl: string;
   private getAuthToken: () => Promise<string | null>;
@@ -455,5 +468,9 @@ export class ApiClient {
       "GET",
       `/attestationTokens/${publicKey}`,
     );
+  }
+
+  async getInfo(): Promise<InfoResponse> {
+    return this.request<InfoResponse>("GET", "/info");
   }
 }

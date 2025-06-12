@@ -270,21 +270,6 @@ export function getMessageImages(message: RequestMessage): string[] {
   );
 }
 
-export function isVisionModel(modelConfig: ModelConfig | undefined) {
-  return (
-    modelConfig?.name ===
-    "RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16"
-  );
-  //   const visionModels = useAccessStore.getState().visionModels;
-  //   const envVisionModels = visionModels?.split(",").map((m) => m.trim());
-  //   if (envVisionModels?.includes(model)) {
-  //     return true;
-  //   }
-  //   return (
-  //     !EXCLUDE_VISION_MODEL_REGEXES.some((regex) => regex.test(model)) &&
-  //     VISION_MODEL_REGEXES.some((regex) => regex.test(model))
-  //   );
-}
 
 export function isDalle3(model: string) {
   return "dall-e-3" === model;
