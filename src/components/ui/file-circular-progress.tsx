@@ -9,14 +9,12 @@ export const FileCircularProgress: React.FC<FileCircularProgressProps> = ({
   progress,
 }) => {
   const normalizedProgress = Math.max(0, Math.min(100, progress)); // Ensure 0-100
-
   return (
     <svg viewBox="0 0 36 36" className={styles.circularProgressSvg}>
       <path
         className={styles.circularProgressTrack} // Use class for track
         d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
         fill="none"
-        // stroke property will come from SCSS class
         strokeWidth="2.5"
       />
       <path
@@ -27,9 +25,9 @@ export const FileCircularProgress: React.FC<FileCircularProgressProps> = ({
           transform: "rotate(-90deg)",
           transformOrigin: "center",
         }}
-        // stroke property will come from SCSS class
         d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
         fill="none"
+        stroke="white"
         strokeWidth="2.5"
         strokeLinecap="round"
       />

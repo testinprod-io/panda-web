@@ -11,7 +11,7 @@
 
 .skeletonHeader {
   height: 14px;
-  background: linear-gradient(270deg, rgba(36.78, 61.39, 115.10, 0.05) 0%, #1E2941 50%);
+  background: linear-gradient(270deg, #f0f0f0 0%, #e6e6e6 50%);
   border-radius: 3px;
   margin-bottom: 18px;
   position: relative;
@@ -27,8 +27,8 @@
   width: 200px;
   background: linear-gradient(
     to right,
-    rgba(37, 61, 115, 0.05) 0%,
-    rgba(30, 41, 65, 1) 50%
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.6) 50%
   );
   animation: shimmer 1.5s infinite;
 }
@@ -47,7 +47,7 @@
 
 .skeletonLine {
   height: 14px;
-  background: linear-gradient(270deg, rgba(36.78, 61.39, 115.10, 0.05) 0%, #1E2941 50%);
+  background: linear-gradient(270deg, #f0f0f0 0%, #e6e6e6 50%);
   border-radius: 3px;
   position: relative;
   overflow: hidden;
@@ -62,8 +62,8 @@
   width: 200px;
   background: linear-gradient(
     to right,
-    rgba(37, 61, 115, 0.05) 0%,
-    rgba(30, 41, 65, 1) 50%
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.6) 50%
   );
   animation: shimmer 1.5s infinite;
 }

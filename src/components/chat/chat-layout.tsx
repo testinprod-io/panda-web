@@ -319,8 +319,8 @@ export default function ChatLayoutContent({
             left: 0,
             right: 0,
             bottom: 0,
-            background:
-              "linear-gradient(177deg, white 0%, #FEFEFE 27%, #F6FFFC 75%, #DAF7EF 100%)",
+            // background:
+              // "linear-gradient(177deg, white 0%, #FEFEFE 27%, #F6FFFC 75%, #DAF7EF 100%)",
             opacity: isNewChatPage && !isNavigatingAway ? 1 : 0,
             transition: isNavigatingAway ? "opacity 0.4s ease-in" : "none",
             zIndex: -1,

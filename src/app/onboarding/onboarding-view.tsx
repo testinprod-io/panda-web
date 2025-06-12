@@ -70,6 +70,9 @@ export default function OnboardingView() {
       setStep((s: number) => s + 1);
     }
   };
+  const handleSkip = () => {
+    router.push("/");
+  };
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
@@ -161,22 +164,46 @@ export default function OnboardingView() {
             switch (currentStepKey) {
               case "intro":
                 return (
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    onClick={() => handleNext("")}
-                    sx={{
-                      alignSelf: "flex-start",
-                      height: "48px",
-                      backgroundColor: "#131A28",
-                      color: "#C1FF83",
-                      borderRadius: "8px",
-                      textTransform: "none",
-                      fontSize: "16px",
+                  <Box
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      gap: "1rem",
                     }}
                   >
-                    Continue
-                  </Button>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      onClick={() => handleNext("")}
+                      sx={{
+                        alignSelf: "flex-start",
+                        height: "48px",
+                        backgroundColor: "#131A28",
+                        color: "#C1FF83",
+                        borderRadius: "8px",
+                        textTransform: "none",
+                        fontSize: "16px",
+                      }}
+                    >
+                      Continue
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="text"
+                      onClick={handleSkip}
+                      sx={{
+                        alignSelf: "flex-start",
+                        height: "48px",
+                        color: "#8a8a8a",
+                        borderRadius: "8px",
+                        textTransform: "none",
+                        fontSize: "16px",
+                      }}
+                    >
+                      Skip
+                    </Button>
+                  </Box>
                 );
               case "name":
                 return (
@@ -233,13 +260,15 @@ export default function OnboardingView() {
   };
 
   return (
-    <Box key="container" style={{
-      display: "flex",
-      flexDirection: "column",
-      height: "100vh",
-      backgroundColor: "#FFFFFF",
-      color: "#1E1E1E",
-    }}
+    <Box
+      key="container"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        backgroundColor: "#FFFFFF",
+        color: "#1E1E1E",
+      }}
     >
       <Box
         sx={{
@@ -282,13 +311,16 @@ export default function OnboardingView() {
             Panda
           </Typography>
         </Box>
-        <Box key="content" style={{
-          display: "flex", 
-          flexDirection:"column",
-          width: "80%", 
-          maxWidth: "min(500px, 80%)",
-          gap:"1.5rem",
-        }}>
+        <Box
+          key="content"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            width: "80%",
+            maxWidth: "min(500px, 80%)",
+            gap: "1.5rem",
+          }}
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -303,8 +335,10 @@ export default function OnboardingView() {
           <StreamingText
             text={getQuestion(currentStepKey, data.name)}
             style={{
-              fontSize: "2rem",
-              marginBottom: "2.5rem",
+              fontFamily: "Inter",
+              fontWeight: "600",
+              fontSize: "1.5rem",
+              marginBottom: "1rem",
               maxWidth: "80%",
             }}
           />

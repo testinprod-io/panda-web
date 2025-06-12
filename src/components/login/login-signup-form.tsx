@@ -38,11 +38,21 @@ const isValidEmail = (email: string): boolean => {
 export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [submittedEmail, setSubmittedEmail] = useState("");
   const [code, setCode] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const { ready, authenticated } = usePrivy();
   const { isFirstTimeUser } = useEncryption();
+
+  useEffect(() => {
+    // Reset state on unmount
+    return () => {
+      setEmail("");
+      setSubmittedEmail("");
+      setCode("");
+    };
+  }, []);
 
   const onComplete = ({ isNewUser }: {
     user: User;
@@ -97,16 +107,23 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
     }
   }, [ready, authenticated, router, isFirstTimeUser]);
 
+  const isCodeEntryVisible =
+    emailState.status === "awaiting-code-input" &&
+    email.toLowerCase() === submittedEmail.toLowerCase();
+
   const handleEmailSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (emailState.status === "initial" || emailState.status === "error") {
-        sendCode({ email, disableSignup: mode !== "signup" });
-      } else if (emailState.status === "awaiting-code-input") {
+      if (isCodeEntryVisible) {
         loginWithCode({ code });
+      } else {
+        if (isValidEmail(email)) {
+          setSubmittedEmail(email);
+          sendCode({ email, disableSignup: mode !== "signup" });
+        }
       }
     },
-    [email, code, emailState.status, sendCode, loginWithCode],
+    [isCodeEntryVisible, loginWithCode, code, email, sendCode, mode],
   );
 
   const handleGoogleLogin = useCallback(async () => {
@@ -119,7 +136,6 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
 
   const isSendingCode = emailState.status === "sending-code";
   const isSubmittingCode = emailState.status === "submitting-code";
-  const isCodeEntryVisible = emailState.status === "awaiting-code-input";
   const isOauthLoading = oauthState.status === "loading";
 
   const title = mode === "signup" ? "Create an account" : "Sign in";
@@ -175,7 +191,7 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
             value={email}
             size="medium"
             onChange={(e) => setEmail(e.target.value)}
-            disabled={isCodeEntryVisible || isSendingCode || isSubmittingCode || isOauthLoading}
+            disabled={isSendingCode || isSubmittingCode || isOauthLoading}
             inputProps={{ style: { fontSize: '14px', height: '40px', padding: '0px 10px' } }}
             sx={{ mb: 2, alignItems: 'left', '& .MuiInputBase-input': { textAlign: 'left', border: 'none' } }}
           />
@@ -232,7 +248,7 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
               isSubmittingCode ||
               isOauthLoading ||
               (isCodeEntryVisible
-                ? mode === "signup" && (!agreedToTerms || code.length !== 6)
+                ? (mode === "signup" && !agreedToTerms) || code.length !== 6
                 : !isValidEmail(email))
             }
           >

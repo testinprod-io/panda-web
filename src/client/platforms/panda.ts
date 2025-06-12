@@ -61,9 +61,9 @@ export class PandaApi implements LLMApi {
   }
 
   async chat(options: ChatOptions) {
-    let messages = options.messages.map((v) => ({
+    let messages = options.messages.map((v, i) => ({
       role: v.role,
-      content: v.attachments
+      content: (v.attachments && i === options.messages.length - 1)
         ? [...v.attachments, { type: "text", text: v.content }]
         : v.content,
     }));

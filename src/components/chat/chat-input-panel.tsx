@@ -454,6 +454,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
         activeSessionId,
         getAccessToken,
         chatActions,
+        setAttachedFiles,
         newSession,
       ],
     );

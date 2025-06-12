@@ -33,7 +33,7 @@ export function useAuthStatus() {
         setHasFetchedPromptsThisSession(true);
       }).catch((err) => {
         console.log("Failed to fetch prompts:", err);
-        router.push("/onboarding");
+        // router.push("/onboarding");
       });
     }
   }, [router, appConfig, apiClient, authenticated, hasFetchedPromptsThisSession, isLocked]);

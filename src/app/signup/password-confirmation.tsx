@@ -77,7 +77,7 @@ export default function PasswordConfirmation() {
         height: '100vh',
         py: 4,
         px: 2,
-        background: "linear-gradient(177deg, white 0%, #FEFEFE 27%, #F6FFFC 75%, #DAF7EF 100%)"
+        // background: "linear-gradient(177deg, white 0%, #FEFEFE 27%, #F6FFFC 75%, #DAF7EF 100%)"
       }}
     >
       <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', maxWidth: '410px', position: 'absolute', top: '32px', left: '32px' }}>
