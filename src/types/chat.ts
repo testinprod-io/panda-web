@@ -152,6 +152,7 @@ export type ChatMessage = Omit<RequestMessage, "content"> & {
   date: Date;
   streaming: boolean;
   isError: boolean;
+  errorMessage?: string;
   id: UUID;
   model?: ModelType;
   syncState: MessageSyncState;

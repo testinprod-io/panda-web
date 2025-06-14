@@ -329,14 +329,7 @@ export function useChatActions() {
         return;
       }
 
-      // Don't re-save synced messages
       if (message.syncState === MessageSyncState.SYNCED) return;
-
-      // const content = getMessageTextContent(message);
-      // if (!content) {
-      //     console.warn("[saveMessageToServer Action] Message content is empty, skipping save.", message);
-      //     return;
-      // }
 
       console.log(
         `[ChatActions] Saving message ${localMessageId} to conversation ${conversationId}`,
@@ -353,6 +346,8 @@ export function useChatActions() {
         custom_data: {
           useSearch: message.useSearch,
         },
+        is_error: message.isError,
+        error_message: message.errorMessage,
       };
 
       try {

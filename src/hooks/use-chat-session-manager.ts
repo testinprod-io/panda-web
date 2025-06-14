@@ -653,42 +653,20 @@ export function useChatSessionManager(
   );
 
   const finalizeStreamedBotMessage = useCallback(
-    (botMessageId: UUID, finalContent: string, date: Date, challengeResponse?: ChallengeResponse) => {
+    (botMessageId: UUID, finalContent: string, date: Date, challengeResponse?: ChallengeResponse, isError?: boolean, errorMessage?: string) => {
       setDisplayedMessages((prevMessages) => {
         let messageToSave: ChatMessage | undefined;
         const updatedMessages = prevMessages.map((msg) => {
           if (msg.id === botMessageId) {
             msg.streaming = false;
-            msg.content = EncryptionService.encrypt(finalContent);
-            msg.challengeResponse = challengeResponse;
+            if (isError !== undefined && errorMessage !== undefined) {
+              msg.isError = true;
+              msg.errorMessage = errorMessage;
+            } else {
+              msg.content = EncryptionService.encrypt(finalContent);
+              msg.challengeResponse = challengeResponse;
+            }
             messageToSave = msg;
-            // This is the message that should have been updated by onReasoningChunk, etc.
-            // const completeReasoning = msg.reasoning || "";
-            // let contentForSaving = finalContent;
-
-            // if (completeReasoning) {
-            //   contentForSaving = `[Reasoning]:\n${completeReasoning}\n\n[Answer]:\n${finalContent}`;
-            // }
-
-            // // This is the object that will be saved to the server
-            // messageToSave = {
-            //   ...msg,
-            //   content: contentForSaving, // Combined content for saving
-            //   reasoning: completeReasoning, // Keep separate reasoning for UI
-            //   streaming: false,
-            //   isReasoning: false, // Ensure this is reset
-            //   date: date,
-            //   syncState: MessageSyncState.PENDING_CREATE,
-            // };
-
-            // console.log("[ChatSessionManager] Finalizing bot message in setDisplayedMessages. ID:", messageToSave.id, "Content for DB:", messageToSave.content);
-
-            // // Return the version for UI state (separate content and reasoning)
-            // return {
-            //   ...messageToSave, // Spread to get most fields
-            //   content: finalContent,    // Override with main content for UI
-            //   reasoning: completeReasoning, // Ensure reasoning is separate for UI
-            // };
           }
           return msg;
         });
@@ -944,24 +922,34 @@ export function useChatSessionManager(
             duration = Date.now() - reasoningStartTimeForThisQuery;
             reasoningStartTimeForThisQuery = null;
           }
-          setDisplayedMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === localBotMessageId
-                ? {
-                    ...msg,
-                    isError: true,
-                    streaming: false,
-                    isReasoning: false,
-                    reasoningTime: duration,
-                    content:
-                      (typeof msg.content === "string" ? msg.content : "") +
-                      "\n\n--- ERROR ---\n" +
-                      error.message,
-                    syncState: MessageSyncState.ERROR,
-                  }
-                : msg,
-            ),
+          finalizeStreamedBotMessage(
+            localBotMessageId,
+            "",
+            new Date(),
+            undefined,
+            true,
+            error.message
           );
+
+
+          // setDisplayedMessages((prev) =>
+          //   prev.map((msg) =>
+          //     msg.id === localBotMessageId
+          //       ? {
+          //           ...msg,
+          //           isError: true,
+          //           streaming: false,
+          //           isReasoning: false,
+          //           reasoningTime: duration,
+          //           content:
+          //             (typeof msg.content === "string" ? msg.content : "") +
+          //             "\n\n--- ERROR ---\n" +
+          //             error.message,
+          //           syncState: MessageSyncState.ERROR,
+          //         }
+          //       : msg,
+          //   ),
+          // );
           ChatControllerPool.remove(sessionId, localBotMessageId);
           callbacks?.onFailure?.(error);
         },

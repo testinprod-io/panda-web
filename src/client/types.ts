@@ -19,6 +19,8 @@ export interface Message {
   reasoning_content?: string;
   reasoning_time?: string;
   custom_data?: Record<string, any>;
+  is_error: boolean;
+  error_message?: string;
 }
 
 export interface InitialMessageContent {
@@ -67,6 +69,8 @@ export interface MessageCreateRequest {
   reasoning_content?: string;
   reasoning_time?: string;
   custom_data?: Record<string, any>;
+  is_error?: boolean;
+  error_message?: string;
 }
 
 // Response Schemas

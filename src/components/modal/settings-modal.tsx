@@ -119,9 +119,9 @@ export default function SettingsModal({
           variant="text"
           endIcon={<ChevronRightIcon />}
           className={styles.actionButtonText}
-          onClick={() => setIsPromptsModalOpen(true)}
         />
       ),
+      onClick: () => setIsPromptsModalOpen(true),
     },
     // {
     //   label: "Archive chats",
@@ -181,8 +181,13 @@ export default function SettingsModal({
       default:
         return (
           <Box className={styles.generalSettings}>
-            {generalSettingsItems.map((item, index) => (
-              <Box key={index} className={styles.settingItem}>
+            {(generalSettingsItems as any[]).map((item, index) => (
+              <Box
+                key={index}
+                className={styles.settingItem}
+                onClick={item.onClick}
+                sx={{ cursor: item.onClick ? "pointer" : "default" }}
+              >
                 <Typography className={styles.settingItemLabel}>
                   {item.label}
                 </Typography>

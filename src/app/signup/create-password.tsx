@@ -22,7 +22,7 @@ export default function CreatePassword() {
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const router = useRouter();
   const { user, logout, ready, authenticated } = usePrivy();
-  const { isFirstTimeUser, createPassword } = useEncryption();
+  const { isFirstTimeUser, createPassword, unlockApp } = useEncryption();
   const { showSnackbar } = useSnackbar();
   
   useEffect(() => {
@@ -101,12 +101,13 @@ export default function CreatePassword() {
 
       try {
         await createPassword(password);
+        await unlockApp(password);
         router.replace("/signup?step=password-confirmation");
       } catch (err: any) {
         setPasswordError(err.message || "Failed to process password");
       }
     },
-    [password, confirmPassword, createPassword, router],
+    [password, confirmPassword, createPassword, unlockApp, router],
   );
 
   const handleLogOut = useCallback(() => {

@@ -524,6 +524,9 @@
     .search-button-text {
       color: #203D00;
     }
+    &:hover {
+      background-color: #b5f56b !important;
+    }
   }
 
   &:disabled {

@@ -24,11 +24,15 @@ const getQuestion = (step: string, name: string): string => {
     case "name":
       return "First, what should Panda AI call you?";
     case "role":
-      return `Great, ${name}. What's your role or profession?`;
+      return `${
+        name ? `Great, ${name}.` : ""
+      } What's your role or profession?`;
     case "traits":
       return "Got it. What traits should Panda AI have?";
     case "knowledge":
-      return `Finally, is there anything else Panda AI should know about you, ${name}?`;
+      return `Finally, is there anything else Panda AI should know about you${
+        name ? `, ${name}` : ""
+      }?`;
     default:
       return "";
   }
@@ -70,6 +74,7 @@ export default function OnboardingView() {
       setStep((s: number) => s + 1);
     }
   };
+  
   const handleSkip = () => {
     router.push("/");
   };
@@ -212,6 +217,7 @@ export default function OnboardingView() {
                   <TextInputStep
                     placeholder={PLACEHOLDERS[currentStepKey]}
                     onNext={handleNext}
+                    onSkip={() => handleNext("")}
                     avatarInitial={
                       data.name ? data.name.charAt(0).toUpperCase() : "🐼"
                     }
@@ -223,6 +229,7 @@ export default function OnboardingView() {
                   <TextInputStep
                     placeholder={PLACEHOLDERS[currentStepKey]}
                     onNext={handleNext}
+                    onSkip={() => handleNext("")}
                     avatarInitial={
                       data.name ? data.name.charAt(0).toUpperCase() : "🐼"
                     }
@@ -234,6 +241,7 @@ export default function OnboardingView() {
                   <TextInputStep
                     placeholder={PLACEHOLDERS[currentStepKey]}
                     onNext={handleNext}
+                    onSkip={() => handleNext("")}
                     avatarInitial={
                       data.name ? data.name.charAt(0).toUpperCase() : "🐼"
                     }
@@ -246,6 +254,7 @@ export default function OnboardingView() {
                   <TraitsStepView
                     placeholder={PLACEHOLDERS.traits}
                     onNext={handleNext}
+                    onSkip={() => handleNext("")}
                     avatarInitial={
                       data.name ? data.name.charAt(0).toUpperCase() : "🐼"
                     }

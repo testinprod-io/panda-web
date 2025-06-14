@@ -25,6 +25,7 @@ const initialTraits: Trait[] = [
 interface TraitsStepViewProps {
   placeholder: string;
   onNext: (value: string) => void;
+  onSkip: () => void;
   avatarInitial: string;
   initialValue: string;
 }
@@ -32,6 +33,7 @@ interface TraitsStepViewProps {
 export default function TraitsStepView({
   placeholder,
   onNext,
+  onSkip,
   avatarInitial,
   initialValue,
 }: TraitsStepViewProps) {
@@ -54,7 +56,8 @@ export default function TraitsStepView({
     setSelectedTraits(currentTextTraits);
   }, [traitsText]);
 
-  const onNextClick = () => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     onNext(traitsText);
   };
 
@@ -75,7 +78,8 @@ export default function TraitsStepView({
       transition={{ duration: 0.5, delay: 0.2 }}
     >
       <Box
-        key="content"
+        component="form"
+        onSubmit={handleSubmit}
         style={{
           display: "flex",
           flexDirection: "column",
@@ -126,7 +130,7 @@ export default function TraitsStepView({
             onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                onNextClick();
+                handleSubmit(e);
               }
             }}
             onFocus={() => setIsFocused(true)}
@@ -182,24 +186,39 @@ export default function TraitsStepView({
             />
           ))}
         </Box>
-        <Button
-          type="submit"
-          variant="contained"
-          onClick={onNextClick}
-          disabled={!traitsText.trim()}
-          sx={{
-            alignSelf: "flex-start",
-            height: "48px",
-            backgroundColor: "#131A28",
-            color: "#C1FF83",
-            borderRadius: "8px",
-            textTransform: "none",
-            fontSize: "16px",
-          }}
-          // className={styles.sendButton}
-        >
-          Continue
-        </Button>
+        <Box sx={{ display: "flex", gap: "1rem" }}>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={!traitsText.trim()}
+            sx={{
+              alignSelf: "flex-start",
+              height: "48px",
+              backgroundColor: "#131A28",
+              color: "#C1FF83",
+              borderRadius: "8px",
+              textTransform: "none",
+              fontSize: "16px",
+            }}
+          >
+            Continue
+          </Button>
+          <Button
+            type="button"
+            variant="text"
+            onClick={onSkip}
+            sx={{
+              alignSelf: "flex-start",
+              height: "48px",
+              color: "#8a8a8a",
+              borderRadius: "8px",
+              textTransform: "none",
+              fontSize: "16px",
+            }}
+          >
+            Skip
+          </Button>
+        </Box>
       </Box>
     </motion.div>
   );

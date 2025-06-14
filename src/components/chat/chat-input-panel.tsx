@@ -183,26 +183,16 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
       ) => {
         if (currentActiveSessionId) {
           const key = UNFINISHED_INPUT(currentActiveSessionId.toString());
-          const filesToPersist: SubmittedFile[] = (currentAttachedFiles || [])
-            .filter((f) => f.uploadStatus === "success" && f.fileId)
-            .map((f) => ({
-              url: f.previewUrl,
-              fileId: f.fileId!,
-              type: f.type,
-              name: f.name,
-              size: f.size,
-            }));
 
           if (
             (currentInput || "").trim() === "" &&
-            filesToPersist.length === 0 &&
             !(currentEnableSearch || false)
           ) {
             localStorage.removeItem(key);
           } else {
             const stateToSave: SessionState = {
               userInput: currentInput || "",
-              persistedAttachedFiles: filesToPersist,
+              persistedAttachedFiles: [],
               enableSearch: currentEnableSearch || false,
             };
             localStorage.setItem(key, JSON.stringify(stateToSave));
@@ -581,6 +571,12 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
       }
     };
 
+    const handleEnableSearch = useCallback((enabled: boolean) => {
+      setEnableSearch(enabled);
+      
+    }, []);
+
+    
     const handlePaste = useCallback(
       async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
         if (!modelConfig || !supportsImages(modelConfig.features) || !supportsPdf(modelConfig.features)) return;
