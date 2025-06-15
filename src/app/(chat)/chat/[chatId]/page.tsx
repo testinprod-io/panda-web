@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Box, CircularProgress } from "@mui/material";
 import { useChatStore } from "@/store/chat";
 import { useEffect, useState } from "react";
-import { MemoizedChatComponent } from "@/components/chat/chat-component";
+import { ChatComponent } from "@/components/chat/chat-component";
 
 import { useAuthStatus } from "@/hooks/use-auth-status";
 import toast from "react-hot-toast";
@@ -135,10 +135,10 @@ export default function ChatPage() {
   }
 
   return (
-    <MemoizedChatComponent
+    <ChatComponent
       key={sessionDataForValidation.id}
       sessionId={sessionDataForValidation.id}
-      session={sessionDataForValidation}
+      // session={sessionDataForValidation}
     />
   );
 }
