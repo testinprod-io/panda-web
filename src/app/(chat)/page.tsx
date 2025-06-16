@@ -3,8 +3,16 @@
 import { Box, Typography } from "@mui/material";
 import Image from "next/image";
 import Locale from "@/locales";
+import { useChatStore } from "@/store/chat";
+import { useEffect } from "react";
 
 export default function NewChatPage() {
+  const store = useChatStore();
+
+  useEffect(() => {
+    store.setCurrentSessionIndex(-1);
+  }, []);
+
   return (
     <Box
       sx={{

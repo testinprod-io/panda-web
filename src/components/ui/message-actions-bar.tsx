@@ -115,14 +115,22 @@ const AttestationInfoPopup: React.FC<{
   return (
     <Box sx={{ p: 1, maxWidth: 300 }}>
       <Typography variant="subtitle2" gutterBottom sx={{ color: "black" }}>
-        🔒Verified secure execution
+        🔒 Verified secure execution  
+        <a
+          href="https://testinprod.notion.site/Panda-Technical-FAQ-2018fc57f5468023bac3c5380179a272"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "black", textDecoration: "none" }}
+        >
+        .  (Learn more)
+        </a>
       </Typography>
       <Typography
         variant="body2"
         key={"AppID"}
         sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
       >
-        <strong>AppID:</strong>{" "}
+        <strong>App ID:</strong>{" "}
         <a
           href={"https://optimistic.etherscan.io/address/0x38C403D31722C3ff6F41d4575F26d6206BcD5176"}
           target="_blank"
@@ -137,7 +145,7 @@ const AttestationInfoPopup: React.FC<{
         key={"AppHash"}
         sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
       >
-        <strong>AppHash:</strong>{" "}
+        <strong>App Hash:</strong>{" "}
         {/* <a
           href={`https://etherscan.io/`}
           target="_blank"
@@ -161,14 +169,7 @@ const AttestationInfoPopup: React.FC<{
         key={"Help"}
         sx={{ wordBreak: "break-all", p: "2px", color: "black", fontStyle: "italic" }}
       >
-        <a
-          href="https://testinprod.notion.site/Panda-Technical-FAQ-2018fc57f5468023bac3c5380179a272"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: "black", textDecoration: "none" }}
-        >
-          <strong>Help?</strong>
-        </a>
+
       </Typography>
     </Box>
   );
@@ -231,6 +232,7 @@ export const MessageActionsBar: React.FC<MessageActionsBarProps> = ({
               backgroundColor: "white",
               borderRadius: "8px",
               border: "1px solid #e0e0e0",
+              maxWidth: "600px",
               // "& .MuiTooltip-popperInteractive": {
               //   backgroundColor: "white",
               //   borderRadius: "8px",
