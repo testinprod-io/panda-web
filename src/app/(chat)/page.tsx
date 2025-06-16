@@ -3,8 +3,16 @@
 import { Box, Typography } from "@mui/material";
 import Image from "next/image";
 import Locale from "@/locales";
+import { useChatStore } from "@/store/chat";
+import { useEffect } from "react";
 
 export default function NewChatPage() {
+  const store = useChatStore();
+
+  useEffect(() => {
+    store.setCurrentSessionIndex(-1);
+  }, []);
+
   return (
     <Box
       sx={{
@@ -16,7 +24,7 @@ export default function NewChatPage() {
       }}
     >
       <Image
-        src="/icons/inverse-icon.png"
+        src="/icons/inverse-icon.svg"
         alt="Panda AI Logo"
         width={100}
         height={100}

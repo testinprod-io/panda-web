@@ -264,13 +264,15 @@ export default function SettingsModal({
               {activeNavSection === "general" && renderContent()}
               {activeNavSection === "faq" && (
                 <Box>
-                  <Typography variant="h5" fontFamily={"Inter"}>Help & FAQ</Typography>
+                  <Typography fontSize={24} fontWeight={600} fontFamily={"Inter"}>Help & FAQ</Typography>
+                  <p>
                   <Typography>
-                    <a href="https://testinprod.notion.site/Private-Alpha-One-Pager-1ff8fc57f54680d0aa08ce7b8013948a" className={styles.FAQText}>Private Alpha One Pager</a>
+                    <a href="https://testinprod.notion.site/Private-Alpha-One-Pager-1ff8fc57f54680d0aa08ce7b8013948a" className={styles.FAQText}>- Private Alpha One Pager</a>
                   </Typography>
                   <Typography>
-                    <a href="https://testinprod.notion.site/Panda-Technical-FAQ-2018fc57f5468023bac3c5380179a272" className={styles.FAQText}>Panda Technical FAQ</a>
+                    <a href="https://testinprod.notion.site/Panda-Technical-FAQ-2018fc57f5468023bac3c5380179a272" className={styles.FAQText}>- Panda Technical FAQ</a>
                   </Typography>
+                  </p>
                 </Box>
               )}
             </Box>

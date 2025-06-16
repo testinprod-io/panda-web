@@ -294,9 +294,6 @@ export default function OnboardingView() {
         }}
       >
         <Box
-          // initial={{ opacity: 0, y: -20 }}
-          // animate={{ opacity: 1, y: 0 }}
-          // transition={{ duration: 0.5 }}
           style={{
             display: "flex",
             flexDirection: "row",
@@ -308,7 +305,7 @@ export default function OnboardingView() {
           }}
         >
           <img
-            src="/icons/inverse-icon.png"
+            src="/icons/inverse-icon.svg"
             alt="Panda AI Logo"
             width={40}
             height={40}

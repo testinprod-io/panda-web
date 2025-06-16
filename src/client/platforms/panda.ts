@@ -12,7 +12,7 @@ import {
   verifyChallenge,
   ChallengeResponse,
 } from "./panda-challenge";
-// Type for the Privy getAccessToken function
+
 export type GetAccessTokenFn = () => Promise<string | null>;
 
 export interface RequestPayload {

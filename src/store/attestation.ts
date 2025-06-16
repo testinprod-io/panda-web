@@ -4,10 +4,8 @@ import { VerificationResult, VerificationStatus } from "@/hooks/use-attestation-
 
 interface AttestationState {
   attestationResults: Record<string, AttestationResult>;
-//   verificationStatuses: Record<strin    g, VerificationStatus>;
   verificationResults: Record<string, VerificationResult>;
   setAttestationResult: (publicKeyHex: string, result: AttestationResult) => void;
-//   setVerificationStatus: (appId: string, status: VerificationStatus) => void;
   setVerificationResult: (appId: string, result: VerificationResult) => void;
 }
 
