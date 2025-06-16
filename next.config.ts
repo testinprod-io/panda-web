@@ -12,7 +12,7 @@ const CSP = [
   "frame-ancestors 'none'",
   "child-src https://auth.privy.io https://verify.walletconnect.com https://verify.walletconnect.org",
   "frame-src https://auth.privy.io https://verify.walletconnect.com https://verify.walletconnect.org https://challenges.cloudflare.com",
-  "connect-src 'self' https://*.panda.chat https://auth.privy.io wss://relay.walletconnect.com wss://relay.walletconnect.org https://pulse.walletconnect.org wss://www.walletlink.org https://api.web3modal.org https://*.rpc.privy.systems https://explorer-api.walletconnect.com",
+  "connect-src 'self' https://*.panda.chat https://auth.privy.io wss://relay.walletconnect.com wss://relay.walletconnect.org https://pulse.walletconnect.org wss://www.walletlink.org https://api.web3modal.org https://*.rpc.privy.systems https://explorer-api.walletconnect.com https://mainnet.optimism.io",
   "worker-src 'self'",
   "manifest-src 'self'",
 ]
