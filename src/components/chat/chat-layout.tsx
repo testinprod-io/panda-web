@@ -336,7 +336,9 @@ export default function ChatLayoutContent({
         <Box
           sx={{
             height: { xs: "calc(100% - 80px)", md: "calc(100% - 112px)" },
-            width: { xs: "90%", md: "clamp(540px, 70%, 1200px)" },
+            width: "100%",
+            paddingLeft: { xs: "5%", md: "max(calc((100% - 1200px) / 2), 15%)" },
+            paddingRight: { xs: "5%", md: "max(calc((100% - 1200px) / 2), 15%)" },
             display: "flex",
             flexDirection: "column",
             gap: "1rem",

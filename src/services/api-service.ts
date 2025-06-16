@@ -105,6 +105,8 @@ export function mapApiMessageToChatMessage(message: ApiMessage): ChatMessage {
       : undefined,
     useSearch: message.custom_data?.useSearch ?? false,
     syncState: MessageSyncState.SYNCED,
+    isError: message.is_error,
+    errorMessage: message.error_message,
   });
 }
 
@@ -318,38 +320,6 @@ export const ChatApiService = {
       );
       args.onError(error as Error);
     }
-  },
-
-  // Wrapper for LLM chat specifically for summarizing (non-streaming)
-  async callLlmSummarize(
-    api: ClientApi,
-    messages: RequestMessage[],
-    config: ModelConfig,
-  ): Promise<string> {
-    console.log("[ChatApiService] Calling LLM summarize:", {
-      messagesCount: messages.length,
-      config,
-    });
-    return new Promise((resolve, reject) => {
-      const llmSummarizeConfig: LLMConfig = {
-        model: config.name,
-        temperature: config.temperature,
-        top_p: config.top_p,
-        reasoning: config.reasoning ?? false,
-        stream: false,
-        targetEndpoint: config.endpoint,
-      };
-      api.llm
-        .summary(llmSummarizeConfig, messages, 1000)
-        .then((response) => {
-          console.log("[ChatApiService] LLM summarize finished successfully.");
-          resolve(response.summary);
-        })
-        .catch((error) => {
-          console.error("[ChatApiService] LLM summarize failed:", error);
-          reject(error);
-        });
-    });
   },
 
   async callLlmGenerateTitle(
