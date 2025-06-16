@@ -249,6 +249,7 @@ export function PasswordModal({
             margin="none"
             id={`unlock-password`}
             type="password"
+            autoComplete="current-password"
             fullWidth
             variant="outlined"
             value={password}
