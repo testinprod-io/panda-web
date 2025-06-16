@@ -305,7 +305,7 @@ export default function OnboardingView() {
           }}
         >
           <img
-            src="/icons/inverse-icon.png"
+            src="/icons/inverse-icon.svg"
             alt="Panda AI Logo"
             width={40}
             height={40}

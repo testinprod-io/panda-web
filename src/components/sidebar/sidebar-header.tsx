@@ -32,7 +32,7 @@ export default function SidebarHeader({
         onClick={handleNewChat}
       >
         <Image
-          src="/icons/inverse-icon.png"
+          src="/icons/inverse-icon.svg"
           alt="Panda Logo"
           className={clsx(styles.sidebarHeaderLogoImage, isSidebarCollapsed && styles.collapsed)}
           width={32}
