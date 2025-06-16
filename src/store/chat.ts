@@ -243,7 +243,6 @@ export const useChatStore = createPersistStore(
 
     const methods = {
       setCurrentSessionIndex(index: number) {
-        console.log("[ChatStore] Setting current session index:", index);
         const sessions = _get().sessions;
         if (index >= 0 && index < sessions.length) {
           set({ currentSessionIndex: index });
@@ -253,8 +252,6 @@ export const useChatStore = createPersistStore(
       },
 
       setSessions(sessions: ChatSession[], currentSessionIndex?: number) {
-        console.log("[ChatStore] Setting sessions:", sessions);
-        console.log("[ChatStore] Setting current session index:", currentSessionIndex);
         const newIndex = currentSessionIndex ?? -1; //(sessions.length > 0 ? 0 : -1);
         set({
           sessions: sessions, // Assumes sessions are already decrypted
@@ -335,7 +332,6 @@ export const useChatStore = createPersistStore(
 
       currentSession() {
         const { sessions, currentSessionIndex } = _get();
-        console.log("[ChatStore] Current session index:", currentSessionIndex);
         if (currentSessionIndex < 0 || currentSessionIndex >= sessions.length) {
           return undefined; // No valid session selected
         }
@@ -381,11 +377,8 @@ export const useChatStore = createPersistStore(
 
       updateCurrentSessionModel(newModelConfig: ModelConfig) {
         const session = get().currentSession();
-        console.log("[Update Current Session Model - Store] ", newModelConfig);
-
+        
         if (!session) return;
-        console.log("session", session);
-
         get().updateTargetSession(session, (sess) => {
           // sess.modelConfig is typed as ModelConfig from app/constant.ts
           sess.modelConfig = newModelConfig;
