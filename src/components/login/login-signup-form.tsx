@@ -119,7 +119,7 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
       } else {
         if (isValidEmail(email)) {
           setSubmittedEmail(email);
-          sendCode({ email, disableSignup: mode !== "signup" });
+          sendCode({ email, disableSignup: false });
         }
       }
     },

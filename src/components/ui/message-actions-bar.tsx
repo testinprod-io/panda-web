@@ -44,14 +44,14 @@ const AttestationInfoPopup: React.FC<{
         sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
       >
         <strong>Challenge Text:</strong>{" "}
-        <a
+        {/* <a
           href={`https://etherscan.io/`}
           target="_blank"
           rel="noopener noreferrer"
           style={{ color: "black" }}
-        >
-          {challengeResponse?.challenge}
-        </a>
+        > */}
+        {challengeResponse?.challenge}
+        {/* </a> */}
       </Typography>
         <Typography
           variant="body2"
@@ -59,14 +59,14 @@ const AttestationInfoPopup: React.FC<{
           sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
         >
           <strong>Certificate Key:</strong>{" "}
-          <a
+          {/* <a
             href={`https://etherscan.io/`}
             target="_blank"
             rel="noopener noreferrer"
             style={{ color: "black" }}
-          >
+          > */}
             {verificationResult.publicKey}
-          </a>
+          {/* </a> */}
         </Typography>
       </Box>
     );
@@ -91,14 +91,7 @@ const AttestationInfoPopup: React.FC<{
         sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
       >
         <strong>Challenge Text:</strong>{" "}
-        <a
-          href={`https://etherscan.io/`}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: "black" }}
-        >
-          {challengeResponse?.challenge}
-        </a>
+        {challengeResponse?.challenge}
       </Typography>
         <Typography
           variant="body2"
@@ -106,14 +99,14 @@ const AttestationInfoPopup: React.FC<{
           sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
         >
           <strong>Certificate Key:</strong>{" "}
-          <a
+          {/* <a
             href={`https://etherscan.io/`}
             target="_blank"
             rel="noopener noreferrer"
             style={{ color: "black" }}
-          >
+          > */}
             {verificationResult.publicKey}
-          </a>
+          {/* </a> */}
         </Typography>
       </Box>
     );
@@ -131,7 +124,7 @@ const AttestationInfoPopup: React.FC<{
       >
         <strong>AppID:</strong>{" "}
         <a
-          href={`https://etherscan.io/`}
+          href={"https://optimistic.etherscan.io/address/0x38C403D31722C3ff6F41d4575F26d6206BcD5176"}
           target="_blank"
           rel="noopener noreferrer"
           style={{ color: "black" }}
@@ -145,14 +138,14 @@ const AttestationInfoPopup: React.FC<{
         sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
       >
         <strong>AppHash:</strong>{" "}
-        <a
+        {/* <a
           href={`https://etherscan.io/`}
           target="_blank"
           rel="noopener noreferrer"
           style={{ color: "black" }}
-        >
+        > */}
           {verificationResult.attestationResult?.composeHash}
-        </a>
+        {/* </a> */}
       </Typography>
       <Typography
         variant="body2"
@@ -160,26 +153,19 @@ const AttestationInfoPopup: React.FC<{
         sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
       >
         <strong>Challenge Text:</strong>{" "}
-        <a
-          href={`https://etherscan.io/`}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: "black" }}
-        >
-          {challengeResponse?.challenge}
-        </a>
+        {challengeResponse?.challenge}
       </Typography>
 
       <Typography
         variant="body2"
         key={"Help"}
-        sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
+        sx={{ wordBreak: "break-all", p: "2px", color: "black", fontStyle: "italic" }}
       >
         <a
-          href="https://etherscan.io/"
+          href="https://testinprod.notion.site/Panda-Technical-FAQ-2018fc57f5468023bac3c5380179a272"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: "black" }}
+          style={{ color: "black", textDecoration: "none" }}
         >
           <strong>Help?</strong>
         </a>
@@ -197,10 +183,7 @@ export const MessageActionsBar: React.FC<MessageActionsBarProps> = ({
   challengeResponse,
   onResend,
 }) => {
-  const contentToCopy = messageContent || "";
-  const fullContentToCopy = reasoningText
-    ? `${contentToCopy}\\n\\n[Reasoning]:\\n${reasoningText}`
-    : contentToCopy;
+  const contentToCopy = (messageContent || "").trim();
 
   let attestationIcon: React.ReactNode = null;
   if (verificationResult && challengeResponse) {
@@ -299,7 +282,7 @@ export const MessageActionsBar: React.FC<MessageActionsBarProps> = ({
       // No specific sx needed here if default chat-message-actions alignment is fine
     >
       <button
-        onClick={() => copyToClipboard(fullContentToCopy)}
+        onClick={() => copyToClipboard(contentToCopy)}
         className={styles["user-action-button"]}
         aria-label="Copy message and reasoning"
         title="Copy message and reasoning"

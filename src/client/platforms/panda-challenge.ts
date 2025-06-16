@@ -1,11 +1,5 @@
 /**
  * This middleware handles the Panda API's challenge-response verification.
- * It requires the 'elliptic' package. Please install it using:
- * npm install elliptic
- * or
- * yarn add elliptic
- * If using TypeScript, also install types:
- * npm install --save-dev @types/elliptic
  */
 import { createVerify, randomBytes } from "crypto";
 import { ec as EC } from "elliptic";

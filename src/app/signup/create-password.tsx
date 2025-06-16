@@ -134,7 +134,6 @@ export default function CreatePassword() {
         height: '100vh',
         py: 4,
         px: 2,
-        background: "linear-gradient(177deg, white 0%, #FEFEFE 27%, #F6FFFC 75%, #DAF7EF 100%)"
       }}
     >
       <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', maxWidth: '410px', marginRight: 'auto', mb: 10 }}>
@@ -161,15 +160,8 @@ export default function CreatePassword() {
             alignItems: "left",
             gap: "12px",
             marginTop: "15vh",
-            // marginBottom: "20px",
           }}
         >
-          {/* <Image
-            src="/icons/rounded-logo.svg"
-            alt="Panda AI Logo"
-            width={64}
-            height={64}
-          /> */}
           <Typography
             variant="h5"
             component="div"

@@ -520,7 +520,7 @@ const CertificateInfoPopup: React.FC<{
   return (
     <Box sx={{ p: 1, maxWidth: 300 }}>
       <Typography variant="subtitle2" gutterBottom sx={{ color: "black" }}>
-        🔒 Verified secure execution <a href="https://etherscan.io/" target="_blank" rel="noopener noreferrer" style={{ color: "black" }}>Learn more</a>
+        🔒 Verified secure execution <a href="https://testinprod.notion.site/Panda-Technical-FAQ-2018fc57f5468023bac3c5380179a272" target="_blank" rel="noopener noreferrer" style={{ color: "black" }}>Learn more</a>
       </Typography>
       <Typography
         variant="body2"
