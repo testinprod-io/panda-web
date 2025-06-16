@@ -422,6 +422,7 @@ export default function ChatHeader({
                   primary={
                     user?.wallet?.address ||
                     user?.email?.address ||
+                    user?.google?.email ||
                     "Anonymous"
                   }
                   className={styles.profileMenuText}
