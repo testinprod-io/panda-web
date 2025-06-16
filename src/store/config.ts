@@ -1,5 +1,4 @@
-import { ServerModelInfo } from "@/client/client";
-
+import { ServerModelInfo } from "@/client/types";
 import {
   DEFAULT_MODELS,
   DEFAULT_SIDEBAR_WIDTH,
