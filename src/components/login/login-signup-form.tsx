@@ -187,7 +187,7 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
           <TextField
             type="email"
             fullWidth
-            placeholder="name@work-email.com"
+            placeholder="name@email.com"
             value={email}
             size="medium"
             onChange={(e) => setEmail(e.target.value)}

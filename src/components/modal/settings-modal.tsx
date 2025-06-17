@@ -272,6 +272,9 @@ export default function SettingsModal({
                   <Typography>
                     <a href="https://testinprod.notion.site/Panda-Technical-FAQ-2018fc57f5468023bac3c5380179a272" className={styles.FAQText}>- Panda Technical FAQ</a>
                   </Typography>
+                  <Typography>
+                    <a href="https://testinprod.notion.site/Panda-Tips-Guides-2148fc57f54680f982b3d32973d20314" className={styles.FAQText}>- Panda Tips & Guides</a>
+                  </Typography>
                   </p>
                 </Box>
               )}
