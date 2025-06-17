@@ -235,7 +235,9 @@ export default function CustomizePromptsView({
 
       setInitialData(responseData);
       setIsUpdateMode(true);
-      // onNavigateBack(); // Optionally navigate back
+      
+      // Close the modal after successful save
+      onCloseRequest();
     } catch (apiError: any) {
       setError(apiError.message || "Failed to save customized prompts.");
     } finally {
@@ -407,7 +409,8 @@ export default function CustomizePromptsView({
           className={styles.saveButton}
           disabled={!canSave || isSaving}
         >
-          {isSaving ? <CircularProgress size={24} color="inherit" /> : "Save"}
+          {isSaving && <CircularProgress size={16} color="inherit" sx={{ mr: 1 }} />}
+          Save
         </Button>
       </Box>
     </Box>
