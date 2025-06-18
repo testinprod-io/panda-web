@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const isDev = process.env.NODE_ENV !== "production";
+
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://*.panda.chat",
@@ -24,7 +26,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: false,
 
   async headers() {
-    return [
+    return isDev ? [] : [
       {
         source: "/:path*",
         headers: [
