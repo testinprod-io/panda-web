@@ -141,7 +141,7 @@ export default function SettingsModal({
       onClick: () => setIsPromptsModalOpen(true),
     },
     {
-      label: "Password expiration",
+      label: "Inactivity Lock Timer",
       control: (
         <Select
           value={passwordExpirationMinutes.toString()}
