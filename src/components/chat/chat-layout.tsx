@@ -16,7 +16,7 @@ import Sidebar from "@/components/sidebar/sidebar";
 import ChatHeader from "@/components/chat/chat-header";
 
 import { ChatInputPanel } from "@/components/chat/chat-input-panel";
-import { useChatStore, useAppConfig } from "@/store";
+import { useChatStore, useAppConfig, DEFAULT_TOPIC } from "@/store";
 import { UNFINISHED_INPUT } from "@/types/constant";
 import { SessionState } from "@/types/session";
 import { safeLocalStorage } from "@/utils/utils";
@@ -27,7 +27,7 @@ import { useSnackbar } from "@/providers/snackbar-provider";
 import styles from "@/components/chat/chat.module.scss";
 import sidebarStyles from "@/components/sidebar/sidebar.module.scss";
 import { usePrivy } from "@privy-io/react-auth";
-
+import { usePandaSDK } from "@/providers/sdk-provider";
 const localStorage = safeLocalStorage();
 
 function usePrevious<T>(value: T): T | undefined {
@@ -52,7 +52,7 @@ export default function ChatLayoutContent({
   const router = useRouter();
   const appConfig = useAppConfig();
   const prevIsMobile = usePrevious(isMobile);
-
+  const sdk = usePandaSDK();
   const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
 
   const { newSession } = useChatActions();
@@ -143,10 +143,12 @@ export default function ChatLayoutContent({
             showSnackbar("Failed to start new chat", "error");
           }
         } else {
-          const createdSession = await newSession(
+          const createdSession = await sdk.chat.createNewChat(
+            DEFAULT_TOPIC,
             modelConfig,
             appConfig.customizedPrompts,
           );
+          
           if (createdSession) {
             const newUserMessage = { sessionState };
             localStorage.setItem(

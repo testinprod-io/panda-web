@@ -33,11 +33,12 @@ import { LLMConfig, RequestMessage } from "@/client/api";
 import { DEFAULT_TOPIC } from "@/store/chat";
 import { EncryptionService } from "@/services/encryption-service";
 import { generateSystemPrompt } from "@/types/chat";
-
+// import { usePandaSDK } from "@/providers/sdk-provider";
 export function useChatActions() {
   const store = useChatStore();
   const apiClient = useApiClient();
   const appConfig = useAppConfig();
+  // const sdk = usePandaSDK();
 
   const loadSessionsFromServer = useCallback(
     async (options?: { cursor?: string | null; limit?: number }) => {
@@ -145,22 +146,28 @@ export function useChatActions() {
           customized_prompts: EncryptionService.encrypt(systemPrompt)
         };
       }
-
+      
       try {
-        const newConversation = await ChatApiService.createConversation(
-          apiClient,
-          createRequest,
-        );
-        const session = mapConversationToSession(newConversation);
+        // const newConversation = await sdk.chat.createNewChat(
+        //   DEFAULT_TOPIC,
+        //   { ...modelConfig, ...appConfig.modelConfig },
+        //   customizedPrompts,
+        // );
+        // return { ...newConversation, syncState: SessionSyncState.SYNCED, modelConfig: { ...appConfig.modelConfig, ...modelConfig } };
+        // // const newConversation = await ChatApiService.createConversation(
+        //   apiClient,
+        //   createRequest,
+        // );
+        // const session = mapConversationToSession(newConversation);
 
-        session.syncState = SessionSyncState.SYNCED;
-        session.modelConfig = { ...appConfig.modelConfig, ...modelConfig };
-        store.addSession(session);
+        // session.syncState = SessionSyncState.SYNCED;
+        // session.modelConfig = { ...appConfig.modelConfig, ...modelConfig };
+        // store.addSession(session);
 
-        console.log(
-          `[ChatActions] New session ${session.id} created and added to store.`,
-        );
-        return session;
+        // console.log(
+        //   `[ChatActions] New session ${session.id} created and added to store.`,
+        // );
+        // return session;
       } catch (error) {
         console.error("[ChatActions] Failed to create server session:", error);
         return undefined;

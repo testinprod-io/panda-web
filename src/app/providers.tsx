@@ -30,11 +30,11 @@ function AuthenticatedContentWrapper({
 
 function SDKWrapper({ children }: { children: React.ReactNode }) {
   const { getAccessToken } = usePrivy();
-  if (!getAccessToken) {
-    // This can happen briefly while Privy is initializing.
-    // Return a loader or null.
-    return null; 
-  }
+  // if (!getAccessToken) {
+  //   // This can happen briefly while Privy is initializing.
+  //   // Return a loader or null.
+  //   return null; 
+  // }
   return (
     <PandaSDKProvider getAccessToken={getAccessToken}>
       {children}
@@ -71,13 +71,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
               },
             }}
           >
-            <ApiClientProvider>
               <SDKWrapper>
+            <ApiClientProvider>
                 <AuthenticatedContentWrapper>
                   {children}
                 </AuthenticatedContentWrapper>
-              </SDKWrapper>
             </ApiClientProvider>
+              </SDKWrapper>
           </PrivyProvider>
         ) : (
           <SnackbarProvider>{children}</SnackbarProvider>

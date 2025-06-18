@@ -8,12 +8,12 @@ import { useChatActions } from "@/hooks/use-chat-actions";
 import { useState } from "react";
 import { jwtVerify, importSPKI, JWTPayload, importJWK, JWK } from "jose";
 import { AuthService } from "@/services/auth-service";
-
+// import { usePandaSDK } from "@/providers/sdk-provider";
 // Uses the action hook to trigger data loading/clearing based on auth state.
 export function AuthChatListener() {
   const { ready, authenticated } = usePrivy();
   const apiClient = useApiClient();
-
+  // const sdk = usePandaSDK();
   // Get actions from the hook
   const actions = useChatActions();
 
@@ -38,7 +38,7 @@ export function AuthChatListener() {
       console.log(
         "[AuthChatListener] User authenticated. Triggering load/sync...",
       );
-      actions.loadSessionsFromServer();
+      // sdk.chat.loadChats();
       setInitialLoadDone(true); // Mark initial load attempt as done
       try {
       // handleAttestation3("04b4e21611be6ea53d5ea647922eca60c869906ae3be4c12a5928ea50097d48cbb6d72c18213572b1c8f9ffa56aaab6a519e918e05157fec328241ca19f1cdea62");
