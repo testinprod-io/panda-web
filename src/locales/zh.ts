@@ -205,6 +205,19 @@ const zh = {
     ExtraInformationTitle: "最后，还有什么 Panda AI 需要了解你的吗？",
     ExtraInformationPlaceholder:
       "例如：我更喜欢精准、数据驱动的回答。",
+    Intro: {
+      Title:
+        "我是以隐私为先原则打造的 AI 助手。让我们一起头脑风暴、创作并学习。",
+      Intro1Title: "数据只属于你。",
+      Intro1Content:
+        "每次对话都经过加密，仅存储在你的设备上。云端不保留任何内容，完全保护隐私。",
+      Intro2Title: "无法追溯的对话。",
+      Intro2Content:
+        "由于无法追溯到你，本次讨论安全且保密。我不会用你的聊天记录进行训练。",
+      Intro3Title: "一切尽在掌控。",
+      Intro3Content:
+        "你随时可以删除聊天和数据。一切由你说了算。",
+    },
   },
   ChatList: {
     Today: "今天",

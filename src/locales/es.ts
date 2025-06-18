@@ -207,6 +207,20 @@ const es = {
       "Por último, ¿hay algo más que Panda AI deba saber sobre ti?",
     ExtraInformationPlaceholder:
       "p. ej. Prefiero respuestas precisas basadas en datos.",
+    Intro: {
+      Title:
+        "Soy tu asistente de IA, creado con un principio de privacidad ante todo. Pensemos, creemos y aprendamos juntos.",
+      Intro1Title: "Tus datos son tuyos.",
+      Intro1Content:
+        "Cada conversación está cifrada y se almacena solo en tu dispositivo. Nada se guarda en la nube, garantizando total privacidad.",
+      Intro2Title: "Conversaciones sin rastro.",
+      Intro2Content:
+        "Como nada puede vincularse a ti, tus charlas son seguras y confidenciales. No entreno con tus conversaciones.",
+      Intro3Title: "Tú tienes el control.",
+      Intro3Content:
+        "Puedes borrar tus chats y datos en cualquier momento. La última palabra la tienes tú.",
+    },
+    
   },
 
   ChatList: {

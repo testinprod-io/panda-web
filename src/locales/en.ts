@@ -199,6 +199,15 @@ const en = {
     TraitsPlaceholder: "Describe or select traits by clicking below",
     ExtraInformationTitle: "Finally, is there anything else Panda AI should know about you?",
     ExtraInformationPlaceholder: "e.g. I prefer precise, data-driven answers.",
+    Intro: { 
+      Title: "I'm your AI assistant, built on a privacy-first principle. Let's brainstorm, create, and learn together.",
+      Intro1Title: "Your data stays yours.",
+      Intro1Content: "Every conversation is encrypted and stored only on your device. Nothing is stored in the cloud, ensuring complete privacy.",
+      Intro2Title: "Untraceable conversations.",
+      Intro2Content: "Since nothing is traceable back to you, your discussions are secure and secret. I don't train on your chats.",
+      Intro3Title: "You're in control.",
+      Intro3Content: "You can delete your chats and data anytime. You have the final say."
+    }
   },
   ChatList: {
     Today: "Today",
