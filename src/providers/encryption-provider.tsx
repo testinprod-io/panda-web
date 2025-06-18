@@ -54,7 +54,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   const router = useRouter();
 
   const passwordExpirationMinutes =
-    useUserStore((state) => state.get<number>("passwordExpirationMinutes")) ?? 10 * 60 * 1000;
+    (useUserStore((state) => state.get<number>("passwordExpirationMinutes")) ?? 10) * 60 * 1000;
   
   // Set up error handling for encryption-related operations
   useEffect(() => {
