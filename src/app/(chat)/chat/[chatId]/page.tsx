@@ -5,24 +5,24 @@ import { Box, CircularProgress } from "@mui/material";
 import { useChatStore } from "@/store/chat";
 import { useEffect, useState } from "react";
 import { ChatComponent } from "@/components/chat/chat-component";
-
+import { usePandaSDK } from "@/providers/sdk-provider";
 import { useAuthStatus } from "@/hooks/use-auth-status";
 import toast from "react-hot-toast";
-import { ChatSession } from "@/types";
+import { Chat } from "@/sdk/Chat";
 import { UUID } from "crypto";
 
 export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
   const store = useChatStore();
-
+  const sdk = usePandaSDK();
   const chatId = params?.chatId as UUID | undefined;
   const { isReady: isAuthReady, isAuthenticated } = useAuthStatus();
 
   const [isLoadingState, setIsLoadingState] = useState(true);
   const [isValidSession, setIsValidSession] = useState<boolean>(false);
   const [sessionDataForValidation, setSessionDataForValidation] =
-    useState<ChatSession | null>(null);
+    useState<Chat | null>(null);
 
   useEffect(() => {
     const isStoreHydrated = store._hasHydrated;
@@ -45,7 +45,7 @@ export default function ChatPage() {
       return;
     }
 
-    const currentSession = store.sessions.find((s) => s.id === chatId);
+    const currentSession = sdk.chat.getChat(chatId);
     if (currentSession) {
       if (store.currentSession()?.id !== chatId) {
         const sessionIndex = store.sessions.findIndex((s) => s.id === chatId);

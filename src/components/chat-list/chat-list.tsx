@@ -11,6 +11,7 @@ import { usePandaSDK } from "@/providers/sdk-provider";
 import { useChatList } from "@/sdk/hooks";
 import { Conversation } from "@/client/types";
 import { useChatStore } from "@/store";
+import { Chat } from "@/sdk/Chat";
 
 interface ChatListProps {
   narrow?: boolean;
@@ -80,34 +81,34 @@ export function ChatList(props: ChatListProps) {
     };
   }, [hasMore, isLoading, chatManager]);
 
-  const handleSelectItem = (conversation: Conversation) => {
-    const session = chatStore.sessions.find(s => s.id === conversation.conversation_id);
+  const handleSelectItem = (conversation: Chat) => {
+    const session = chatManager.getChat(conversation.id);
     if(session) {
-      chatManager.setActiveChat(conversation.conversation_id, session.modelConfig, session.customizedPrompts);
-      router.replace(`/chat/${conversation.conversation_id}`);
+      chatManager.setActiveChat(conversation.id);
+      router.replace(`/chat/${conversation.id}`);
     } else {
-        console.error("Session config not found for conversation:", conversation.conversation_id);
+        console.error("Session config not found for conversation:", conversation.id);
     }
   };
 
-  const handleDeleteItem = async (conversation: Conversation) => {
+  const handleDeleteItem = async (conversation: Chat) => {
     if (window.confirm(Locale.Home.DeleteChat)) {
-      const wasActive = activeChat?.id === conversation.conversation_id;
-      await chatManager.deleteChat(conversation.conversation_id as any);
+      const wasActive = activeChat?.id === conversation.id;
+      await chatManager.deleteChat(conversation.id);
       if (wasActive) {
         router.push("/");
       }
     }
   };
   
-  const handleRenameItem = (conversation: Conversation, newName: string) => {
-    chatManager.renameChat(conversation.conversation_id as any, newName);
+  const handleRenameItem = (conversation: Chat, newName: string) => {
+    chatManager.renameChat(conversation.id, newName);
   };
 
-  const groupedSessions = conversations.reduce<{[groupName: string]: Conversation[]}>((acc, session) => {
-      const dateToGroup = new Date(session.updated_at).getTime();
+  const groupedSessions = conversations.reduce<{[groupName: string]: Chat[]}>((acc, session) => {
+      const dateToGroup = new Date(session.updatedAt ?? 0).getTime();
       const groupName = getRelativeDateGroup(dateToGroup);
-      if (!acc[groupName]) acc[groupName] = [];
+      if (!acc[groupName]) acc[groupName] = []; 
       acc[groupName].push(session);
       return acc;
     }, {});
@@ -142,9 +143,9 @@ export function ChatList(props: ChatListProps) {
             .map((item, i) => (
               <ChatItem
                 session={item as any}
-                key={item.conversation_id}
+                key={item.id}
                 index={i}
-                selected={item.conversation_id === activeChat?.id}
+                selected={item.id === activeChat?.id}
                 onClick={() => handleSelectItem(item)}
                 onDelete={() => handleDeleteItem(item)}
                 onRename={(newTitle) => handleRenameItem(item, newTitle)}

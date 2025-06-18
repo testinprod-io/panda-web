@@ -12,7 +12,7 @@ import { useDebouncedCallback } from "use-debounce";
 import { ModelConfig } from "@/types/constant";
 import { usePrivy } from "@privy-io/react-auth";
 
-import { useChatStore } from "@/store";
+import { DEFAULT_TOPIC, useChatStore } from "@/store";
 import { UNFINISHED_INPUT } from "@/types/constant";
 import {
   autoGrowTextArea,
@@ -36,7 +36,7 @@ import { SessionState, SubmittedFile } from "@/types/session";
 import { EncryptionService } from "@/services/encryption-service";
 import { FileCircularProgress } from "../ui/file-circular-progress";
 import { supportsImages, supportsPdf, supportsSearch } from "@/utils/model";
-
+import { usePandaSDK } from "@/providers/sdk-provider";
 import {
   loadSessionState,
   filterValidFilesForUpload,
@@ -45,7 +45,7 @@ import {
   ALLOWED_FILE_TYPES,
   AttachedClientFile,
 } from "./chat-input-panel.utils";
-import { CustomizedPromptsData } from "@/types";
+import { CustomizedPromptsData, generateSystemPrompt } from "@/types";
 
 interface ChatInputPanelProps {
   sessionId: UUID | undefined;
@@ -74,7 +74,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
 
     const chatStore = useChatStore();
     const chatActions = useChatActions();
-
+    const sdk = usePandaSDK();
     const [activeSessionId, setActiveSessionId] = useState<UUID | undefined>(
       propSessionId,
     );
@@ -265,9 +265,10 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
             );
           }
 
-          const session = await chatActions.newSession(
+          const session = await sdk.chat.createNewChat(
+            DEFAULT_TOPIC,
             modelConfig,
-            customizedPrompts,
+            customizedPrompts ? generateSystemPrompt(customizedPrompts) : undefined,
           );
           if (session) {
             console.log(

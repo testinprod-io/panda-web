@@ -1,7 +1,7 @@
 import { UUID } from 'crypto';
 import { ApiService } from './api';
 import { AuthManager } from './AuthManager';
-import { ChatMessage, createMessage, Role, MessageSyncState } from '@/types';
+import { ChatMessage, createMessage, Role, MessageSyncState, CustomizedPromptsData } from '@/types';
 import { FileInfo, GetConversationMessagesParams, Summary, MessageCreateRequest } from '@/client/types';
 import { MultimodalContent, LLMConfig } from '@/client/api';
 import { mapApiMessagesToChatMessages } from '@/services/api-service';
@@ -15,11 +15,14 @@ const EncryptionService = {
 };
 
 export class Chat extends EventEmitter {
-  public readonly id: string;
+  public readonly id: UUID;
   public title: string;
   public messages: ChatMessage[];
-  public modelConfig: ModelConfig;
-  public customizedPrompts?: string;
+  public modelConfig?: ModelConfig;
+  public customizedPrompts?: CustomizedPromptsData;
+
+  public updatedAt: number;
+  public createdAt: number;
 
   // State migrated from the hook
   public hasMoreMessages: boolean = true;
@@ -33,13 +36,21 @@ export class Chat extends EventEmitter {
   private api: ApiService;
   private authManager: AuthManager;
 
+  private state: {
+    messages: ChatMessage[];
+    isLoading: boolean;
+    hasMoreMessages: boolean;
+  };
+
   constructor(
     api: ApiService, 
     authManager: AuthManager, 
-    id: string, 
+    id: UUID, 
     title: string,
-    modelConfig: ModelConfig,
-    customizedPrompts?: string,
+    updatedAt: number,
+    createdAt: number,
+    modelConfig?: ModelConfig,
+    customizedPrompts?: CustomizedPromptsData,
   ) {
     super();
     this.api = api;
@@ -49,6 +60,22 @@ export class Chat extends EventEmitter {
     this.modelConfig = modelConfig;
     this.customizedPrompts = customizedPrompts;
     this.messages = [];
+    this.state = this.buildState();
+    this.updatedAt = updatedAt;
+    this.createdAt = createdAt;
+  }
+
+  private buildState() {
+    return {
+      messages: this.messages,
+      isLoading: this.isLoading,
+      hasMoreMessages: this.hasMoreMessages,
+    };
+  }
+
+  private updateState() {
+    this.state = this.buildState();
+    this.emit('update');
   }
 
   /**
@@ -59,7 +86,7 @@ export class Chat extends EventEmitter {
     if (this.isLoading) return;
     console.log(`[SDK-Chat] Initializing message and summary load for chat ${this.id}.`);
     this.isLoading = true;
-    this.emit('update');
+    this.updateState();
     
     try {
         const [messagesResult, summariesResult] = await Promise.all([
@@ -96,7 +123,7 @@ export class Chat extends EventEmitter {
         console.error(`[SDK-Chat] Error loading initial data for chat ${this.id}:`, error);
     } finally {
         this.isLoading = false;
-        this.emit('update');
+        this.updateState();
     }
   }
   
@@ -109,7 +136,7 @@ export class Chat extends EventEmitter {
 
     console.log(`[SDK-Chat] Loading more messages for ${this.id}, cursor: ${this.nextMessageCursor}`);
     this.isLoading = true;
-    this.emit('update');
+    this.updateState();
 
     try {
         const result = await this.api.app.getConversationMessages(this.id as UUID, { limit: 20, cursor: this.nextMessageCursor });
@@ -125,7 +152,7 @@ export class Chat extends EventEmitter {
         console.error(`[SDK-Chat] Error loading more messages for chat ${this.id}:`, error);
     } finally {
         this.isLoading = false;
-        this.emit('update');
+        this.updateState();
     }
   }
 
@@ -143,6 +170,9 @@ export class Chat extends EventEmitter {
         onFailure?: (error: Error) => void;
     }
   ) {
+    if(!this.modelConfig) {
+      throw new Error("Model config is required");
+    }
     const userMessage = createMessage({
         role: Role.USER,
         content: EncryptionService.encrypt(userInput),
@@ -153,7 +183,7 @@ export class Chat extends EventEmitter {
         syncState: MessageSyncState.PENDING_CREATE,
     });
     this.messages.push(userMessage);
-    this.emit('update');
+    this.updateState();
     
     let messagesForApi: any[] = [];
     this.summaries.forEach((summary) => {
@@ -196,7 +226,7 @@ export class Chat extends EventEmitter {
         reasoning: this.modelConfig.reasoning,
         targetEndpoint: this.modelConfig.endpoint,
         useSearch: userMessage.useSearch,
-        customizedPrompts: this.customizedPrompts ? EncryptionService.decrypt(this.customizedPrompts) : undefined,
+        customizedPrompts: this.customizedPrompts ? EncryptionService.decrypt(JSON.stringify(this.customizedPrompts)) : undefined,
     };
 
     await this.api.llm.chat({
@@ -205,7 +235,7 @@ export class Chat extends EventEmitter {
         onReasoningStart: () => {
             const msg = this.messages.find(m => m.id === localBotMessageId);
             if (msg) msg.isReasoning = true;
-            this.emit('update');
+            this.updateState();
             options.onReasoningStart?.(localBotMessageId);
         },
         onReasoningChunk: (_id, chunk) => {
@@ -213,7 +243,7 @@ export class Chat extends EventEmitter {
             if (msg) {
                 msg.visibleReasoning = (msg.visibleReasoning || "") + chunk;
             }
-            this.emit('update');
+            this.updateState();
             options.onReasoningChunk?.(localBotMessageId, chunk);
         },
         onReasoningEnd: () => {
@@ -222,7 +252,7 @@ export class Chat extends EventEmitter {
                 msg.isReasoning = false;
                 msg.reasoning = EncryptionService.encrypt(msg.visibleReasoning ?? "");
             }
-            this.emit('update');
+            this.updateState();
             options.onReasoningEnd?.(localBotMessageId);
         },
         onContentChunk: (_id, chunk) => {
@@ -230,7 +260,7 @@ export class Chat extends EventEmitter {
             if (msg) {
                 msg.visibleContent = (msg.visibleContent || "") + chunk;
             }
-            this.emit('update');
+            this.updateState();
             options.onContentChunk?.(localBotMessageId, chunk);
         },
         onFinish: (finalContent, timestamp) => {
@@ -268,7 +298,7 @@ export class Chat extends EventEmitter {
             reasoning_time: message.reasoningTime?.toString()
         };
         this.api.app.createMessage(this.id as UUID, request);
-        this.emit('update');
+        this.updateState();
     }
   }
 
@@ -277,11 +307,6 @@ export class Chat extends EventEmitter {
   }
 
   getState() {
-    return {
-      messages: this.messages,
-      isLoading: this.isLoading,
-      hasMoreMessages: this.hasMoreMessages,
-      // We can add other chat-specific state here later if needed
-    };
+    return this.state;
   }
 }
