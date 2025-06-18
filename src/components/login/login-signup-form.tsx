@@ -69,7 +69,7 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
     loginAccount: LinkedAccountWithMetadata | null;
   }) => {
     if (isNewUser) {
-      router.push("/signup?step=create-password");
+      router.push("/onboarding");
     } else {
       router.replace("/");
     }
@@ -107,7 +107,7 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
       }
       
       if (window.location.pathname.includes("signup") && isFirstTimeUser === true) {
-        router.replace("/signup?step=create-password");
+        router.push("/onboarding");
       } else {
         router.replace("/");
       }

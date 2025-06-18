@@ -414,7 +414,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
 
   useEffect(() => {
     if (router && isFirstTimeUser === true) {
-      router.push("/signup?step=create-password");
+      router.push("/onboarding");
     }
   }, [isFirstTimeUser, router]);
 

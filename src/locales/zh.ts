@@ -195,6 +195,7 @@ const zh = {
     Continue: "继续",
     Skip: "跳过",
     Welcome: "欢迎使用 Panda AI！让我们为你进行设置。",
+    CustomizationTitle: "几个简单问题",
     NameTitle: "首先，Panda AI 应该怎么称呼你？",
     NamePlaceholder: "例如：Alex",
     RoleTitle1: "好的，",

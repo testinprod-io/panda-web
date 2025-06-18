@@ -20,11 +20,13 @@ import { useUser } from "@/sdk/hooks";
 import IntroStepView from "@/components/onboarding/IntroStepView";
 import CreatePasswordStep from "@/components/onboarding/CreatePasswordStep";
 import PasswordConfirmationStep from "@/components/onboarding/PasswordConfirmationStep";
+import InfoStepView from "@/components/onboarding/InfoStepView";
 
 const STEPS = [
   "intro",
   "create-password",
   "password-confirmation",
+  "customization",
   "name",
   "role",
   "traits",
@@ -39,6 +41,8 @@ const getQuestion = (step: string, name: string): string => {
       return Locale.Onboarding.Encryption.Title;
     case "password-confirmation":
       return Locale.Onboarding.Encryption.PasswordCreatedTitle;
+    case "customization":
+      return Locale.Onboarding.CustomizationTitle;
     case "name":
       return Locale.Onboarding.NameTitle;
     case "role":
@@ -65,6 +69,9 @@ export default function OnboardingView() {
   const [step, setStep] = useState(0);
   const [data, setData] = useState({
     intro: "",
+    "create-password": "",
+    "password-confirmation": "",
+    customization: "",
     name: "",
     job: "",
     traits: "",
@@ -79,6 +86,9 @@ export default function OnboardingView() {
   const handleNext = (value: string) => {
     const keys: (keyof typeof data)[] = [
       "intro",
+      "create-password",
+      "password-confirmation",
+      "customization",
       "name",
       "job",
       "traits",
@@ -198,7 +208,17 @@ export default function OnboardingView() {
                 return <CreatePasswordStep onNext={() => handleNext("")} />;
               case "password-confirmation":
                 return (
-                  <PasswordConfirmationStep onNext={() => handleNext("")} />
+                  <PasswordConfirmationStep
+                    onStartChat={() => router.push("/")}
+                    onCustomize={() => handleNext("")}
+                  />
+                );
+              case "customization":
+                return (
+                  <InfoStepView
+                    text="To make our conversations more helpful, I'm going to ask a few questions to get to know you better and customize your experience."
+                    onNext={() => handleNext("")}
+                  />
                 );
               case "name":
                 return (
@@ -210,7 +230,7 @@ export default function OnboardingView() {
                       data.name ? data.name.charAt(0).toUpperCase() : "🐼"
                     }
                     initialValue={data.name}
-                  />
+                  /> 
                 );
               case "role":
                 return (

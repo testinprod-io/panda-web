@@ -192,6 +192,7 @@ const ko: PartialLocaleType = {
     Continue: "계속",
     Skip: "건너뛰기",
     Welcome: "Panda AI에 오신 것을 환영합니다! 설정을 시작해 볼까요?",
+    CustomizationTitle: "간단한 몇 가지 질문",
     NameTitle: "먼저, Panda AI가 어떻게 불러야 할까요?",
     NamePlaceholder: "예: Alex",
     RoleTitle1: "좋아요, ",

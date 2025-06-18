@@ -190,6 +190,7 @@ const en = {
     Continue: "Continue",
     Skip: "Skip",
     Welcome: "Welcome to Panda AI! Let's get you set up.",
+    CustomizationTitle: "A few quick questions",
     NameTitle: "First, what should Panda AI call you?",
     NamePlaceholder: "e.g. Alex",
     RoleTitle1: "Great, ",

@@ -195,6 +195,7 @@ const ja = {
     Continue: "続行",
     Skip: "スキップ",
     Welcome: "Panda AI へようこそ！セットアップを始めましょう。",
+    CustomizationTitle: "簡単な質問をいくつか",
     NameTitle: "まず、Panda AI はあなたを何と呼べば良いですか？",
     NamePlaceholder: "例: Alex",
     RoleTitle1: "了解です、",

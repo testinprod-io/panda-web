@@ -195,6 +195,7 @@ const es = {
     Continue: "Continuar",
     Skip: "Omitir",
     Welcome: "¡Bienvenido a Panda AI! Vamos a configurarte.",
+    CustomizationTitle: "Algunas preguntas rápidas",
     NameTitle: "Primero, ¿cómo debería llamarte Panda AI?",
     NamePlaceholder: "p. ej. Alex",
     RoleTitle1: "Genial, ",
