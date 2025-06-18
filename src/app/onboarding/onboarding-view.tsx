@@ -18,13 +18,27 @@ import Locale from "@/locales";
 import Image from "next/image";
 import { useUser } from "@/sdk/hooks";
 import IntroStepView from "@/components/onboarding/IntroStepView";
+import CreatePasswordStep from "@/components/onboarding/CreatePasswordStep";
+import PasswordConfirmationStep from "@/components/onboarding/PasswordConfirmationStep";
 
-const STEPS = ["intro", "name", "role", "traits", "knowledge"];
+const STEPS = [
+  "intro",
+  "create-password",
+  "password-confirmation",
+  "name",
+  "role",
+  "traits",
+  "knowledge",
+];
 
 const getQuestion = (step: string, name: string): string => {
   switch (step) {
     case "intro":
       return Locale.Onboarding.Welcome;
+    case "create-password":
+      return Locale.Onboarding.Encryption.Title;
+    case "password-confirmation":
+      return Locale.Onboarding.Encryption.PasswordCreatedTitle;
     case "name":
       return Locale.Onboarding.NameTitle;
     case "role":
@@ -179,6 +193,12 @@ export default function OnboardingView() {
                   <IntroStepView
                     onNext={() => handleNext("")}
                   />
+                );
+              case "create-password":
+                return <CreatePasswordStep onNext={() => handleNext("")} />;
+              case "password-confirmation":
+                return (
+                  <PasswordConfirmationStep onNext={() => handleNext("")} />
                 );
               case "name":
                 return (
