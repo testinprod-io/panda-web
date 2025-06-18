@@ -43,7 +43,7 @@ function verifyChallengeSignature(
 ): boolean {
   const verify = createVerify("RSA-SHA256");
 
-  const challengeExpiresAt = parseInt(challenge.timestamp) + 60 * 3; // 3 minutes
+  const challengeExpiresAt = parseInt(challenge.timestamp) + 60 * 3; // 3 minutes timeout
   if (challengeExpiresAt < Date.now()) {
     console.error("Panda Challenge verification failed: Timestamp is too old.");
     return false;
