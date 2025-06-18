@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const isDev = process.env.NODE_ENV !== "production";
+const isDev = process.env.VERCEL_ENV !== "production";
 
 const CSP = [
   "default-src 'self'",
