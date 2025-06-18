@@ -161,28 +161,31 @@
 /* Specific Control Styles */
 .selectControl {
   min-width: 150px; // Ensure select has enough width
+  // border-radius: 8px;
   .MuiSelect-select {
     padding-right: 32px !important; // Ensure space for icon
     font-size: 15px;
     font-family: "Inter", sans-serif;
     font-weight: 500;
-    color: #131A28;
+    // color: #131A28;
   }
   .MuiOutlinedInput-notchedOutline {
     border: none !important; // Figma shows no border directly on select itself
   }
-  &:hover .MuiOutlinedInput-notchedOutline {
-    // border-color: #131A28; // Optional: show border on hover
-  }
-  &.Mui-focused .MuiOutlinedInput-notchedOutline {
-    // border-color: #1976d2; // MUI default focus, or custom
+  &.Mui-focused .MuiSelect-outlined {
+    border: none !important;
   }
 }
 
 .selectMenuPaper {
     box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.1) !important;
-    border: 1px solid #d0d0d0 !important;
-    border-radius: 8px !important;
+    // border: 1px solid #d0d0d0 !important;
+    // border-radius: 8px !important;
+    background-color: white !important;
+    font-family: "Inter", sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    color: #131A28;
 }
 
 

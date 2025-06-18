@@ -15,9 +15,7 @@ import { useApiClient } from "@/providers/api-client-provider";
 import { usePrivy } from "@privy-io/react-auth";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
-
-// Define the inactivity timeout (e.g., 15 minutes) in milliseconds
-const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
+import { useUserStore } from "@/store/user";
 
 interface EncryptionContextType {
   isLocked: boolean;
@@ -54,6 +52,9 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   const { user, authenticated } = usePrivy();
   const pathname = usePathname();
   const router = useRouter();
+
+  const passwordExpirationMinutes =
+    useUserStore((state) => state.get<number>("passwordExpirationMinutes")) ?? 10 * 60 * 1000;
   
   // Set up error handling for encryption-related operations
   useEffect(() => {
@@ -120,16 +121,17 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
     }
-    // Only set a new timer if the app is *not* locked
-    if (!isLocked) {
+    // Only set a new timer if the app is *not* locked and expiration is not "Never"
+    if (!isLocked && passwordExpirationMinutes > 0) {
+      const timeoutMs = passwordExpirationMinutes * 60 * 1000;
       inactivityTimerRef.current = setTimeout(() => {
         console.log(
           "[EncryptionProvider] Inactivity timeout reached. Locking app.",
         );
         lockApp();
-      }, INACTIVITY_TIMEOUT_MS);
+      }, timeoutMs);
     }
-  }, [isLocked]); // Rerun when lock state changes
+  }, [isLocked, passwordExpirationMinutes]); // Rerun when lock state or expiration changes
 
   const lockApp = useCallback(() => {
     // We're not clearing the key for now as requested
@@ -258,7 +260,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         clearTimeout(inactivityTimerRef.current);
       }
     };
-  }, [resetInactivityTimer, isLocked]);
+  }, [resetInactivityTimer, isLocked, passwordExpirationMinutes]);
 
   useEffect(() => {
     if (!user && !isLocked) {
