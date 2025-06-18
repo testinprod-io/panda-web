@@ -34,6 +34,7 @@ import { useApiClient } from "@/providers/api-client-provider";
 import { usePrivy } from "@privy-io/react-auth";
 import { useChatStore } from "@/store";
 import { useAppConfig, useAppConfig as useAppConfigStore } from "@/store/config";
+import { useUserStore } from "@/store/user";
 import { AuthService } from "@/services/auth-service";
 import { useEncryption } from "@/providers/encryption-provider";
 import { useAttestationStore } from "@/store/attestation";
@@ -55,6 +56,14 @@ export default function SettingsModal({
     useState<ActiveSettingSection>("general");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isPromptsModalOpen, setIsPromptsModalOpen] = useState(false);
+
+  const passwordExpirationMinutes =
+    useUserStore((state) => state.get<number>("passwordExpirationMinutes")) ?? 0;
+
+  const handlePasswordExpirationChange = (event: SelectChangeEvent<string>) => {
+    const value = parseInt(event.target.value, 10);
+    useUserStore.getState().set("passwordExpirationMinutes", value);
+  };
 
   const router = useRouter();
   const { authenticated, logout } = usePrivy();
@@ -93,6 +102,14 @@ export default function SettingsModal({
     setTheme(event.target.value as string);
   };
 
+  const passwordExpirationOptions = [
+    { value: 5, label: "5 minutes" },
+    { value: 15, label: "15 minutes" },
+    { value: 30, label: "30 minutes" },
+    { value: 60, label: "1 hour" },
+    { value: 0, label: "Never" },
+  ];
+
   const generalSettingsItems = [
     // {
     //   label: "Theme",
@@ -122,6 +139,34 @@ export default function SettingsModal({
         />
       ),
       onClick: () => setIsPromptsModalOpen(true),
+    },
+    {
+      label: "Password expiration",
+      control: (
+        <Select
+          value={passwordExpirationMinutes.toString()}
+          onChange={handlePasswordExpirationChange}
+          variant="outlined"
+          size="small"
+          className={styles.selectControl}
+          IconComponent={ExpandMoreIcon}
+          MenuProps={{ classes: { paper: styles.selectMenuPaper } }}
+          sx={{
+            fieldset: {
+              border: "none",
+            },
+            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+              border: "none",
+            },
+          }}
+        >
+          {passwordExpirationOptions.map((option) => (
+            <SelectMenuItem key={option.value} value={option.value.toString()}>
+              {option.label}
+            </SelectMenuItem>
+          ))}
+        </Select>
+      ),
     },
     // {
     //   label: "Archive chats",
