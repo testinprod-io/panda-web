@@ -26,13 +26,9 @@ export default function PasswordConfirmation() {
 
     const intervalId = setInterval(() => {
       if (currentWordIndex < words.length) {
-          setDisplayedText((prev) => {
-            if (words[currentWordIndex]) {
-                return prev ? `${prev}${words[currentWordIndex]}` : words[currentWordIndex]
-            }
-            return prev;
-          });
-            currentWordIndex++;
+        const char = words[currentWordIndex];
+        setDisplayedText((prev) => prev + char);
+        currentWordIndex++;
       } else {
         clearInterval(intervalId);
         setTimeout(() => setIsEncrypting(true), 1000); // Wait 1s before starting encryption
@@ -71,17 +67,16 @@ export default function PasswordConfirmation() {
     <Box
       sx={{
         display: "flex",
-        flexDirection: "row",
+        flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
+        justifyContent: "flex-start",
         height: '100vh',
         py: 4,
         px: 2,
-        // background: "linear-gradient(177deg, white 0%, #FEFEFE 27%, #F6FFFC 75%, #DAF7EF 100%)"
       }}
     >
-      <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', maxWidth: '410px', position: 'absolute', top: '32px', left: '32px' }}>
-        <img src="/icons/inverse-icon.png" alt="Panda AI Logo" width={40} height={40} />
+      <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', maxWidth: '410px', marginRight: 'auto', mb: 10 }}>
+        <img src="/icons/inverse-icon.svg" alt="Panda AI Logo" width={40} height={40} />
         <Typography fontSize="24px" fontWeight="600" color="#131A28" marginLeft="12px">
           Panda
         </Typography>
@@ -96,15 +91,40 @@ export default function PasswordConfirmation() {
           gap: "24px",
         }}
       >
+        <Box
+          sx={{
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "left",
+            gap: "12px",
+            marginTop: "15vh",
+          }}
+        >
+          <Typography
+            variant="h5"
+            component="div"
+            sx={{
+              color: "#131A28",
+              fontSize: "24px",
+              fontFamily: "Inter, sans-serif",
+              fontWeight: "600",
+              textAlign: "left"
+            }}
+          >
+            Encryption Password Confirmed
+          </Typography>
+
         <Typography
           variant="h5"
           component="div"
           sx={{
             color: "#131A28",
-            fontSize: "20px",
+            fontSize: "16px",
             fontFamily: "Inter, sans-serif",
-            fontWeight: "600",
+            fontWeight: "500",
             textAlign: "left",
+            marginTop: "24px",
             lineHeight: "1.5",
             minHeight: '108px', // To prevent layout shift (24 * 1.5 * 3 lines)
             maxWidth: '500px',
@@ -143,7 +163,8 @@ export default function PasswordConfirmation() {
           >
             Continue
           </Button>
-          </Box>
+        </Box>
+      </Box>
     </Box>
   );
 } 

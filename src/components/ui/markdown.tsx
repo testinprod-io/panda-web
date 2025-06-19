@@ -30,6 +30,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import MuiIconButton from "@mui/material/IconButton"; // Renamed to avoid conflict
 import CloseIcon from "@mui/icons-material/Close";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 
 // MUI Imports for Fullscreen Button
 // import FullscreenIcon from '@mui/icons-material/Fullscreen';
@@ -159,63 +160,63 @@ const PreCode = React.forwardRef<
   const innerRef = useRef<HTMLPreElement>(null);
   const ref = (forwardedRef || innerRef) as React.RefObject<HTMLPreElement>;
   const [mermaidCode, setMermaidCode] = useState("");
-  // Removed unused chatStore and session variables
-  // const chatStore = useChatStore();
-  // const session = chatStore.currentSession();
-
-  const renderArtifacts = useDebouncedCallback(() => {
-    if (!ref.current) return;
-    const mermaidDom = ref.current.querySelector("code.language-mermaid");
-    if (mermaidDom) {
-      setMermaidCode((mermaidDom as HTMLElement).innerText);
-    }
-  }, 600);
+  const [language, setLanguage] = useState("code");
 
   useEffect(() => {
-    if (ref.current) {
-      const codeElements = ref.current.querySelectorAll(
-        "code",
-      ) as NodeListOf<HTMLElement>;
-      const wrapLanguages = [
-        "",
-        "md",
-        "markdown",
-        "text",
-        "txt",
-        "plaintext",
-        "tex",
-        "latex",
-      ];
-      codeElements.forEach((codeElement) => {
-        let languageClass = codeElement.className.match(/language-(\w+)/);
-        let name = languageClass ? languageClass[1] : "";
-        if (wrapLanguages.includes(name)) {
-          codeElement.style.whiteSpace = "pre-wrap";
-        }
-      });
-      // setTimeout ensures renderArtifacts is called after the current rendering tick,
-      // allowing ReactMarkdown children to be in the DOM for querying.
-      setTimeout(renderArtifacts, 1);
+    if (!ref.current) return;
+
+    const codeElement = ref.current.querySelector("code");
+    if (!codeElement) return;
+
+    const languageMatch = codeElement.className.match(/language-(\\w+)/);
+    const lang = languageMatch ? languageMatch[1] : "code";
+    setLanguage(lang);
+
+    if (lang === "mermaid") {
+      setMermaidCode(codeElement.innerText);
     }
-  }, [ref, renderArtifacts]);
+
+    const wrapLanguages = [
+      "",
+      "md",
+      "markdown",
+      "text",
+      "txt",
+      "plaintext",
+      "tex",
+      "latex",
+    ];
+    if (wrapLanguages.includes(lang)) {
+      codeElement.style.whiteSpace = "pre-wrap";
+    }
+  }, [children]);
+
+  if (language === "mermaid") {
+    return <Mermaid code={mermaidCode} />;
+  }
 
   return (
-    <>
-      <pre ref={ref} className={className} {...props}>
+    <div className="code-block">
+      <div className="code-header">
+        <span className="code-language">{language}</span>
         <button
           className="copy-code-button"
           onClick={() => {
             if (ref.current) {
-              copyToClipboard(
-                ref.current.querySelector("code")?.innerText ?? "",
-              );
+              const codeToCopy =
+                ref.current.querySelector("code")?.innerText ?? "";
+              copyToClipboard(codeToCopy);
             }
           }}
-        />
+        >
+          <ContentCopyIcon sx={{ fontSize: "1em", marginRight: "0.5em" }} />
+          Copy
+        </button>
+      </div>
+      <pre ref={ref} className={className} {...props}>
         {children}
       </pre>
-      {mermaidCode && <Mermaid code={mermaidCode} />}
-    </>
+    </div>
   );
 });
 

@@ -252,7 +252,7 @@ export const useChatStore = createPersistStore(
       },
 
       setSessions(sessions: ChatSession[], currentSessionIndex?: number) {
-        const newIndex = currentSessionIndex ?? (sessions.length > 0 ? 0 : -1);
+        const newIndex = currentSessionIndex ?? -1; //(sessions.length > 0 ? 0 : -1);
         set({
           sessions: sessions, // Assumes sessions are already decrypted
           currentSessionIndex: newIndex,
@@ -377,11 +377,8 @@ export const useChatStore = createPersistStore(
 
       updateCurrentSessionModel(newModelConfig: ModelConfig) {
         const session = get().currentSession();
-        console.log("[Update Current Session Model - Store] ", newModelConfig);
-
+        
         if (!session) return;
-        console.log("session", session);
-
         get().updateTargetSession(session, (sess) => {
           // sess.modelConfig is typed as ModelConfig from app/constant.ts
           sess.modelConfig = newModelConfig;
@@ -442,15 +439,19 @@ export const useChatStore = createPersistStore(
 
     storage: createJSONStorage(() => indexedDBStorage),
 
-    onRehydrateStorage: (state) => {
-      console.log("[ChatStore] Hydration finished.");
-      return (hydratedState, error) => {
-        if (error) {
-          console.error("[ChatStore] Error during rehydration:", error);
-        } else {
-          console.log("[ChatStore] Rehydration successful.");
-        }
-      };
+    partialize: (state) => {
+      const {
+        currentSessionIndex,
+        hitBottom,
+        isChatComponentBusy,
+        onSendMessageHandler,
+        scrollToBottomHandler,
+        showPromptModalHandler,
+        showShortcutKeyModalHandler,
+        ...rest
+      } = state as ChatState;
+
+      return rest;
     },
 
     migrate(persistedState: any, version: number) {

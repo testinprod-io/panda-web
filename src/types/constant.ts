@@ -47,15 +47,9 @@ export enum FileName {
 }
 
 export enum StoreKey {
-  Chat = "chat-next-web-store",
-  Plugin = "chat-next-web-plugin",
-  Access = "access-control",
+  Chat = "panda-store",
   Config = "app-config",
-  Mask = "mask-store",
-  Prompt = "prompt-store",
-  Update = "chat-update",
-  Sync = "sync",
-  Mcp = "mcp-store",
+  User = "user-store",
 }
 
 export const DEFAULT_SIDEBAR_WIDTH = 300;

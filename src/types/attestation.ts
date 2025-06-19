@@ -18,9 +18,7 @@ export interface TdxPayload {
     tdx_mrowner: string;
     tdx_mrconfigid: string;
     tdx_mrownerconfig: string;
-    // …any other tdx fields
   };
-  // …other JWT payload fields
 }
 
 export interface EventLogEntry {

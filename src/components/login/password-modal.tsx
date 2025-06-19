@@ -249,6 +249,7 @@ export function PasswordModal({
             margin="none"
             id={`unlock-password`}
             type="password"
+            autoComplete="current-password"
             fullWidth
             variant="outlined"
             value={password}
@@ -320,31 +321,31 @@ export function PasswordModal({
               {currentConfig.submitButtonText}
             </Button>
           </DialogActions>
-
-          <DialogActions sx={{ padding: 0, width: "100%" }}>
-            <Button
-              variant="outlined"
-              fullWidth
-              sx={{
-                height: "48px",
-                background: "#FFFFFF",
-                color: "#131A28",
-                borderRadius: "24px",
-                borderColor: "#B3B3B3",
-                padding: "0 10px",
-                textTransform: "none",
-                fontColor: "#131A28",
-                fontSize: "16px",
-                fontFamily: "Inter, sans-serif",
-                fontWeight: "400",
-                boxShadow: "none",
-              }}
-              onClick={handleLogOut}
-            >
-              {"Log out"}
-            </Button>
-          </DialogActions>
         </Box>
+
+        <DialogActions sx={{ padding: 0, width: "100%", marginTop: "8px" }}>
+          <Button
+            variant="outlined"
+            fullWidth
+            sx={{
+              height: "48px",
+              background: "#FFFFFF",
+              color: "#131A28",
+              borderRadius: "24px",
+              borderColor: "#B3B3B3",
+              padding: "0 10px",
+              textTransform: "none",
+              fontColor: "#131A28",
+              fontSize: "16px",
+              fontFamily: "Inter, sans-serif",
+              fontWeight: "400",
+              boxShadow: "none",
+            }}
+            onClick={handleLogOut}
+          >
+            {"Log out"}
+          </Button>
+        </DialogActions>
       </Box>
     </Dialog>
   );

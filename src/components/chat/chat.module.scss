@@ -120,19 +120,9 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  width: 100%;
+  min-width: 0;
   gap: 0.25rem;
-  &:hover {
-    // .chat-message-edit {
-    //   opacity: 0.9;
-    // }
 
-    // .chat-message-actions {
-    //   opacity: 1;
-    //   pointer-events: all;
-    //   transform: scale(1) translateY(0);
-    // }
-  }
 }
 
 .chat-message-user > .chat-message-container {

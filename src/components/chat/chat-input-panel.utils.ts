@@ -55,7 +55,7 @@ export const loadSessionState = (sessionId?: UUID): SessionState => {
 };
 
 export const MAX_IMAGE_FILES = 10;
-export const MAX_PDF_AGGREGATE_SIZE = 25 * 1024 * 1024; // 25MB
+export const MAX_PDF_AGGREGATE_SIZE = 3 * 1024 * 1024; // 3MB
 export const ALLOWED_FILE_TYPES = [
   "image/jpeg",
   "image/png",

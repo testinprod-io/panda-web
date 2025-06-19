@@ -29,7 +29,7 @@ import {
   SummaryCreateRequest,
 } from "@/client/types";
 import { UUID } from "crypto";
-import { RequestMessage } from "@/client/api";
+import { LLMConfig, RequestMessage } from "@/client/api";
 import { DEFAULT_TOPIC } from "@/store/chat";
 import { EncryptionService } from "@/services/encryption-service";
 import { generateSystemPrompt } from "@/types/chat";
@@ -102,9 +102,6 @@ export function useChatActions() {
             newCurrentIndex = finalSessionsArray.findIndex(
               (s) => s.id === currentSession.id,
             );
-          }
-          if (newCurrentIndex === -1 && finalSessionsArray.length > 0) {
-            newCurrentIndex = 0; // Default to first if current was removed or no current
           }
 
           store.setSessions(finalSessionsArray, newCurrentIndex);
@@ -602,12 +599,17 @@ export function useChatActions() {
           attachments: msg.attachments,
         }));
 
-        const summaryText = await ChatApiService.callLlmSummarize(
-          apiClient,
-          apiMessages,
-          modelConfig,
-        );
+        const summarizationConfig: LLMConfig = {
+          model: modelConfig.name,
+          temperature: modelConfig.temperature,
+          top_p: modelConfig.top_p,
+          reasoning: modelConfig.reasoning ?? false,
+          stream: false,
+          targetEndpoint: modelConfig.endpoint,
+        };
 
+        const summaryText = (await apiClient.llm.summary(summarizationConfig, apiMessages, 1000)).summary;
+        
         if (!summaryText || summaryText.trim().length === 0) {
           console.warn(
             "[ChatActions] LLM returned empty summary. Skipping storage.",

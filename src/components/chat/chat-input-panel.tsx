@@ -11,6 +11,7 @@ import { isEmpty } from "lodash-es";
 import { useDebouncedCallback } from "use-debounce";
 import { ModelConfig } from "@/types/constant";
 import { usePrivy } from "@privy-io/react-auth";
+import TextareaAutosize from "react-textarea-autosize";
 
 import { DEFAULT_TOPIC, useChatStore } from "@/store";
 import { UNFINISHED_INPUT } from "@/types/constant";
@@ -93,7 +94,6 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
       [],
     );
     const [isUploadingFiles, setIsUploadingFiles] = useState(false);
-    const [inputRows, setInputRows] = useState(1);
     const [enableSearch, setEnableSearch] = useState(false);
     const [placeholder] = useState(() => Locale.Chat.Input(submitKey));
     const autoFocus = !isMobileScreen;
@@ -221,28 +221,6 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
     const stopGeneration = () => {
       ChatControllerPool.stopAll();
     };
-
-    const measure = useDebouncedCallback(
-      () => {
-        const rows = inputRef.current ? autoGrowTextArea(inputRef.current) : 1;
-        const currentInputRows = Math.min(20, Math.max(1, rows));
-        setInputRows(currentInputRows);
-      },
-      100,
-      { leading: true, trailing: true },
-    );
-
-    useEffect(measure, [userInput, isMobileScreen, measure]);
-
-    useLayoutEffect(() => {
-      if (userInput && inputRef.current) {
-        const rows = autoGrowTextArea(inputRef.current);
-        const initialCalculatedRows = Math.min(20, Math.max(1, rows));
-        if (initialCalculatedRows !== inputRows) {
-          setInputRows(initialCalculatedRows);
-        }
-      }
-    }, [userInput, isMobileScreen, inputRows]);
 
     const executeFileUploads = useCallback(
       async (candidateFiles: File[]) => {
@@ -736,7 +714,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
 
         <div className={styles["chat-input-main-area"]}>
           <label htmlFor="chat-input" className={styles["chat-input-label"]}>
-            <textarea
+            <TextareaAutosize
               id="chat-input"
               ref={inputRef}
               className={styles["chat-input"]}
@@ -751,7 +729,8 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
               onFocus={scrollToBottom}
               onClick={scrollToBottom}
               onPaste={handlePaste}
-              rows={inputRows}
+              minRows={1}
+              maxRows={20}
               autoFocus={autoFocus}
               disabled={!authenticated}
               aria-label={authenticated ? placeholder : "Please login to chat"}

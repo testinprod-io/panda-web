@@ -13,78 +13,16 @@ import {
   Summary,
   SummaryCreateRequest,
   SummaryResponse,
+  ApiError,
+  DeleteMessagesResponse,
+  UploadFileResponse,
+  FileUploadResponseData,
+  CustomizedPromptsResponse,
+  AttestationResponse,
+  InfoResponse
 } from "./types";
 import { UUID } from "crypto";
 import { CustomizedPromptsData } from "@/types";
-
-export interface CustomizedPromptsResponse extends CustomizedPromptsData {
-  created_at: string;
-  updated_at: string;
-}
-
-export class ApiError extends Error {
-  status: number;
-  body: any;
-
-  constructor(status: number, message: string, body?: any) {
-    super(message);
-    this.name = "ApiError";
-    this.status = status;
-    this.body = body;
-  }
-}
-
-export interface FileUploadResponseData {
-  file_id: string;
-  name: string;
-  size: number;
-  type: string;
-  url: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface DeleteMessagesResponse {
-  deleted_count: number;
-  failed_messages: Array<{
-    message_id: UUID;
-    reason: string;
-    error_message: string;
-  }>;
-}
-
-export interface UploadFileResponse {
-  fileResponse: FileUploadResponseData;
-  abort: () => void;
-  xhr?: XMLHttpRequest; // Exposed for direct manipulation if needed, though abort() is preferred
-}
-
-export interface EventRecord {
-  imr: number;
-  event_type: number;
-  digest: string;
-  event: string;
-  event_payload: string;
-}
-
-export interface AttestationResponse {
-  quote: string;
-  token: string;
-  event_log: string;
-}
-
-export interface ServerModelInfo {
-  name: string;
-  model_name: string;
-  description: string;
-  url: string;
-  supported_features: string[];
-  max_context_length: number;
-}
-
-export interface InfoResponse {
-  models: ServerModelInfo[];
-}
 
 export class ApiClient {
   private baseUrl: string;

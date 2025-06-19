@@ -337,9 +337,10 @@ export default function ChatHeader({
               <Tooltip title={<CertificateInfoPopup publicKey={currentStatusInfo.publicKey} verificationResult={currentStatusInfo} />} componentsProps={{
                 tooltip: {
                   sx: {
-                    backgroundColor: "white",
+                    backgroundColor: "white", 
                     borderRadius: "8px",
                     border: "1px solid #e0e0e0",
+                    maxWidth: "600px",
                   }
                 }
               }}>
@@ -421,6 +422,7 @@ export default function ChatHeader({
                   primary={
                     user?.wallet?.address ||
                     user?.email?.address ||
+                    user?.google?.email ||
                     "Anonymous"
                   }
                   className={styles.profileMenuText}
@@ -520,7 +522,19 @@ const CertificateInfoPopup: React.FC<{
   return (
     <Box sx={{ p: 1, maxWidth: 300 }}>
       <Typography variant="subtitle2" gutterBottom sx={{ color: "black" }}>
-        🔒 Verified secure execution <a href="https://etherscan.io/" target="_blank" rel="noopener noreferrer" style={{ color: "black" }}>Learn more</a>
+        <strong>Panda's privacy at a glance</strong>
+      </Typography>
+      <Typography variant="body2" gutterBottom sx={{ color: "black" }}>
+        - <strong>End-to-end encrypted</strong>: Your message is encrypted in-browser and decrypted only inside Panda's TEE — visible to no one, including us.
+      </Typography>
+      <Typography variant="body2" gutterBottom sx={{ color: "black" }}>
+        - <strong>Verifiable</strong>: TEE attestation prove the running code matches the build we published on-chain.
+      </Typography>
+      <Typography variant="body2" gutterBottom sx={{ color: "black" }}>
+        - <strong>Opt-in cloud backups</strong>: Backups are re-encrypted with your password before they ever reach the cloud.
+      </Typography>
+      {/* <Typography variant="subtitle2" gutterBottom sx={{ color: "black" }}>
+        🔒 Verified secure execution <a href="https://testinprod.notion.site/Panda-Technical-FAQ-2018fc57f5468023bac3c5380179a272" target="_blank" rel="noopener noreferrer" style={{ color: "black" }}>Learn more</a>
       </Typography>
       <Typography
         variant="body2"
@@ -528,33 +542,7 @@ const CertificateInfoPopup: React.FC<{
         sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
       >
         <strong>Currently connected certificate:</strong> <a href={`https://etherscan.io/`} target="_blank" rel="noopener noreferrer" style={{ color: "black" }}>{publicKey}</a>
-      </Typography>
-      {/* <Typography
-        variant="body2"
-        key={"AppHash"}
-        sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
-      >
-        <strong>AppHash:</strong> <a href={`https://etherscan.io/`} target="_blank" rel="noopener noreferrer" style={{ color: "black" }}>{attestationResult.composeHash}</a>
-      </Typography>
-
-      <Typography
-        variant="body2"
-        key={"Help"}
-        sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
-      >
-        <a href="https://etherscan.io/" target="_blank" rel="noopener noreferrer" style={{ color: "black" }}><strong>Help?</strong></a>
       </Typography> */}
-
-      {/* {Object.entries(attestationResult).map(([key, value]) => (
-        <Typography
-          variant="body2"
-          key={key}
-          sx={{ wordBreak: "break-all", p: "2px" }}
-        >
-          <strong>{key}:</strong>{" "}
-          {Array.isArray(value) ? value.join(", ") : value}
-        </Typography>
-      ))} */}
     </Box>
   );
 };
