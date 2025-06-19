@@ -116,9 +116,21 @@ export default function ChatLayoutContent({
         `[handleLayoutSubmit] sessionId: ${sessionId} currentChatId: ${currentChatId} onSendMessageHandlerFromStore: ${onSendMessageHandlerFromStore}`,
       );
       try {
-        if (currentChatId && onSendMessageHandlerFromStore) {
+        if (currentChatId) {
+          const chat = await sdk.chat.getChat(currentChatId);
+          if (chat) {
+            await chat.sendMessage(sessionState.userInput, modelConfig, {
+              attachments: sessionState.persistedAttachedFiles as any,
+              enableSearch: sessionState.enableSearch,
+              onSuccess: () => {},
+              onFailure: (error: Error) => {
+                console.error("[ChatComponent] Failed user input", error);
+                showSnackbar(Locale.Store.Error, "error");
+              },
+            });
+          }
           console.log(`[handleLayoutSubmit] currentChatId: ${currentChatId}`);
-          await onSendMessageHandlerFromStore(sessionState);
+          // await onSendMessageHandlerFromStore(sessionState);
           localStorage.removeItem(UNFINISHED_INPUT(currentChatId));
         } else if (sessionId) {
           const session = useChatStore

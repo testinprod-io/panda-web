@@ -132,6 +132,13 @@ export class AppServer {
     );
   }
 
+  async getConversation(conversationId: UUID): Promise<Conversation> {
+    return this.request<Conversation>(
+      "GET",
+      `/conversations/${conversationId}`,
+    );
+  }
+
   async createConversation(
     data: ConversationCreateRequest,
   ): Promise<Conversation> {

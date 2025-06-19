@@ -158,6 +158,7 @@ export class Chat extends EventEmitter {
 
   public async sendMessage(
     userInput: string,
+    modelConfig: ModelConfig,
     options: {
         enableSearch?: boolean;
         files?: FileInfo[];
@@ -170,9 +171,9 @@ export class Chat extends EventEmitter {
         onFailure?: (error: Error) => void;
     }
   ) {
-    if(!this.modelConfig) {
-      throw new Error("Model config is required");
-    }
+    // if(!this.modelConfig) {
+    //   throw new Error("Model config is required");
+    // }
     const userMessage = createMessage({
         role: Role.USER,
         content: EncryptionService.encrypt(userInput),
@@ -212,19 +213,19 @@ export class Chat extends EventEmitter {
     const botMessage = createMessage({
         role: Role.ASSISTANT,
         streaming: true,
-        model: this.modelConfig.name,
+        model: modelConfig.name,
         syncState: MessageSyncState.PENDING_CREATE,
     });
     this.messages.push(botMessage);
     const localBotMessageId = botMessage.id;
     
     const llmChatConfig: LLMConfig = {
-        model: this.modelConfig.name,
-        temperature: this.modelConfig.temperature,
-        top_p: this.modelConfig.top_p,
+        model: modelConfig.name,
+        temperature: modelConfig.temperature,
+        top_p: modelConfig.top_p,
         stream: true,
-        reasoning: this.modelConfig.reasoning,
-        targetEndpoint: this.modelConfig.endpoint,
+        reasoning: modelConfig.reasoning,
+        targetEndpoint: modelConfig.endpoint,
         useSearch: userMessage.useSearch,
         customizedPrompts: this.customizedPrompts ? EncryptionService.decrypt(JSON.stringify(this.customizedPrompts)) : undefined,
     };
