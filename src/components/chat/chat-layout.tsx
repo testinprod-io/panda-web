@@ -356,8 +356,8 @@ export default function ChatLayoutContent({
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              flexShrink: 0,
               height: "20vh",
+              minHeight: "0px",
               // height: "35vh",
               marginBottom: { xs: "24px", md: "48px" },
               marginTop: "15vh",
@@ -373,6 +373,7 @@ export default function ChatLayoutContent({
         <Box
           className={styles["chat-layout-input-panel-wrapper"]}
           sx={{
+            flexShrink: 0,
             width: "100%",
             display: "flex",
             flexDirection: "column",
@@ -422,6 +423,7 @@ export default function ChatLayoutContent({
             paddingLeft: "16px",
             paddingRight: "16px",
             boxSizing: "border-box",
+            backgroundColor: "#FFFFFF",
           }}
         >
           By messaging Panda AI, you agree to <a href="https://testinprod.notion.site/Panda-Alpha-Terms-of-Service-Privacy-Notice-2078fc57f54680349183dde6f0224da8" style={{color: "black", textDecoration: "none", fontWeight: "500"}}>our Terms</a> and 
