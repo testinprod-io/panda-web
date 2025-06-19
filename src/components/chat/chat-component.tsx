@@ -65,7 +65,7 @@ export function ChatComponent({ sessionId }: { sessionId: UUID }) {
     if (!activeChat) return;
     
     // The sendMessage options are now simpler as the config is on the Chat object
-    await activeChat.sendMessage(sessionState.userInput, {
+    await activeChat.sendMessage(sessionState.userInput, activeChat.modelConfig, {
         attachments: sessionState.persistedAttachedFiles as any,
         enableSearch: sessionState.enableSearch,
         onSuccess: () => {},
@@ -78,12 +78,12 @@ export function ChatComponent({ sessionId }: { sessionId: UUID }) {
   }, [activeChat, setAutoScroll, showSnackbar]);
 
   // Register/unregister submit handler with the store
-  useEffect(() => {
-    chatStore.setOnSendMessageHandler(doSubmit);
-    return () => {
-      chatStore.setOnSendMessageHandler(null);
-    };
-  }, [chatStore, doSubmit]);
+  // useEffect(() => {
+  //   chatStore.setOnSendMessageHandler(doSubmit);
+  //   return () => {
+  //     chatStore.setOnSendMessageHandler(null);
+  //   };
+  // }, [chatStore, doSubmit]);
 
   const onResend = useCallback(async (messageId: UUID) => {
     if (!activeChat) return;

@@ -19,7 +19,7 @@ export function PandaSDKProvider({ children, getAccessToken }: SDKProviderProps)
   const { ready, authenticated, user } = privy;
 
   const authAdapter = useMemo(() => {
-    if (!ready) return null;
+    // if (!ready) return null;
     return new PrivyAuthAdapter(privy, authenticated, user);
   }, [ready, privy, authenticated, user]);
 
@@ -30,7 +30,7 @@ export function PandaSDKProvider({ children, getAccessToken }: SDKProviderProps)
   }, [authAdapter, authenticated, user]);
 
   const sdk = useMemo(() => {
-    if (!authAdapter) return null;
+    // if (!authAdapter) return null;
     return new PandaSDK(getAccessToken, authAdapter);
   }, [getAccessToken, authAdapter]);
 

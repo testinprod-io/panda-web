@@ -165,12 +165,19 @@ export class ChatManager extends EventEmitter {
     throw new Error("Conversation not found");
   }
 
-  public getChat(conversationId: UUID): Chat | undefined {
+  public async getChat(conversationId: UUID): Promise<Chat | undefined> {
     const conversation = this.conversations.find(c => c.id === conversationId);
     if(conversation) {
       return conversation;
     } else { 
-      // this.api.app.getConversations
+      try {
+        const conversation = await this.api.app.getConversation(conversationId);
+        const chat = new Chat(this.api, this.authManager, conversation.conversation_id, conversation.title ?? "", new Date(conversation.updated_at).getTime(), new Date(conversation.created_at).getTime(), undefined, conversation.custom_data as CustomizedPromptsData);
+        return chat;
+      } catch (error) {
+        console.error(`[SDK-ChatManager] Failed to get chat ${conversationId}:`, error);
+        return undefined;
+      }
     }
     return undefined;
   }
