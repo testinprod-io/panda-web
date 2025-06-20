@@ -18,6 +18,7 @@ import { useEncryption } from "@/providers/encryption-provider";
 import { EncryptionService } from "@/services/encryption-service";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import { Chat } from "@/sdk/Chat";
 
 interface ChatItemProps {
   onClick?: () => void;
@@ -25,7 +26,7 @@ interface ChatItemProps {
   onRename?: (newTitle: string) => void;
   onShare?: () => void;
   onArchive?: () => void;
-  session: ChatSession;
+  session: Chat;
   selected: boolean;
   index: number;
   narrow?: boolean;
@@ -57,19 +58,19 @@ export function ChatItem({
   const listItemRef = useRef<HTMLDivElement | null>(null);
 
   const { isLocked } = useEncryption();
-  const [displayedTitle, setDisplayedTitle] = useState(session.visibleTopic);
+  const [displayedTitle, setDisplayedTitle] = useState(session.title);
   const [isAnimating, setIsAnimating] = useState(false);
   const animationIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const [visibleTopic, setVisibleTopic] = useState(session.visibleTopic);
+  const [visibleTopic, setVisibleTopic] = useState(session.title);
 
   useEffect(() => {
-    const topic = session.topic || Locale.Store.DefaultTopic;
+    const topic = session.title || Locale.Store.DefaultTopic;
     if (isLocked) {
       setVisibleTopic(topic);
     } else {
       setVisibleTopic(EncryptionService.decrypt(topic));
     }
-  }, [isLocked, session.topic]);
+  }, [isLocked, session.title]);
 
   useEffect(() => {
     if (!isEditing) {
@@ -108,14 +109,14 @@ export function ChatItem({
       handleSaveEdit();
     } else if (e.key === "Escape") {
       setIsEditing(false);
-      setEditValue(session.visibleTopic);
+      setEditValue(session.title);
     }
   };
 
   const handleSaveEdit = () => {
     if (
       editValue.trim() !== "" &&
-      editValue !== session.visibleTopic &&
+      editValue !== session.title &&
       onRename
     ) {
       onRename(editValue.trim());
@@ -218,11 +219,11 @@ export function ChatItem({
       animationIntervalRef.current = null;
     }
 
-    const rawTopic = session.topic || Locale.Store.DefaultTopic;
+    const rawTopic = session.encryptedTitle || Locale.Store.DefaultTopic;
 
-    if (isLocked || rawTopic === Locale.Store.DefaultTopic || !session.topic) {
+    if (isLocked || rawTopic === Locale.Store.DefaultTopic || !session.encryptedTitle) {
       // If locked, or it's the default topic, or no session topic, just display the actual (possibly raw) topic
-      setDisplayedTitle(session.topic);
+      setDisplayedTitle(session.encryptedTitle);
       setIsAnimating(false);
       return;
     }
@@ -268,7 +269,7 @@ export function ChatItem({
       }
     };
     // }, [session.topic, session.visibleTopic, isLocked]); // Rerun if underlying topic, its decrypted version, or lock state changes
-  }, [session.topic, visibleTopic, isLocked]); // Rerun if underlying topic, its decrypted version, or lock state changes
+  }, [session.encryptedTitle, visibleTopic, isLocked]); // Rerun if underlying topic, its decrypted version, or lock state changes
 
   const handleItemClick = () => {
     if (isAnimating) {

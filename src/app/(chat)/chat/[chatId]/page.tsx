@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { Box, CircularProgress } from "@mui/material";
 import { useChatStore } from "@/store/chat";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ChatComponent } from "@/components/chat/chat-component";
 import { usePandaSDK } from "@/providers/sdk-provider";
 import { useAuthStatus } from "@/hooks/use-auth-status";
@@ -25,50 +25,51 @@ export default function ChatPage() {
     useState<Chat | null>(null);
 
   useEffect(() => {
-    const isStoreHydrated = store._hasHydrated;
-    if (!isAuthReady || !isStoreHydrated) {
-      setIsLoadingState(true);
-      return;
-    }
-
-    if (isAuthReady && !isAuthenticated) {
-      setIsLoadingState(false);
-      setIsValidSession(false);
-      setSessionDataForValidation(null);
-      return;
-    }
-
-    if (!chatId) {
-      setIsValidSession(false);
-      setSessionDataForValidation(null);
-      setIsLoadingState(false);
-      return;
-    }
-
-    const currentSession = sdk.chat.getChat(chatId);
-    if (currentSession) {
-      if (store.currentSession()?.id !== chatId) {
-        const sessionIndex = store.sessions.findIndex((s) => s.id === chatId);
-        if (sessionIndex !== -1) {
-          store.setCurrentSessionIndex(sessionIndex);
-        }
+    const validateSession = async () => {
+      if (!isAuthReady) {
+        console.log(`[ChatPage] Not ready`);
+        setIsLoadingState(true);
+        return;
       }
-      setIsValidSession(true);
-      setSessionDataForValidation(currentSession);
-    } else {
-      setIsValidSession(false);
-      setSessionDataForValidation(null);
+  
+      if (isAuthReady && !isAuthenticated) {
+        console.log(`[ChatPage] Not authenticated`);
+        setIsLoadingState(false);
+        setIsValidSession(false);
+        setSessionDataForValidation(null);
+        return;
+      }
+  
+      if (!chatId) {
+        console.log(`[ChatPage] No chatId`);
+        setIsValidSession(false);
+        setSessionDataForValidation(null);
+        setIsLoadingState(false);
+        return;
+      }
+  
+      const currentSession = await sdk.chat.getChat(chatId);
+      if (currentSession) {
+        console.log(`[ChatPage] Session found`);
+        sdk.chat.setActiveChat(chatId);
+        setIsValidSession(true);
+        setSessionDataForValidation(currentSession);
+      } else {
+        console.log(`[ChatPage] No session`);
+        setIsValidSession(false);
+        setSessionDataForValidation(null);
+      }
+      setIsLoadingState(false);
     }
-    setIsLoadingState(false);
-  }, [
-    chatId,
-    isAuthReady,
-    isAuthenticated,
-    store._hasHydrated,
-    store.sessions,
-    store,
-    router,
-  ]);
+    validateSession();
+    }, [
+      chatId,
+      isAuthReady,
+      isAuthenticated,
+      router,
+      sdk,
+    ]);
+
 
   useEffect(() => {
     if (!isLoadingState && !isValidSession) {

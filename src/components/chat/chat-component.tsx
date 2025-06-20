@@ -32,25 +32,26 @@ export function ChatComponent({ sessionId }: { sessionId: UUID }) {
   const chatStore = useChatStore();
 
   const { activeChat } = useChatList();
+  console.log(`[ChatComponent] Active chat: ${activeChat?.id}`);
   const { messages: displayedMessages, isLoading: isLoadingMessages, hasMoreMessages } = useChat(activeChat);
-
+  console.log(`[ChatComponent] Displayed messages: ${displayedMessages.length}`);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [internalHitBottom, setInternalHitBottom] = useState(true);
 
   // When the component mounts or sessionId changes, ensure the correct chat is active.
-  useEffect(() => {
-    // If there is no active chat or the active chat is not the one for this page, set it.
-    if (activeChat?.id !== sessionId) {
-        const session = chatStore.sessions.find(s => s.id === sessionId);
-        if(session) {
-            sdk.chat.setActiveChat(sessionId, session.modelConfig, session.customizedPrompts);
-        } else {
-            // This might happen if the session list hasn't loaded yet.
-            // The component will re-render once the session list is available.
-            console.log("Waiting for session info to set active chat...");
-        }
-    }
-  }, [sessionId, activeChat, chatStore.sessions, sdk.chat]);
+  // useEffect(() => {
+  //   // If there is no active chat or the active chat is not the one for this page, set it.
+  //   if (activeChat?.id !== sessionId) {
+  //       const session = chatStore.sessions.find(s => s.id === sessionId);
+  //       if(session) {
+  //           sdk.chat.setActiveChat(sessionId);
+  //       } else {
+  //           // This might happen if the session list hasn't loaded yet.
+  //           // The component will re-render once the session list is available.
+  //           console.log("Waiting for session info to set active chat...");
+  //       }
+  //   }
+  // }, [sessionId, activeChat, chatStore.sessions, sdk.chat]);
   
   // When the active chat changes and has no messages, load them.
   useEffect(() => {
@@ -65,7 +66,7 @@ export function ChatComponent({ sessionId }: { sessionId: UUID }) {
     if (!activeChat) return;
     
     // The sendMessage options are now simpler as the config is on the Chat object
-    await activeChat.sendMessage(sessionState.userInput, activeChat.modelConfig, {
+    await activeChat.sendMessage(sessionState.userInput, config.modelConfig, {
         attachments: sessionState.persistedAttachedFiles as any,
         enableSearch: sessionState.enableSearch,
         onSuccess: () => {},
@@ -122,6 +123,7 @@ export function ChatComponent({ sessionId }: { sessionId: UUID }) {
     }
   }, 200, { leading: false, trailing: true });
 
+  console.log(`[ChatComponent] Rendering messages: ${displayedMessages.length} ${displayedMessages.map(m => m.role)}`);
   return (
     <div className={styles["chat-body-container"]}>
       <div

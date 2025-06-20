@@ -116,7 +116,7 @@ export default function ChatLayoutContent({
         `[handleLayoutSubmit] sessionId: ${sessionId} currentChatId: ${currentChatId} onSendMessageHandlerFromStore: ${onSendMessageHandlerFromStore}`,
       );
       try {
-        if (currentChatId) {
+        if (currentChatId && sdk.chat.activeChat?.id === currentChatId) {
           const chat = await sdk.chat.getChat(currentChatId);
           if (chat) {
             await chat.sendMessage(sessionState.userInput, modelConfig, {
@@ -133,9 +133,7 @@ export default function ChatLayoutContent({
           // await onSendMessageHandlerFromStore(sessionState);
           localStorage.removeItem(UNFINISHED_INPUT(currentChatId));
         } else if (sessionId) {
-          const session = useChatStore
-            .getState()
-            .sessions.find((s) => s.id === sessionId);
+          const session = await sdk.chat.getChat(sessionId);
           if (session) {
             console.log(`[handleLayoutSubmit] sessionId: ${sessionId}`);
             const newUserMessage = { sessionState };
