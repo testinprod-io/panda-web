@@ -18,7 +18,7 @@
   justify-content: center;
   display: flex;
   flex-direction: column;
-  color: #979797;
+  color: var(--text-secondary);
   font-size: 14px;
   font-family: 'Inter', sans-serif;
   font-weight: 600;
@@ -36,7 +36,7 @@
   border-radius: 8px; 
 
   &:hover {
-    background-color: #F3F3F3;
+    background-color: var(--bg-secondary);
   }
 }
 
@@ -68,7 +68,7 @@
   justify-content: center;
   display: flex;
   flex-direction: column;
-  color: #1E1E1E;
+  color: var(--text-primary);
   font-size: 16px;
   font-family: 'Inter', sans-serif;
   font-weight: 500;

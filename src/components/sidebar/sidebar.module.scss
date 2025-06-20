@@ -6,13 +6,13 @@ $sidebar-transition-duration: 0.4s;
 $sidebar-transition-timing: ease-in-out;
 
 .sidebar {
-  background-color: #ffffff;
+  background-color: var(--bg-primary);
   height: 100%;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   box-sizing: border-box;
-  border-right: 1px solid #cacaca;
+  border-right: 1px solid var(--border-primary);
   overflow-x: hidden;
   position: relative;
   // transition: width $sidebar-// transition-duration $sidebar-// transition-timing;
@@ -129,7 +129,7 @@ $sidebar-transition-timing: ease-in-out;
     svg {
       width: 24px;
       height: 24px;
-      color: #1e1e1e;
+      color: var(--icon-primary);
     }
     padding: 0.5rem;
     display: flex;
@@ -142,11 +142,11 @@ $sidebar-transition-timing: ease-in-out;
   align-items: center;
   gap: 8px;
   padding: 8px;
-  background: #FFFFFF;
+  background: var(--bg-primary);
   border-radius: 12px;
-  outline: 1px #cacaca solid;
+  outline: 1px var(--border-primary) solid;
   outline-offset: -1px;
-  color: #1e1e1e;
+  color: var(--icon-primary);
   font-size: 16px;
   font-family: "Inter", sans-serif;
   font-weight: 500;
@@ -164,7 +164,7 @@ $sidebar-transition-timing: ease-in-out;
     & > * {
       width: 20px;
       height: 20px;
-      color: #1e1e1e;
+      color: var(--icon-primary);
       filter: invert(0%) sepia(3%) saturate(4%) hue-rotate(324deg)
         brightness(100%) contrast(100%);
     }
@@ -205,7 +205,7 @@ $sidebar-transition-timing: ease-in-out;
   padding-left: 8px;
 
   &:hover {
-    background-color: #F3F3F3;
+    background-color: var(--bg-secondary);
   }
 
   &.collapsed {
@@ -233,7 +233,7 @@ $sidebar-transition-timing: ease-in-out;
 
 .sidebarHeaderLogoTextContainer { 
   display: flex; 
-  color: #1e1e1e;
+  color: var(--icon-primary);
   font-family: 'Montserrat', sans-serif; 
   font-size: 20px; 
   letter-spacing: 0.80px; 
@@ -279,8 +279,8 @@ $sidebar-transition-timing: ease-in-out;
   top: 50%; 
   transform: translateY(-50%);
   z-index: 100;
-  background-color: #FFFFFF !important; 
-  border: 1px solid #E0E0E0 !important; 
+  background-color: var(--bg-primary) !important; 
+  border: 1px solid var(--border-primary) !important; 
   border-radius: 50% !important; 
   width: 32px !important; 
   height: 32px !important; 
@@ -289,11 +289,11 @@ $sidebar-transition-timing: ease-in-out;
 
   svg {
     font-size: 20px;
-    color: #5F6368;
+    color: var(--icon-primary);
   }
 
   &:hover {
-    background-color: #F8F9FA !important; 
+    background-color: var(--bg-secondary) !important; 
     box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
   }
 } 

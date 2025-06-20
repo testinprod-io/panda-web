@@ -137,7 +137,7 @@ export function PasswordModal({
       }}
       PaperProps={{
         sx: {
-          backgroundColor: "#FFFFFF",
+          backgroundColor: "var(--bg-primary)",
           borderRadius: "8px",
           paddingTop: { xs: "24px", sm: "40px" },
           paddingBottom: { xs: "24px", sm: "40px" },
@@ -193,7 +193,7 @@ export function PasswordModal({
               variant="h5"
               component="div"
               sx={{
-                color: "#131A28",
+                color: "var(--text-primary)",
                 fontSize: "24px",
                 fontFamily: "Inter, sans-serif",
                 fontWeight: "600",
@@ -207,7 +207,7 @@ export function PasswordModal({
             <Typography
               variant="body1"
               sx={{
-                color: "#131A28",
+                color: "var(--text-primary)",
                 fontSize: "16px",
                 fontFamily: "Inter, sans-serif",
                 fontWeight: "400",
@@ -264,7 +264,7 @@ export function PasswordModal({
                 height: "40px",
                 fontFamily: "Inter, sans-serif",
                 "& fieldset": {
-                  borderColor: "#CACACA",
+                  borderColor: "var(--border-primary)",
                 },
                 "&:hover fieldset": {
                   borderColor: "#A0A0A0",
@@ -280,13 +280,13 @@ export function PasswordModal({
                 width: "100% !important",
                 padding: "0 14px",
                 height: "100%",
-                color: "#131A28",
+                color: "var(--text-primary)",
                 fontSize: "16px",
                 fontFamily: "Inter, sans-serif",
                 fontWeight: "400",
                 "&::placeholder": {
                   opacity: 1,
-                  color: "#CACACA",
+                  color: "var(--text-secondary)",
                 },
               },
             }}
@@ -299,8 +299,8 @@ export function PasswordModal({
               fullWidth
               sx={{
                 height: "48px",
-                background: !isSubmitButtonDisabled ? "#131A28" : "#F3F3F3",
-                color: !isSubmitButtonDisabled ? "#C1FF83" : "#CACACA",
+                background: !isSubmitButtonDisabled ? "var(--bg-primary)" : "var(--bg-tertiary)",
+                color: !isSubmitButtonDisabled ? "var(--text-primary)" : "var(--text-secondary)",
                 borderRadius: "24px",
                 padding: "0 10px",
                 textTransform: "none",

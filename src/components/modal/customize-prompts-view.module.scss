@@ -4,7 +4,7 @@
   flex-grow: 1;
   min-height: 0;
   overflow: hidden;
-  background-color: white; 
+  background-color: var(--bg-primary); 
   padding: 32px 24px;
   border-radius: 16px;
   @media (max-width: 600px) {
@@ -19,7 +19,7 @@
   gap: 8px;
   .title {  
     padding: 6px 16px 0px 16px;
-    color: #131a28;
+    color: var(--text-primary);
     font-size: 20px;
     font-family: "Inter", sans-serif;
     font-weight: 600;
@@ -27,7 +27,7 @@
   }
   .subtitle {
     padding: 0px 16px 6px 16px;
-    color: #757575;
+    color: var(--text-secondary);
     font-size: 16px;
     font-family: "Inter", sans-serif;
     font-weight: 500;
@@ -38,7 +38,7 @@
 }
 
 .divider {
-  border-color: #b3b3b3;
+  border-color: var(--border-primary);
 }
 
 .formArea {
@@ -61,16 +61,16 @@
 .textField {
   & :global(.MuiOutlinedInput-root) {
     border-radius: 8px !important;
-    background-color: white !important;
+    background-color: var(--bg-primary) !important;
     height: 48px !important;
     font-family: "Inter", sans-serif !important;
 
     &:hover fieldset {
-      border-color: #a0a0a0 !important;
+      border-color: var(--border-primary) !important;
     }
 
     &:global(.Mui-focused fieldset) {
-      border-color: black !important;
+      border-color: var(--icon-primary) !important;
     }
 
     &:global(.Mui-error fieldset) {
@@ -82,7 +82,7 @@
     width: 100% !important;
     padding: 0 14px !important;
     height: 100% !important;
-    color: #131a28 !important;
+    color: var(--text-primary) !important;
     font-size: 16px !important;
     font-family: "Inter", sans-serif !important;
     font-weight: 400 !important;
@@ -92,15 +92,15 @@
 .textArea {
   & :global(.MuiOutlinedInput-root) {
     border-radius: 8px !important;
-    background-color: white !important;
+    background-color: var(--bg-primary) !important;
     font-family: "Inter", sans-serif !important;
 
     &:hover fieldset {
-      border-color: #a0a0a0 !important;
+      border-color: var(--border-primary) !important;
     }
 
     &:global(.Mui-focused fieldset) {
-      border-color: black !important;
+      border-color: var(--icon-primary) !important;
     }
 
     &:global(.Mui-error fieldset) {
@@ -119,17 +119,17 @@
 
 .traitChip {
   border-radius: 48px !important;
-  border: 1px solid #cacaca !important;
+  border: 1px solid var(--border-primary) !important;
   font-family: "Inter", sans-serif !important;
   font-size: 15px !important;
   font-weight: 500 !important;
   line-height: 32px !important;
   padding: 4px 8px !important;
-  color: #1E1E1E !important;
-  background-color: white !important;
+  color: var(--text-primary) !important;
+  background-color: var(--bg-primary) !important;
 
   .MuiChip-icon {
-    color: #757575 !important;
+    color: var(--text-secondary) !important;
     margin-left: 6px !important;
     margin-right: -4px !important;
     font-size: 20px !important;
@@ -140,16 +140,16 @@
   }
 
   &:hover {
-    border-color: #757575 !important;
-    background-color: #f5f5f5 !important;
+    border-color: var(--border-primary) !important;
+    background-color: var(--bg-tertiary) !important;
   }
 
   &.selectedTrait {
-    border-color: #131a28 !important;
-    background-color: #e3f2fd !important;
-    color: #131a28 !important;
+    border-color: var(--border-primary) !important;
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
     .MuiChip-icon {
-      color: #131a28 !important;
+      color: var(--text-primary) !important;
     }
   }
 }
@@ -157,25 +157,25 @@
 .blackAndWhiteSwitch {
   & :global(.MuiSwitch-switchBase) {
     & :global(.MuiSwitch-thumb) {
-      background-color: black !important;
+      background-color: var(--icon-primary) !important;
     }
 
     &.Mui-checked {
-      color: white !important;
+      color: var(--bg-primary) !important;
 
       & :global(.MuiSwitch-thumb) {
-        background-color: white !important;
+        background-color: var(--bg-primary) !important;
       }
     }
   }
 
   & :global(.MuiSwitch-track) {
-    background-color: #ccc !important;
+    background-color: var(--bg-tertiary) !important;
     opacity: 1 !important;
   }
 
   & :global(.MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track) {
-    background-color: black !important;
+    background-color: var(--icon-primary) !important;
     opacity: 1 !important;
   }
 }
@@ -195,14 +195,14 @@
   font-weight: 500 !important;
   line-height: 32px !important;
 
-  color: #131a28 !important;
-  border-color: #cacaca !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-primary) !important;
   border-radius: 48px !important;
   padding: 4px 16px !important;
   text-transform: none !important;
   &:hover {
-    border-color: #131a28 !important;
-    background-color: #f9f9f9 !important;
+    border-color: var(--border-primary) !important;
+    background-color: var(--bg-tertiary) !important;
   }
 }
 
@@ -215,16 +215,16 @@
   border-radius: 48px !important;
   padding: 4px 16px !important;
   text-transform: none !important;
-  background-color: #f3f3f3 !important;
-  color: #cacaca !important;
-  border: 1px solid #f3f3f3 !important;
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-primary) !important;
 
   &:not(:disabled) {
-    background-color: #131a28 !important;
-    color: white !important;
-    border-color: #131a28 !important;
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-primary) !important;
     &:hover {
-      background-color: #333a47 !important;
+      background-color: var(--bg-tertiary) !important;
     }
   }
 } 

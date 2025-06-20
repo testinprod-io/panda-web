@@ -35,8 +35,13 @@ export default function NewChatPage() {
       <Typography
         gutterBottom
         sx={{
+<<<<<<< HEAD
           color: "#131A28",
           fontSize: { xs: "20px", md: "24px" },
+=======
+          color: "var(--text-primary)",
+          fontSize: "24px",
+>>>>>>> f7c6e4e (Apply theme variables)
           fontWeight: "600",
           lineHeight: "38.74px",
           paddingTop: "1.1vh",
@@ -47,7 +52,7 @@ export default function NewChatPage() {
       </Typography>
       <Typography
         sx={{
-          color: "#131A28",
+          color: "var(--text-primary)",
           fontSize: { xs: "20px", md: "24px" },
           fontWeight: "400",
           lineHeight: "38.74px",

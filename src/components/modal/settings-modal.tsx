@@ -41,6 +41,7 @@ import { useAttestationStore } from "@/store/attestation";
 import { AllLangs, ALL_LANG_OPTIONS, changeLang, Lang } from "@/locales";
 import { safeLocalStorage } from "@/utils/utils";
 import Locale from "@/locales";
+import clsx from "clsx";
 
 interface SettingsModalProps {
   open: boolean;
@@ -86,7 +87,7 @@ export default function SettingsModal({
   const { authenticated, logout } = usePrivy();
   const { clearSessions } = useChatStore();
   const apiClient = useApiClient();
-  const [theme, setTheme] = useState("light");
+  const theme = useUserStore((state) => state.get<string>("theme")) ?? "system";
   const { lockApp } = useEncryption();
   if (!authenticated) {
     return <div></div>;
@@ -116,7 +117,7 @@ export default function SettingsModal({
   };
 
   const handleThemeChange = (event: SelectChangeEvent<string>) => {
-    setTheme(event.target.value as string);
+    useUserStore.getState().set("theme", event.target.value as string);
   };
 
   const passwordExpirationOptions = [
@@ -128,6 +129,32 @@ export default function SettingsModal({
   ];
 
   const generalSettingsItems = [
+    {
+      label: "Theme",
+      control: (
+        <Select
+          value={theme}
+          onChange={handleThemeChange}
+          variant="outlined"
+          size="small"
+          className={styles.selectControl}
+          IconComponent={ExpandMoreIcon}
+          MenuProps={{ classes: { paper: styles.selectMenuPaper } }}
+          sx={{
+            fieldset: {
+              border: "none",
+            },
+            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+              border: "none",
+            },
+          }}
+        >
+          <SelectMenuItem value="light">Light mode</SelectMenuItem>
+          <SelectMenuItem value="dark">Dark mode</SelectMenuItem>
+          <SelectMenuItem value="system">System</SelectMenuItem>
+        </Select>
+      ),
+    },
     {
       label: Locale.SettingsModal.Language,
       control: (
@@ -407,8 +434,4 @@ export default function SettingsModal({
       </Dialog>
     </>
   );
-}
-
-function clsx(...classes: (string | boolean | undefined | null)[]) {
-  return classes.filter(Boolean).join(" ");
 }

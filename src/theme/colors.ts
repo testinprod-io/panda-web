@@ -16,7 +16,7 @@ export const lightColors: ColorScheme = {
   textPrimary: '#111827',
   textSecondary: '#4B5563',
   textDisabled: '#9CA3AF',
-  bgPrimary: '#f9fafb',
+  bgPrimary: '#FFFFFF',
   bgSecondary: '#f3f4f6',
   border: '#e5e7eb',
   borderSecondary: '#d1d5db',

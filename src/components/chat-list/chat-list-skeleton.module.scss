@@ -11,7 +11,7 @@
 
 .skeletonHeader {
   height: 14px;
-  background: linear-gradient(270deg, #f0f0f0 0%, #e6e6e6 50%);
+  background: linear-gradient(270deg, var(--bg-secondary) 0%, var(--bg-tertiary) 50%);
   border-radius: 3px;
   margin-bottom: 18px;
   position: relative;
@@ -47,7 +47,7 @@
 
 .skeletonLine {
   height: 14px;
-  background: linear-gradient(270deg, #f0f0f0 0%, #e6e6e6 50%);
+  background: linear-gradient(270deg, var(--bg-secondary) 0%, var(--bg-tertiary) 50%);
   border-radius: 3px;
   position: relative;
   overflow: hidden;
