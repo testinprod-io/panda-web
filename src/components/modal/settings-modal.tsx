@@ -305,6 +305,7 @@ export default function SettingsModal({
 
           <Divider className={styles.divider} />
 
+
           <Box className={styles.mainArea}>
             <Box className={styles.leftNav}>
               <List component="nav">
@@ -341,7 +342,7 @@ export default function SettingsModal({
               {activeNavSection === "faq" && (
                 <Box>
                   <Typography fontSize={24} fontWeight={600} fontFamily={"Inter"}>{Locale.SettingsModal.Help}</Typography>
-                  <p>
+                  <br />
                   <Typography>
                     <a href="https://testinprod.notion.site/Private-Alpha-One-Pager-1ff8fc57f54680d0aa08ce7b8013948a" className={styles.FAQText}>- Private Alpha One Pager</a>
                   </Typography>
@@ -351,7 +352,6 @@ export default function SettingsModal({
                   <Typography>
                     <a href="https://testinprod.notion.site/Panda-Tips-Guides-2148fc57f54680f982b3d32973d20314" className={styles.FAQText}>- Panda Tips & Guides</a>
                   </Typography>
-                  </p>
                 </Box>
               )}
             </Box>

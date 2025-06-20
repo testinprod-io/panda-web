@@ -382,7 +382,7 @@ export default function CustomizePromptsView({
             disabled={isSaving}
             className={styles.blackAndWhiteSwitch}
           />
-          <Typography sx={{ fontSize: "14px", color: "#555" }}>
+          <Typography sx={{ fontSize: "14px", color: "var(--text-primary)" }}>
             {Locale.CustomizedPrompts.EnableForNewChats}
           </Typography>
         </Box>

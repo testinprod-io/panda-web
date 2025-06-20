@@ -260,10 +260,10 @@
     // max-width: 450px; // Adjusted for a more typical dialog width
     
     // padding: 32px 24px;
-    background: var(--Fill-Inverse_Primary, white);
+    background: var(--bg-primary);
     box-shadow: 0px 2px 18px rgba(0, 0, 0, 0.10);
     border-radius: 16px;
-    outline: 1px var(--Border-Tertiary, #CACACA) solid;
+    outline: 1px var(--border-primary) solid;
     outline-offset: -1px; // Not directly translatable, but outline behaves this way
     margin: 0; // Reset margin if any default exists
   }

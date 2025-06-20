@@ -82,6 +82,7 @@
     width: 100% !important;
     padding: 0 14px !important;
     height: 100% !important;
+    background-color: var(--bg-primary) !important;
     color: var(--text-primary) !important;
     font-size: 16px !important;
     font-family: "Inter", sans-serif !important;
@@ -195,7 +196,7 @@
   font-weight: 500 !important;
   line-height: 32px !important;
 
-  color: var(--text-primary) !important;
+  color: var(--black) !important;
   border-color: var(--border-primary) !important;
   border-radius: 48px !important;
   padding: 4px 16px !important;
@@ -215,16 +216,17 @@
   border-radius: 48px !important;
   padding: 4px 16px !important;
   text-transform: none !important;
-  background-color: var(--bg-primary) !important;
-  color: var(--text-primary) !important;
+  background-color: var(--bg-secondary) !important;
+  color: var(--black) !important;
   border: 1px solid var(--border-primary) !important;
+  box-shadow: none !important;
 
   &:not(:disabled) {
-    background-color: var(--bg-tertiary) !important;
-    color: var(--text-primary) !important;
+    background-color: var(--icon-primary) !important;
+    color: var(--white) !important;
     border-color: var(--border-primary) !important;
     &:hover {
-      background-color: var(--bg-tertiary) !important;
+      background-color: var(--icon-secondary) !important;
     }
   }
 } 

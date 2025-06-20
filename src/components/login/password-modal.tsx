@@ -130,7 +130,7 @@ export function PasswordModal({
       onClose={onClose}
       BackdropProps={{
         style: {
-          backgroundColor: "rgba(0, 0, 0, 0.6)",
+          // backgroundColor: "rgba(0, 0, 0, 0.6)",
           backdropFilter: "blur(5px)",
           WebkitBackdropFilter: "blur(5px)",
         },
@@ -260,7 +260,7 @@ export function PasswordModal({
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: "8px",
-                backgroundColor: "white",
+                // backgroundColor: "white",
                 height: "40px",
                 fontFamily: "Inter, sans-serif",
                 "& fieldset": {
@@ -280,6 +280,7 @@ export function PasswordModal({
                 width: "100% !important",
                 padding: "0 14px",
                 height: "100%",
+                backgroundColor: "var(--bg-secondary)",
                 color: "var(--text-primary)",
                 fontSize: "16px",
                 fontFamily: "Inter, sans-serif",

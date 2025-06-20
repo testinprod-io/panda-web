@@ -23,13 +23,13 @@ export const lightColors: ColorScheme = {
 };
 
 export const darkColors: ColorScheme = {
-  primary: '#C1FF83',
-  secondary: '#111827',
-  textPrimary: '#f3f4f6',
-  textSecondary: '#9CA3AF',
-  textDisabled: '#6B7280',
-  bgPrimary: '#111827',
-  bgSecondary: '#1f2937',
-  border: '#374151',
-  borderSecondary: '#4B5563',
+  primary: '#ffffff',
+  secondary: '#303030',
+  textPrimary: '#fff',
+  textSecondary: '#f3f3f3',
+  textDisabled: '#afafaf',
+  bgPrimary: '#212121',
+  bgSecondary: '#303030',
+  border: '#ffffff26',
+  borderSecondary: '#ffffff0d',
 };
