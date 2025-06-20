@@ -81,14 +81,8 @@ export function ChatList(props: ChatListProps) {
     };
   }, [hasMore, isLoading, chatManager]);
 
-  const handleSelectItem = (conversation: Chat) => {
-    const session = chatManager.getChat(conversation.id);
-    if(session) {
-      chatManager.setActiveChat(conversation.id);
-      router.replace(`/chat/${conversation.id}`);
-    } else {
-        console.error("Session config not found for conversation:", conversation.id);
-    }
+  const handleSelectItem = async (conversation: Chat) => {
+    router.replace(`/chat/${conversation.id}`);
   };
 
   const handleDeleteItem = async (conversation: Chat) => {

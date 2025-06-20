@@ -17,6 +17,7 @@ const EncryptionService = {
 export class Chat extends EventEmitter {
   public readonly id: UUID;
   public title: string;
+  public encryptedTitle: string;
   public messages: ChatMessage[];
   public modelConfig?: ModelConfig;
   public customizedPrompts?: CustomizedPromptsData;
@@ -183,6 +184,18 @@ export class Chat extends EventEmitter {
         useSearch: options.enableSearch ?? false,
         syncState: MessageSyncState.PENDING_CREATE,
     });
+    const createRequest: MessageCreateRequest = {
+      message_id: userMessage.id,
+      sender_type: userMessage.role,
+      content: userMessage.content,
+      files: userMessage.files,
+      custom_data: {
+        useSearch: userMessage.useSearch,
+      },
+      is_error: userMessage.isError,
+      error_message: userMessage.errorMessage,
+    };
+    await this.api.app.createMessage(this.id as UUID, createRequest);
     this.messages.push(userMessage);
     this.updateState();
     
@@ -234,77 +247,106 @@ export class Chat extends EventEmitter {
         messages: messagesForApi,
         config: llmChatConfig,
         onReasoningStart: () => {
-            const msg = this.messages.find(m => m.id === localBotMessageId);
-            if (msg) msg.isReasoning = true;
+            this.messages = this.messages.map(m => {
+                return m.id === localBotMessageId
+                ? {
+                    ...m,
+                    isReasoning: true,
+                }
+                : m;
+            });
             this.updateState();
             options.onReasoningStart?.(localBotMessageId);
         },
         onReasoningChunk: (_id, chunk) => {
-            const msg = this.messages.find(m => m.id === localBotMessageId);
-            if (msg) {
-                msg.visibleReasoning = (msg.visibleReasoning || "") + chunk;
-            }
+            this.messages = this.messages.map(m => {
+                return m.id === localBotMessageId
+                ? {
+                    ...m,
+                    visibleReasoning: (m.visibleReasoning || "") + chunk,
+                }
+                : m;
+            });
             this.updateState();
             options.onReasoningChunk?.(localBotMessageId, chunk);
         },
         onReasoningEnd: () => {
-             const msg = this.messages.find(m => m.id === localBotMessageId);
-            if (msg) {
-                msg.isReasoning = false;
-                msg.reasoning = EncryptionService.encrypt(msg.visibleReasoning ?? "");
-            }
+            this.messages = this.messages.map(msg => {
+              return msg.id === localBotMessageId
+              ? {
+                  ...msg,
+                  isReasoning: false,
+                  reasoning: EncryptionService.encrypt(msg.visibleReasoning ?? ""),
+                }
+              : msg;
+            });
             this.updateState();
             options.onReasoningEnd?.(localBotMessageId);
         },
         onContentChunk: (_id, chunk) => {
-            const msg = this.messages.find(m => m.id === localBotMessageId);
-            if (msg) {
-                msg.visibleContent = (msg.visibleContent || "") + chunk;
-            }
+            this.messages = this.messages.map(msg => {
+              return msg.id === localBotMessageId
+              ? {
+                  ...msg,
+                  visibleContent: (msg.visibleContent || "") + chunk,
+                  streaming: true,
+                  isReasoning: false,
+                }
+              : msg;
+            });
             this.updateState();
             options.onContentChunk?.(localBotMessageId, chunk);
         },
         onFinish: (finalContent, timestamp) => {
-            this.finalizeMessage(localBotMessageId, finalContent, timestamp);
+            this._finalizeMessage(localBotMessageId, finalContent, timestamp);
             options.onSuccess?.(localBotMessageId, finalContent, timestamp);
         },
         onError: (error) => {
-            this.markMessageAsError(localBotMessageId, error.message);
+            this._finalizeMessage(localBotMessageId, "", new Date(), true, error.message);
             options.onFailure?.(error);
         },
     });
   }
 
-  finalizeMessage(messageId: UUID, finalContent: string, timestamp: Date, isError: boolean = false, errorMessage?: string) {
-    const message = this.messages.find(m => m.id === messageId);
-    if (message) {
-        message.streaming = false;
-        if(isError) {
-            message.isError = true;
-            message.errorMessage = errorMessage;
+  private _finalizeMessage(messageId: UUID, finalContent: string, timestamp: Date, isError: boolean = false, errorMessage?: string) {
+    let messageToSave: ChatMessage | undefined;
+
+    this.messages = this.messages.map(msg => {
+      if (msg.id === messageId) {
+        const updatedMsg = { ...msg, streaming: false };
+
+        if (isError) {
+          updatedMsg.isError = true;
+          updatedMsg.errorMessage = errorMessage;
         } else {
-            message.content = EncryptionService.encrypt(finalContent);
-            message.visibleContent = finalContent;
-            message.date = timestamp;
-            message.syncState = MessageSyncState.SYNCED;
+          updatedMsg.content = EncryptionService.encrypt(finalContent);
+          updatedMsg.visibleContent = finalContent;
+          updatedMsg.date = timestamp;
+          updatedMsg.syncState = MessageSyncState.SYNCED;
         }
         
+        messageToSave = updatedMsg;
+        return updatedMsg;
+      }
+      return msg;
+    });
+
+    if (messageToSave) {
         const request: MessageCreateRequest = {
-            message_id: message.id,
-            sender_type: message.role,
-            content: message.content,
-            files: message.files,
-            custom_data: { useSearch: message.useSearch },
-            reasoning_content: message.reasoning,
-            reasoning_time: message.reasoningTime?.toString()
+            message_id: messageToSave.id,
+            sender_type: messageToSave.role,
+            content: messageToSave.content,
+            files: messageToSave.files,
+            custom_data: { useSearch: messageToSave.useSearch },
+            reasoning_content: messageToSave.reasoning,
+            reasoning_time: messageToSave.reasoningTime?.toString()
         };
         this.api.app.createMessage(this.id as UUID, request);
-        this.updateState();
+    } else {
+        console.error(`[SDK-Chat] _finalizeMessage: Message with ID ${messageId} not found. Cannot save to server.`);
     }
-  }
 
-  markMessageAsError(messageId: UUID, error: string) {
-      this.finalizeMessage(messageId, "", new Date(), true, error);
+    this.updateState();
   }
 
   getState() {

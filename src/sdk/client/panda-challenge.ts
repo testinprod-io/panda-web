@@ -1,11 +1,5 @@
 /**
  * This middleware handles the Panda API's challenge-response verification.
- * It requires the 'elliptic' package. Please install it using:
- * npm install elliptic
- * or
- * yarn add elliptic
- * If using TypeScript, also install types:
- * npm install --save-dev @types/elliptic
  */
 import { createVerify, randomBytes } from "crypto";
 import { ec as EC } from "elliptic";
@@ -14,6 +8,8 @@ export interface ChallengeResponse {
   publicKey: string;
   challenge: string;
   signature: string;
+  timestamp: string;
+  randomHex: string;
 }
 
 /**
@@ -46,7 +42,16 @@ function verifyChallengeSignature(
   challenge: ChallengeResponse,
 ): boolean {
   const verify = createVerify("RSA-SHA256");
-  verify.update(challenge.challenge, "utf8");
+
+  const challengeExpiresAt = parseInt(challenge.timestamp) + 60 * 3; // 3 minutes timeout
+  if (challengeExpiresAt < Date.now() / 1000) {
+    console.error("Panda Challenge verification failed: Timestamp is too old.");
+    return false;
+  }
+
+  const proofPrefix = "PANDA_PROOF_V0";
+  const proof = `${proofPrefix}|${challenge.timestamp}|${challenge.randomHex}|${challenge.challenge}`;
+  verify.update(proof, "utf8");
   verify.end();
 
   const publicKeyPem = publicKeyFromHex(challenge.publicKey);
@@ -84,10 +89,12 @@ export function generateChallengeHeaders(): {
 export function verifyChallenge(response: Response, challenge: string): ChallengeResponse {
   const publicKeyHex = response.headers.get("Panda-Public-key");
   const signatureHex = response.headers.get("Panda-Signature");
+  const timestamp = response.headers.get("Panda-Timestamp");
+  const randomHex = response.headers.get("Panda-Server-Random");
 
-  if (!publicKeyHex || !signatureHex) {
+  if (!publicKeyHex || !signatureHex || !timestamp || !randomHex) {
     throw new Error(
-      "Panda Challenge verification failed: Missing 'Panda-Public-key' or 'Panda-Signature' headers., response.headers: " + JSON.stringify(response.headers),
+      "Panda Challenge verification failed: Missing 'Panda-Public-key', 'Panda-Signature', 'Panda-Timestamp', 'Panda-Server-Random' headers., response.headers: " + JSON.stringify(response.headers),
     );
   }
 
@@ -95,6 +102,8 @@ export function verifyChallenge(response: Response, challenge: string): Challeng
     publicKey: publicKeyHex,
     challenge,
     signature: signatureHex,
+    randomHex: randomHex,
+    timestamp: timestamp,
   }
   const isValid = verifyChallengeSignature(challengeResponse);
 
