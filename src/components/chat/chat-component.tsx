@@ -24,6 +24,7 @@ import { usePandaSDK } from "@/providers/sdk-provider";
 import { useChatList, useChat } from "@/sdk/hooks";
 import { Chat } from "@/sdk/Chat";
 import { useChatStore } from "@/store";
+import { ModelConfig } from "@/types/constant";
 
 export function ChatComponent({ sessionId }: { sessionId: UUID }) {
   const config = useAppConfig();
@@ -43,7 +44,22 @@ export function ChatComponent({ sessionId }: { sessionId: UUID }) {
     if (activeChat?.id !== sessionId) {
         const session = chatStore.sessions.find(s => s.id === sessionId);
         if(session) {
-            sdk.chat.setActiveChat(sessionId, session.modelConfig, session.customizedPrompts);
+            try {
+              sdk.chat.setActiveChat(sessionId);
+              // Update the chat's model config if needed
+              if (activeChat && session.modelConfig) {
+                activeChat.updateModelConfig(session.modelConfig);
+              }
+              if (activeChat && session.customizedPrompts) {
+                // Handle both string and object types for customizedPrompts
+                const prompts = typeof session.customizedPrompts === 'string' 
+                  ? JSON.parse(session.customizedPrompts) 
+                  : session.customizedPrompts;
+                activeChat.updateCustomizedPrompts(prompts);
+              }
+            } catch (error) {
+              console.error("Failed to set active chat:", error);
+            }
         } else {
             // This might happen if the session list hasn't loaded yet.
             // The component will re-render once the session list is available.
@@ -55,27 +71,46 @@ export function ChatComponent({ sessionId }: { sessionId: UUID }) {
   // When the active chat changes and has no messages, load them.
   useEffect(() => {
     if (activeChat && activeChat.messages.length === 0) {
-      activeChat.loadInitial();
+      activeChat.loadInitial().catch(error => {
+        console.error("Failed to load initial messages:", error);
+        showSnackbar("Failed to load messages", "error");
+      });
     }
-  }, [activeChat]);
+  }, [activeChat, showSnackbar]);
 
   const { scrollDomToBottom, setAutoScroll } = useScrollToBottom(scrollRef, !internalHitBottom, displayedMessages);
 
   const doSubmit = useCallback(async (sessionState: SessionState) => {
-    if (!activeChat) return;
+    if (!activeChat) {
+      console.error("No active chat for submitting message");
+      return;
+    }
     
-    // The sendMessage options are now simpler as the config is on the Chat object
-    await activeChat.sendMessage(sessionState.userInput, activeChat.modelConfig, {
-        attachments: sessionState.persistedAttachedFiles as any,
-        enableSearch: sessionState.enableSearch,
-        onSuccess: () => {},
-        onFailure: (error: Error) => {
-            console.error("[ChatComponent] Failed user input", error);
-            showSnackbar(Locale.Store.Error, "error");
-        },
-    });
-    setAutoScroll(true);
-  }, [activeChat, setAutoScroll, showSnackbar]);
+    // Get model config from the active chat or use a default
+    const modelConfig = activeChat.modelConfig || config.modelConfig;
+    if (!modelConfig) {
+      console.error("No model config available");
+      showSnackbar("Configuration error", "error");
+      return;
+    }
+    
+    try {
+      await activeChat.sendMessage(sessionState.userInput, modelConfig, {
+          attachments: sessionState.persistedAttachedFiles as any,
+          enableSearch: sessionState.enableSearch,
+          onSuccess: () => {
+            setAutoScroll(true);
+          },
+          onFailure: (error: Error) => {
+              console.error("[ChatComponent] Failed user input", error);
+              showSnackbar(Locale.Store.Error, "error");
+          },
+      });
+    } catch (error) {
+      console.error("[ChatComponent] Error sending message:", error);
+      showSnackbar("Failed to send message", "error");
+    }
+  }, [activeChat, config.modelConfig, setAutoScroll, showSnackbar]);
 
   // Register/unregister submit handler with the store
   // useEffect(() => {
@@ -98,10 +133,13 @@ export function ChatComponent({ sessionId }: { sessionId: UUID }) {
   }, [activeChat]);
   
   const loadMore = useCallback(() => {
-    if (activeChat) {
-      activeChat.loadMoreMessages();
+    if (activeChat && hasMoreMessages && !isLoadingMessages) {
+      activeChat.loadMoreMessages().catch(error => {
+        console.error("Failed to load more messages:", error);
+        showSnackbar("Failed to load more messages", "error");
+      });
     }
-  }, [activeChat]);
+  }, [activeChat, hasMoreMessages, isLoadingMessages, showSnackbar]);
 
   // ... (scroll handling logic can remain mostly the same, but call `loadMore`)
   const onChatBodyScroll = (e: React.UIEvent<HTMLDivElement>) => {

@@ -1,45 +1,46 @@
 "use client";
 
-import { usePrivy } from "@privy-io/react-auth";
-import { useApiClient } from "@/providers/api-client-provider";
-import { useAppConfig } from "@/store";
 import { useEffect, useState } from "react";
-import { decryptSystemPrompt } from "@/types";
-import { useEncryption } from "@/providers/encryption-provider";
-import { useRouter } from "next/navigation";
+import { usePandaSDK, useSDKState } from "@/providers/sdk-provider";
+import { User } from "@/sdk/auth/types";
+
 /**
- * Custom hook to get the authentication status from Privy.
+ * Custom hook to get the authentication status from the SDK.
  * Provides boolean flags for readiness and authentication state.
  */
 export function useAuthStatus() {
-  const { ready, authenticated } = usePrivy();
-  const appConfig = useAppConfig();
-  const apiClient = useApiClient();
-  const { isLocked } = useEncryption();
-  const router = useRouter();
-  // const [hasFetchedPromptsThisSession, setHasFetchedPromptsThisSession] =
-  //   useState(false);
+  const { sdk, initializationState } = useSDKState();
+  const [authState, setAuthState] = useState<{
+    isAuthenticated: boolean;
+    user: User | null;
+  }>({
+    isAuthenticated: false,
+    user: null,
+  });
 
-  // useEffect(() => {
-  //   if (!authenticated) {
-  //     setHasFetchedPromptsThisSession(false);
-  //   }
-  // }, [authenticated]);
+  useEffect(() => {
+    if (!sdk || !initializationState.isInitialized) {
+      setAuthState({ isAuthenticated: false, user: null });
+      return;
+    }
 
-  // useEffect(() => {
-  //   if (apiClient && authenticated && !isLocked && !hasFetchedPromptsThisSession) {
-  //     apiClient.app.getCustomizedPrompts().then((res) => {
-  //       appConfig.setCustomizedPrompts(decryptSystemPrompt(res));
-  //       setHasFetchedPromptsThisSession(true);
-  //     }).catch((err) => {
-  //       console.log("Failed to fetch prompts:", err);
-  //       // router.push("/onboarding");
-  //     });
-  //   }
-  // }, [router, appConfig, apiClient, authenticated, hasFetchedPromptsThisSession, isLocked]);
+    // Set initial auth state
+    const currentAuthState = sdk.auth.getState();
+    setAuthState(currentAuthState);
+
+    // Subscribe to auth state changes
+    const unsubscribe = sdk.auth.on('authStateChanged', (newAuthState) => {
+      setAuthState(newAuthState);
+    });
+
+    return unsubscribe;
+  }, [sdk, initializationState.isInitialized]);
 
   return {
-    isReady: ready, // Is Privy loaded and authentication status known?
-    isAuthenticated: authenticated, // Is the user authenticated?
+    isReady: initializationState.isInitialized && !initializationState.isAuthenticating,
+    isAuthenticated: authState.isAuthenticated,
+    user: authState.user,
+    isAuthenticating: initializationState.isAuthenticating,
+    initializationError: initializationState.error,
   };
 }

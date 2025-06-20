@@ -7,12 +7,7 @@ import { MultimodalContent, LLMConfig } from '@/client/api';
 import { mapApiMessagesToChatMessages } from '@/services/api-service';
 import { ModelConfig } from '@/types/constant';
 import { EventEmitter } from './events';
-
-// This would be a proper import in the final version
-const EncryptionService = {
-  encrypt: (text: string) => text,
-  decrypt: (text: string) => text,
-};
+import { EncryptionService } from '@/services/encryption-service';
 
 export class Chat extends EventEmitter {
   public readonly id: UUID;
@@ -40,6 +35,7 @@ export class Chat extends EventEmitter {
     messages: ChatMessage[];
     isLoading: boolean;
     hasMoreMessages: boolean;
+    summaries: Summary[];
   };
 
   constructor(
@@ -70,6 +66,7 @@ export class Chat extends EventEmitter {
       messages: this.messages,
       isLoading: this.isLoading,
       hasMoreMessages: this.hasMoreMessages,
+      summaries: this.summaries,
     };
   }
 
@@ -121,6 +118,7 @@ export class Chat extends EventEmitter {
 
     } catch (error) {
         console.error(`[SDK-Chat] Error loading initial data for chat ${this.id}:`, error);
+        throw error; // Re-throw to allow caller to handle
     } finally {
         this.isLoading = false;
         this.updateState();
@@ -150,6 +148,7 @@ export class Chat extends EventEmitter {
 
     } catch (error) {
         console.error(`[SDK-Chat] Error loading more messages for chat ${this.id}:`, error);
+        throw error; // Re-throw to allow caller to handle
     } finally {
         this.isLoading = false;
         this.updateState();
@@ -169,11 +168,9 @@ export class Chat extends EventEmitter {
         onContentChunk?: (messageId: UUID, contentChunk: string) => void;
         onSuccess?: (messageId: UUID, finalMessage: string, timestamp: Date) => void;
         onFailure?: (error: Error) => void;
-    }
+        onController?: (controller: AbortController) => void;
+    } = {}
   ) {
-    // if(!this.modelConfig) {
-    //   throw new Error("Model config is required");
-    // }
     const userMessage = createMessage({
         role: Role.USER,
         content: EncryptionService.encrypt(userInput),
@@ -230,49 +227,93 @@ export class Chat extends EventEmitter {
         customizedPrompts: this.customizedPrompts ? EncryptionService.decrypt(JSON.stringify(this.customizedPrompts)) : undefined,
     };
 
-    await this.api.llm.chat({
-        messages: messagesForApi,
-        config: llmChatConfig,
-        onReasoningStart: () => {
-            const msg = this.messages.find(m => m.id === localBotMessageId);
-            if (msg) msg.isReasoning = true;
-            this.updateState();
-            options.onReasoningStart?.(localBotMessageId);
-        },
-        onReasoningChunk: (_id, chunk) => {
-            const msg = this.messages.find(m => m.id === localBotMessageId);
-            if (msg) {
-                msg.visibleReasoning = (msg.visibleReasoning || "") + chunk;
-            }
-            this.updateState();
-            options.onReasoningChunk?.(localBotMessageId, chunk);
-        },
-        onReasoningEnd: () => {
-             const msg = this.messages.find(m => m.id === localBotMessageId);
-            if (msg) {
-                msg.isReasoning = false;
-                msg.reasoning = EncryptionService.encrypt(msg.visibleReasoning ?? "");
-            }
-            this.updateState();
-            options.onReasoningEnd?.(localBotMessageId);
-        },
-        onContentChunk: (_id, chunk) => {
-            const msg = this.messages.find(m => m.id === localBotMessageId);
-            if (msg) {
-                msg.visibleContent = (msg.visibleContent || "") + chunk;
-            }
-            this.updateState();
-            options.onContentChunk?.(localBotMessageId, chunk);
-        },
-        onFinish: (finalContent, timestamp) => {
-            this.finalizeMessage(localBotMessageId, finalContent, timestamp);
-            options.onSuccess?.(localBotMessageId, finalContent, timestamp);
-        },
-        onError: (error) => {
-            this.markMessageAsError(localBotMessageId, error.message);
-            options.onFailure?.(error);
-        },
-    });
+    try {
+      await this.api.llm.chat({
+          messages: messagesForApi,
+          config: llmChatConfig,
+          onReasoningStart: () => {
+              const msg = this.messages.find(m => m.id === localBotMessageId);
+              if (msg) msg.isReasoning = true;
+              this.updateState();
+              options.onReasoningStart?.(localBotMessageId);
+          },
+          onReasoningChunk: (_id, chunk) => {
+              const msg = this.messages.find(m => m.id === localBotMessageId);
+              if (msg) {
+                  msg.visibleReasoning = (msg.visibleReasoning || "") + chunk;
+              }
+              this.updateState();
+              options.onReasoningChunk?.(localBotMessageId, chunk);
+          },
+          onReasoningEnd: () => {
+               const msg = this.messages.find(m => m.id === localBotMessageId);
+              if (msg) {
+                  msg.isReasoning = false;
+                  msg.reasoning = EncryptionService.encrypt(msg.visibleReasoning ?? "");
+              }
+              this.updateState();
+              options.onReasoningEnd?.(localBotMessageId);
+          },
+          onContentChunk: (_id, chunk) => {
+              const msg = this.messages.find(m => m.id === localBotMessageId);
+              if (msg) {
+                  msg.visibleContent = (msg.visibleContent || "") + chunk;
+              }
+              this.updateState();
+              options.onContentChunk?.(localBotMessageId, chunk);
+          },
+          onFinish: (finalContent, timestamp) => {
+              this.finalizeMessage(localBotMessageId, finalContent, timestamp);
+              options.onSuccess?.(localBotMessageId, finalContent, timestamp);
+          },
+          onError: (error) => {
+              this.markMessageAsError(localBotMessageId, error.message);
+              options.onFailure?.(error);
+          },
+          onController: options.onController,
+      });
+    } catch (error) {
+      this.markMessageAsError(localBotMessageId, (error as Error).message);
+      options.onFailure?.(error as Error);
+    }
+  }
+
+  /**
+   * Adds an optimistic message to the chat (for immediate UI feedback)
+   */
+  public addOptimisticMessage(message: ChatMessage) {
+    this.messages.push(message);
+    this.updateState();
+  }
+
+  /**
+   * Updates an optimistic message (typically during streaming)
+   */
+  public updateOptimisticMessage(localMessageId: string, updates: Partial<ChatMessage>) {
+    const messageIndex = this.messages.findIndex(m => m.id === localMessageId);
+    if (messageIndex !== -1) {
+      this.messages[messageIndex] = { ...this.messages[messageIndex], ...updates };
+      this.updateState();
+    }
+  }
+
+  /**
+   * Clears messages from a specific message ID onwards
+   */
+  public async clearMessages(fromMessageId: UUID) {
+    try {
+      // Find all messages from the specified ID onwards
+      const messageIndex = this.messages.findIndex(m => m.id === fromMessageId);
+      if (messageIndex !== -1) {
+        const messagesToDelete = this.messages.slice(messageIndex).map(m => m.id);
+        await this.api.app.deleteMessages(this.id as UUID, messagesToDelete);
+        this.messages = this.messages.slice(0, messageIndex);
+        this.updateState();
+      }
+    } catch (error) {
+      console.error(`[SDK-Chat] Error clearing messages for chat ${this.id}:`, error);
+      throw error;
+    }
   }
 
   finalizeMessage(messageId: UUID, finalContent: string, timestamp: Date, isError: boolean = false, errorMessage?: string) {
@@ -289,6 +330,7 @@ export class Chat extends EventEmitter {
             message.syncState = MessageSyncState.SYNCED;
         }
         
+        // Save message to server
         const request: MessageCreateRequest = {
             message_id: message.id,
             sender_type: message.role,
@@ -298,7 +340,12 @@ export class Chat extends EventEmitter {
             reasoning_content: message.reasoning,
             reasoning_time: message.reasoningTime?.toString()
         };
-        this.api.app.createMessage(this.id as UUID, request);
+        
+        // Don't await this - fire and forget
+        this.api.app.createMessage(this.id as UUID, request).catch(error => {
+          console.error(`[SDK-Chat] Error saving message to server:`, error);
+        });
+        
         this.updateState();
     }
   }
@@ -307,7 +354,39 @@ export class Chat extends EventEmitter {
       this.finalizeMessage(messageId, "", new Date(), true, error);
   }
 
+  /**
+   * Updates the title of this chat
+   */
+  public updateTitle(newTitle: string) {
+    this.title = newTitle;
+    this.updateState();
+  }
+
+  /**
+   * Updates the model config for this chat
+   */
+  public updateModelConfig(modelConfig: ModelConfig) {
+    this.modelConfig = modelConfig;
+    this.updateState();
+  }
+
+  /**
+   * Updates the customized prompts for this chat
+   */
+  public updateCustomizedPrompts(customizedPrompts: CustomizedPromptsData) {
+    this.customizedPrompts = customizedPrompts;
+    this.updateState();
+  }
+
   getState() {
     return this.state;
+  }
+
+  /**
+   * Clean up resources when the chat is no longer needed
+   */
+  public dispose() {
+    // Clear all event listeners using the protected cleanup method
+    this.cleanup();
   }
 }
