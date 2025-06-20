@@ -18,6 +18,7 @@ import { CustomizedPromptsResponse } from "@/client/types";
 import { useApiClient } from "@/providers/api-client-provider";
 import { CustomizedPromptsData, decryptSystemPrompt, encryptSystemPrompt } from "@/types";
 import { useAppConfig } from "@/store/config";
+import Locale from "@/locales";
 
 interface Trait {
   id: string;
@@ -274,10 +275,10 @@ export default function CustomizePromptsView({
       )}
       <Box className={styles.header}>
         <Typography variant="h5" className={styles.title}>
-          Customize Panda
+          {Locale.CustomizedPrompts.Title}
         </Typography>
         <Typography className={styles.subtitle}>
-          Introduce yourself to get better, more personalized responses
+          {Locale.CustomizedPrompts.Description}
         </Typography>
       </Box>
 
@@ -286,12 +287,12 @@ export default function CustomizePromptsView({
       <Box className={styles.formArea}>
         <Box className={styles.formSection}>
           <Typography className={styles.label}>
-            What should Panda call you?
+            {Locale.CustomizedPrompts.NicknameDescription}
           </Typography>
           <TextField
             fullWidth
             variant="outlined"
-            placeholder="Nickname"
+            placeholder={Locale.CustomizedPrompts.NicknamePlaceholder}
             value={name}
             onChange={(e) => setName(e.target.value)}
             className={styles.textField}
@@ -300,11 +301,11 @@ export default function CustomizePromptsView({
         </Box>
 
         <Box className={styles.formSection}>
-          <Typography className={styles.label}>What do you do?</Typography>
+          <Typography className={styles.label}>{Locale.CustomizedPrompts.JobDescription}</Typography>
           <TextField
             fullWidth
             variant="outlined"
-            placeholder="Product Manager"
+            placeholder={Locale.CustomizedPrompts.JobPlaceholder}
             value={job}
             onChange={(e) => setJob(e.target.value)}
             className={styles.textField}
@@ -314,14 +315,14 @@ export default function CustomizePromptsView({
 
         <Box className={styles.formSection}>
           <Typography className={styles.label}>
-            What traits should Panda have?
+            {Locale.CustomizedPrompts.TraitsDescription}
           </Typography>
           <TextField
             fullWidth
             multiline
             rows={4}
             variant="outlined"
-            placeholder="Describe or select traits by clicking below"
+            placeholder={Locale.CustomizedPrompts.TraitsPlaceholder}
             value={traitsText}
             onChange={(e) => setTraitsText(e.target.value)}
             className={styles.textArea}
@@ -360,14 +361,14 @@ export default function CustomizePromptsView({
 
         <Box className={styles.formSection}>
           <Typography className={styles.label}>
-            Anything else Panda should know about you?
+            {Locale.CustomizedPrompts.ExtraParamsDescription}
           </Typography>
           <TextField
             fullWidth
             multiline
             rows={4}
             variant="outlined"
-            placeholder="Interests, values, or preferences to keep in mind"
+            placeholder={Locale.CustomizedPrompts.ExtraParamsPlaceholder}
             value={extraParams}
             onChange={(e) => setExtraParams(e.target.value)}
             className={styles.textArea}
@@ -387,7 +388,7 @@ export default function CustomizePromptsView({
             className={styles.blackAndWhiteSwitch}
           />
           <Typography sx={{ fontSize: "14px", color: "#555" }}>
-            Enable for new chats
+            {Locale.CustomizedPrompts.EnableForNewChats}
           </Typography>
         </Box>
 
@@ -398,7 +399,7 @@ export default function CustomizePromptsView({
           className={styles.cancelButton}
           disabled={isSaving}
         >
-          Cancel
+          {Locale.CustomizedPrompts.Cancel}
         </Button>
         <Button
           variant="contained"
@@ -407,7 +408,7 @@ export default function CustomizePromptsView({
           className={styles.saveButton}
           disabled={!canSave || isSaving}
         >
-          {isSaving ? <CircularProgress size={24} color="inherit" /> : "Save"}
+          {isSaving ? <CircularProgress size={24} color="inherit" /> : Locale.CustomizedPrompts.Save}
         </Button>
       </Box>
     </Box>

@@ -385,7 +385,7 @@ export function ChatItem({
                     <EditOutlinedIcon fontSize="small" />
                   </ListItemIcon>
                   <ListItemText
-                    primary="Rename"
+                    primary={Locale.ChatList.Rename}
                     className={styles.chatActionMenuItemText}
                   />
                 </MenuItem>
@@ -405,7 +405,7 @@ export function ChatItem({
                     <DeleteOutlineOutlinedIcon fontSize="small" />
                   </ListItemIcon>
                   <ListItemText
-                    primary="Delete"
+                    primary={Locale.ChatList.Delete}
                     className={clsx(
                       styles.chatActionMenuItemText,
                       styles.deleteActionText,

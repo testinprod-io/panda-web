@@ -218,10 +218,6 @@ export default function ChatLayoutContent({
       {privyAuthenticated && (
         <>
           {!isMobile && (
-            <Tooltip
-              title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-              placement="right"
-            >
               <IconButton
                 onClick={handleToggleSidebar}
                 className={sidebarStyles.sidebarToggleButton}
@@ -249,7 +245,6 @@ export default function ChatLayoutContent({
                   />
                 )}
               </IconButton>
-            </Tooltip>
           )}
 
           <>
@@ -424,8 +419,28 @@ export default function ChatLayoutContent({
             boxSizing: "border-box",
           }}
         >
-          By messaging Panda AI, you agree to <a href="https://testinprod.notion.site/Panda-Alpha-Terms-of-Service-Privacy-Notice-2078fc57f54680349183dde6f0224da8" style={{color: "black", textDecoration: "none", fontWeight: "500"}}>our Terms</a> and 
-          have read <a href="https://testinprod.notion.site/Panda-Alpha-Terms-of-Service-Privacy-Notice-2078fc57f54680349183dde6f0224da8" style={{color: "black", textDecoration: "none", fontWeight: "500"}}>our Privacy Policy</a>
+          {Locale.ChatLayout.Terms1}
+          <a
+            href="https://testinprod.notion.site/Panda-Alpha-Terms-of-Service-Privacy-Notice-2078fc57f54680349183dde6f0224da8"
+            style={{
+              color: "black",
+              textDecoration: "none",
+              fontWeight: "500",
+            }}
+          >
+            {Locale.ChatLayout.Terms2}
+          </a>
+          {Locale.ChatLayout.Terms3}
+          <a
+            href="https://testinprod.notion.site/Panda-Alpha-Terms-of-Service-Privacy-Notice-2078fc57f54680349183dde6f0224da8"
+            style={{
+              color: "black",
+              textDecoration: "none",
+              fontWeight: "500",
+            }}
+          >
+            {Locale.ChatLayout.Terms4}
+          </a>
         </Typography>
         </Box>
       </Box>

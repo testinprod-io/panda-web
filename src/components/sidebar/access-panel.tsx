@@ -1,5 +1,6 @@
 import React from "react";
 import styles from "./access-panel.module.scss";
+import Locale from "@/locales";
 
 interface AccessPanelProps {
   onLockServiceClick?: () => void;
@@ -9,7 +10,7 @@ const AccessPanel: React.FC<AccessPanelProps> = ({ onLockServiceClick }) => {
   return (
     <div className={styles.container}>
       <div className={styles.accessHeaderContainer}>
-        <div className={styles.accessHeaderText}>Access</div>
+        <div className={styles.accessHeaderText}>{Locale.Sidebar.Access}</div>
       </div>
       <div
         className={styles.row}
@@ -26,7 +27,7 @@ const AccessPanel: React.FC<AccessPanelProps> = ({ onLockServiceClick }) => {
             />
           </div>
         </div>
-        <div className={styles.lockServiceText}>Lock Panda</div>
+        <div className={styles.lockServiceText}>{Locale.Sidebar.LockService}</div>
       </div>
     </div>
   );

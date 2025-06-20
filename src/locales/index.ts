@@ -1,16 +1,22 @@
 import en from "./en";
-// import ko from "./ko";
+import ko from "./ko";
+import es from "./es";
+import ja from "./ja";
+import zh from "./zh";
 import { merge } from "@/utils/merge";
 import { safeLocalStorage } from "@/utils/utils";
 
-import type { LocaleType } from "./en";
-export type { LocaleType, PartialLocaleType } from "./en";
+import type { LocaleType } from "../types/locale";
+export type { LocaleType, PartialLocaleType } from "../types/locale";
 
 const localStorage = safeLocalStorage();
 
 const ALL_LANGS = {
   en,
-  // ko,
+  ko,
+  es,
+  ja,
+  zh,
 };
 
 export type Lang = keyof typeof ALL_LANGS;
@@ -19,7 +25,10 @@ export const AllLangs = Object.keys(ALL_LANGS) as Lang[];
 
 export const ALL_LANG_OPTIONS: Record<Lang, string> = {
   en: "English",
-  // ko: "한국어",
+  ko: "한국어",
+  es: "Español",
+  ja: "日本語",
+  zh: "中文",
 };
 
 const LANG_KEY = "lang";

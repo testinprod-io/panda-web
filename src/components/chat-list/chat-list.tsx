@@ -43,13 +43,13 @@ const getRelativeDateGroup = (dateInput: number): string => {
   const diffTime = now.getTime() - then.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-  if (now.toDateString() === then.toDateString()) return "Today";
+  if (now.toDateString() === then.toDateString()) return Locale.ChatList.Today;
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
-  if (yesterday.toDateString() === then.toDateString()) return "Yesterday";
+  if (yesterday.toDateString() === then.toDateString()) return Locale.ChatList.Yesterday;
 
-  if (diffDays < 7) return "Previous 7 Days";
-  if (diffDays < 30) return "Previous 30 Days";
+  if (diffDays < 7) return Locale.ChatList.Previous7Days;
+  if (diffDays < 30) return Locale.ChatList.Previous30Days;
 
   if (now.getFullYear() === then.getFullYear()) {
     return then.toLocaleString("default", { month: "long" });
@@ -63,10 +63,10 @@ interface GroupedSessions {
 
 // Order of date groups for display
 const groupOrder = [
-  "Today",
-  "Yesterday",
-  "Previous 7 Days",
-  "Previous 30 Days",
+  Locale.ChatList.Today,
+  Locale.ChatList.Yesterday,
+  Locale.ChatList.Previous7Days,
+  Locale.ChatList.Previous30Days,
 ];
 
 const getMonthYearSortKey = (
@@ -74,18 +74,18 @@ const getMonthYearSortKey = (
   currentYear: number,
 ): string => {
   const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    Locale.ChatList.January,
+    Locale.ChatList.February,
+    Locale.ChatList.March,
+    Locale.ChatList.April,
+    Locale.ChatList.May,
+    Locale.ChatList.June,
+    Locale.ChatList.July,
+    Locale.ChatList.August,
+    Locale.ChatList.September,
+    Locale.ChatList.October,
+    Locale.ChatList.November,
+    Locale.ChatList.December,
   ];
   if (months.includes(groupName)) {
     // Format as YYYY-MM for sorting (e.g., 2024-03 for March 2024)
