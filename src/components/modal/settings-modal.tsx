@@ -38,6 +38,7 @@ import { useUserStore } from "@/store/user";
 import { AuthService } from "@/services/auth-service";
 import { useEncryption } from "@/providers/encryption-provider";
 import { useAttestationStore } from "@/store/attestation";
+import clsx from "clsx";
 
 interface SettingsModalProps {
   open: boolean;
@@ -69,7 +70,7 @@ export default function SettingsModal({
   const { authenticated, logout } = usePrivy();
   const { clearSessions } = useChatStore();
   const apiClient = useApiClient();
-  const [theme, setTheme] = useState("light");
+  const theme = useUserStore((state) => state.get<string>("theme")) ?? "system";
   const { lockApp } = useEncryption();
   if (!authenticated) {
     return <div></div>;
@@ -99,7 +100,7 @@ export default function SettingsModal({
   };
 
   const handleThemeChange = (event: SelectChangeEvent<string>) => {
-    setTheme(event.target.value as string);
+    useUserStore.getState().set("theme", event.target.value as string);
   };
 
   const passwordExpirationOptions = [
@@ -111,24 +112,32 @@ export default function SettingsModal({
   ];
 
   const generalSettingsItems = [
-    // {
-    //   label: "Theme",
-    //   control: (
-    //     <Select
-    //       value={theme}
-    //       onChange={handleThemeChange}
-    //       variant="outlined"
-    //       size="small"
-    //       className={styles.selectControl}
-    //       IconComponent={ExpandMoreIcon}
-    //       MenuProps={{ classes: { paper: styles.selectMenuPaper } }}
-    //     >
-    //       <SelectMenuItem value="light">Light mode</SelectMenuItem>
-    //       <SelectMenuItem value="dark">Dark mode</SelectMenuItem>
-    //       <SelectMenuItem value="system">System</SelectMenuItem>
-    //     </Select>
-    //   ),
-    // },
+    {
+      label: "Theme",
+      control: (
+        <Select
+          value={theme}
+          onChange={handleThemeChange}
+          variant="outlined"
+          size="small"
+          className={styles.selectControl}
+          IconComponent={ExpandMoreIcon}
+          MenuProps={{ classes: { paper: styles.selectMenuPaper } }}
+          sx={{
+            fieldset: {
+              border: "none",
+            },
+            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+              border: "none",
+            },
+          }}
+        >
+          <SelectMenuItem value="light">Light mode</SelectMenuItem>
+          <SelectMenuItem value="dark">Dark mode</SelectMenuItem>
+          <SelectMenuItem value="system">System</SelectMenuItem>
+        </Select>
+      ),
+    },
     {
       label: "Custom instructions",
       control: (
@@ -168,30 +177,6 @@ export default function SettingsModal({
         </Select>
       ),
     },
-    // {
-    //   label: "Archive chats",
-    //   control: (
-    //     <Button
-    //       variant="outlined"
-    //       className={styles.actionButton}
-    //       onClick={() => console.log("Manage Archive chats clicked")}
-    //     >
-    //       Manage
-    //     </Button>
-    //   ),
-    // },
-    // {
-    //   label: "Archive all chats",
-    //   control: (
-    //     <Button
-    //       variant="outlined"
-    //       className={styles.actionButton}
-    //       onClick={() => console.log("Archive all chats clicked")}
-    //     >
-    //       Archive all
-    //     </Button>
-    //   ),
-    // },
     {
       label: "Delete all chats",
       control: (
@@ -404,8 +389,4 @@ export default function SettingsModal({
       </Dialog>
     </>
   );
-}
-
-function clsx(...classes: (string | boolean | undefined | null)[]) {
-  return classes.filter(Boolean).join(" ");
 }
