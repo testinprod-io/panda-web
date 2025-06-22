@@ -197,16 +197,11 @@ export default function CustomizePromptsView({
       enabled: enableForNewChats,
     };
 
-    if (name.trim()) payload.personal_info!.name = name.trim();
-    if (job.trim()) payload.personal_info!.job = job.trim();
-    if (traitsText.trim()) payload.prompts!.traits = traitsText.trim();
-    if (extraParams.trim()) payload.prompts!.extra_params = extraParams.trim();
-
-    // Remove empty objects
-    if (Object.keys(payload.personal_info!).length === 0)
-      delete payload.personal_info;
-    if (Object.keys(payload.prompts!).length === 0) delete payload.prompts;
-
+    payload.personal_info!.name = name.trim();
+    payload.personal_info!.job = job.trim();
+    payload.prompts!.traits = traitsText.trim();
+    payload.prompts!.extra_params = extraParams.trim();
+    
     try {
       const encryptedPayload = encryptSystemPrompt(payload);
       let responseData: CustomizedPromptsData;
