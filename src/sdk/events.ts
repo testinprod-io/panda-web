@@ -1,3 +1,38 @@
+import { User } from "./auth/types";
+
+/* event-bus.ts */
+export interface SDKEventMap {
+  "app.locked": void;                          // no payload
+  "app.unlocked": void;
+  "chat.updated": void;
+  "chat.list.updated": void;
+  "auth.status.updated": { isAuthenticated: boolean, user: User | null };
+}
+
+/** Generic handler type that is aware of the payload shape */
+type Handler<K extends keyof SDKEventMap> = (payload: SDKEventMap[K]) => void;
+
+export class EventBus {
+  private listeners: { [K in keyof SDKEventMap]?: Set<Handler<K>> } = {};
+
+  on<K extends keyof SDKEventMap>(type: K, cb: Handler<K>): () => void {
+    if (!this.listeners[type]) {
+      this.listeners[type] = new Set() as any;
+    }
+    (this.listeners[type] as Set<Handler<K>>).add(cb);
+
+    return () => (this.listeners[type] as Set<Handler<K>>).delete(cb);
+  }
+
+  emit<K extends keyof SDKEventMap>(type: K, payload: SDKEventMap[K]): void {
+    this.listeners[type]?.forEach(cb => cb(payload));
+  }
+  
+  off<K extends keyof SDKEventMap>(type: K, cb: Handler<K>): void {
+    (this.listeners[type] as Set<Handler<K>>).delete(cb);
+  }
+}
+
 type Listener<T = any> = (...args: T[]) => void;
 
 export abstract class EventEmitter {
@@ -27,4 +62,4 @@ export abstract class EventEmitter {
       this.listeners.get(event)!.forEach(listener => listener(...args));
     }
   }
-}
+// }

@@ -6,17 +6,16 @@ import { FileInfo, GetConversationMessagesParams, Summary, MessageCreateRequest 
 import { MultimodalContent, LLMConfig } from '@/client/api';
 import { mapApiMessagesToChatMessages } from '@/services/api-service';
 import { ModelConfig } from '@/types/constant';
-import { EventEmitter } from './events';
+import { EventBus } from './events';
+import { IStorage } from './storage/i-storage';
+import { EncryptionService } from './EncryptionService';
 
-// This would be a proper import in the final version
-const EncryptionService = {
-  encrypt: (text: string) => text,
-  decrypt: (text: string) => text,
-};
+export class Chat {
+  private bus: EventBus;
+  private encryptionService: EncryptionService;
 
-export class Chat extends EventEmitter {
   public readonly id: UUID;
-  public title: string;
+  public title: string = "";
   public encryptedTitle: string;
   public messages: ChatMessage[];
   public modelConfig?: ModelConfig;
@@ -36,6 +35,7 @@ export class Chat extends EventEmitter {
 
   private api: ApiService;
   private authManager: AuthManager;
+  private storage: IStorage;
 
   private state: {
     messages: ChatMessage[];
@@ -44,26 +44,32 @@ export class Chat extends EventEmitter {
   };
 
   constructor(
+    bus: EventBus,
     api: ApiService, 
     authManager: AuthManager, 
+    encryptionService: EncryptionService,
+    storage: IStorage,
     id: UUID, 
-    title: string,
+    encryptedTitle: string,
     updatedAt: number,
     createdAt: number,
     modelConfig?: ModelConfig,
     customizedPrompts?: CustomizedPromptsData,
   ) {
-    super();
+    this.bus = bus;
     this.api = api;
     this.authManager = authManager;
+    this.storage = storage;
+    this.encryptionService = encryptionService;
     this.id = id;
-    this.title = title;
+    this.encryptedTitle = encryptedTitle;
     this.modelConfig = modelConfig;
     this.customizedPrompts = customizedPrompts;
     this.messages = [];
     this.state = this.buildState();
     this.updatedAt = updatedAt;
     this.createdAt = createdAt;
+    this.updateState();
   }
 
   private buildState() {
@@ -76,7 +82,7 @@ export class Chat extends EventEmitter {
 
   private updateState() {
     this.state = this.buildState();
-    this.emit('update');
+    this.bus.emit('chat.updated', undefined);
   }
 
   /**
@@ -90,41 +96,39 @@ export class Chat extends EventEmitter {
     this.updateState();
     
     try {
-        const [messagesResult, summariesResult] = await Promise.all([
-            this.api.app.getConversationMessages(this.id as UUID, { limit: 20 }),
-            this.api.app.getSummaries(this.id as UUID)
-        ]);
+      const [messagesResult, summariesResult] = await Promise.all([
+        this.storage.listMessages(this.id as string, undefined, 20),
+        this.storage.getSummaries(this.id as string),
+      ]);
 
-        // Process messages
-        const serverMessages = messagesResult.data.slice().reverse(); 
-        const chatMessages = mapApiMessagesToChatMessages(serverMessages);
-        this.messages = chatMessages;
-        this.hasMoreMessages = messagesResult.pagination.has_more;
-        this.nextMessageCursor = messagesResult.pagination.next_cursor;
-        
-        // Process summaries
-        const sortedSummaries = [...summariesResult].sort(
-            (a, b) =>
-              new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-          );
-          sortedSummaries.forEach((summary) => {
-            summary.content = EncryptionService.decrypt(summary.content);
-          });
-  
-          let lastId: UUID | null = null;
-          if (sortedSummaries.length > 0) {
-            lastId = sortedSummaries[0].end_message_id;
-        }
-        this.summaries = sortedSummaries;
-        this.lastSummarizedMessageId = lastId;
+      // Process messages
+      this.messages = messagesResult.messages;
+      this.hasMoreMessages = messagesResult.hasMore;
+      this.nextMessageCursor = messagesResult.nextCursor;
+      
+      // Process summaries
+      const sortedSummaries = [...summariesResult].sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+      sortedSummaries.forEach((summary) => {
+        summary.content = this.encryptionService.decrypt(summary.content);
+      });
 
-        console.log(`[SDK-Chat] Initial load complete. Messages: ${this.messages.length}, Summaries: ${this.summaries.length}`);
+      let lastId: UUID | null = null;
+      if (sortedSummaries.length > 0) {
+        lastId = sortedSummaries[0].end_message_id;
+      }
+      this.summaries = sortedSummaries;
+      this.lastSummarizedMessageId = lastId;
+
+      console.log(`[SDK-Chat] Initial load complete. Messages: ${this.messages.length}, Summaries: ${this.summaries.length}`);
 
     } catch (error) {
-        console.error(`[SDK-Chat] Error loading initial data for chat ${this.id}:`, error);
+      console.error(`[SDK-Chat] Error loading initial data for chat ${this.id}:`, error);
     } finally {
-        this.isLoading = false;
-        this.updateState();
+      this.isLoading = false;
+      this.updateState();
     }
   }
   
@@ -140,20 +144,25 @@ export class Chat extends EventEmitter {
     this.updateState();
 
     try {
-        const result = await this.api.app.getConversationMessages(this.id as UUID, { limit: 20, cursor: this.nextMessageCursor });
-        
-        const olderMessages = mapApiMessagesToChatMessages(result.data.slice().reverse());
-        this.messages = [...olderMessages, ...this.messages];
+      const result = await this.storage.listMessages(
+        this.id as string,
+        this.nextMessageCursor ?? undefined,
+        20,
+      );
 
-        this.hasMoreMessages = result.pagination.has_more;
-        this.nextMessageCursor = result.pagination.next_cursor;
-        console.log(`[SDK-Chat] Loaded ${olderMessages.length} more messages. Total now: ${this.messages.length}.`);
+      const olderMessages = result.messages;
+      this.messages = [...olderMessages, ...this.messages];
 
+      this.hasMoreMessages = result.hasMore;
+      this.nextMessageCursor = result.nextCursor;
+      console.log(
+        `[SDK-Chat] Loaded ${olderMessages.length} more messages. Total now: ${this.messages.length}.`,
+      );
     } catch (error) {
-        console.error(`[SDK-Chat] Error loading more messages for chat ${this.id}:`, error);
+      console.error(`[SDK-Chat] Error loading more messages for chat ${this.id}:`, error);
     } finally {
-        this.isLoading = false;
-        this.updateState();
+      this.isLoading = false;
+      this.updateState();
     }
   }
 
@@ -172,30 +181,16 @@ export class Chat extends EventEmitter {
         onFailure?: (error: Error) => void;
     }
   ) {
-    // if(!this.modelConfig) {
-    //   throw new Error("Model config is required");
-    // }
     const userMessage = createMessage({
         role: Role.USER,
-        content: EncryptionService.encrypt(userInput),
+        content: this.encryptionService.encrypt(userInput),
         visibleContent: userInput,
         attachments: options.attachments,
         files: options.files,
         useSearch: options.enableSearch ?? false,
         syncState: MessageSyncState.PENDING_CREATE,
     });
-    const createRequest: MessageCreateRequest = {
-      message_id: userMessage.id,
-      sender_type: userMessage.role,
-      content: userMessage.content,
-      files: userMessage.files,
-      custom_data: {
-        useSearch: userMessage.useSearch,
-      },
-      is_error: userMessage.isError,
-      error_message: userMessage.errorMessage,
-    };
-    await this.api.app.createMessage(this.id as UUID, createRequest);
+    await this.storage.saveMessage(this.id as string, userMessage);
     this.messages.push(userMessage);
     this.updateState();
     
@@ -240,7 +235,7 @@ export class Chat extends EventEmitter {
         reasoning: modelConfig.reasoning,
         targetEndpoint: modelConfig.endpoint,
         useSearch: userMessage.useSearch,
-        customizedPrompts: this.customizedPrompts ? EncryptionService.decrypt(JSON.stringify(this.customizedPrompts)) : undefined,
+        customizedPrompts: this.customizedPrompts ? this.encryptionService.decrypt(JSON.stringify(this.customizedPrompts)) : undefined,
     };
 
     await this.api.llm.chat({
@@ -276,7 +271,7 @@ export class Chat extends EventEmitter {
               ? {
                   ...msg,
                   isReasoning: false,
-                  reasoning: EncryptionService.encrypt(msg.visibleReasoning ?? ""),
+                  reasoning: this.encryptionService.encrypt(msg.visibleReasoning ?? ""),
                 }
               : msg;
             });
@@ -319,7 +314,7 @@ export class Chat extends EventEmitter {
           updatedMsg.isError = true;
           updatedMsg.errorMessage = errorMessage;
         } else {
-          updatedMsg.content = EncryptionService.encrypt(finalContent);
+          updatedMsg.content = this.encryptionService.encrypt(finalContent);
           updatedMsg.visibleContent = finalContent;
           updatedMsg.date = timestamp;
           updatedMsg.syncState = MessageSyncState.SYNCED;
@@ -332,18 +327,11 @@ export class Chat extends EventEmitter {
     });
 
     if (messageToSave) {
-        const request: MessageCreateRequest = {
-            message_id: messageToSave.id,
-            sender_type: messageToSave.role,
-            content: messageToSave.content,
-            files: messageToSave.files,
-            custom_data: { useSearch: messageToSave.useSearch },
-            reasoning_content: messageToSave.reasoning,
-            reasoning_time: messageToSave.reasoningTime?.toString()
-        };
-        this.api.app.createMessage(this.id as UUID, request);
+      this.storage.saveMessage(this.id as string, messageToSave);
     } else {
-        console.error(`[SDK-Chat] _finalizeMessage: Message with ID ${messageId} not found. Cannot save to server.`);
+      console.error(
+        `[SDK-Chat] _finalizeMessage: Message with ID ${messageId} not found. Cannot save to server.`,
+      );
     }
 
     this.updateState();

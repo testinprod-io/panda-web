@@ -11,8 +11,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { usePrivy } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
-import { AuthService } from "@/services/auth-service";
-import { useEncryption } from "@/providers/encryption-provider";
+import { usePandaSDK } from "@/providers/sdk-provider";
 
 const MODAL_CONFIG = {
     iconSrc: "/icons/rounded-logo.svg",
@@ -54,8 +53,7 @@ export function PasswordModal({
   const [password, setPassword] = useState(initialPassword);
   const [error, setError] = useState("");
   const router = useRouter();
-  const { logout } = usePrivy();
-  const { lockApp } = useEncryption();
+  const sdk = usePandaSDK();
   const currentConfig = MODAL_CONFIG;
 
   useEffect(() => {
@@ -104,10 +102,10 @@ export function PasswordModal({
   );
 
   const handleLogOut = useCallback(() => {
-    AuthService.handleLogout(logout, lockApp).then(() => {
+    sdk.auth.logout().then(() => {
       router.push("/");
     });
-  }, [logout, router]);
+  }, [sdk, router]);
 
   useEffect(() => {
     if (!open) {

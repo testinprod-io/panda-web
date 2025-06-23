@@ -1,11 +1,8 @@
 import CryptoJS from "crypto-js";
 
-export class EncryptionService { 
-    
-    private inMemoryKey: CryptoJS.lib.WordArray | null = null;
-    private inMemoryIv: CryptoJS.lib.WordArray | null = null;
-    
-
+export class EncryptionService {
+  private inMemoryKey: CryptoJS.lib.WordArray | null = null;
+  private inMemoryIv: CryptoJS.lib.WordArray | null = null;
 
   public generateKeyFromPassword(password: string): {
     key: CryptoJS.lib.WordArray;
@@ -59,7 +56,7 @@ export class EncryptionService {
     } catch (error) {
       console.error(
         "[EncryptionService] Failed to derive key from password:",
-        error,
+        error
       );
       this.clearKey();
     }
@@ -87,7 +84,7 @@ export class EncryptionService {
   public encryptVerificationToken(userId: string): string {
     if (!this.isKeySet()) {
       console.error(
-        "[EncryptionService] encryptVerificationToken called without key set.",
+        "[EncryptionService] encryptVerificationToken called without key set."
       );
       return "";
     }
@@ -102,7 +99,7 @@ export class EncryptionService {
     } catch (error) {
       console.error(
         "[EncryptionService] Failed to encrypt verification token:",
-        error,
+        error
       );
       return "";
     }
@@ -115,7 +112,7 @@ export class EncryptionService {
   public verifyKey(
     verificationToken: string,
     userId: string,
-    password: string,
+    password: string
   ): boolean {
     if (typeof window === "undefined") {
       console.error("[EncryptionService] verifyKey called outside of browser.");
@@ -142,7 +139,7 @@ export class EncryptionService {
   public encrypt(text: string): string {
     if (!this.isKeySet()) {
       console.warn(
-        "[EncryptionService] encrypt called but no key set. Returning plain text.",
+        "[EncryptionService] encrypt called but no key set. Returning plain text."
       );
       return text;
     }
@@ -164,7 +161,7 @@ export class EncryptionService {
   public decrypt(encryptedText: string): string {
     if (!this.isKeySet()) {
       console.info(
-        "[EncryptionService] decrypt called but no key set. Returning plain text.",
+        "[EncryptionService] decrypt called but no key set. Returning plain text."
       );
       return encryptedText;
     }
@@ -184,7 +181,7 @@ export class EncryptionService {
 
       if (!decryptedText && encryptedText) {
         console.error(
-          "Decryption failed - incorrect password or corrupted data",
+          "Decryption failed - incorrect password or corrupted data"
         );
         return encryptedText;
       }
@@ -212,7 +209,7 @@ export class EncryptionService {
         keyUint8Array,
         { name: "AES-GCM", length: this.inMemoryKey!.sigBytes * 8 },
         false,
-        ["encrypt", "decrypt"],
+        ["encrypt", "decrypt"]
       );
 
       const encryptedData = await crypto.subtle.encrypt(
@@ -221,7 +218,7 @@ export class EncryptionService {
           iv: ivUint8Array,
         },
         cryptoKey,
-        data,
+        data
       );
 
       const encryptedFile = new File([encryptedData], file.name, {
@@ -249,35 +246,35 @@ export class EncryptionService {
       keyUint8Array,
       { name: "AES-GCM", length: this.inMemoryKey!.sigBytes * 8 },
       false,
-      ["encrypt", "decrypt"],
+      ["encrypt", "decrypt"]
     );
 
     const decryptedBuffer = await crypto.subtle.decrypt(
       { name: "AES-GCM", iv: ivUint8Array },
       cryptoKey,
-      data,
+      data
     );
 
     return new File([decryptedBuffer], file.name, { type: file.type });
   }
-};
+}
 
 function isLikelyBase64(str: string): boolean {
-    if (!str) return false;
-  
-    // Very basic regex: checks for Base64 characters and potential padding
-    const base64Regex =
-      /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
-    return base64Regex.test(str);
+  if (!str) return false;
+
+  // Very basic regex: checks for Base64 characters and potential padding
+  const base64Regex =
+    /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+  return base64Regex.test(str);
+}
+
+// Helper function to convert WordArray to Uint8Array
+function wordArrayToUint8Array(wordArray: CryptoJS.lib.WordArray): Uint8Array {
+  const len = wordArray.sigBytes;
+  const result = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    const byte = (wordArray.words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
+    result[i] = byte;
   }
-  
-  // Helper function to convert WordArray to Uint8Array
-  function wordArrayToUint8Array(wordArray: CryptoJS.lib.WordArray): Uint8Array {
-    const len = wordArray.sigBytes;
-    const result = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      const byte = (wordArray.words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
-      result[i] = byte;
-    }
-    return result;
-  }
+  return result;
+}
