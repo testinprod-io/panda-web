@@ -51,7 +51,7 @@ export default function ChatPage() {
       const currentSession = await sdk.chat.getChat(chatId);
       if (currentSession) {
         console.log(`[ChatPage] Session found`);
-        sdk.chat.setActiveChat(chatId);
+        sdk.chat.setActiveChat(currentSession);
         setIsValidSession(true);
         setSessionDataForValidation(currentSession);
       } else {

@@ -2,15 +2,21 @@ import { ApiService } from './api';
 import { AuthManager } from './AuthManager';
 import { Chat } from './Chat';
 import { UUID } from 'crypto';
-import { EncryptionService } from '@/services/encryption-service';
-import { EventEmitter } from './events';
+import { EncryptionService } from './EncryptionService';
+import { EventBus } from './events';
 import { ModelConfig } from '@/types/constant';
 import { Conversation } from '@/client/types';
 import { CustomizedPromptsData } from '@/types';
+import { AttestationManager } from './AttestationManager';
+import { IStorage } from './storage/i-storage';
 
-export class ChatManager extends EventEmitter {
+export class ChatManager {
+  private bus: EventBus;
   private api: ApiService;
   private authManager: AuthManager;
+  private encryptionService: EncryptionService;
+  private attestationManager: AttestationManager;
+  private storage: IStorage;
   
   public conversations: Chat[] = [];
   public activeChat: Chat | null = null;
@@ -27,12 +33,32 @@ export class ChatManager extends EventEmitter {
     activeChat: Chat | null;
   };
 
-  constructor(api: ApiService, authManager: AuthManager) {
-    super();
+  constructor(
+    bus: EventBus,
+    api: ApiService,
+    authManager: AuthManager,
+    encryptionService: EncryptionService,
+    attestationManager: AttestationManager,
+    storage: IStorage,
+  ) {
+    this.bus = bus;
     this.api = api;
     this.authManager = authManager;
+    this.encryptionService = encryptionService;
+    this.attestationManager = attestationManager;
+    this.storage = storage;
     this.state = this.buildState();
     console.log('ChatManager initialized');
+
+    this.bus.on('app.unlocked', () => {
+      this.conversations.forEach(c => c.title = this.encryptionService.decrypt(c.encryptedTitle));
+      this.updateState();
+    });
+
+    this.bus.on('app.locked', () => {
+      this.conversations.forEach(c => c.title = c.encryptedTitle);
+      this.updateState();
+    });
   }
 
   private buildState() {
@@ -49,8 +75,14 @@ export class ChatManager extends EventEmitter {
     // Simple shallow comparison to see if anything has changed
     if (Object.keys(newState).some(key => (newState as any)[key] !== (this.state as any)[key])) {
         this.state = newState;
-        this.emit('update');
+        this.bus.emit('chat.list.updated', undefined);
     }
+  }
+
+  private insertChat(chat: Chat) {
+    chat.title = this.encryptionService.decrypt(chat.encryptedTitle);
+    this.conversations.unshift(chat);
+    this.updateState();
   }
 
   /**
@@ -65,12 +97,17 @@ export class ChatManager extends EventEmitter {
     this.updateState();
     console.log("[SDK-ChatManager] Loading chats");
     try {
-      const response = await this.api.app.getConversations({ limit, cursor: this.nextCursor ?? undefined });
-      const newConversations = response.data.map(c => new Chat(this.api, this.authManager, c.conversation_id, c.title ?? "", new Date(c.updated_at).getTime(), new Date(c.created_at).getTime(), undefined, c.custom_data as CustomizedPromptsData));
-      this.conversations = this.nextCursor ? [...this.conversations, ...newConversations] : newConversations;
+      const { chats, hasMore, nextCursor } = await this.storage.listChats(
+        this.nextCursor ?? undefined,
+        limit,
+      );
+
+      this.conversations = this.nextCursor
+        ? [...this.conversations, ...chats]
+        : chats;
       console.log("[SDK-ChatManager] Loaded chats", this.conversations);
-      this.hasMore = response.pagination.has_more;
-      this.nextCursor = response.pagination.next_cursor;
+      this.hasMore = hasMore;
+      this.nextCursor = nextCursor;
 
     } catch (error) {
       console.error("[SDK-ChatManager] Failed to load chats:", error);
@@ -84,11 +121,17 @@ export class ChatManager extends EventEmitter {
    * Creates a new chat session on the server and locally.
    * @param title The initial title for the chat.
    */
-  public async createNewChat(title: string, modelConfig: ModelConfig, customizedPrompts?: CustomizedPromptsData): Promise<Chat> {
-    const encryptedTitle = EncryptionService.encrypt(title.trim());
-    const newRawChat = await this.api.app.createConversation({ title: encryptedTitle });
-    const newChat = new Chat(this.api, this.authManager, newRawChat.conversation_id, newRawChat.title ?? "", new Date(newRawChat.updated_at).getTime(), new Date(newRawChat.created_at).getTime(), modelConfig, customizedPrompts);
-    this.conversations.unshift(newChat);
+  public async createNewChat(
+    title: string,
+    modelConfig: ModelConfig,
+    customizedPrompts?: CustomizedPromptsData,
+  ): Promise<Chat> {
+    const newChat = await this.storage.createChat(
+      title,
+      modelConfig,
+      customizedPrompts,
+    );
+    this.insertChat(newChat);
 
     this.activeChat = newChat; // Set the newly created chat as active
     this.updateState();
@@ -102,7 +145,7 @@ export class ChatManager extends EventEmitter {
    */
   public async deleteChat(chatId: UUID) {
     try {
-      await this.api.app.deleteConversation(chatId);
+      await this.storage.deleteChat(chatId as string);
       this.conversations = this.conversations.filter(c => c.id !== chatId);
       if (this.activeChat?.id === chatId) {
         this.activeChat = null;
@@ -125,12 +168,12 @@ export class ChatManager extends EventEmitter {
     if (!trimmedName) return;
 
     try {
-      const encryptedTitle = EncryptionService.encrypt(trimmedName);
-      await this.api.app.updateConversation(chatId, { title: encryptedTitle });
-      
-      const conversation = this.conversations.find(c => c.id === chatId);
+      const encryptedTitle = this.encryptionService.encrypt(trimmedName);
+      const conversation = this.conversations.find((c) => c.id === chatId);
       if (conversation) {
-        conversation.title = encryptedTitle;
+        conversation.title = trimmedName;
+        conversation.encryptedTitle = encryptedTitle;
+        await this.storage.updateChat(conversation);
         this.updateState();
       }
     } catch (error) {
@@ -139,27 +182,27 @@ export class ChatManager extends EventEmitter {
     }
   }  
   
-  public setActiveChat(conversationId: UUID): Chat {
-    if (this.activeChat?.id === conversationId) {
-      // If the active chat is already the correct one, just update its config if needed
-      // This prevents creating a new Chat object unnecessarily
-      // if(this.activeChat.modelConfig !== modelConfig) {
-      //   this.activeChat.modelConfig = modelConfig;
-      // }
-      // if(this.activeChat.customizedPrompts !== customizedPrompts) {
-      //   this.activeChat.customizedPrompts = customizedPrompts;
-      // }
-      return this.activeChat;
-    }
+  public setActiveChat(chat: Chat): Chat {
+    // if (this.activeChat?.id === conversationId) {
+    //   // If the active chat is already the correct one, just update its config if needed
+    //   // This prevents creating a new Chat object unnecessarily
+    //   // if(this.activeChat.modelConfig !== modelConfig) {
+    //   //   this.activeChat.modelConfig = modelConfig;
+    //   // }
+    //   // if(this.activeChat.customizedPrompts !== customizedPrompts) {
+    //   //   this.activeChat.customizedPrompts = customizedPrompts;
+    //   // }
+    //   return this.activeChat;
+    // }
     
-    const conversation = this.conversations.find(c => c.id === conversationId);
+    // const conversation = this.conversations.find(c => c.id === conversationId);
     
-    if (conversation) {
+    // if (conversation) {
         // const chat = new Chat(this.api, this.authManager, conversation.id, conversation.title ?? "", new Date(conversation.updated_at).getTime(), new Date(conversation.created_at).getTime(), modelConfig, customizedPrompts);
-        this.activeChat = conversation;
-        this.updateState();
-        return conversation;
-    }
+    this.activeChat = chat;
+    this.updateState();
+    return chat;
+    // }
     
     // This should ideally not happen if the UI is in sync
     throw new Error("Conversation not found");
@@ -167,19 +210,20 @@ export class ChatManager extends EventEmitter {
 
   public async getChat(conversationId: UUID): Promise<Chat | undefined> {
     const conversation = this.conversations.find(c => c.id === conversationId);
-    if(conversation) {
+    if (conversation) {
       return conversation;
-    } else { 
+    } else {
       try {
-        const conversation = await this.api.app.getConversation(conversationId);
-        const chat = new Chat(this.api, this.authManager, conversation.conversation_id, conversation.title ?? "", new Date(conversation.updated_at).getTime(), new Date(conversation.created_at).getTime(), undefined, conversation.custom_data as CustomizedPromptsData);
+        const chat = await this.storage.getChat(conversationId as string);
+        if (chat) {
+          chat.title = this.encryptionService.decrypt(chat.encryptedTitle);
+        }
         return chat;
       } catch (error) {
         console.error(`[SDK-ChatManager] Failed to get chat ${conversationId}:`, error);
         return undefined;
       }
     }
-    return undefined;
   }
 
   getState() {

@@ -17,7 +17,7 @@ export function useChatList() {
   const chatManager = sdk.chat;
 
   const state = useSyncExternalStore(
-    (callback) => chatManager.on('update', callback),
+    (callback) => sdk.bus.on('chat.list.updated', callback),
     () => chatManager.getState(),
   );
 
@@ -33,13 +33,28 @@ export function useChatList() {
  * @returns The current state of the chat, including messages, loading status, etc.
  */
 export function useChat(chat: Chat | null) {
+  const sdk = usePandaSDK();
+  
   const state = useSyncExternalStore(
     (callback) => {
       if (!chat) return () => {};
-      return chat.on('update', callback);
+      return sdk.bus.on('chat.updated', callback);
     },
     () => chat?.getState(),
   );
 
   return state || chat?.getState() || { messages: [], isLoading: true, hasMoreMessages: false };
+}
+
+export function useAuth() {
+  const sdk = usePandaSDK();
+  const authManager = sdk.auth;
+  const state = useSyncExternalStore(
+    (callback) => sdk.bus.on('auth.status.updated', callback),
+    () => {
+      return authManager.getState();
+    },
+    () => authManager.getState(),
+  );
+  return state || authManager.getState();
 }

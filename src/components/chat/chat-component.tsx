@@ -56,6 +56,7 @@ export function ChatComponent({ sessionId }: { sessionId: UUID }) {
   // When the active chat changes and has no messages, load them.
   useEffect(() => {
     if (activeChat && activeChat.messages.length === 0) {
+      console.log(`[ChatComponent] Loading initial messages for chat ${activeChat.id}`);
       activeChat.loadInitial();
     }
   }, [activeChat]);

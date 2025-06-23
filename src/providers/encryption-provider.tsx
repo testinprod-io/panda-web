@@ -16,6 +16,8 @@ import { usePrivy } from "@privy-io/react-auth";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/store/user";
+import { usePandaSDK } from "./sdk-provider";
+import { useAuth } from "@/sdk/hooks";
 
 interface EncryptionContextType {
   isLocked: boolean;
@@ -43,15 +45,15 @@ interface EncryptionProviderProps {
 
 export function EncryptionProvider({ children }: EncryptionProviderProps) {
   // Always start locked
-  const [isLocked, setIsLocked] = useState<boolean>(true);
-  const [isFirstTimeUser, setIsFirstTimeUser] = useState<boolean | undefined>(undefined);
+  // const [isLocked, setIsLocked] = useState<boolean>(true);
   const [hasError, setHasError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const apiClient = useApiClient();
   const { user, authenticated } = usePrivy();
   const pathname = usePathname();
   const router = useRouter();
+  const sdk = usePandaSDK();
+  const { isLocked, isFirstTimeUser } = useAuth();
 
   const passwordExpirationMinutes =
     (useUserStore((state) => state.get<number>("passwordExpirationMinutes")) ?? 10) * 60 * 1000;
@@ -73,7 +75,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         console.error("[EncryptionProvider] Caught encryption error:", error);
 
         // Lock the app and show error
-        setIsLocked(true);
+        // setIsLocked(true);
         setHasError(true);
         setErrorMessage(error.message);
 
@@ -98,9 +100,8 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
 
     const verifyFirstTimeUser = async () => {
       try {
-        const verificationToken = await apiClient.app.getEncryptedId();
-        if (verificationToken.encrypted_id) {
-          setIsFirstTimeUser(false);
+        if (isFirstTimeUser) {
+          // setIsFirstTimeUser(false);
           console.log(
             "[EncryptionProvider] Verification token found. Existing user.",
           );
@@ -112,10 +113,10 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
           error,
         );
       }
-      setIsFirstTimeUser(true);
+      // setIsFirstTimeUser(true);
     };
     verifyFirstTimeUser();
-  }, [apiClient, authenticated]);
+  }, [isFirstTimeUser, authenticated]);
 
   const resetInactivityTimer = useCallback(() => {
     if (inactivityTimerRef.current) {
@@ -136,7 +137,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   const lockApp = useCallback(() => {
     // We're not clearing the key for now as requested
     // EncryptionService.clearKey();
-    setIsLocked(true);
+    // setIsLocked(true);
     setHasError(false); // Clear any errors when manually locking
     EncryptionService.clearKey();
     if (inactivityTimerRef.current) {
@@ -148,7 +149,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
 
   // Handle successful unlock
   const handleUnlockSuccess = useCallback(() => {
-    setIsLocked(false);
+    // setIsLocked(false);
     setHasError(false); // Clear errors on successful unlock
     resetInactivityTimer(); // Start timer on successful unlock
     console.log("[EncryptionProvider] App unlocked.");
@@ -158,28 +159,14 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   const handleEncryptionError = useCallback((error: Error) => {
     setErrorMessage(error.message);
     setHasError(true);
-    setIsLocked(true);
+    // setIsLocked(true);
   }, []);
 
   // Simplified unlock function - only for existing users now
   const contextUnlockApp = useCallback(
     async (password: string): Promise<boolean> => {
       try {
-        // First-time setup logic removed from here
-        if (!user?.id) {
-          throw new Error("User ID not found");
-        }
-
-        const verificationToken = await apiClient.app.getEncryptedId();
-        if (
-          verificationToken &&
-          (await EncryptionService.verifyKey(
-            verificationToken.encrypted_id,
-            user?.id,
-            password,
-          ))
-        ) {
-          EncryptionService.setKeyFromPassword(password); // Sets the key for active use
+        if (await sdk.auth.unlock(password)) {
           handleUnlockSuccess();
           return true;
         } else {
@@ -194,24 +181,18 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         return false;
       }
     },
-    [apiClient, user?.id, handleUnlockSuccess, handleEncryptionError],
-  ); // Removed isFirstTimeUser from deps if it was there implicitly
+    [sdk, handleUnlockSuccess, handleEncryptionError],
+  );
 
   // Handler for password creation
   const handleCreatePassword = useCallback(
     async (newPassword: string) => {
       try {
         console.log("[EncryptionProvider] Creating new password.");
-        if (!user?.id) {
-          throw new Error("User ID not found");
-        }
-        await EncryptionService.setKeyFromPassword(newPassword);
 
-        const encryptedVerificationToken =
-          EncryptionService.encryptVerificationToken(user?.id);
-        await apiClient.app.createEncryptedId(encryptedVerificationToken);
+        await sdk.auth.createPassword(newPassword);
 
-        setIsFirstTimeUser(false); // No longer a first-time user
+        // setIsFirstTimeUser(false); // No longer a first-time user
         handleUnlockSuccess(); // Unlock the app
         console.log(
           "[EncryptionProvider] New password created and app unlocked.",
@@ -225,11 +206,11 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
           handleEncryptionError(error);
         }
         // Ensure app remains locked or in a clear error state
-        setIsLocked(true);
+        // setIsLocked(true);
         throw error;
       }
     },
-    [apiClient, user?.id, handleUnlockSuccess, handleEncryptionError],
+    [sdk, handleUnlockSuccess, handleEncryptionError],
   );
 
   // Set up global event listeners to reset the timer on user activity
