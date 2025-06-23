@@ -186,6 +186,8 @@ export interface AttestationResponse {
   quote: string;
   token: string;
   event_log: string;
+  version?: string; // none or "v1"
+  tx_hash?: string; // only present for v1 attestation
 }
 
 export interface ServerModelInfo {
