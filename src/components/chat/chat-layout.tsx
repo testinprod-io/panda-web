@@ -211,7 +211,7 @@ export default function ChatLayoutContent({
     <Box
       sx={{
         display: "flex",
-        height: "100vh",
+        height: "100dvh",
         position: "relative",
       }}
     >
@@ -284,7 +284,7 @@ export default function ChatLayoutContent({
                   position: "fixed",
                   top: 0,
                   left: `-${sidebarExpandedWidth}px`,
-                  height: "100vh",
+                  height: "100dvh",
                   width: `${sidebarExpandedWidth}px`,
                   transform: isSidebarCollapsed
                     ? "translateX(0)"
