@@ -1,6 +1,8 @@
 import { User } from "./auth/types";
 import { AttestationResult } from "@/types/attestation";
 import { VerificationStatus } from "@/hooks/use-attestation-manager";
+// import { Chat, ChatMessage, FileWithProgress } from "./Chat";
+import { PandaConfig } from "./ConfigManager";
 
 /* event-bus.ts */
 export interface SDKEventMap {
@@ -10,6 +12,7 @@ export interface SDKEventMap {
   "chat.list.updated": void;
   "auth.status.updated": { isAuthenticated: boolean, user: User | null };
   "attestation.status.updated": { status: VerificationStatus, attestationResult?: AttestationResult, publicKey: string };
+  "config.updated": { config: PandaConfig };
 }
 
 /** Generic handler type that is aware of the payload shape */

@@ -8,6 +8,7 @@ import {
   MessageSyncState,
   CustomizedPromptsData,
   SubmittedFile,
+  FileWithProgress,
 } from "@/types";
 import {
   FileInfo,
@@ -15,6 +16,7 @@ import {
   Summary,
   MessageCreateRequest,
   ServerModelInfo,
+  ConversationUpdateRequest,
 } from "@/client/types";
 import { MultimodalContent, LLMConfig } from "@/client/api";
 import { mapApiMessagesToChatMessages } from "@/services/api-service";
@@ -22,16 +24,18 @@ import { EventBus } from "./events";
 import { IStorage } from "./storage/i-storage";
 import { EncryptionService } from "./EncryptionService";
 import { ChallengeResponse } from "@/client/platforms/panda-challenge";
+import { AttestationManager } from "./AttestationManager";
+import { ConfigManager } from "./ConfigManager";
 
 export class Chat {
   private bus: EventBus;
   private encryptionService: EncryptionService;
+  private config: ConfigManager;
 
   public readonly id: UUID;
   public title: string = "";
   public encryptedTitle: string;
   public messages: ChatMessage[];
-  public modelConfig?: ServerModelInfo;
   public customizedPrompts?: CustomizedPromptsData;
 
   public updatedAt: number;
@@ -57,15 +61,26 @@ export class Chat {
   };
   
   public customData?: Record<string, any>;
-  
+
+  get defaultModelName(): string | undefined {
+    return this.customData?.default_model_name as string | undefined;
+  }
+
+  set defaultModelName(modelName: string | undefined) {
+    this.customData = {
+      ...this.customData,
+      default_model_name: modelName,
+    };
+  }
+
   get customizedPromptsData (): CustomizedPromptsData | undefined {
-    return this.customData?.customizedPrompts as CustomizedPromptsData | undefined;
+    return this.customData?.customized_prompts as CustomizedPromptsData | undefined;
   }
 
   set customizedPromptsData (data: CustomizedPromptsData | undefined) {
     this.customData = {
       ...this.customData,
-      customizedPrompts: data,
+      customized_prompts: data,
     };
   }
 
@@ -75,11 +90,11 @@ export class Chat {
     authManager: AuthManager,
     encryptionService: EncryptionService,
     storage: IStorage,
+    config: ConfigManager,
     id: UUID,
     encryptedTitle: string,
     updatedAt: number,
     createdAt: number,
-    modelConfig?: ServerModelInfo,
     customData?: Record<string, any>,
   ) {
     this.bus = bus;
@@ -87,9 +102,9 @@ export class Chat {
     this.authManager = authManager;
     this.storage = storage;
     this.encryptionService = encryptionService;
+    this.config = config;
     this.id = id;
     this.encryptedTitle = encryptedTitle;
-    this.modelConfig = modelConfig;
     this.customData = customData ?? {};
     this.messages = [];
     this.state = this.buildState();
@@ -224,9 +239,20 @@ export class Chat {
     }
   }
 
+  private getModelConfig(): ServerModelInfo {
+    const modelNameToUse = this.defaultModelName ?? this.config.getConfig().defaultModel?.model_name;
+    if (!modelNameToUse) {
+      throw new Error("No model selected for chat and no default model set.");
+    }
+    const modelConfig = this.config.getConfig().models.find(m => m.model_name === modelNameToUse);
+    if (!modelConfig) {
+      throw new Error(`Model ${modelNameToUse} not found in available models.`);
+    }
+    return modelConfig;
+  }
+
   public async sendMessage(
     userInput: string,
-    defaultModelConfig: ServerModelInfo,
     userAttachments: SubmittedFile[],
     options: {
       enableSearch?: boolean;
@@ -247,10 +273,9 @@ export class Chat {
     if (userAttachments && userAttachments.length > 0) {
       for (const attachedFile of userAttachments) {
         if (attachedFile.type.startsWith("image/")) {
-          // Assuming Panda API format based on user request
           attachments.push({
             type: "image_url",
-            image_url: { url: attachedFile.url }, // file.url is already the base64 data URI
+            image_url: { url: attachedFile.url },
           });
           files.push({
             file_id: attachedFile.fileId,
@@ -259,10 +284,9 @@ export class Chat {
             file_size: attachedFile.size,
           });
         } else if (attachedFile.type.startsWith("application/pdf")) {
-          // Assuming Panda API format based on user request
           attachments.push({
             type: "pdf_url",
-            pdf_url: { url: attachedFile.url }, // file.url is already the base64 data URI
+            pdf_url: { url: attachedFile.url },
           });
           files.push({
             file_id: attachedFile.fileId,
@@ -290,7 +314,7 @@ export class Chat {
     await this.storage.saveMessage(this.id as string, userMessage);
     this.messages.push(userMessage);
     this.updateState();
-    this._sendMessages(this.modelConfig ?? defaultModelConfig, options);
+    this._sendMessages(this.getModelConfig(), options);
   }
 
   private async _sendMessages(
@@ -352,8 +376,8 @@ export class Chat {
       reasoning: true,
       targetEndpoint: modelConfig.url,
       useSearch: options.enableSearch ?? false,
-      customizedPrompts: this.customizedPrompts
-        ? this.encryptionService.decrypt(JSON.stringify(this.customizedPrompts))
+      customizedPrompts: this.customizedPromptsData
+        ? this.encryptionService.decrypt(JSON.stringify(this.customizedPromptsData))
         : undefined,
     };
 
@@ -487,24 +511,22 @@ export class Chat {
     this.updateState();
   }
 
-  public async resendMessage(messageId: UUID, defaultModelConfig: ServerModelInfo) {
+  public async resendMessage(messageId: UUID) {
     const resendingIndex = this.messages.findIndex((m) => m.id === messageId);
     if (resendingIndex <= 0) return;
 
     await this.clearMessages(messageId);
     try {
-      await this._sendMessages(this.modelConfig ??defaultModelConfig, {
+      await this._sendMessages(this.getModelConfig(), {
         onReasoningStart: () => {},
-        onReasoningChunk: (chunk: string) => {},
+        onReasoningChunk: (_id, _chunk) => {},
         onReasoningEnd: () => {},
-        onContentChunk: (chunk: string) => {},
+        onContentChunk: (_id, _chunk) => {},
         onSuccess: () => {},
+        onFailure: () => {},
       });
     } catch (error) {
       console.error("[ChatComponent] Failed resend query", error);
-      // setIsChatComponentBusy(false);
-      // showSnackbar(Locale.Store.Error, "error");
-      // reject(error);
     }
   }
 
@@ -525,9 +547,13 @@ export class Chat {
     return this.state;
   }
 
-  public async updateModelConfig(modelConfig: ServerModelInfo) {
-    this.modelConfig = modelConfig;
-    this.storage.updateChat(this);
+  public async setDefaultModelForChat(modelName: string) {
+    this.defaultModelName = modelName;
+    const updateRequest: ConversationUpdateRequest = {
+      title: this.encryptedTitle,
+      custom_data: this.customData,
+    };
+    await this.storage.updateChat(this.id as string, updateRequest);
     this.updateState();
   }
 }

@@ -34,6 +34,12 @@ export function PandaSDKProvider({ children, getAccessToken }: SDKProviderProps)
     return new PandaSDK(getAccessToken, authAdapter);
   }, [getAccessToken, authAdapter]);
 
+  // useEffect(() => {
+  //   if (sdk) {
+  //     sdk.authenticate();
+  //   }
+  // }, [sdk]);
+
   return (
     <SDKContext.Provider value={sdk}>
       {children}

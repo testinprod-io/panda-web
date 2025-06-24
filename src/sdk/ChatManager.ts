@@ -8,6 +8,7 @@ import { Conversation, ServerModelInfo } from '@/client/types';
 import { CustomizedPromptsData } from '@/types';
 import { AttestationManager } from './AttestationManager';
 import { IStorage } from './storage/i-storage';
+import { ConfigManager } from './ConfigManager';
 
 export class ChatManager {
   private bus: EventBus;
@@ -16,6 +17,7 @@ export class ChatManager {
   private encryptionService: EncryptionService;
   private attestationManager: AttestationManager;
   private storage: IStorage;
+  private config: ConfigManager;
   
   public conversations: Chat[] = [];
   public activeChat: Chat | null = null;
@@ -39,6 +41,7 @@ export class ChatManager {
     encryptionService: EncryptionService,
     attestationManager: AttestationManager,
     storage: IStorage,
+    config: ConfigManager,
   ) {
     this.bus = bus;
     this.api = api;
@@ -46,6 +49,7 @@ export class ChatManager {
     this.encryptionService = encryptionService;
     this.attestationManager = attestationManager;
     this.storage = storage;
+    this.config = config;
     this.state = this.buildState();
     console.log('ChatManager initialized');
 
@@ -64,6 +68,16 @@ export class ChatManager {
       });
       this.updateState();
     });
+
+    this.bus.on('auth.status.updated', ({ isAuthenticated }) => {
+      if (isAuthenticated) {
+        this.loadChats();
+      } else {
+        this.conversations = [];
+        this.activeChat = null;
+        this.updateState();
+      }
+    });
   }
 
   private buildState() {
@@ -81,7 +95,6 @@ export class ChatManager {
   }
 
   private insertChat(chat: Chat) {
-    chat.title = this.encryptionService.decrypt(chat.encryptedTitle);
     this.conversations = [chat, ...this.conversations];
     this.updateState();
   }
@@ -98,14 +111,16 @@ export class ChatManager {
     this.updateState();
     console.log("[SDK-ChatManager] Loading chats");
     try {
-      const { chats, hasMore, nextCursor } = await this.storage.listChats(
+      const { conversations, hasMore, nextCursor } = await this.storage.listChats(
         this.nextCursor ?? undefined,
         limit,
       );
 
+      const newChats = conversations.map(c => this.fromConversation(c));
+
       this.conversations = this.nextCursor
-        ? [...this.conversations, ...chats]
-        : chats;
+        ? [...this.conversations, ...newChats]
+        : newChats;
       console.log("[SDK-ChatManager] Loaded chats", this.conversations);
       this.hasMore = hasMore;
       this.nextCursor = nextCursor;
@@ -123,20 +138,36 @@ export class ChatManager {
    * @param title The initial title for the chat.
    */
   public async createNewChat(
-    title: string,
-    modelConfig: ServerModelInfo,
-    customData?: Record<string, any>,
+    topic: string,
+    modelConfig?: ServerModelInfo,
+    customizedPrompts?: CustomizedPromptsData
   ): Promise<Chat> {
-    const newChat = await this.storage.createChat(
-      title,
-      modelConfig,
-      customData,
-    );
-    this.insertChat(newChat);
+    const newConversation = await this.storage.createChat(topic, {
+      default_model_name: modelConfig?.model_name,
+      customized_prompts: customizedPrompts,
+    });
+    const chat = this.fromConversation(newConversation);
+    this.insertChat(chat);
+    this.setActiveChat(chat);
+    return chat;
+  }
 
-    this.activeChat = newChat; // Set the newly created chat as active
-    this.updateState();
-    return newChat;
+  private fromConversation(conversation: Conversation): Chat {
+    const chat = new Chat(
+      this.bus,
+      this.api,
+      this.authManager,
+      this.encryptionService,
+      this.storage,
+      this.config,
+      conversation.conversation_id,
+      conversation.title ?? "New Chat",
+      new Date(conversation.updated_at).getTime(),
+      new Date(conversation.created_at).getTime(),
+      conversation.custom_data,
+    );
+    chat.title = this.encryptionService.decrypt(chat.encryptedTitle);
+    return chat;
   }
 
   /**
@@ -174,7 +205,10 @@ export class ChatManager {
       if (conversation) {
         conversation.title = trimmedName;
         conversation.encryptedTitle = encryptedTitle;
-        await this.storage.updateChat(conversation);
+        await this.storage.updateChat(conversation.id, {
+          title: trimmedName,
+          custom_data: conversation.customData,
+        });
         this.updateState();
       }
     } catch (error) {
@@ -184,42 +218,22 @@ export class ChatManager {
   }  
   
   public setActiveChat(chat: Chat): Chat {
-    // if (this.activeChat?.id === conversationId) {
-    //   // If the active chat is already the correct one, just update its config if needed
-    //   // This prevents creating a new Chat object unnecessarily
-    //   // if(this.activeChat.modelConfig !== modelConfig) {
-    //   //   this.activeChat.modelConfig = modelConfig;
-    //   // }
-    //   // if(this.activeChat.customizedPrompts !== customizedPrompts) {
-    //   //   this.activeChat.customizedPrompts = customizedPrompts;
-    //   // }
-    //   return this.activeChat;
-    // }
-    
-    // const conversation = this.conversations.find(c => c.id === conversationId);
-    
-    // if (conversation) {
-        // const chat = new Chat(this.api, this.authManager, conversation.id, conversation.title ?? "", new Date(conversation.updated_at).getTime(), new Date(conversation.created_at).getTime(), modelConfig, customizedPrompts);
     this.activeChat = chat;
     this.updateState();
     return chat;
-    // }
-    
-    // This should ideally not happen if the UI is in sync
-    throw new Error("Conversation not found");
   }
 
   public async getChat(conversationId: UUID): Promise<Chat | undefined> {
-    const conversation = this.conversations.find(c => c.id === conversationId);
-    if (conversation) {
-      return conversation;
+    const existingChat = this.conversations.find(c => c.id === conversationId);
+    if (existingChat) {
+      return existingChat;
     } else {
       try {
-        const chat = await this.storage.getChat(conversationId as string);
-        if (chat) {
-          chat.title = this.encryptionService.decrypt(chat.encryptedTitle);
+        const conversation = await this.storage.getChat(conversationId as string);
+        if (conversation) {
+          return this.fromConversation(conversation);
         }
-        return chat;
+        return undefined;
       } catch (error) {
         console.error(`[SDK-ChatManager] Failed to get chat ${conversationId}:`, error);
         return undefined;

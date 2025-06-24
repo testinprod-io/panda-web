@@ -1,13 +1,9 @@
 import { UUID } from "crypto";
 import { Role } from "@/types";
-import { ModelType } from "@/types/constant";
 import { ChallengeResponse } from "@/client/platforms/panda-challenge";
 import { CustomizedPromptsData } from "@/types";
 
 export type GetAccessTokenFn = () => Promise<string | null>;
-
-
-export type ChatModel = ModelType;
 
 export interface MultimodalContent {
   type: "text" | "image_url" | "pdf_url";
@@ -118,7 +114,6 @@ export interface ServerModelInfo {
 export interface InfoResponse {
   models: ServerModelInfo[];
 }
-
 
 export interface Conversation {
   title: string | null;

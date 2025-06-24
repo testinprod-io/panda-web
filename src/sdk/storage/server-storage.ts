@@ -1,4 +1,9 @@
-import { IStorage, PaginatedChats, PaginatedMessages, PaginatedSummaries } from './i-storage';
+import {
+  IStorage,
+  PaginatedMessages,
+  PaginatedSummaries,
+  PaginatedConversations,
+} from './i-storage';
 import { Chat } from '@/sdk/Chat';
 import { ChatMessage, CustomizedPromptsData } from '@/types';
 import { ApiService } from '../api';
@@ -10,6 +15,8 @@ import {
   Summary,
   SummaryCreateRequest,
   ServerModelInfo,
+  Conversation,
+  ConversationUpdateRequest,
 } from '@/client/types';
 import { mapApiMessagesToChatMessages } from '@/services/api-service';
 import { EncryptionService } from '../EncryptionService';
@@ -36,56 +43,21 @@ export class ServerStorage implements IStorage {
   async listChats(
     cursor?: string,
     limit: number = 20,
-  ): Promise<PaginatedChats> {
+  ): Promise<PaginatedConversations> {
     const response = await this.api.app.getConversations({
       limit,
       cursor: cursor ?? undefined,
     });
-    const chats = response.data.map(
-      (c) =>
-        new Chat(
-          this.bus,
-          this.api,
-          this.authManager,
-          this.encryptionService,
-          this,
-          c.conversation_id,
-          c.title ?? '',
-          new Date(c.updated_at).getTime(),
-          new Date(c.created_at).getTime(),
-          c.custom_data?.model_config as ServerModelInfo,
-          c.custom_data as CustomizedPromptsData,
-        ),
-    );
-
-    chats.forEach(
-      (c) => (c.title = this.encryptionService.decrypt(c.encryptedTitle)),
-    );
 
     return {
-      chats,
+      conversations: response.data,
       hasMore: response.pagination.has_more,
       nextCursor: response.pagination.next_cursor,
     };
   }
-  async getChat(id: string): Promise<Chat | undefined> {
+  async getChat(id: string): Promise<Conversation | undefined> {
     try {
-      const conversation = await this.api.app.getConversation(id as UUID);
-      const chat = new Chat(
-        this.bus,
-        this.api,
-        this.authManager,
-        this.encryptionService,
-        this,
-        conversation.conversation_id,
-        conversation.title ?? '',
-        new Date(conversation.updated_at).getTime(),
-        new Date(conversation.created_at).getTime(),
-        conversation.custom_data?.model_config as ServerModelInfo,
-        conversation.custom_data,
-      );
-      chat.title = this.encryptionService.decrypt(chat.encryptedTitle);
-      return chat;
+      return await this.api.app.getConversation(id as UUID);
     } catch (error) {
       console.error(`[ServerStorage] Failed to get chat ${id}:`, error);
       return undefined;
@@ -94,35 +66,24 @@ export class ServerStorage implements IStorage {
 
   async createChat(
     title: string,
-    modelConfig: ServerModelInfo,
     customData?: Record<string, any>,
-  ): Promise<Chat> {
+  ): Promise<Conversation> {
     const encryptedTitle = this.encryptionService.encrypt(title.trim());
-    const newRawChat = await this.api.app.createConversation({
+    return await this.api.app.createConversation({
       title: encryptedTitle,
       custom_data: customData,
     });
-    const newChat = new Chat(
-      this.bus,
-      this.api,
-      this.authManager,
-      this.encryptionService,
-      this,
-      newRawChat.conversation_id,
-      newRawChat.title ?? '',
-      new Date(newRawChat.updated_at).getTime(),
-      new Date(newRawChat.created_at).getTime(),
-      modelConfig,
-      customData,
-    );
-    newChat.title = this.encryptionService.decrypt(newChat.encryptedTitle);
-    return newChat;
   }
-  async updateChat(chat: Chat): Promise<void> {
-    await this.api.app.updateConversation(chat.id, {
-      title: chat.encryptedTitle,
-      custom_data: chat.customData,
-    });
+  async updateChat(
+    chatId: string,
+    data: Partial<ConversationUpdateRequest>,
+  ): Promise<void> {
+    console.log(`[ServerStorage] Updating chat ${chatId} with data:`, data);
+    const conversationUpdateRequest: ConversationUpdateRequest = {
+      title: data.title ?? "",
+      custom_data: data.custom_data,
+    };
+    await this.api.app.updateConversation(chatId as UUID, conversationUpdateRequest);
   }
 
   async deleteChat(id: string): Promise<void> {

@@ -16,7 +16,7 @@ import Sidebar from "@/components/sidebar/sidebar";
 import ChatHeader from "@/components/chat/chat-header";
 
 import { ChatInputPanel } from "@/components/chat/chat-input-panel";
-import { useChatStore, useAppConfig, DEFAULT_TOPIC } from "@/store";
+import { useChatStore, DEFAULT_TOPIC } from "@/store";
 import { UNFINISHED_INPUT } from "@/types/constant";
 import { SessionState } from "@/types/session";
 import { safeLocalStorage } from "@/utils/utils";
@@ -29,6 +29,7 @@ import sidebarStyles from "@/components/sidebar/sidebar.module.scss";
 import { usePrivy } from "@privy-io/react-auth";
 import { usePandaSDK } from "@/providers/sdk-provider";
 import { Chat } from "@/sdk/Chat";
+import { usePandaConfig } from "@/hooks/use-panda-config";
 const localStorage = safeLocalStorage();
 
 function usePrevious<T>(value: T): T | undefined {
@@ -51,7 +52,7 @@ export default function ChatLayoutContent({
   );
   const params = useParams();
   const router = useRouter();
-  const appConfig = useAppConfig();
+  const pandaConfig = usePandaConfig();
   const prevIsMobile = usePrevious(isMobile);
   const sdk = usePandaSDK();
   const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
@@ -96,15 +97,8 @@ export default function ChatLayoutContent({
   }, [isMobile]);
 
   const modelConfig = React.useMemo(() => {
-    const defaultModel = appConfig.models.find((m) => m.model_name === appConfig.defaultModel) ?? appConfig.models[0]; 
-    // if (currentChatId) {
-    //   const chat = await sdk.chat.getChat(currentChatId as UUID);
-    //   return chat?.modelConfig ?? defaultModel;
-    // } else {
-    // return defaultModel;
-    // }
-    return defaultModel;
-  }, [currentChatId, appConfig.defaultModel, useChatStore]);
+    return pandaConfig.defaultModel;
+  }, [pandaConfig.defaultModel]);
 
   const handleLayoutSubmit = useCallback(
     async (sessionId: UUID | undefined, sessionState: SessionState) => {
@@ -138,10 +132,15 @@ export default function ChatLayoutContent({
             }, 400);
           }
         } else {
+          if (!modelConfig) {
+            showSnackbar("Models are not loaded yet.", "error");
+            setInternalIsSubmitting(false);
+            return;
+          }
           chat = await sdk.chat.createNewChat(
             DEFAULT_TOPIC,
             modelConfig,
-            appConfig.customizedPrompts,
+            pandaConfig.customizedPrompts,
           );
           
           if (chat) {
@@ -158,17 +157,17 @@ export default function ChatLayoutContent({
           }
         }
         if (chat) {
-        chat.sendMessage(sessionState.userInput, modelConfig, sessionState.persistedAttachedFiles, {
-          enableSearch: sessionState.enableSearch,
-          onSuccess: () => {
-            console.log(`[handleLayoutSubmit] onSuccess: ${chat}`);
-          },
-          onFailure: (error: Error) => {
-            console.error("[ChatComponent] Failed user input", error);
-            showSnackbar(Locale.Store.Error, "error");
-          },
-        });
-      }
+          chat.sendMessage(sessionState.userInput, sessionState.persistedAttachedFiles, {
+            enableSearch: sessionState.enableSearch,
+            onSuccess: () => {
+              console.log(`[handleLayoutSubmit] onSuccess: ${chat}`);
+            },
+            onFailure: (error: Error) => {
+              console.error("[ChatComponent] Failed user input", error);
+              showSnackbar(Locale.Store.Error, "error");
+            },
+          });
+        }
       } catch (error) {
         showSnackbar(Locale.Store.Error, "error");
       } finally {
@@ -392,26 +391,30 @@ export default function ChatLayoutContent({
             marginBottom: "8px",
           }}
         >
-          <ChatInputPanel
-            sessionId={currentChatId}
-            modelConfig={modelConfig}
-            customizedPrompts={appConfig.customizedPrompts}
-            isLoading={internalIsSubmitting}
-            onSubmit={handleLayoutSubmit}
-            scrollToBottom={
-              scrollToBottomHandlerFromStore ||
-              (() => console.warn("ScrollToBottom handler not set in store"))
-            }
-            setShowPromptModal={
-              showPromptModalHandlerFromStore ||
-              (() => console.warn("ShowPromptModal handler not set in store"))
-            }
-            setShowShortcutKeyModal={
-              showShortcutKeyModalHandlerFromStore ||
-              (() =>
-                console.warn("ShowShortcutKeyModal handler not set in store"))
-            }
-          />
+          {modelConfig ? (
+            <ChatInputPanel
+              sessionId={currentChatId}
+              modelConfig={modelConfig}
+              customizedPrompts={pandaConfig.customizedPrompts}
+              isLoading={internalIsSubmitting}
+              onSubmit={handleLayoutSubmit}
+              scrollToBottom={
+                scrollToBottomHandlerFromStore ||
+                (() => console.warn("ScrollToBottom handler not set in store"))
+              }
+              setShowPromptModal={
+                showPromptModalHandlerFromStore ||
+                (() => console.warn("ShowPromptModal handler not set in store"))
+              }
+              setShowShortcutKeyModal={
+                showShortcutKeyModalHandlerFromStore ||
+                (() =>
+                  console.warn("ShowShortcutKeyModal handler not set in store"))
+              }
+            />
+          ) : (
+            <CircularProgress />
+          )}
         <Typography
           hidden={isMobile}
           sx={{

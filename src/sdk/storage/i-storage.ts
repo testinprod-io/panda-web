@@ -1,9 +1,9 @@
-import { ServerModelInfo, Summary } from "@/client/types";
+import { ServerModelInfo, Summary, Conversation, ConversationUpdateRequest } from "@/client/types";
 import { Chat } from "@/sdk/Chat";
 import { ChatMessage } from "@/types";
 
-export interface PaginatedChats {
-  chats: Chat[];
+export interface PaginatedConversations {
+  conversations: Conversation[];
   hasMore: boolean;
   nextCursor: string | null;
 }
@@ -22,10 +22,16 @@ export interface PaginatedSummaries {
 
 export interface IStorage {
   /*  Chats  */
-  listChats(cursor?: string, limit?: number): Promise<PaginatedChats>;
-  getChat(id: string): Promise<Chat | undefined>;
-  createChat(title: string, modelConfig?: any, customData?: Record<string, any>): Promise<Chat>;
-  updateChat(chat: Chat): Promise<void>;
+  listChats(cursor?: string, limit?: number): Promise<PaginatedConversations>;
+  getChat(id: string): Promise<Conversation | undefined>;
+  createChat(
+    title: string,
+    customData?: Record<string, any>,
+  ): Promise<Conversation>;
+  updateChat(
+    chatId: string,
+    data: Partial<ConversationUpdateRequest>,
+  ): Promise<void>;
   deleteChat(id: string): Promise<void>;
 
   /*  Messages  */
