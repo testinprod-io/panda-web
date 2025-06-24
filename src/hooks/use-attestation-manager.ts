@@ -124,7 +124,7 @@ export function useAttestationManager() {
           throw new Error("tx_hash is required for v1 attestation");
         }
 
-        const txHash = attestationResponse.tx_hash as `0x${string}`;
+        const txHash = `0x${attestationResponse.tx_hash}` as `0x${string}`;
 
         const [tx, receipt] = await Promise.all([
           client.getTransaction({ hash: txHash }),
@@ -144,10 +144,8 @@ export function useAttestationManager() {
         const logData = attestationUtils.hexToBuf(
           receipt.logs[0].data as `0x${string}`
         );
-        const successWord = attestationUtils
-          .bufToHex(logData.slice(0, 32))
-          .replace(/^0x/, "");
-        if (successWord !== "1".padStart(64, "0"))
+        const successWord = attestationUtils.bufToHex(logData.slice(0, 32));
+        if (successWord !== "0x" + "1".padStart(64, "0"))
           throw new Error("attestation contract emitted success = 0");
 
         const output = logData.slice(128); // skip 4 × 32-byte words
@@ -179,16 +177,22 @@ export function useAttestationManager() {
         const bootInfo = attestationUtils.extractBootInfo(eventLog);
         const { appId, keyProvider, composeHash, instanceId, osImageHash } =
           bootInfo;
+        
+          if (!appId || !keyProvider || !composeHash || !osImageHash || !instanceId) {
+          throw new Error(
+            "Missing one of app-id, key-provider, or compose-hash, or os-image-hash, or instance-id in event_log"
+          );
+        }
 
         const attestationResult: AttestationResult = {
           appId,
-          mrSystem: "",
+          mrSystem: "0".repeat(64),
           osImageHash,
           composeHash,
           deviceId,
           instanceId,
-          mrAggregated: "",
-          tcbStatus: "",
+          mrAggregated: "0".repeat(64),
+          tcbStatus: "0".repeat(64),
           advisoryIds: [],
         };
         return attestationResult;
@@ -214,9 +218,10 @@ export function useAttestationManager() {
         const computedQuoteHash = await attestationUtils.sha256Hex(
           attestationResponse.quote
         );
-        if (computedQuoteHash !== jwtPayload.tdx.tdx_collateral.quotehash) {
+        const expectedQuoteHash = `0x${jwtPayload.tdx.tdx_collateral.quotehash}`;
+        if (computedQuoteHash !== expectedQuoteHash) {
           throw new Error(
-            `quotehash mismatch:\n  expected ${jwtPayload.tdx.tdx_collateral.quotehash}\n  got      ${computedQuoteHash}`
+            `quotehash mismatch:\n  expected ${expectedQuoteHash}\n  got      ${computedQuoteHash}`
           );
         }
 
@@ -231,7 +236,7 @@ export function useAttestationManager() {
         const rtmr: string[] = await attestationUtils.replayRtmr(eventLog);
         for (let i = 0; i < 4; i++) {
           const claimName = `tdx_rtmr${i}` as keyof TdxPayload["tdx"];
-          const expected = jwtPayload.tdx[claimName];
+          const expected = `0x${jwtPayload.tdx[claimName]}`;
           if (rtmr[i] !== expected) {
             throw new Error(
               `RTMR${i} mismatch:\n  expected ${expected}\n  got      ${rtmr[i]}`

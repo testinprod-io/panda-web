@@ -40,10 +40,15 @@ export interface AttestationResult {
 
 /* ---------- tiny helpers ------------------------------------------------ */
 
-export const hexToBuf = (hex: string): Uint8Array =>
-  Uint8Array.from(hex.match(/.{1,2}/g)!.map((b) => parseInt(b, 16)));
+export const hexToBuf = (hex: string): Uint8Array => {
+  const hexString = hex.startsWith("0x") ? hex.slice(2) : hex;
+  return Uint8Array.from(
+    hexString.match(/.{1,2}/g)!.map((b) => parseInt(b, 16))
+  );
+};
 
 export const bufToHex = (buf: ArrayBuffer | Uint8Array): string =>
+  "0x" +
   [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 
 export const sha256Hex = async (
@@ -85,8 +90,10 @@ export const verifyJwtWithJwks = async <P extends JWTPayload>(
 export const quoteHash = (quoteHex: string) => sha256Hex(quoteHex);
 
 /** user_data = quote[28*2 .. 48*2) → device_id = SHA-256(user_data) */
-export const deviceIdFromQuote = async (quoteHex: string): Promise<string> =>
-  sha256Hex(quoteHex.slice(28 * 2, 48 * 2));
+export const deviceIdFromQuote = async (quoteHex: string): Promise<string> => {
+  const rawHex = quoteHex.startsWith("0x") ? quoteHex.slice(2) : quoteHex;
+  return sha256Hex(rawHex.slice(28 * 2, 48 * 2));
+};
 
 /** Replay the event log to regenerate the four RTMR registers */
 export const replayRtmr = async (log: EventLogEntry[]): Promise<string[]> => {
@@ -107,7 +114,17 @@ export const extractBootInfo = (log: EventLogEntry[]) => {
   };
   for (const ev of log) {
     // @ts-ignore – key is guaranteed present
-    if (ev.event in out) out[ev.event as keyof typeof out] = ev.event_payload;
+    if (ev.event === "app-id") {
+      out.appId = ev.event_payload;
+    } else if (ev.event === "key-provider") {
+      out.keyProvider = ev.event_payload;
+    } else if (ev.event === "compose-hash") {
+      out.composeHash = ev.event_payload;
+    } else if (ev.event === "instance-id") {
+      out.instanceId = ev.event_payload;
+    } else if (ev.event === "os-image-hash") {
+      out.osImageHash = ev.event_payload;
+    }
   }
   return out;
 };
