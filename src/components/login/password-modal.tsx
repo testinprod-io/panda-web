@@ -138,10 +138,10 @@ export function PasswordModal({
         sx: {
           backgroundColor: "#FFFFFF",
           borderRadius: "8px",
-          paddingTop: "40px",
-          paddingBottom: "40px",
-          paddingLeft: { xs: "24px", sm: "86px" },
-          paddingRight: { xs: "24px", sm: "86px" },
+          paddingTop: { xs: "24px", sm: "40px" },
+          paddingBottom: { xs: "24px", sm: "40px" },
+          paddingLeft: { xs: "16px", sm: "86px" },
+          paddingRight: { xs: "16px", sm: "86px" },
         },
       }}
     >
