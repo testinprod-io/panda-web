@@ -17,7 +17,6 @@ export interface LoadedFile {
 export function useLoadedFiles(
   messageFiles: FileInfo[], // Updated type
   sessionId: UUID,
-  apiClient: ClientApi, // Updated type to ClientApi
   isLocked: boolean,
 ): LoadedFile[] {
   const sdk = usePandaSDK();
@@ -36,7 +35,7 @@ export function useLoadedFiles(
 
   // Extract the specific function to be used in the effect's dependency array
   // This helps if apiClient object reference changes but apiClient.app.getFile function reference is stable.
-  const getFileFunction = apiClient.app.getFile;
+  const getFileFunction = sdk.api.app.getFile;
 
   // Ref to store previous dependencies for logging
   const prevDepsRef = useRef<{
@@ -122,7 +121,7 @@ export function useLoadedFiles(
     ): Promise<LoadedFile> => {
       try {
         // Use the extracted getFileFunction here
-        const response = await apiClient.app.getFile(
+        const response = await sdk.api.app.getFile(
           sessionId,
           fileInfo.file_id as UUID,
         );

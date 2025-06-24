@@ -8,8 +8,8 @@ import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import theme from "@/theme";
 import { SnackbarProvider } from "@/providers/snackbar-provider";
-import { AuthChatListener } from "@/providers/auth-chat-listener";
-import { ApiClientProvider } from "@/providers/api-client-provider";
+// import { AuthChatListener } from "@/providers/auth-chat-listener";
+// import { ApiClientProvider } from "@/providers/api-client-provider";
 import { EncryptionProvider } from "@/providers/encryption-provider";
 import { PandaSDKProvider } from "@/providers/sdk-provider";
 
@@ -21,7 +21,7 @@ function AuthenticatedContentWrapper({
   return (
     <>
         <EncryptionProvider>
-          <AuthChatListener />
+          {/* <AuthChatListener /> */}
           <SnackbarProvider>{children}</SnackbarProvider>
         </EncryptionProvider>
     </>
@@ -72,11 +72,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
             }}
           >
               <SDKWrapper>
-            <ApiClientProvider>
+            {/* <ApiClientProvider> */}
                 <AuthenticatedContentWrapper>
                   {children}
                 </AuthenticatedContentWrapper>
-            </ApiClientProvider>
+            {/* </ApiClientProvider> */}
               </SDKWrapper>
           </PrivyProvider>
         ) : (

@@ -69,10 +69,8 @@ export class ChatManager {
       this.updateState();
     });
 
-    this.bus.on('auth.status.updated', ({ isAuthenticated }) => {
-      if (isAuthenticated) {
-        this.loadChats();
-      } else {
+    this.bus.on('auth.status.updated', ( isAuthenticated ) => {
+      if (!isAuthenticated) {
         this.conversations = [];
         this.activeChat = null;
         this.updateState();

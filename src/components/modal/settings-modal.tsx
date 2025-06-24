@@ -30,7 +30,7 @@ import styles from "./settings-modal.module.scss";
 import { SettingsPage } from "./settings-modal-handler";
 import CustomizePromptsView from "./customize-prompts-view";
 import { useRouter } from "next/navigation";
-import { useApiClient } from "@/providers/api-client-provider";
+// import { useApiClient } from "@/providers/api-client-provider";
 import { usePrivy } from "@privy-io/react-auth";
 import { useChatStore } from "@/store";
 import { useAppConfig, useAppConfig as useAppConfigStore } from "@/store/config";
@@ -38,6 +38,7 @@ import { useUserStore } from "@/store/user";
 import { AuthService } from "@/services/auth-service";
 import { useEncryption } from "@/providers/encryption-provider";
 import { useAttestationStore } from "@/store/attestation";
+import { usePandaSDK } from "@/providers/sdk-provider";
 
 interface SettingsModalProps {
   open: boolean;
@@ -68,9 +69,11 @@ export default function SettingsModal({
   const router = useRouter();
   const { authenticated, logout } = usePrivy();
   const { clearSessions } = useChatStore();
-  const apiClient = useApiClient();
+  // const apiClient = useApiClient();
   const [theme, setTheme] = useState("light");
   const { lockApp } = useEncryption();
+  const sdk = usePandaSDK();
+  
   if (!authenticated) {
     return <div></div>;
   }
@@ -91,7 +94,7 @@ export default function SettingsModal({
   };
 
   const confirmDeleteAllChats = () => {
-    apiClient.app.deleteConversations();
+    sdk.api.app.deleteConversations();
     clearSessions();
     router.replace("/");
     console.log("All chats deleted after confirmation");

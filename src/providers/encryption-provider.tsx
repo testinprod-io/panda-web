@@ -11,7 +11,7 @@ import React, {
 } from "react";
 import { EncryptionService } from "@/services/encryption-service";
 import { PasswordModal } from "@/components/login/password-modal";
-import { useApiClient } from "@/providers/api-client-provider";
+// import { useApiClient } from "@/providers/api-client-provider";
 import { usePrivy } from "@privy-io/react-auth";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
@@ -21,7 +21,7 @@ import { useAuth } from "@/sdk/hooks";
 
 interface EncryptionContextType {
   isLocked: boolean;
-  isFirstTimeUser: boolean | undefined;
+  isFirstTimeUser: boolean | null;
   unlockApp: (password: string) => Promise<boolean>;
   lockApp: () => void;
   createPassword: (password: string) => Promise<void>;
@@ -49,12 +49,13 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   const [hasError, setHasError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const { user, authenticated } = usePrivy();
+  const { user, authenticated, ready } = usePrivy();
   const pathname = usePathname();
   const router = useRouter();
   const sdk = usePandaSDK();
-  const { isLocked, isFirstTimeUser } = useAuth();
+  const { isLocked, encryptedId } = useAuth();
 
+  const isFirstTimeUser = encryptedId === null && sdk.initialized;
   const passwordExpirationMinutes =
     (useUserStore((state) => state.get<number>("passwordExpirationMinutes")) ?? 10) * 60 * 1000;
   
@@ -264,7 +265,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     createPassword: handleCreatePassword,
   };
 
-  if (!authenticated || isFirstTimeUser === undefined) {
+  if (!ready || !sdk.initialized) {
     return (
       <EncryptionContext.Provider value={contextValue}>
         {children}

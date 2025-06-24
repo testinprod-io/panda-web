@@ -1,3 +1,6 @@
+import { EventBus } from "./events";
+import { CustomizedPromptsData } from "@/types";
+
 export interface UserData {
   encryptedId?: string;
   customizedPromptsData?: Record<string, any>;
@@ -30,25 +33,49 @@ export class MemoryUserDataStore implements IUserDataStore {
 
 export class UserManager {
   private store: IUserDataStore;
+  private bus: EventBus;
+  private state: UserData = {};
 
-  constructor(store: IUserDataStore) {
+  constructor(store: IUserDataStore, bus: EventBus) {
     this.store = store;
+    this.bus = bus;
+    this.loadInitialData();
   }
 
-  get data(): Promise<UserData> {
-    return this.store.get();
+  private async loadInitialData() {
+    this.state = await this.store.get();
+    this.bus.emit('user.updated', undefined);
+  }
+
+  getState() {
+    return this.state;
+  }
+
+  get data(): UserData {
+    return this.state;
+  }
+
+  async updateCustomizedPrompts(data: Partial<CustomizedPromptsData>): Promise<void> {
+    const newState = { ...this.state, customizedPromptsData: { ...this.state.customizedPromptsData, ...data } };
+    await this.store.set(newState);
+    this.state = newState;
+    this.bus.emit('user.updated', undefined);
   }
 
   async updateData(data: Partial<UserData>): Promise<void> {
-    await this.store.set(data);
+    const newState = { ...this.state, ...data };
+    await this.store.set(newState);
+    this.state = newState;
+    this.bus.emit('user.updated', undefined);
   }
 
   async clearData(): Promise<void> {
     await this.store.clear();
+    this.state = {};
+    this.bus.emit('user.updated', undefined);
   }
 
-  async getEncryptedId(): Promise<string | undefined> {
-    const data = await this.store.get();
-    return data.encryptedId;
+  getEncryptedId(): string | undefined {
+    return this.state.encryptedId;
   }
 }

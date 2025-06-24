@@ -26,14 +26,15 @@ import styles from "./chat-header.module.scss";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import {
-  useAttestationManager,
+//   useAttestationManager,
   VerificationResult,
   VerificationStatus,
 } from "@/hooks/use-attestation-manager";
 import { AttestationResult } from "@/types/attestation";
+import { useAttestation } from "@/sdk/hooks";
 import { AuthService } from "@/services/auth-service";
 import { useEncryption } from "@/providers/encryption-provider";
-import { useApiClient } from "@/providers/api-client-provider";
+// import { useApiClient } from "@/providers/api-client-provider";
 import { usePandaSDK } from "@/providers/sdk-provider";
 import { UUID } from "crypto";
 import { ServerModelInfo } from "@/sdk/client/types";
@@ -57,9 +58,10 @@ export default function ChatHeader({
   const { login, logout, user, getAccessToken } = usePrivy();
   const { isReady, isAuthenticated } = useAuthStatus();
   const pandaConfig = usePandaConfig();
-  const { verificationResults } = useAttestationManager();
+  const { attestationResults, verificationResults } = useAttestation();
+
   const { lockApp } = useEncryption();
-  const apiClient = useApiClient();
+  // const apiClient = useApiClient();
   const sdk = usePandaSDK();
   const [currentChatModel, setCurrentChatModel] = useState<ServerModelInfo | undefined>();
 

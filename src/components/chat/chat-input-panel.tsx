@@ -30,8 +30,8 @@ import Button from "@mui/material/Button";
 import styles from "@/components/chat/chat.module.scss";
 import { UUID } from "crypto";
 import CloseIcon from "@mui/icons-material/Close";
-import { useApiClient } from "@/providers/api-client-provider";
-import { useChatActions } from "@/hooks/use-chat-actions";
+// import { useApiClient } from "@/providers/api-client-provider";
+// import { useChatActions } from "@/hooks/use-chat-actions";
 import { SessionState, SubmittedFile } from "@/types/session";
 import { EncryptionService } from "@/services/encryption-service";
 import { FileCircularProgress } from "../ui/file-circular-progress";
@@ -50,7 +50,7 @@ import { ServerModelInfo } from "@/sdk/client/types";
 
 interface ChatInputPanelProps {
   sessionId: UUID | undefined;
-  modelConfig: ServerModelInfo;
+  modelConfig?: ServerModelInfo;
   customizedPrompts?: CustomizedPromptsData;
   isLoading: boolean;
   onSubmit: (
@@ -74,7 +74,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
     } = props;
 
     const chatStore = useChatStore();
-    const chatActions = useChatActions();
+    // const chatActions = useChatActions();
     const sdk = usePandaSDK();
     const [activeSessionId, setActiveSessionId] = useState<UUID | undefined>(
       propSessionId,
@@ -83,8 +83,8 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
     const isProvisionalSessionCommittedRef = useRef<boolean>(false);
 
     const { authenticated, getAccessToken } = usePrivy();
-    const apiClient = useApiClient();
-    const { newSession } = useChatActions();
+    // const apiClient = useApiClient();
+    // const { newSession } = useChatActions();
     const isMobileScreen = useMobileScreen();
     const { submitKey, shouldSubmit } = useSubmitHandler();
     const { showSnackbar } = useSnackbar();
@@ -120,18 +120,14 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
             !isProvisionalSessionCommittedRef.current &&
             provisionalSessionIdRef.current !== propSessionId
           ) {
-            chatActions
-              .deleteSession(provisionalSessionIdRef.current)
-              .catch(() => {
-                // console.error("Error deleting provisional session:", err);
-              });
+            sdk.chat.deleteChat(provisionalSessionIdRef.current);
             provisionalSessionIdRef.current = null;
           }
           isProvisionalSessionCommittedRef.current = false;
           setActiveSessionId(propSessionId);
         }
       }
-    }, [propSessionId, activeSessionId, chatActions]);
+    }, [propSessionId, activeSessionId]);
 
     useEffect(() => {
       if (activeSessionId) {
@@ -165,9 +161,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
           provisionalSessionIdRef.current &&
           !isProvisionalSessionCommittedRef.current
         ) {
-          chatActions
-            .deleteSession(provisionalSessionIdRef.current)
-            .catch(() => {});
+          sdk.chat.deleteChat(provisionalSessionIdRef.current);
         }
         provisionalSessionIdRef.current = null;
         isProvisionalSessionCommittedRef.current = false;
@@ -234,9 +228,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
             provisionalSessionIdRef.current &&
             !isProvisionalSessionCommittedRef.current
           ) {
-            await chatActions
-              .deleteSession(provisionalSessionIdRef.current)
-              .catch(() => {});
+            await sdk.chat.deleteChat(provisionalSessionIdRef.current);
             provisionalSessionIdRef.current = null;
             console.log(
               "DEBUG [executeFileUploads] Deleted provisional session",
@@ -347,7 +339,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
             "DEBUG [executeFileUploads] Uploading file with session ID",
             currentSessionIdToUse,
           );
-          const uploadPromise = apiClient.app.uploadFile(
+          const uploadPromise = sdk.api.app.uploadFile(
             currentSessionIdToUse!,
             await sdk.encryption.encryptFile(clientFile.originalFile),
             sdk.encryption.encrypt(clientFile.name),
@@ -417,15 +409,14 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
         }
       },
       [
-        apiClient,
         attachedFiles,
         modelConfig,
         showSnackbar,
         activeSessionId,
         getAccessToken,
-        chatActions,
+        // chatActions,
         setAttachedFiles,
-        newSession,
+        // newSession,
       ],
     );
 
@@ -493,9 +484,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
         !isProvisionalSessionCommittedRef.current &&
         provisionalSessionIdRef.current !== activeSessionId
       ) {
-        chatActions
-          .deleteSession(provisionalSessionIdRef.current)
-          .catch(() => {});
+        sdk.chat.deleteChat(provisionalSessionIdRef.current);
         provisionalSessionIdRef.current = null;
         isProvisionalSessionCommittedRef.current = false;
       }
@@ -621,14 +610,14 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
         }
 
         if (activeSessionId && file.fileId) {
-          apiClient.app.deleteFile(activeSessionId, file.fileId);
+          sdk.api.app.deleteFile(activeSessionId, file.fileId);
         }
 
         setAttachedFiles((prev) =>
           prev.filter((f) => f.clientId !== file.clientId),
         );
       },
-      [activeSessionId, apiClient],
+      [activeSessionId],
     );
 
     return (
@@ -742,7 +731,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
           <div className={styles["chat-input-controls-left"]}>
             <button
               onClick={uploadFile}
-              disabled={!supportsPdf(modelConfig.supported_features)}
+              disabled={!modelConfig || !supportsPdf(modelConfig.supported_features)}
               className={styles["chat-input-action-plus"]}
               aria-label={Locale.Chat.InputActions.UploadFile}
             >
@@ -755,7 +744,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
             </button>
             <button
               onClick={uploadImage}
-              disabled={!supportsImages(modelConfig.supported_features)}
+              disabled={!modelConfig || !supportsImages(modelConfig.supported_features)}
               className={styles["chat-input-action-plus"]}
               aria-label={Locale.Chat.InputActions.UploadImage}
             >
@@ -771,7 +760,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
               className={clsx(styles["chat-input-action-search"], {
                 [styles.active]: enableSearch,
               })}
-              disabled={!authenticated || isUploadingFiles || !supportsSearch(modelConfig.supported_features)}
+              disabled={!authenticated || isUploadingFiles || !modelConfig || !supportsSearch(modelConfig.supported_features)}
               aria-pressed={enableSearch}
               aria-label={
                 enableSearch ? "Disable web search" : "Enable web search"

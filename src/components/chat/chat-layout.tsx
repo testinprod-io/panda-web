@@ -20,7 +20,7 @@ import { useChatStore, DEFAULT_TOPIC } from "@/store";
 import { UNFINISHED_INPUT } from "@/types/constant";
 import { SessionState } from "@/types/session";
 import { safeLocalStorage } from "@/utils/utils";
-import { useChatActions } from "@/hooks/use-chat-actions";
+// import { useChatActions } from "@/hooks/use-chat-actions";
 import type { UUID } from "crypto"; // Keep as type import
 import Locale from "@/locales";
 import { useSnackbar } from "@/providers/snackbar-provider";
@@ -57,7 +57,7 @@ export default function ChatLayoutContent({
   const sdk = usePandaSDK();
   const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
 
-  const { newSession } = useChatActions();
+  // const { newSession } = useChatActions();
   const { showSnackbar } = useSnackbar();
 
   const onSendMessageHandlerFromStore = useChatStore(
@@ -177,7 +177,6 @@ export default function ChatLayoutContent({
     [
       currentChatId,
       onSendMessageHandlerFromStore,
-      newSession,
       router,
       showSnackbar,
     ],
@@ -195,7 +194,7 @@ export default function ChatLayoutContent({
     effectiveIsSidebarCollapsed = true;
   }
 
-  if (!privyReady) {
+  if (!privyReady || !sdk.initialized) {
     return (
       <Box
         sx={{
@@ -391,30 +390,26 @@ export default function ChatLayoutContent({
             marginBottom: "8px",
           }}
         >
-          {modelConfig ? (
-            <ChatInputPanel
-              sessionId={currentChatId}
-              modelConfig={modelConfig}
-              customizedPrompts={pandaConfig.customizedPrompts}
-              isLoading={internalIsSubmitting}
-              onSubmit={handleLayoutSubmit}
-              scrollToBottom={
-                scrollToBottomHandlerFromStore ||
-                (() => console.warn("ScrollToBottom handler not set in store"))
-              }
-              setShowPromptModal={
-                showPromptModalHandlerFromStore ||
-                (() => console.warn("ShowPromptModal handler not set in store"))
-              }
-              setShowShortcutKeyModal={
-                showShortcutKeyModalHandlerFromStore ||
-                (() =>
-                  console.warn("ShowShortcutKeyModal handler not set in store"))
-              }
-            />
-          ) : (
-            <CircularProgress />
-          )}
+          <ChatInputPanel
+            sessionId={currentChatId}
+            modelConfig={modelConfig}
+            customizedPrompts={pandaConfig.customizedPrompts}
+            isLoading={internalIsSubmitting}
+            onSubmit={handleLayoutSubmit}
+            scrollToBottom={
+              scrollToBottomHandlerFromStore ||
+              (() => console.warn("ScrollToBottom handler not set in store"))
+            }
+            setShowPromptModal={
+              showPromptModalHandlerFromStore ||
+              (() => console.warn("ShowPromptModal handler not set in store"))
+            }
+            setShowShortcutKeyModal={
+              showShortcutKeyModalHandlerFromStore ||
+              (() =>
+                console.warn("ShowShortcutKeyModal handler not set in store"))
+            }
+          />
         <Typography
           hidden={isMobile}
           sx={{

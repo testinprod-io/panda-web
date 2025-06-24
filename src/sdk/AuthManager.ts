@@ -14,7 +14,7 @@ export class AuthManager {
   private state: {
     isAuthenticated: boolean;
     isLocked: boolean;
-    isFirstTimeUser: boolean;
+    encryptedId: string | null;
     user: User | null;
   };
 
@@ -32,7 +32,7 @@ export class AuthManager {
     this.state = {
       isAuthenticated: false,
       isLocked: true,
-      isFirstTimeUser: false,
+      encryptedId: null,
       user: null,
     };
 
@@ -48,16 +48,23 @@ export class AuthManager {
   }
 
   private updateState(newState: Partial<typeof this.state>) {
+    if (newState.isAuthenticated && newState.isAuthenticated !== this.state.isAuthenticated) {
+      this.bus.emit("auth.status.updated", newState.isAuthenticated);
+    }
+
     this.state = { ...this.state, ...newState };
-    this.bus.emit("auth.status.updated", this.state);
+    this.bus.emit("auth.state.updated", this.state);
   }
 
   public async initializeAuthState() {
     const isAuthenticated = await this.authProvider.getIsAuthenticated();
     const user = await this.authProvider.getUser();
+    const encryptedId = (await this.api.app.getEncryptedId()).encrypted_id;
+
     this.updateState({
       isAuthenticated,
       user,
+      encryptedId,
     });
   }
 
@@ -65,15 +72,12 @@ export class AuthManager {
     isAuthenticated: boolean;
     user: User | null;
   }) => {
-    if (this.state.isAuthenticated !== payload.isAuthenticated) {
-      const isFirstTimeUser = payload.isAuthenticated
-        ? (await this.api.app.getEncryptedId()) !== null
-        : false;
+    console.log("handleAuthStateChange", payload);
 
+    if (this.state.isAuthenticated !== payload.isAuthenticated) {
       const newState: Partial<typeof this.state> = {
         isAuthenticated: payload.isAuthenticated,
         user: payload.isAuthenticated ? payload.user : null,
-        isFirstTimeUser,
       };
 
       if (!payload.isAuthenticated) {
@@ -108,12 +112,10 @@ export class AuthManager {
       throw new Error("User ID not found");
     }
 
-    const verificationToken = await this.api.app.getEncryptedId();
-
     if (
-      verificationToken &&
+      this.state.encryptedId &&
       (await this.encryptionService.verifyKey(
-        verificationToken.encrypted_id,
+        this.state.encryptedId,
         this.state.user.id,
         password
       ))
@@ -134,7 +136,7 @@ export class AuthManager {
   }
 
   public async logout(): Promise<void> {
-    this.updateState({ isLocked: true });
+    this.updateState({ isLocked: true, isAuthenticated: false });
     this.encryptionService.clearKey();
     await this.authProvider.logout();
     this.bus.emit("app.locked", undefined);

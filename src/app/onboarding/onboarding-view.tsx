@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useApiClient } from "@/providers/api-client-provider";
+// import { useApiClient } from "@/providers/api-client-provider";
 import { useAppConfig } from "@/store/config";
 import {
   CustomizedPromptsData,
@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import TextInputStep from "@/components/onboarding/TextInputStep";
 import TraitsStepView from "@/components/onboarding/TraitsStepView";
 import StreamingText from "@/components/onboarding/StreamingText";
+import { usePandaSDK } from "@/providers/sdk-provider";
 
 const STEPS = ["intro", "name", "role", "traits", "knowledge"];
 
@@ -55,7 +56,8 @@ export default function OnboardingView() {
     extra_params: "",
   });
   const [isSaving, setIsSaving] = useState(false);
-  const apiClient = useApiClient();
+  const sdk = usePandaSDK();
+  // const apiClient = useApiClient();
   const { setCustomizedPrompts } = useAppConfig();
   const router = useRouter();
 
@@ -100,7 +102,7 @@ export default function OnboardingView() {
     try {
       const encryptedPayload = encryptSystemPrompt(payload);
       const responseData = decryptSystemPrompt(
-        await apiClient.app.createCustomizedPrompts(encryptedPayload)
+        await sdk.api.app.createCustomizedPrompts(encryptedPayload)
       );
       setCustomizedPrompts(responseData);
       router.push("/");
@@ -110,7 +112,7 @@ export default function OnboardingView() {
       // Optional: Show an error message to the user
       router.push("/"); // For now, just navigate away
     }
-  }, [apiClient.app, data, router, setCustomizedPrompts]);
+  }, [sdk.api.app, data, router, setCustomizedPrompts]);
 
   useEffect(() => {
     if (step === STEPS.length && !isSaving) {

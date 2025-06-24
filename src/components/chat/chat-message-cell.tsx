@@ -8,7 +8,6 @@ import { LoadingAnimation } from "@/components/ui/loading-animation";
 import { Box, CircularProgress } from "@mui/material";
 import styles from "./chat.module.scss";
 import { UUID } from "crypto";
-import { useApiClient } from "@/providers/api-client-provider";
 import { useEncryption } from "@/providers/encryption-provider";
 import { useLoadedFiles, LoadedFile } from "@/hooks/use-loaded-files";
 import { FilePreviewItem } from "../ui/file-preview-item";
@@ -16,7 +15,7 @@ import { MessageActionsBar } from "../ui/message-actions-bar";
 import { ReasoningDisplay } from "../ui/reasoning-display";
 import { EditMessageForm } from "../ui/edit-message-form";
 import {
-  useAttestationManager,
+  // useAttestationManager,
   VerificationStatus,
   VerificationResult,
 } from "@/hooks/use-attestation-manager";
@@ -109,17 +108,9 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
   const { isLocked } = useEncryption();
   const { attestationResults, verificationResults } = useAttestation();
   const sdk = usePandaSDK();
-  const apiClient = useApiClient();
 
-  const loadedFiles = useLoadedFiles(files, sessionId, apiClient, isLocked);
-  // const { verifyAttestation, verifyContract } = useAttestationManager();
-  
-  // const [verificationResult, setVerificationResult] = useState<VerificationResult | undefined>(undefined);
-  // const [attestationStatus, setAttestationStatus] = useState<
-  //   VerificationStatus | undefined
-  // >(undefined);
-  // const [attestationResult, setAttestationResult] =
-  //   useState<AttestationResult>();
+  const loadedFiles = useLoadedFiles(files, sessionId, isLocked);
+
 
   useEffect(() => {
     const doVerify = async (key: string) => {

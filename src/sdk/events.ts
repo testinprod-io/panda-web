@@ -10,7 +10,9 @@ export interface SDKEventMap {
   "app.unlocked": void;
   "chat.updated": void;
   "chat.list.updated": void;
-  "auth.status.updated": { isAuthenticated: boolean, user: User | null };
+  "user.updated": void;
+  "auth.status.updated": boolean;
+  "auth.state.updated": { isAuthenticated: boolean, isLocked: boolean, user: User | null };
   "attestation.status.updated": { status: VerificationStatus, attestationResult?: AttestationResult, publicKey: string };
   "config.updated": { config: PandaConfig };
 }

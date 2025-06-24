@@ -3,6 +3,8 @@
 import { useSyncExternalStore } from 'react';
 import { usePandaSDK } from '@/providers/sdk-provider';
 import { Chat } from "./Chat";
+import { UserData } from './User';
+import { CustomizedPromptsData } from '@/types';
 
 /**
  * A modern hook to subscribe to the state of the ChatManager.
@@ -50,7 +52,7 @@ export function useAuth() {
   const sdk = usePandaSDK();
   const authManager = sdk.auth;
   const state = useSyncExternalStore(
-    (callback) => sdk.bus.on('auth.status.updated', callback),
+    (callback) => sdk.bus.on('auth.state.updated', callback),
     () => {
       return authManager.getState();
     },
@@ -70,4 +72,22 @@ export function useAttestation() {
     () => attestationManager.getState(),
   );
   return state || attestationManager.getState();
+}
+
+export function useUser() {
+  const sdk = usePandaSDK();
+  const userManager = sdk.user;
+  const state = useSyncExternalStore(
+    (callback) => sdk.bus.on('user.updated', callback),
+    () => {
+      return userManager.getState();
+    },
+    () => userManager.getState(),
+  );
+  return {
+    data: state || userManager.getState(),
+    updateCustomizedPrompts: userManager.updateCustomizedPrompts.bind(userManager),
+    updateData: userManager.updateData.bind(userManager),
+    clearData: userManager.clearData.bind(userManager),
+  };
 }

@@ -5,6 +5,7 @@ import { PandaSDK } from '@/sdk/PandaSDK';
 import { GetAccessTokenFn } from '@/sdk/client/types';
 import { usePrivy } from '@privy-io/react-auth';
 import { PrivyAuthAdapter } from './privy-auth-adapter';
+// import { Box, Box, CircularProgress } from '@mui/material';
 
 interface SDKProviderProps {
   children: ReactNode;
@@ -20,8 +21,9 @@ export function PandaSDKProvider({ children, getAccessToken }: SDKProviderProps)
 
   const authAdapter = useMemo(() => {
     // if (!ready) return null;
-    return new PrivyAuthAdapter(privy, authenticated, user);
-  }, [ready, privy, authenticated, user]);
+    console.log("NEWNEW authAdapter", authenticated, user);
+    return new PrivyAuthAdapter(privy);
+  }, [ready]);
 
   useEffect(() => {
     if (authAdapter) {
@@ -29,16 +31,34 @@ export function PandaSDKProvider({ children, getAccessToken }: SDKProviderProps)
     }
   }, [authAdapter, authenticated, user]);
 
+  
   const sdk = useMemo(() => {
-    // if (!authAdapter) return null;
+    console.log("NEWNEW sdk", authAdapter);
+    if (!authAdapter) return null;
     return new PandaSDK(getAccessToken, authAdapter);
   }, [getAccessToken, authAdapter]);
+  
+  useEffect(() => {
+    if (sdk && ready && authenticated) {
+      sdk.handleAuthenticated();
+    }
+  }, [sdk, ready, authenticated]);
 
-  // useEffect(() => {
-  //   if (sdk) {
-  //     sdk.authenticate();
-  //   }
-  // }, [sdk]);
+  // if (!sdk || !sdk.initialized) { 
+  //   return (
+  //     <Box
+  //       sx={{
+  //         display: "flex",
+  //         justifyContent: "center",
+  //         alignItems: "center",
+  //         height: "100%",
+  //         backgroundColor: "red",
+  //       }}
+  //     >
+  //       <CircularProgress color="primary" />
+  //     </Box>
+  //   );
+  // }
 
   return (
     <SDKContext.Provider value={sdk}>

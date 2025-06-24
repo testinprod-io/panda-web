@@ -1,7 +1,7 @@
 "use client";
 
 import { usePrivy } from "@privy-io/react-auth";
-import { useApiClient } from "@/providers/api-client-provider";
+// import { useApiClient } from "@/providers/api-client-provider";
 import { useAppConfig } from "@/store";
 import { useEffect, useState } from "react";
 import { decryptSystemPrompt } from "@/types";
@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 export function useAuthStatus() {
   const { ready, authenticated } = usePrivy();
   const appConfig = useAppConfig();
-  const apiClient = useApiClient();
+  // const apiClient = useApiClient();
   const { isLocked } = useEncryption();
   const router = useRouter();
   // const [hasFetchedPromptsThisSession, setHasFetchedPromptsThisSession] =

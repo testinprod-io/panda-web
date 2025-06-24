@@ -9,18 +9,14 @@ function mapPrivyUserToSdkUser(privyUser: PrivyUser | null): SdkUser | null {
 
 export class PrivyAuthAdapter extends EventEmitter implements AuthProvider {
     private privy: PrivyInterface;
-    private _isAuthenticated: boolean;
-    private _user: PrivyUser | null;
+    private _isAuthenticated: boolean = false;
+    private _user: PrivyUser | null = null;
 
     constructor(
         privy: PrivyInterface,
-        isAuthenticated: boolean,
-        user: PrivyUser | null,
     ) {
         super();
         this.privy = privy;
-        this._isAuthenticated = isAuthenticated;
-        this._user = user;
     }
 
     // This is required by the EventEmitter base class
@@ -36,7 +32,10 @@ export class PrivyAuthAdapter extends EventEmitter implements AuthProvider {
         this._isAuthenticated = authenticated;
         this._user = user;
         if (changed) {
-            this.emit('authStateChanged', this._isAuthenticated);
+            this.emit('authStateChanged', {
+                isAuthenticated: this._isAuthenticated,
+                user: mapPrivyUserToSdkUser(this._user),
+            });
         }
     }
 

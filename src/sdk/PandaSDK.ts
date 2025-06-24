@@ -29,9 +29,11 @@ export class PandaSDK {
   public readonly config: ConfigManager;
 
   private readonly storage: IStorage;
-  private readonly api: ApiService;
-
+  public readonly api: ApiService;
+  public initialized: boolean = false;
+  private initializing: boolean = false;
   constructor(getAccessToken: GetAccessTokenFn, authProvider: AuthProvider) {
+    console.log('[PandaSDK] Constructor called from:', new Error().stack);
     this.api = new ApiService(getAccessToken);
     this.config = new ConfigManager(this.bus);
 
@@ -42,34 +44,38 @@ export class PandaSDK {
     
     this.storage = new ServerStorage(this.bus, this.api, this.auth, this.encryption);
     this.chat = new ChatManager(this.bus, this.api, this.auth, this.encryption, this.attestation, this.storage, this.config);
-    this.user = new UserManager(new MemoryUserDataStore());
+    this.user = new UserManager(new MemoryUserDataStore(), this.bus);
     
-    this.bus.on('auth.status.updated', ({ isAuthenticated }) => {
+    this.bus.on('auth.status.updated', ( isAuthenticated ) => {
       if (isAuthenticated) {
-        this._onAuthenticated();
+        console.log("auth.status.updated", isAuthenticated);
+        this.handleAuthenticated();
       }
     });
     
     console.log('PandaSDK initialized successfully!');
   }
 
-  public async authenticate() {
-    await this.auth.initializeAuthState();
-  }
+  public async handleAuthenticated() {
+    if (this.initialized || this.initializing) {
+      return;
+    }
+    console.log("handleAuthenticated");
+    console.log("[PandaSDK] handleAuthenticated called from:", new Error().stack);
+    this.initializing = true;
+    
+    const [customizedPrompts, info, authState] = await Promise.all([
+      this.api.app.getCustomizedPrompts(),
+      this.api.app.getInfo(),
+      this.auth.initializeAuthState(),
+    ]);
 
-  private async _onAuthenticated() { 
-    const encryptedId = (await this.api.app.getEncryptedId()).encrypted_id;
-    const customizedPrompts = await this.api.app.getCustomizedPrompts();
-    this.user.updateData({
-      encryptedId,
-      customizedPromptsData: customizedPrompts,
-    });
+    this.user.updateData({customizedPromptsData: customizedPrompts});
     this.config.setCustomizedPrompts(customizedPrompts);
-
-    const info = await this.api.app.getInfo();
     this.config.setModels(info.models);
+    
+    this.initialized = true;
   }
-
   // You could add global SDK methods here if needed, for example:
   public getStatus() {
     return {

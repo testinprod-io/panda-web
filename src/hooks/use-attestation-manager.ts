@@ -1,4 +1,4 @@
-import { useApiClient } from "@/providers/api-client-provider";
+// import { useApiClient } from "@/providers/api-client-provider";
 import {
   TdxPayload,
   Jwks,
@@ -110,14 +110,14 @@ export function useAttestationManager() {
     [wallets, verificationResults, setVerificationResult, ready]
   );
 
-  const verifyAttestation = useCallback(
-    async (publicKeyHex: string): Promise<AttestationResult> => {
-      console.log("verifying attestation for publicKeyHex:", publicKeyHex);
-      if (attestationResults[publicKeyHex]) {
-        console.log("attestation already verified, returning true");
-        verifyContract(publicKeyHex, attestationResults[publicKeyHex]);
-        return attestationResults[publicKeyHex];
-      }
+//   const verifyAttestation = useCallback(
+//     async (publicKeyHex: string): Promise<AttestationResult> => {
+//       console.log("verifying attestation for publicKeyHex:", publicKeyHex);
+//       if (attestationResults[publicKeyHex]) {
+//         console.log("attestation already verified, returning true");
+//         verifyContract(publicKeyHex, attestationResults[publicKeyHex]);
+//         return attestationResults[publicKeyHex];
+//       }
 
       async function verifyOnchain(attestationResponse: AttestationResponse) {
         if (!attestationResponse.tx_hash) {
