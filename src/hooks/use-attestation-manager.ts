@@ -279,8 +279,10 @@ export function useAttestationManager() {
 
       let attestationResult: AttestationResult;
       if (attestationResponse.version === "v1") {
+        console.log("verifying onchain attestation");
         attestationResult = await verifyOnchain(attestationResponse);
       } else {
+        console.log("verifying local cert attestation");
         attestationResult = await verifyLocalCert(attestationResponse);
       }
 
