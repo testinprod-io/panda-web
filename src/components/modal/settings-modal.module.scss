@@ -114,6 +114,14 @@
   overflow-y: auto; // Allow content to scroll if it overflows
   display: flex;
   flex-direction: column;
+  @media (max-width: 600px) {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  @media (max-width: 400px) {
+    padding-left: 0px;
+    padding-right: 0px;
+  }
 }
 
 .promptsViewFullArea {
@@ -215,6 +223,7 @@
   font-family: "Inter", sans-serif !important;
   font-weight: 500 !important;
   text-transform: none !important; // Keep text as is
+  flex-shrink: 0;
   padding: 4px 16px !important;
   border-radius: 48px !important;
   border: 1px solid #cacaca !important;

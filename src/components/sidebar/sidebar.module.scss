@@ -61,7 +61,7 @@ $sidebar-transition-timing: ease-in-out;
 .expandedPane {
   @extend .paneBase;
   width: $sidebar-expanded-width;
-  overflow-y: auto;
+  overflow-y: hidden;
   height: 100%;
 }
 
@@ -101,6 +101,7 @@ $sidebar-transition-timing: ease-in-out;
   display: flex;
   flex-direction: column;
   width: 100%;
+  min-height: 0;
 }
 
 .collapsedNavMenu {

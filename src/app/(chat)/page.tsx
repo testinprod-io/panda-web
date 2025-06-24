@@ -23,17 +23,20 @@ export default function NewChatPage() {
         paddingTop: "0px",
       }}
     >
-      <Image
-        src="/icons/inverse-icon.svg"
-        alt="Panda AI Logo"
-        width={100}
-        height={100}
-      />
+      <Box sx={{ width: { xs: 60, md: 100 }, height: { xs: 60, md: 100 } }}>
+        <Image
+          src="/icons/inverse-icon.svg"
+          alt="Panda AI Logo"
+          width={100}
+          height={100}
+          style={{ width: "100%", height: "100%" }}
+        />
+      </Box>
       <Typography
         gutterBottom
         sx={{
           color: "#131A28",
-          fontSize: "24px",
+          fontSize: { xs: "20px", md: "24px" },
           fontWeight: "600",
           lineHeight: "38.74px",
           paddingTop: "1.1vh",
@@ -45,7 +48,7 @@ export default function NewChatPage() {
       <Typography
         sx={{
           color: "#131A28",
-          fontSize: "24px",
+          fontSize: { xs: "20px", md: "24px" },
           fontWeight: "400",
           lineHeight: "38.74px",
         }}
