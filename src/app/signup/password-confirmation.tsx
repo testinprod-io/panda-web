@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import Locale from "@/locales";
+import { EncryptionService } from "@/services/encryption-service";
 
 const TEXT_TO_ANIMATE = Locale.Onboarding.Encryption.PasswordCreatedDescription;
 
@@ -15,7 +16,7 @@ export default function PasswordConfirmation() {
   const [isButtonHidden, setIsButtonHidden] = useState(true);
 
   const base64Text = useMemo(() => {
-    return Buffer.from(TEXT_TO_ANIMATE, "utf-8").toString("base64");
+    return EncryptionService.encrypt(TEXT_TO_ANIMATE);
   }, []);
 
   useEffect(() => {
