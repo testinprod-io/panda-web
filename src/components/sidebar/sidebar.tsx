@@ -25,6 +25,7 @@ import { Tooltip } from "@mui/material";
 import { useChatStore } from "@/store/chat";
 import { useAppConfig } from "@/store/config";
 import { AuthService } from "@/services/auth-service";
+import Locale from "@/locales";
 
 interface SidebarProps {
   isSidebarCollapsed: boolean;
@@ -81,7 +82,7 @@ export default function Sidebar({
           className={styles.navMenuIcon}
         />
       ),
-      text: "Menu",
+      text: Locale.Sidebar.Menu,
       action: onToggleSidebar,
     },
     {
@@ -93,7 +94,7 @@ export default function Sidebar({
           className={styles.navMenuIcon}
         />
       ),
-      text: "New chat",
+      text: Locale.Sidebar.NewChat,
       action: handleNewChat,
     },
     // { id: "archive", icon: <ArchiveIcon />, text: "Archive", action: handleArchive },
@@ -106,7 +107,7 @@ export default function Sidebar({
           className={styles.navMenuIcon}
         />
       ),
-      text: "Settings",
+      text: Locale.Sidebar.Settings,
       action: handleSettings,
     },
     {
@@ -118,7 +119,7 @@ export default function Sidebar({
           className={styles.navMenuIcon}
         />
       ),
-      text: "Log out",
+      text: Locale.Sidebar.Logout,
       action: handleLogout,
     },
   ];

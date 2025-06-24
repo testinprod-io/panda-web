@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Box, TextField, Button, Chip } from "@mui/material";
 import { motion } from "framer-motion";
+import Locale from "@/locales";
 
 interface Trait {
   id: string;
@@ -201,7 +202,7 @@ export default function TraitsStepView({
               fontSize: "16px",
             }}
           >
-            Continue
+            {Locale.Onboarding.Continue}
           </Button>
           <Button
             type="button"
@@ -216,7 +217,7 @@ export default function TraitsStepView({
               fontSize: "16px",
             }}
           >
-            Skip
+            {Locale.Onboarding.Skip}
           </Button>
         </Box>
       </Box>

@@ -13,6 +13,7 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
 import { AuthService } from "@/services/auth-service";
 import { useEncryption } from "@/providers/encryption-provider";
+import Locale from "@/locales";
 
 const MODAL_CONFIG = {
     iconSrc: "/icons/rounded-logo.svg",
@@ -20,10 +21,10 @@ const MODAL_CONFIG = {
     // iconBackgroundColor: "#F33D4F",
     // iconFilter:
     //   "invert(100%) sepia(0%) saturate(7500%) hue-rotate(137deg) brightness(118%) contrast(91%)",
-    title: "Unlock Panda",
-    description: "Unlock and experience encrypted chat that fully protects your privacy.",
-    submitButtonText: "Unlock",
-    textFieldPlaceholder: "Password",
+    title: Locale.PasswordModal.Title,
+    description: Locale.PasswordModal.Description,
+    submitButtonText: Locale.PasswordModal.Submit,
+    textFieldPlaceholder: Locale.PasswordModal.Placeholder,
     getDynamicError: (_password: string) => "",
     validateSubmit: (password: string) => {
       if (!password) {
@@ -93,7 +94,7 @@ export function PasswordModal({
             setPassword("");
             setError("");
           } else {
-            setError("*Incorrect password");
+            setError(`*${Locale.Error.IncorrectPassword}`);
           }
       
       } catch (err: any) {
@@ -343,7 +344,7 @@ export function PasswordModal({
             }}
             onClick={handleLogOut}
           >
-            {"Log out"}
+            {Locale.PasswordModal.Logout}
           </Button>
         </DialogActions>
       </Box>

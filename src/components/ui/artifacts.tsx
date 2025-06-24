@@ -144,7 +144,7 @@ export function ArtifactsShareButton({
   return (
     <>
       <Dialog open={showDialog} onClose={handleCloseDialog}>
-        <DialogTitle>{Locale.Export.Artifacts.Title}</DialogTitle>
+        {/* <DialogTitle>{Locale.Export.Artifacts.Title}</DialogTitle> */}
         <DialogContent>
           <DialogContentText sx={{ wordBreak: "break-all" }}>
             <a target="_blank" rel="noopener noreferrer" href={shareUrl}>

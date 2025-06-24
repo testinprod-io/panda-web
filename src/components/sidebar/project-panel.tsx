@@ -1,5 +1,6 @@
 import React from "react";
 import styles from "./project-panel.module.scss";
+import Locale from "@/locales";
 
 interface ProjectPanelProps {
   onNewChat: () => void;
@@ -9,7 +10,7 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({ onNewChat }) => {
   return (
     <div className={styles.container}>
       <div className={styles.projectHeaderContainer}>
-        <div className={styles.projectHeaderText}>Project</div>
+        <div className={styles.projectHeaderText}>{Locale.Sidebar.Project}</div>
       </div>
       <div
         className={styles.newChatRow}
@@ -26,7 +27,7 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({ onNewChat }) => {
             />
           </div>
         </div>
-        <div className={styles.newChatText}>New chat</div>
+        <div className={styles.newChatText}>{Locale.Sidebar.NewChat}</div>
       </div>
     </div>
   );

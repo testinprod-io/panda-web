@@ -43,7 +43,7 @@ export default function NewChatPage() {
           margin: "0px",
         }}
       >
-        Panda – AI that never watches back.
+        Panda – {Locale.Chat.Tagline}
       </Typography>
       <Typography
         sx={{
