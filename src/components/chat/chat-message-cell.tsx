@@ -21,6 +21,8 @@ import {
   VerificationResult,
 } from "@/hooks/use-attestation-manager";
 import { AttestationResult } from "@/types/attestation";
+import { useAttestation } from "@/sdk/hooks";
+import { usePandaSDK } from "@/providers/sdk-provider";
 const Markdown = dynamic(
   async () => (await import("../ui/markdown")).Markdown,
   {
@@ -105,12 +107,14 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     challengeResponse,
   } = message;
   const { isLocked } = useEncryption();
+  const { attestationResults, verificationResults } = useAttestation();
+  const sdk = usePandaSDK();
   const apiClient = useApiClient();
 
   const loadedFiles = useLoadedFiles(files, sessionId, apiClient, isLocked);
-  const { verifyAttestation, verifyContract } = useAttestationManager();
+  // const { verifyAttestation, verifyContract } = useAttestationManager();
   
-  const [verificationResult, setVerificationResult] = useState<VerificationResult | undefined>(undefined);
+  // const [verificationResult, setVerificationResult] = useState<VerificationResult | undefined>(undefined);
   // const [attestationStatus, setAttestationStatus] = useState<
   //   VerificationStatus | undefined
   // >(undefined);
@@ -119,30 +123,32 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
 
   useEffect(() => {
     const doVerify = async (key: string) => {
-      setVerificationResult({
-        status: VerificationStatus.Pending,
-        attestationResult: undefined,
-        publicKey: key,
-      });
+      // setVerificationResult({
+      //   status: VerificationStatus.Pending,
+      //   attestationResult: undefined,
+      //   publicKey: key,
+      // });
+      console.log("verifying attestation for publicKeyHex:", key);
       try {
-        const attestationResult = await verifyAttestation(key);
-        const verificationResult = await verifyContract(key, attestationResult);
-        setVerificationResult(verificationResult);
+        const attestationResult = await sdk.attestation.verifyAttestation(key);
+        const verificationResult = await sdk.attestation.verifyContract(key, attestationResult);
+        // setVerificationResult(verificationResult);
       } catch (error) {
         console.log("error verifying attestation for publicKeyHex:", key);
         console.log("error:", error);
-        setVerificationResult({
-          status: VerificationStatus.Failed,
-          attestationResult: undefined,
-          publicKey: key,
-        });
+        // setVerificationResult({
+        //   status: VerificationStatus.Failed,
+        //   attestationResult: undefined,
+        //   publicKey: key,
+        // });
       }
     };
 
+    console.log("challengeResponse:", challengeResponse);
     if (challengeResponse) {
       doVerify(challengeResponse.publicKey);
     }
-  }, [challengeResponse]);
+  }, [sdk, challengeResponse]);
 
   const handleResend = useCallback(
     () => onResend(messageId),
@@ -310,7 +316,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
             isChatLoading={isChatLoading}
             messageContent={content}
             reasoningText={reasoning}
-            verificationResult={verificationResult}
+            verificationResult={challengeResponse ? verificationResults[challengeResponse.publicKey] : undefined}
             challengeResponse={challengeResponse}
             onResend={handleResend}
           />

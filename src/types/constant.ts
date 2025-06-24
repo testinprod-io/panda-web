@@ -115,40 +115,40 @@ function getModelEndpointEnvVarName(modelName: string): string {
   return `NEXT_PUBLIC_MODEL_ENDPOINT_${slug}`;
 }
 
-export interface ModelConfig {
-  temperature: number;
-  top_p: number;
-  max_tokens: number;
-  features: string[];
-  stream: boolean;
-  reasoning?: boolean;
-  name: string;
-  displayName: string;
-  endpoint: string;
-}
+// export interface ModelConfig {
+//   temperature: number;
+//   top_p: number;
+//   max_tokens: number;
+//   features: string[];
+//   stream: boolean;
+//   reasoning?: boolean;
+//   name: string;
+//   displayName: string;
+//   endpoint: string;
+// }
 
-// Define a base config for common models
-export const BASE_MODEL_CONFIG: ModelConfig = {
-  name: "",
-  displayName: "",
-  temperature: 0.7,
-  top_p: 1.0,
-  max_tokens: 4096,
-  features: [],
-  stream: true,
-  reasoning: false,
-  endpoint: "",
-};
+// // Define a base config for common models
+// export const BASE_MODEL_CONFIG: ModelConfig = {
+//   name: "",
+//   displayName: "",
+//   temperature: 0.7,
+//   top_p: 1.0,
+//   max_tokens: 4096,
+//   features: [],
+//   stream: true,
+//   reasoning: false,
+//   endpoint: "",
+// };
 
-export interface AppModelDefinition {
-  name: string;
-  displayName?: string;
-  description?: string;
-  config: ModelConfig;
-}
-export type ModelType = AppModelDefinition["name"];
+// export interface AppModelDefinition {
+//   name: string;
+//   displayName?: string;
+//   description?: string;
+//   config: ModelConfig;
+// }
+// export type ModelType = AppModelDefinition["name"];
 
-export const DEFAULT_MODELS: AppModelDefinition[] = [];
+// export const DEFAULT_MODELS: AppModelDefinition[] = [];
 
 export const CHAT_PAGE_SIZE = 15;
 export const MAX_RENDER_MSG_COUNT = 45;

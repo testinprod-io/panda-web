@@ -3,7 +3,7 @@ import { UUID } from "crypto";
 import { FileInfo } from "@/client/types"; // Corrected type for messageFiles elements
 import { ClientApi } from "@/client/api"; // Corrected: apiClient is of type ClientApi
 import { EncryptionService } from "@/services/encryption-service";
-
+import { usePandaSDK } from "@/providers/sdk-provider";
 export interface LoadedFile {
   id: UUID;
   name: string;
@@ -20,6 +20,7 @@ export function useLoadedFiles(
   apiClient: ClientApi, // Updated type to ClientApi
   isLocked: boolean,
 ): LoadedFile[] {
+  const sdk = usePandaSDK();
   const [loadedFiles, setLoadedFiles] = useState<LoadedFile[]>([]);
 
   // Create a stable dependency based on the content of messageFiles
@@ -158,10 +159,10 @@ export function useLoadedFiles(
         let fileToProcess = new File([blob], fileName, { type: contentType });
         let decryptedFileName = fileName;
 
-        if (EncryptionService.isKeySet()) {
+        if (!sdk.auth.getState().isLocked) {
           try {
-            fileToProcess = await EncryptionService.decryptFile(fileToProcess);
-            decryptedFileName = EncryptionService.decrypt(fileInfo.file_name);
+            fileToProcess = await sdk.encryption.decryptFile(fileToProcess);
+            decryptedFileName = sdk.encryption.decrypt(fileInfo.file_name);
           } catch (decryptionError) {
             // console.error("Error decrypting file:", fileInfo.file_id, decryptionError); // Keep console for debug if needed
             return {

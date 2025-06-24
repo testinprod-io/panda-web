@@ -1,4 +1,6 @@
 import { User } from "./auth/types";
+import { AttestationResult } from "@/types/attestation";
+import { VerificationStatus } from "@/hooks/use-attestation-manager";
 
 /* event-bus.ts */
 export interface SDKEventMap {
@@ -7,6 +9,7 @@ export interface SDKEventMap {
   "chat.updated": void;
   "chat.list.updated": void;
   "auth.status.updated": { isAuthenticated: boolean, user: User | null };
+  "attestation.status.updated": { status: VerificationStatus, attestationResult?: AttestationResult, publicKey: string };
 }
 
 /** Generic handler type that is aware of the payload shape */
@@ -62,4 +65,4 @@ export abstract class EventEmitter {
       this.listeners.get(event)!.forEach(listener => listener(...args));
     }
   }
-// }
+}

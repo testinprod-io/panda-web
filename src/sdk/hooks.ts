@@ -58,3 +58,16 @@ export function useAuth() {
   );
   return state || authManager.getState();
 }
+
+export function useAttestation() {
+  const sdk = usePandaSDK();
+  const attestationManager = sdk.attestation;
+  const state = useSyncExternalStore(
+    (callback) => sdk.bus.on('attestation.status.updated', callback),
+    () => {
+      return attestationManager.getState();
+    },
+    () => attestationManager.getState(),
+  );
+  return state || attestationManager.getState();
+}

@@ -9,7 +9,6 @@ import React, {
 import clsx from "clsx";
 import { isEmpty } from "lodash-es";
 import { useDebouncedCallback } from "use-debounce";
-import { ModelConfig } from "@/types/constant";
 import { usePrivy } from "@privy-io/react-auth";
 import TextareaAutosize from "react-textarea-autosize";
 
@@ -47,10 +46,11 @@ import {
   AttachedClientFile,
 } from "./chat-input-panel.utils";
 import { CustomizedPromptsData, generateSystemPrompt } from "@/types";
+import { ServerModelInfo } from "@/sdk/client/types";
 
 interface ChatInputPanelProps {
   sessionId: UUID | undefined;
-  modelConfig: ModelConfig;
+  modelConfig: ServerModelInfo;
   customizedPrompts?: CustomizedPromptsData;
   isLoading: boolean;
   onSubmit: (
@@ -246,7 +246,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
           const session = await sdk.chat.createNewChat(
             DEFAULT_TOPIC,
             modelConfig,
-            customizedPrompts ? generateSystemPrompt(customizedPrompts) : undefined,
+            customizedPrompts,
           );
           if (session) {
             console.log(
@@ -270,7 +270,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
           }
         }
 
-        if (!modelConfig || (!supportsImages(modelConfig.features) && !supportsPdf(modelConfig.features))) {
+        if (!modelConfig || (!supportsImages(modelConfig.supported_features) && !supportsPdf(modelConfig.supported_features))) {
           showSnackbar(
             "Cannot upload files with the current model.",
             "warning",
@@ -349,8 +349,8 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
           );
           const uploadPromise = apiClient.app.uploadFile(
             currentSessionIdToUse!,
-            await EncryptionService.encryptFile(clientFile.originalFile),
-            EncryptionService.encrypt(clientFile.name),
+            await sdk.encryption.encryptFile(clientFile.originalFile),
+            sdk.encryption.encrypt(clientFile.name),
             clientFile.size,
             (progress) => {
               setAttachedFiles((prev) =>
@@ -558,7 +558,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
     
     const handlePaste = useCallback(
       async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
-        if (!modelConfig || !supportsImages(modelConfig.features) || !supportsPdf(modelConfig.features)) return;
+        if (!modelConfig || !supportsImages(modelConfig.supported_features) || !supportsPdf(modelConfig.supported_features)) return;
         if (!activeSessionId && !provisionalSessionIdRef.current) {
         } else if (!activeSessionId && provisionalSessionIdRef.current) {
         }
@@ -742,7 +742,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
           <div className={styles["chat-input-controls-left"]}>
             <button
               onClick={uploadFile}
-              disabled={!supportsPdf(modelConfig.features)}
+              disabled={!supportsPdf(modelConfig.supported_features)}
               className={styles["chat-input-action-plus"]}
               aria-label={Locale.Chat.InputActions.UploadFile}
             >
@@ -755,7 +755,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
             </button>
             <button
               onClick={uploadImage}
-              disabled={!supportsImages(modelConfig.features)}
+              disabled={!supportsImages(modelConfig.supported_features)}
               className={styles["chat-input-action-plus"]}
               aria-label={Locale.Chat.InputActions.UploadImage}
             >
@@ -771,7 +771,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
               className={clsx(styles["chat-input-action-search"], {
                 [styles.active]: enableSearch,
               })}
-              disabled={!authenticated || isUploadingFiles || !supportsSearch(modelConfig.features)}
+              disabled={!authenticated || isUploadingFiles || !supportsSearch(modelConfig.supported_features)}
               aria-pressed={enableSearch}
               aria-label={
                 enableSearch ? "Disable web search" : "Enable web search"

@@ -1,4 +1,4 @@
-import { Summary } from "@/client/types";
+import { ServerModelInfo, Summary } from "@/client/types";
 import { Chat } from "@/sdk/Chat";
 import { ChatMessage } from "@/types";
 
@@ -24,7 +24,7 @@ export interface IStorage {
   /*  Chats  */
   listChats(cursor?: string, limit?: number): Promise<PaginatedChats>;
   getChat(id: string): Promise<Chat | undefined>;
-  createChat(title: string, modelConfig?: any, customizedPrompts?: any): Promise<Chat>;
+  createChat(title: string, modelConfig?: any, customData?: Record<string, any>): Promise<Chat>;
   updateChat(chat: Chat): Promise<void>;
   deleteChat(id: string): Promise<void>;
 
@@ -35,7 +35,8 @@ export interface IStorage {
     limit?: number,
   ): Promise<PaginatedMessages>;
   saveMessage(chatId: string, msg: ChatMessage): Promise<void>;
-  deleteMessage(id: string): Promise<void>;
+  deleteMessage(chatId: string, messageId: string): Promise<void>;
+  deleteMessages(chatId: string, messageIds: string[]): Promise<void>;
 
   /*  Summaries  */
   getSummaries(chatId: string): Promise<Summary[]>;
@@ -45,4 +46,6 @@ export interface IStorage {
   /*  Misc  */
   clear(): Promise<void>;       // wipe everything (used on logout)
   close?(): Promise<void>;      // Optional: free IndexedDB handles etc.
+
+  setModels(models: ServerModelInfo[]): void; 
 }

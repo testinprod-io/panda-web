@@ -4,8 +4,7 @@ import { Chat } from './Chat';
 import { UUID } from 'crypto';
 import { EncryptionService } from './EncryptionService';
 import { EventBus } from './events';
-import { ModelConfig } from '@/types/constant';
-import { Conversation } from '@/client/types';
+import { Conversation, ServerModelInfo } from '@/client/types';
 import { CustomizedPromptsData } from '@/types';
 import { AttestationManager } from './AttestationManager';
 import { IStorage } from './storage/i-storage';
@@ -51,12 +50,18 @@ export class ChatManager {
     console.log('ChatManager initialized');
 
     this.bus.on('app.unlocked', () => {
-      this.conversations.forEach(c => c.title = this.encryptionService.decrypt(c.encryptedTitle));
+      this.conversations = this.conversations.map(c => {
+        c.title = this.encryptionService.decrypt(c.encryptedTitle);
+        return c;
+      });
       this.updateState();
     });
 
     this.bus.on('app.locked', () => {
-      this.conversations.forEach(c => c.title = c.encryptedTitle);
+      this.conversations = this.conversations.map(c => {
+        c.title = c.encryptedTitle;
+        return c;
+      });
       this.updateState();
     });
   }
@@ -71,17 +76,13 @@ export class ChatManager {
   }
 
   private updateState() {
-    const newState = this.buildState();
-    // Simple shallow comparison to see if anything has changed
-    if (Object.keys(newState).some(key => (newState as any)[key] !== (this.state as any)[key])) {
-        this.state = newState;
-        this.bus.emit('chat.list.updated', undefined);
-    }
+    this.state = this.buildState();
+    this.bus.emit('chat.list.updated', undefined);
   }
 
   private insertChat(chat: Chat) {
     chat.title = this.encryptionService.decrypt(chat.encryptedTitle);
-    this.conversations.unshift(chat);
+    this.conversations = [chat, ...this.conversations];
     this.updateState();
   }
 
@@ -123,13 +124,13 @@ export class ChatManager {
    */
   public async createNewChat(
     title: string,
-    modelConfig: ModelConfig,
-    customizedPrompts?: CustomizedPromptsData,
+    modelConfig: ServerModelInfo,
+    customData?: Record<string, any>,
   ): Promise<Chat> {
     const newChat = await this.storage.createChat(
       title,
       modelConfig,
-      customizedPrompts,
+      customData,
     );
     this.insertChat(newChat);
 

@@ -63,22 +63,6 @@ export function ChatComponent({ sessionId }: { sessionId: UUID }) {
 
   const { scrollDomToBottom, setAutoScroll } = useScrollToBottom(scrollRef, !internalHitBottom, displayedMessages);
 
-  const doSubmit = useCallback(async (sessionState: SessionState) => {
-    if (!activeChat) return;
-    
-    // The sendMessage options are now simpler as the config is on the Chat object
-    await activeChat.sendMessage(sessionState.userInput, config.modelConfig, {
-        attachments: sessionState.persistedAttachedFiles as any,
-        enableSearch: sessionState.enableSearch,
-        onSuccess: () => {},
-        onFailure: (error: Error) => {
-            console.error("[ChatComponent] Failed user input", error);
-            showSnackbar(Locale.Store.Error, "error");
-        },
-    });
-    setAutoScroll(true);
-  }, [activeChat, setAutoScroll, showSnackbar]);
-
   // Register/unregister submit handler with the store
   // useEffect(() => {
   //   chatStore.setOnSendMessageHandler(doSubmit);
@@ -89,8 +73,9 @@ export function ChatComponent({ sessionId }: { sessionId: UUID }) {
 
   const onResend = useCallback(async (messageId: UUID) => {
     if (!activeChat) return;
-    // This logic needs to be moved into the Chat class as `resendFrom(messageId)`
-    console.log("Resend logic needs to be implemented in Chat.ts");
+    const defaultModel = config.models.find((m) => m.model_name === config.defaultModel);
+    if (!defaultModel) return;
+    activeChat.resendMessage(messageId, defaultModel);
   }, [activeChat]);
 
   const onEditSubmit = useCallback(async (messageId: UUID, newText: string) => {

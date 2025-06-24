@@ -28,6 +28,7 @@ import styles from "@/components/chat/chat.module.scss";
 import sidebarStyles from "@/components/sidebar/sidebar.module.scss";
 import { usePrivy } from "@privy-io/react-auth";
 import { usePandaSDK } from "@/providers/sdk-provider";
+import { Chat } from "@/sdk/Chat";
 const localStorage = safeLocalStorage();
 
 function usePrevious<T>(value: T): T | undefined {
@@ -95,14 +96,15 @@ export default function ChatLayoutContent({
   }, [isMobile]);
 
   const modelConfig = React.useMemo(() => {
-    if (currentChatId) {
-      const session = useChatStore
-        .getState()
-        .sessions.find((s) => s.id === currentChatId);
-      return session?.modelConfig || appConfig.modelConfig;
-    }
-    return appConfig.modelConfig;
-  }, [currentChatId, appConfig.modelConfig, useChatStore]);
+    const defaultModel = appConfig.models.find((m) => m.model_name === appConfig.defaultModel) ?? appConfig.models[0]; 
+    // if (currentChatId) {
+    //   const chat = await sdk.chat.getChat(currentChatId as UUID);
+    //   return chat?.modelConfig ?? defaultModel;
+    // } else {
+    // return defaultModel;
+    // }
+    return defaultModel;
+  }, [currentChatId, appConfig.defaultModel, useChatStore]);
 
   const handleLayoutSubmit = useCallback(
     async (sessionId: UUID | undefined, sessionState: SessionState) => {
@@ -116,29 +118,14 @@ export default function ChatLayoutContent({
         `[handleLayoutSubmit] sessionId: ${sessionId} currentChatId: ${currentChatId} onSendMessageHandlerFromStore: ${onSendMessageHandlerFromStore}`,
       );
       try {
+        let chat: Chat | undefined;
         if (currentChatId && sdk.chat.activeChat?.id === currentChatId) {
-          const chat = await sdk.chat.getChat(currentChatId);
-          if (chat) {
-            await chat.sendMessage(sessionState.userInput, modelConfig, {
-              attachments: sessionState.persistedAttachedFiles as any,
-              enableSearch: sessionState.enableSearch,
-              onSuccess: () => {},
-              onFailure: (error: Error) => {
-                console.error("[ChatComponent] Failed user input", error);
-                showSnackbar(Locale.Store.Error, "error");
-              },
-            });
-          }
-          console.log(`[handleLayoutSubmit] currentChatId: ${currentChatId}`);
-          // await onSendMessageHandlerFromStore(sessionState);
+          chat = await sdk.chat.getChat(currentChatId);
           localStorage.removeItem(UNFINISHED_INPUT(currentChatId));
         } else if (sessionId) {
-          const session = await sdk.chat.getChat(sessionId);
-          if (session) {
-            console.log(`[handleLayoutSubmit] sessionId: ${sessionId}`);
-            const newUserMessage = { sessionState };
-            localStorage.setItem(session.id, JSON.stringify(newUserMessage));
-            localStorage.removeItem(UNFINISHED_INPUT(session.id));
+          chat = await sdk.chat.getChat(sessionId);
+          if (chat?.id) {
+            localStorage.removeItem(UNFINISHED_INPUT(sessionId));
             setContentOpacity(0);
             setTimeout(() => {
               if (typeof window !== "undefined") {
@@ -147,36 +134,41 @@ export default function ChatLayoutContent({
                   "true",
                 );
               }
-              router.replace(`/chat/${session.id}`);
+              router.replace(`/chat/${chat!.id}`);
             }, 400);
-          } else {
-            showSnackbar("Failed to start new chat", "error");
           }
         } else {
-          const createdSession = await sdk.chat.createNewChat(
+          chat = await sdk.chat.createNewChat(
             DEFAULT_TOPIC,
             modelConfig,
             appConfig.customizedPrompts,
           );
           
-          if (createdSession) {
-            const newUserMessage = { sessionState };
-            localStorage.setItem(
-              createdSession.id,
-              JSON.stringify(newUserMessage),
-            );
-            localStorage.removeItem(UNFINISHED_INPUT(createdSession.id));
+          if (chat) {
+            localStorage.removeItem(UNFINISHED_INPUT(chat.id));
 
             setIsNavigatingAway(true);
             setContentOpacity(0);
 
             setTimeout(() => {
-              router.replace(`/chat/${createdSession.id}`);
+              router.replace(`/chat/${chat!.id}`);
             }, 400);
           } else {
             showSnackbar("Failed to start new chat", "error");
           }
         }
+        if (chat) {
+        chat.sendMessage(sessionState.userInput, modelConfig, sessionState.persistedAttachedFiles, {
+          enableSearch: sessionState.enableSearch,
+          onSuccess: () => {
+            console.log(`[handleLayoutSubmit] onSuccess: ${chat}`);
+          },
+          onFailure: (error: Error) => {
+            console.error("[ChatComponent] Failed user input", error);
+            showSnackbar(Locale.Store.Error, "error");
+          },
+        });
+      }
       } catch (error) {
         showSnackbar(Locale.Store.Error, "error");
       } finally {

@@ -9,16 +9,18 @@ import {
   MessageCreateRequest,
   Summary,
   SummaryCreateRequest,
+  ServerModelInfo,
 } from '@/client/types';
 import { mapApiMessagesToChatMessages } from '@/services/api-service';
 import { EncryptionService } from '../EncryptionService';
+
 
 export class ServerStorage implements IStorage {
   private api: ApiService;
   private authManager: AuthManager;
   private bus: EventBus;
   private encryptionService: EncryptionService;
-
+  
   constructor(
     bus: EventBus,
     api: ApiService,
@@ -51,7 +53,7 @@ export class ServerStorage implements IStorage {
           c.title ?? '',
           new Date(c.updated_at).getTime(),
           new Date(c.created_at).getTime(),
-          undefined,
+          c.custom_data?.model_config as ServerModelInfo,
           c.custom_data as CustomizedPromptsData,
         ),
     );
@@ -79,8 +81,8 @@ export class ServerStorage implements IStorage {
         conversation.title ?? '',
         new Date(conversation.updated_at).getTime(),
         new Date(conversation.created_at).getTime(),
-        undefined,
-        conversation.custom_data as CustomizedPromptsData,
+        conversation.custom_data?.model_config as ServerModelInfo,
+        conversation.custom_data,
       );
       chat.title = this.encryptionService.decrypt(chat.encryptedTitle);
       return chat;
@@ -92,12 +94,13 @@ export class ServerStorage implements IStorage {
 
   async createChat(
     title: string,
-    modelConfig?: any,
-    customizedPrompts?: any,
+    modelConfig: ServerModelInfo,
+    customData?: Record<string, any>,
   ): Promise<Chat> {
     const encryptedTitle = this.encryptionService.encrypt(title.trim());
     const newRawChat = await this.api.app.createConversation({
       title: encryptedTitle,
+      custom_data: customData,
     });
     const newChat = new Chat(
       this.bus,
@@ -110,7 +113,7 @@ export class ServerStorage implements IStorage {
       new Date(newRawChat.updated_at).getTime(),
       new Date(newRawChat.created_at).getTime(),
       modelConfig,
-      customizedPrompts,
+      customData,
     );
     newChat.title = this.encryptionService.decrypt(newChat.encryptedTitle);
     return newChat;
@@ -118,6 +121,7 @@ export class ServerStorage implements IStorage {
   async updateChat(chat: Chat): Promise<void> {
     await this.api.app.updateConversation(chat.id, {
       title: chat.encryptedTitle,
+      custom_data: chat.customData,
     });
   }
 
@@ -130,7 +134,6 @@ export class ServerStorage implements IStorage {
     cursor?: string | undefined,
     limit?: number | undefined,
   ): Promise<PaginatedMessages> {
-    console.log("AAAA,aa", this.api)
     const result = await this.api.app.getConversationMessages(chatId as UUID, {
       limit,
       cursor,
@@ -160,8 +163,12 @@ export class ServerStorage implements IStorage {
     await this.api.app.createMessage(chatId as UUID, request);
   }
 
-  async deleteMessage(id: string): Promise<void> {
-    throw new Error('Method not implemented.');
+  async deleteMessage(chatId: string, messageId: string): Promise<void> {
+    await this.api.app.deleteMessages(chatId as UUID, [messageId as UUID]);
+  }
+
+  async deleteMessages(chatId: string, messageIds: UUID[]): Promise<void> {
+    await this.api.app.deleteMessages(chatId as UUID, messageIds);
   }
 
   /* Summaries */
@@ -177,7 +184,7 @@ export class ServerStorage implements IStorage {
     };
     await this.api.app.createSummary(chatId as UUID, summaryCreate);
   }
-  
+
   async deleteSummary(id: string): Promise<void> {
     throw new Error('Method not implemented.');
   }
@@ -189,5 +196,9 @@ export class ServerStorage implements IStorage {
       'ServerStorage.clear() is not implemented, as it is a destructive action.',
     );
     return Promise.resolve();
+  }
+
+  setModels(models: ServerModelInfo[]): void {
+    // this.models = models;
   }
 }

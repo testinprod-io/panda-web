@@ -171,6 +171,7 @@ export interface ConversationCreateRequest {
 
 export interface ConversationUpdateRequest {
   title: string;
+  custom_data?: Record<string, any>;
 }
 
 export interface FileInfo {

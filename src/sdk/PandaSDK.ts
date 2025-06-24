@@ -9,6 +9,7 @@ import { MemoryUserDataStore, UserManager } from './User';
 import { EventBus } from './events';
 import { IStorage } from './storage/i-storage';
 import { ServerStorage } from './storage/server-storage';
+import { ServerModelInfo } from './client/types';
 /**
  * The main entry point for the Panda SDK.
  * This class instantiates and manages all the different modules
@@ -26,6 +27,8 @@ export class PandaSDK {
   public readonly encryption: EncryptionService;
   public readonly user: UserManager;
   
+  public models: ServerModelInfo[] = [];
+
   private readonly storage: IStorage;
   private readonly api: ApiService;
 
@@ -33,7 +36,7 @@ export class PandaSDK {
     this.api = new ApiService(getAccessToken);
 
     this.encryption = new EncryptionService();
-    this.attestation = new AttestationManager(this.api);
+    this.attestation = new AttestationManager(this.api, this.bus);
 
     this.auth = new AuthManager(this.bus, this.api, authProvider, this.encryption);
     
@@ -53,6 +56,10 @@ export class PandaSDK {
       encryptedId,
       customizedPromptsData: customizedPrompts,
     });
+
+    const info = await this.api.app.getInfo();
+    this.models = info.models;
+    this.storage.setModels(this.models);
   }
 
   // You could add global SDK methods here if needed, for example:
