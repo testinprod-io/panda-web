@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
+import Locale from "@/locales";
 
-const TEXT_TO_ANIMATE = "Awesome, from now on, every data you submit will be encrypted using your password.";
+const TEXT_TO_ANIMATE = Locale.Onboarding.Encryption.PasswordCreatedDescription;
 
 export default function PasswordConfirmation() {
   const router = useRouter();
@@ -14,10 +15,7 @@ export default function PasswordConfirmation() {
   const [isButtonHidden, setIsButtonHidden] = useState(true);
 
   const base64Text = useMemo(() => {
-    if (typeof window === "undefined") {
-      return "";
-    }
-    return window.btoa(TEXT_TO_ANIMATE);
+    return Buffer.from(TEXT_TO_ANIMATE, "utf-8").toString("base64");
   }, []);
 
   useEffect(() => {
@@ -112,7 +110,7 @@ export default function PasswordConfirmation() {
               textAlign: "left"
             }}
           >
-            Encryption Password Confirmed
+            {Locale.Onboarding.Encryption.PasswordCreatedTitle}
           </Typography>
 
         <Typography
@@ -161,7 +159,7 @@ export default function PasswordConfirmation() {
               },
             }}
           >
-            Continue
+            {Locale.Onboarding.Encryption.Continue}
           </Button>
         </Box>
       </Box>

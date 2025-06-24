@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Box, TextField, Button } from "@mui/material";
 import { motion } from "framer-motion";
+import Locale from "@/locales";
 
 interface TextInputStepProps {
   placeholder: string;
@@ -133,7 +134,7 @@ export default function TextInputStep({
               },
             }}
           >
-            Continue
+            {Locale.Onboarding.Continue}
           </Button>
           <Button
             type="button"
@@ -148,7 +149,7 @@ export default function TextInputStep({
               fontSize: "16px",
             }}
           >
-            Skip
+            {Locale.Onboarding.Skip}
           </Button>
         </Box>
       </Box>

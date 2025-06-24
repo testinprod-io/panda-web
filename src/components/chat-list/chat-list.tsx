@@ -431,7 +431,7 @@ export function ChatList(props: ChatListProps) {
         sessionsFromStore.length === 0 &&
         !hasMore && ( // Use sessionsFromStore
           <div className={styles["chat-date-header"]}>
-            {"No conversations found"}
+            {Locale.ChatList.NoConversations}
           </div>
         )}
     </div>
