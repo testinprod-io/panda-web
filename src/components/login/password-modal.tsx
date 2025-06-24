@@ -94,7 +94,7 @@ export function PasswordModal({
             setPassword("");
             setError("");
           } else {
-            setError("*Incorrect password");
+            setError(`*${Locale.Error.IncorrectPassword}`);
           }
       
       } catch (err: any) {

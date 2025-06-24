@@ -3,8 +3,10 @@ import type { PartialLocaleType } from "./index";
 const ko: PartialLocaleType = {
   Error: {
     Unauthorized: `😆 문제가 발생했습니다. 괜찮아요`,
+    IncorrectPassword: `비밀번호가 틀렸습니다`,
   },
   Chat: {
+    Tagline: "프라이버시를 지켜주는 AI",
     SubTitle: (count: number) => `${count}개의 메시지`,
     EditMessage: {
       Title: "모든 메시지 수정",
@@ -48,6 +50,7 @@ const ko: PartialLocaleType = {
     },
     Rename: "채팅 이름 바꾸기",
     Typing: "입력 중…",
+    Search: "검색",
     Input: (submitKey: string) => {
       const placeholders = [
         "무엇이든 물어보세요. 기본적으로 암호화됩니다.",

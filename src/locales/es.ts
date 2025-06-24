@@ -1,9 +1,11 @@
 const es = {
   Error: {
     Unauthorized: `😆 Uy, ocurrió un problema. No te preocupes`,
+    IncorrectPassword: `Contraseña incorrecta`,
   },
 
   Chat: {
+    Tagline: "IA que protege tu privacidad",
     SubTitle: (count: number) => `${count} mensajes`,
     EditMessage: {
       Title: "Editar todos los mensajes",
@@ -47,6 +49,7 @@ const es = {
     },
     Rename: "Renombrar chat",
     Typing: "Escribiendo…",
+    Search: "Buscar",
     Input: (_submitKey: string) => {
       const placeholders = [
         "Pregunta lo que quieras. Cifrado por defecto.",

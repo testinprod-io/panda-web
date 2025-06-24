@@ -3,8 +3,10 @@ import { Language, Password } from "@mui/icons-material";
 const en = {
   Error: {
     Unauthorized: `😆 Oops, there's an issue. No worries`,
+    IncorrectPassword: `Incorrect password`,
   },
   Chat: {
+    Tagline: "AI that never watches back",
     SubTitle: (count: number) => `${count} messages`,
     EditMessage: {
       Title: "Edit All Messages",

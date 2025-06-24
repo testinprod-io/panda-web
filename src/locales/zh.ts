@@ -1,9 +1,11 @@
 const zh = {
   Error: {
     Unauthorized: `😆 哎呀，出了点问题，不过不用担心`,
+    IncorrectPassword: `密码错误`,
   },
 
   Chat: {
+    Tagline: "守护隐私的 AI",
     SubTitle: (count: number) => `${count} 条消息`,
     EditMessage: {
       Title: "编辑全部消息",
@@ -47,6 +49,7 @@ const zh = {
     },
     Rename: "重命名聊天",
     Typing: "正在输入…",
+    Search: "搜索",
     Input: (_submitKey: string) => {
       const placeholders = [
         "随便问我任何问题，默认加密。",

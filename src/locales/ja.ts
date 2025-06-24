@@ -1,9 +1,11 @@
 const ja = {
   Error: {
     Unauthorized: `😆 おっと、問題が発生しました。でもご安心ください`,
+    IncorrectPassword: `パスワードが違います`,
   },
 
   Chat: {
+    Tagline: "プライバシーを守るAI",
     SubTitle: (count: number) => `${count} 件のメッセージ`,
     EditMessage: {
       Title: "すべてのメッセージを編集",
@@ -47,6 +49,7 @@ const ja = {
     },
     Rename: "チャット名を変更",
     Typing: "入力中…",
+    Search: "検索",
     Input: (_submitKey: string) => {
       const placeholders = [
         "何でも聞いてください。デフォルトで暗号化されています。",
