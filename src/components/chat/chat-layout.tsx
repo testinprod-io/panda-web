@@ -199,7 +199,8 @@ export default function ChatLayoutContent({
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          height: "100%",
+          height: "100vh",
+          backgroundColor: "var(--bg-primary)",
         }}
       >
         <CircularProgress color="primary" />
@@ -218,10 +219,6 @@ export default function ChatLayoutContent({
       {privyAuthenticated && (
         <>
           {!isMobile && (
-            <Tooltip
-              title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-              placement="right"
-            >
               <IconButton
                 onClick={handleToggleSidebar}
                 className={sidebarStyles.sidebarToggleButton}
@@ -249,7 +246,6 @@ export default function ChatLayoutContent({
                   />
                 )}
               </IconButton>
-            </Tooltip>
           )}
 
           <>
@@ -413,7 +409,7 @@ export default function ChatLayoutContent({
           sx={{
             minWidth: { xs: "auto", md: "460px" },
             textAlign: "center",
-            color: "#646464",
+            color: "var(--text-secondary)",
             fontSize: "14px",
             fontFamily: "Inter",
             fontWeight: "400",
@@ -423,11 +419,31 @@ export default function ChatLayoutContent({
             paddingLeft: "16px",
             paddingRight: "16px",
             boxSizing: "border-box",
-            backgroundColor: "#FFFFFF",
+            backgroundColor: "var(--bg-primary)",
           }}
         >
-          By messaging Panda AI, you agree to <a href="https://testinprod.notion.site/Panda-Alpha-Terms-of-Service-Privacy-Notice-2078fc57f54680349183dde6f0224da8" style={{color: "black", textDecoration: "none", fontWeight: "500"}}>our Terms</a> and 
-          have read <a href="https://testinprod.notion.site/Panda-Alpha-Terms-of-Service-Privacy-Notice-2078fc57f54680349183dde6f0224da8" style={{color: "black", textDecoration: "none", fontWeight: "500"}}>our Privacy Policy</a>
+          {Locale.ChatLayout.Terms1}
+          <a
+            href="https://testinprod.notion.site/Panda-Alpha-Terms-of-Service-Privacy-Notice-2078fc57f54680349183dde6f0224da8"
+            style={{
+              color: "var(--text-primary)",
+              textDecoration: "none",
+              fontWeight: "500",
+            }}
+          >
+            {Locale.ChatLayout.Terms2}
+          </a>
+          {Locale.ChatLayout.Terms3}
+          <a
+            href="https://testinprod.notion.site/Panda-Alpha-Terms-of-Service-Privacy-Notice-2078fc57f54680349183dde6f0224da8"
+            style={{
+              color: "var(--text-primary)",
+              textDecoration: "none",
+              fontWeight: "500",
+            }}
+          >
+            {Locale.ChatLayout.Terms4}
+          </a>
         </Typography>
         </Box>
       </Box>

@@ -38,6 +38,11 @@ import { useUserStore } from "@/store/user";
 import { AuthService } from "@/services/auth-service";
 import { useEncryption } from "@/providers/encryption-provider";
 import { useAttestationStore } from "@/store/attestation";
+import { AllLangs, ALL_LANG_OPTIONS, changeLang, Lang } from "@/locales";
+import { safeLocalStorage } from "@/utils/utils";
+import Locale from "@/locales";
+import clsx from "clsx";
+import { useTheme } from "next-themes";
 
 interface SettingsModalProps {
   open: boolean;
@@ -57,6 +62,20 @@ export default function SettingsModal({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isPromptsModalOpen, setIsPromptsModalOpen] = useState(false);
 
+  const LANG_KEY = "lang";
+  const localStorage = safeLocalStorage();
+  const currentLang = localStorage.getItem(LANG_KEY) ?? "auto";
+
+  const handleLangChange = (event: SelectChangeEvent<string>) => {
+    const newLang = event.target.value;
+    if (newLang === "auto") {
+      localStorage.removeItem(LANG_KEY);
+      location.reload();
+    } else {
+      changeLang(newLang as Lang);
+    }
+  };
+
   const passwordExpirationMinutes =
     useUserStore((state) => state.get<number>("passwordExpirationMinutes")) ?? 0;
 
@@ -69,7 +88,7 @@ export default function SettingsModal({
   const { authenticated, logout } = usePrivy();
   const { clearSessions } = useChatStore();
   const apiClient = useApiClient();
-  const [theme, setTheme] = useState("light");
+  const { theme, setTheme } = useTheme();
   const { lockApp } = useEncryption();
   if (!authenticated) {
     return <div></div>;
@@ -111,26 +130,63 @@ export default function SettingsModal({
   ];
 
   const generalSettingsItems = [
-    // {
-    //   label: "Theme",
-    //   control: (
-    //     <Select
-    //       value={theme}
-    //       onChange={handleThemeChange}
-    //       variant="outlined"
-    //       size="small"
-    //       className={styles.selectControl}
-    //       IconComponent={ExpandMoreIcon}
-    //       MenuProps={{ classes: { paper: styles.selectMenuPaper } }}
-    //     >
-    //       <SelectMenuItem value="light">Light mode</SelectMenuItem>
-    //       <SelectMenuItem value="dark">Dark mode</SelectMenuItem>
-    //       <SelectMenuItem value="system">System</SelectMenuItem>
-    //     </Select>
-    //   ),
-    // },
     {
-      label: "Custom instructions",
+      label: "Theme",
+      control: (
+        <Select
+          value={theme ?? "system"}
+          onChange={handleThemeChange}
+          variant="outlined"
+          size="small"
+          className={styles.selectControl}
+          IconComponent={ExpandMoreIcon}
+          MenuProps={{ classes: { paper: styles.selectMenuPaper } }}
+          sx={{
+            fieldset: {
+              border: "none",
+            },
+            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+              border: "none",
+            },
+          }}
+        >
+          <SelectMenuItem value="light">Light mode</SelectMenuItem>
+          <SelectMenuItem value="dark">Dark mode</SelectMenuItem>
+          <SelectMenuItem value="system">System</SelectMenuItem>
+        </Select>
+      ),
+    },
+    {
+      label: Locale.SettingsModal.Language,
+      control: (
+        <Select
+          value={currentLang}
+          onChange={handleLangChange}
+          variant="outlined"
+          size="small"
+          className={styles.selectControl}
+          IconComponent={ExpandMoreIcon}
+          MenuProps={{ classes: { paper: styles.selectMenuPaper } }}
+          sx={{
+            fieldset: {
+              border: "none",
+            },
+            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+              border: "none",
+            },
+          }}
+        >
+          <SelectMenuItem value="auto">System</SelectMenuItem>
+          {AllLangs.map((lang) => (
+            <SelectMenuItem key={lang} value={lang}>
+              {ALL_LANG_OPTIONS[lang]}
+            </SelectMenuItem>
+          ))}
+        </Select>
+      ),
+    },
+    {
+      label: Locale.SettingsModal.CustomInstructions,
       control: (
         <Button
           variant="text"
@@ -141,7 +197,7 @@ export default function SettingsModal({
       onClick: () => setIsPromptsModalOpen(true),
     },
     {
-      label: "Inactivity Lock Timer",
+      label: Locale.SettingsModal.InactivityLockTimer,
       control: (
         <Select
           value={passwordExpirationMinutes.toString()}
@@ -168,32 +224,8 @@ export default function SettingsModal({
         </Select>
       ),
     },
-    // {
-    //   label: "Archive chats",
-    //   control: (
-    //     <Button
-    //       variant="outlined"
-    //       className={styles.actionButton}
-    //       onClick={() => console.log("Manage Archive chats clicked")}
-    //     >
-    //       Manage
-    //     </Button>
-    //   ),
-    // },
-    // {
-    //   label: "Archive all chats",
-    //   control: (
-    //     <Button
-    //       variant="outlined"
-    //       className={styles.actionButton}
-    //       onClick={() => console.log("Archive all chats clicked")}
-    //     >
-    //       Archive all
-    //     </Button>
-    //   ),
-    // },
     {
-      label: "Delete all chats",
+      label: Locale.SettingsModal.DeleteAllChats,
       control: (
         <Button
           variant="contained"
@@ -202,19 +234,19 @@ export default function SettingsModal({
           sx={{ boxShadow: "0px" }}
           disableElevation={true}
         >
-          Delete
+          {Locale.SettingsModal.Delete}
         </Button>
       ),
     },
     {
-      label: "Log out on this device",
+      label: Locale.SettingsModal.LogoutTitle,
       control: (
         <Button
           variant="outlined"
           className={styles.actionButton}
           onClick={handleLogOut}
         >
-          Log out
+          {Locale.SettingsModal.Logout}
         </Button>
       ),
     },
@@ -261,7 +293,7 @@ export default function SettingsModal({
               component="h2"
               className={styles.title}
             >
-              Settings
+              {Locale.SettingsModal.Settings}
             </Typography>
             <IconButton
               aria-label="close settings"
@@ -273,6 +305,7 @@ export default function SettingsModal({
           </Box>
 
           <Divider className={styles.divider} />
+
 
           <Box className={styles.mainArea}>
             <Box className={styles.leftNav}>
@@ -288,7 +321,7 @@ export default function SettingsModal({
                   <ListItemIcon className={styles.navItemIcon}>
                     <SettingsIcon fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText className={styles.navItemText} primary="General" />
+                  <ListItemText className={styles.navItemText} primary={Locale.SettingsModal.General} />
                 </ListItemButton>
                 <ListItemButton
                   selected={activeNavSection === "faq"}
@@ -301,7 +334,7 @@ export default function SettingsModal({
                   <ListItemIcon className={styles.navItemIcon}>
                     <HelpOutlineIcon fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText className={styles.navItemText} primary="Help & FAQ" />
+                  <ListItemText className={styles.navItemText} primary={Locale.SettingsModal.Help} />
                 </ListItemButton>
               </List>
             </Box>
@@ -309,8 +342,8 @@ export default function SettingsModal({
               {activeNavSection === "general" && renderContent()}
               {activeNavSection === "faq" && (
                 <Box>
-                  <Typography fontSize={24} fontWeight={600} fontFamily={"Inter"}>Help & FAQ</Typography>
-                  <p>
+                  <Typography fontSize={24} fontWeight={600} fontFamily={"Inter"}>{Locale.SettingsModal.Help}</Typography>
+                  <br />
                   <Typography>
                     <a href="https://testinprod.notion.site/Private-Alpha-One-Pager-1ff8fc57f54680d0aa08ce7b8013948a" className={styles.FAQText}>- Private Alpha One Pager</a>
                   </Typography>
@@ -320,7 +353,6 @@ export default function SettingsModal({
                   <Typography>
                     <a href="https://testinprod.notion.site/Panda-Tips-Guides-2148fc57f54680f982b3d32973d20314" className={styles.FAQText}>- Panda Tips & Guides</a>
                   </Typography>
-                  </p>
                 </Box>
               )}
             </Box>
@@ -369,21 +401,20 @@ export default function SettingsModal({
           id="alert-dialog-title"
           className={styles.confirmDialogTitleContainer}
         >
-          <div className={styles.confirmDialogTitle}>Clear chat data</div>
+          <div className={styles.confirmDialogTitle}>{Locale.SettingsModal.ClearChatData}</div>
         </DialogTitle>
         <DialogContent className={styles.confirmDialogContent} sx={{ padding: "0px 24px 16px 20px" }}>
           <DialogContentText
             id="alert-dialog-description-primary"
             className={styles.confirmDialogContentTextPrimary}
           >
-            This will delete all Chat.
+            {Locale.SettingsModal.ClearChatDataDescription}
           </DialogContentText>
           <DialogContentText
             id="alert-dialog-description-secondary"
             className={styles.confirmDialogContentTextSecondary}
           >
-            Your messages are not used for training purposes and cannot be
-            recovered, even if you choose not to reset your chat data.
+            {Locale.SettingsModal.ClearChatDataDescription2}
           </DialogContentText>
         </DialogContent>
         <DialogActions className={styles.confirmDialogActions} sx={{ padding: "0px 12px 16px 16px"}}>
@@ -391,21 +422,17 @@ export default function SettingsModal({
             onClick={() => setDeleteConfirmOpen(false)}
             className={styles.confirmDialogButton}
           >
-            Cancel
+            {Locale.SettingsModal.Cancel}
           </Button>
           <Button
             onClick={confirmDeleteAllChats}
             className={styles.confirmDialogButtonDelete}
             autoFocus
           >
-            Delete
+            {Locale.SettingsModal.Delete}
           </Button>
         </DialogActions>
       </Dialog>
     </>
   );
-}
-
-function clsx(...classes: (string | boolean | undefined | null)[]) {
-  return classes.filter(Boolean).join(" ");
 }

@@ -13,17 +13,18 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
 import { AuthService } from "@/services/auth-service";
 import { useEncryption } from "@/providers/encryption-provider";
+import Locale from "@/locales";
 
 const MODAL_CONFIG = {
-    iconSrc: "/icons/rounded-logo.svg",
+    iconSrc: "/icons/icon-white.svg",
     iconAlt: "Lock Icon",
     // iconBackgroundColor: "#F33D4F",
     // iconFilter:
     //   "invert(100%) sepia(0%) saturate(7500%) hue-rotate(137deg) brightness(118%) contrast(91%)",
-    title: "Unlock Panda",
-    description: "Unlock and experience encrypted chat that fully protects your privacy.",
-    submitButtonText: "Unlock",
-    textFieldPlaceholder: "Password",
+    title: Locale.PasswordModal.Title,
+    description: Locale.PasswordModal.Description,
+    submitButtonText: Locale.PasswordModal.Submit,
+    textFieldPlaceholder: Locale.PasswordModal.Placeholder,
     getDynamicError: (_password: string) => "",
     validateSubmit: (password: string) => {
       if (!password) {
@@ -93,7 +94,7 @@ export function PasswordModal({
             setPassword("");
             setError("");
           } else {
-            setError("*Incorrect password");
+            setError(`*${Locale.Error.IncorrectPassword}`);
           }
       
       } catch (err: any) {
@@ -129,14 +130,14 @@ export function PasswordModal({
       onClose={onClose}
       BackdropProps={{
         style: {
-          backgroundColor: "rgba(0, 0, 0, 0.6)",
+          // backgroundColor: "rgba(0, 0, 0, 0.6)",
           backdropFilter: "blur(5px)",
           WebkitBackdropFilter: "blur(5px)",
         },
       }}
       PaperProps={{
         sx: {
-          backgroundColor: "#FFFFFF",
+          backgroundColor: "var(--bg-primary)",
           borderRadius: "8px",
           paddingTop: { xs: "24px", sm: "40px" },
           paddingBottom: { xs: "24px", sm: "40px" },
@@ -192,7 +193,7 @@ export function PasswordModal({
               variant="h5"
               component="div"
               sx={{
-                color: "#131A28",
+                color: "var(--text-primary)",
                 fontSize: "24px",
                 fontFamily: "Inter, sans-serif",
                 fontWeight: "600",
@@ -206,7 +207,7 @@ export function PasswordModal({
             <Typography
               variant="body1"
               sx={{
-                color: "#131A28",
+                color: "var(--text-primary)",
                 fontSize: "16px",
                 fontFamily: "Inter, sans-serif",
                 fontWeight: "400",
@@ -259,11 +260,11 @@ export function PasswordModal({
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: "8px",
-                backgroundColor: "white",
+                // backgroundColor: "white",
                 height: "40px",
                 fontFamily: "Inter, sans-serif",
                 "& fieldset": {
-                  borderColor: "#CACACA",
+                  borderColor: "var(--border-primary)",
                 },
                 "&:hover fieldset": {
                   borderColor: "#A0A0A0",
@@ -279,13 +280,14 @@ export function PasswordModal({
                 width: "100% !important",
                 padding: "0 14px",
                 height: "100%",
-                color: "#131A28",
+                backgroundColor: "var(--bg-secondary)",
+                color: "var(--text-primary)",
                 fontSize: "16px",
                 fontFamily: "Inter, sans-serif",
                 fontWeight: "400",
                 "&::placeholder": {
                   opacity: 1,
-                  color: "#CACACA",
+                  color: "var(--text-secondary)",
                 },
               },
             }}
@@ -298,8 +300,8 @@ export function PasswordModal({
               fullWidth
               sx={{
                 height: "48px",
-                background: !isSubmitButtonDisabled ? "#131A28" : "#F3F3F3",
-                color: !isSubmitButtonDisabled ? "#C1FF83" : "#CACACA",
+                background: !isSubmitButtonDisabled ? "var(--icon-primary)" : "var(--bg-tertiary)",
+                color: !isSubmitButtonDisabled ? "var(--white)" : "var(--text-secondary)",
                 borderRadius: "24px",
                 padding: "0 10px",
                 textTransform: "none",
@@ -308,12 +310,12 @@ export function PasswordModal({
                 fontWeight: "600",
                 boxShadow: "none",
                 "&:hover": {
-                  background: !isSubmitButtonDisabled ? "#131A28" : "#F3F3F3",
+                  background: !isSubmitButtonDisabled ? "var(--icon-primary)" : "var(--bg-tertiary)",
                   boxShadow: "none",
                 },
                 "&.Mui-disabled": {
-                  background: "#F3F3F3",
-                  color: "#CACACA",
+                  background: "var(--bg-secondary)",
+                  color: "var(--text-disabled)",
                 },
                 marginTop: "12px",
               }}
@@ -343,7 +345,7 @@ export function PasswordModal({
             }}
             onClick={handleLogOut}
           >
-            {"Log out"}
+            {Locale.PasswordModal.Logout}
           </Button>
         </DialogActions>
       </Box>

@@ -30,6 +30,10 @@ import { AttestationResult } from "@/types/attestation";
 import { AuthService } from "@/services/auth-service";
 import { useEncryption } from "@/providers/encryption-provider";
 import { useApiClient } from "@/providers/api-client-provider";
+import Locale from "@/locales";
+import HelpIcon from "@/public/icons/help.svg";
+import SettingsIcon from "@/public/icons/settings.svg";
+import LogoutIcon from "@/public/icons/logout.svg";
 
 interface ChatHeaderProps {
   currentChatId?: string; 
@@ -241,7 +245,7 @@ export default function ChatHeader({
               >
                 <img
                   src="/icons/sidebar.svg"
-                  alt="Reveal Sidebar"
+                  alt={Locale.ChatHeader.RevealSidebar}
                   className={styles.headerActionIconImg}
                 />
               </IconButton>
@@ -253,8 +257,7 @@ export default function ChatHeader({
               >
                 <img
                   src="/icons/new-chat.svg"
-                  // style={{ filter: "invert(100%) sepia(0%) saturate(7500%) hue-rotate(137deg) brightness(118%) contrast(91%)" }}
-                  alt="New Chat"
+                  alt={Locale.ChatHeader.NewChat}
                   className={styles.headerActionIconImg}
                 />
               </IconButton>
@@ -437,14 +440,10 @@ export default function ChatHeader({
                 className={styles.profileMenuItem}
               >
                 <ListItemIcon className={styles.profileMenuItemIconWrapper}>
-                  <img
-                    src="/icons/help.svg"
-                    alt="Help & FAQ"
-                    className={styles.profileMenuIcon}
-                  />
+                  <HelpIcon className={styles.profileMenuIcon} />
                 </ListItemIcon>
                 <ListItemText
-                  primary="Help & FAQ"
+                  primary={Locale.ProfileMenu.Help}
                   className={styles.profileMenuTextItem}
                 />
               </MenuItem>
@@ -455,14 +454,10 @@ export default function ChatHeader({
                 className={styles.profileMenuItem}
               >
                 <ListItemIcon className={styles.profileMenuItemIconWrapper}>
-                  <img
-                    src="/icons/settings.svg"
-                    alt="Settings"
-                    className={styles.profileMenuIcon}
-                  />
+                  <SettingsIcon className={styles.profileMenuIcon} />
                 </ListItemIcon>
                 <ListItemText
-                  primary="Settings"
+                  primary={Locale.ProfileMenu.Settings}
                   className={styles.profileMenuTextItem}
                 />
               </MenuItem>
@@ -471,14 +466,10 @@ export default function ChatHeader({
                 className={styles.profileMenuItem}
               >
                 <ListItemIcon className={styles.profileMenuItemIconWrapper}>
-                  <img
-                    src="/icons/logout.svg"
-                    alt="Logout"
-                    className={styles.profileMenuIcon}
-                  />
+                  <LogoutIcon className={styles.profileMenuIcon} />
                 </ListItemIcon>
                 <ListItemText
-                  primary="Log out"
+                  primary={Locale.ProfileMenu.Logout}
                   className={styles.profileMenuTextItem}
                 />
               </MenuItem>

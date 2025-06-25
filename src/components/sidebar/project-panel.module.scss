@@ -19,7 +19,7 @@
   justify-content: center;
   display: flex;
   flex-direction: column;
-  color: #979797;
+  color: var(--text-secondary);
   font-size: 14px;
   font-family: 'Inter', sans-serif;
   font-weight: 600;
@@ -37,7 +37,7 @@
   border-radius: 8px;
 
   &:hover {
-    background-color: #F3F3F3;
+    background-color: var(--bg-secondary);
   }
 }
 
@@ -62,13 +62,19 @@
 .newChatIcon {
   width: 20px;
   height: 20px;
+  color: var(--icon-primary);
+  svg {
+    color: var(--icon-primary);
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .newChatText {
   justify-content: center;
   display: flex;
   flex-direction: column;
-  color: var(--Colors-Neutral-grey-800, #1E1E1E);
+  color: var(--text-primary);
   font-size: 16px;
   font-family: 'Inter';
   font-weight: 500;

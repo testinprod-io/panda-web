@@ -8,6 +8,8 @@ import { useEncryption } from "@/providers/encryption-provider";
 import { useSnackbar } from "@/providers/snackbar-provider";
 import { AuthService } from "@/services/auth-service";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
+import Locale from "@/locales";
+import Image from "next/image";
 // import { useForm } from "react-hook-form";
 
 const MIN_PASSWORD_LENGTH = 10;
@@ -40,13 +42,13 @@ export default function CreatePassword() {
     setPassword(newPassword);
 
     if (newPassword && (newPassword.length < MIN_PASSWORD_LENGTH || newPassword.length > MAX_PASSWORD_LENGTH)) {
-      setPasswordError(`Password must be ${MIN_PASSWORD_LENGTH}–${MAX_PASSWORD_LENGTH} characters.`);
+      setPasswordError(Locale.Onboarding.Encryption.PasswordLengthMismatch(MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH));
     } else {
       setPasswordError("");
     }
     
     if (confirmPassword && newPassword !== confirmPassword) {
-      setConfirmPasswordError("Passwords do not match.");
+      setConfirmPasswordError(Locale.Onboarding.Encryption.PasswordMismatch);
     } else {
       setConfirmPasswordError("");
     }
@@ -57,7 +59,7 @@ export default function CreatePassword() {
     setConfirmPassword(newConfirmPassword);
 
     if (password !== newConfirmPassword) {
-      setConfirmPasswordError("Passwords do not match.");
+      setConfirmPasswordError(Locale.Onboarding.Encryption.PasswordMismatch);
     } else {
       setConfirmPasswordError("");
     }
@@ -75,21 +77,15 @@ export default function CreatePassword() {
       event.preventDefault();
 
       let hasError = false;
-      if (!password) {
-        setPasswordError("Password cannot be empty.");
-        hasError = true;
-      } else if (password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
-        setPasswordError(`Password must be ${MIN_PASSWORD_LENGTH}–${MAX_PASSWORD_LENGTH} characters.`);
+      if (password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
+        setPasswordError(Locale.Onboarding.Encryption.PasswordLengthMismatch(MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH));
         hasError = true;
       } else {
         setPasswordError("");
       }
 
-      if (!confirmPassword) {
-        setConfirmPasswordError("Password cannot be empty.");
-        hasError = true;
-      } else if (password !== confirmPassword) {
-        setConfirmPasswordError("Passwords do not match.");
+      if (password !== confirmPassword) {
+        setConfirmPasswordError(Locale.Onboarding.Encryption.PasswordMismatch);
         hasError = true;
       } else {
         setConfirmPasswordError("");
@@ -137,8 +133,37 @@ export default function CreatePassword() {
       }}
     >
       <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', maxWidth: '410px', marginRight: 'auto', mb: 10 }}>
-        <img src="/icons/inverse-icon.svg" alt="Panda AI Logo" width={40} height={40} />
-        <Typography fontSize="24px" fontWeight="600" color="#131A28" marginLeft="12px">
+        <Box
+          sx={{
+            display: "block",
+            ".dark &": {
+              display: "none",
+            },
+          }}
+        >
+          <Image
+            src="/icons/inverse-icon.svg"
+            alt="Panda AI Logo"
+            width={40}
+            height={40}
+          />
+        </Box>
+        <Box
+          sx={{
+            display: "none",
+            ".dark &": {
+              display: "block",
+            },
+          }}
+        >
+          <Image
+            src="/icons/icon-white.svg"
+            alt="Panda AI Logo"
+            width={40}
+            height={40}
+          />
+        </Box>
+        <Typography fontSize="24px" fontWeight="600" color="var(--text-primary)" marginLeft="12px">
           Panda
         </Typography>
       </Box>
@@ -166,19 +191,19 @@ export default function CreatePassword() {
             variant="h5"
             component="div"
             sx={{
-              color: "#131A28",
+              color: "var(--text-primary)",
               fontSize: "24px",
               fontFamily: "Inter, sans-serif",
               fontWeight: "600",
               textAlign: "left"
             }}
           >
-            Create Encryption Password
+            {Locale.Onboarding.Encryption.Title}
           </Typography>
           <Typography
             variant="body1"
             sx={{
-              color: "#131A28",
+              color: "var(--text-primary)",
               fontSize: "16px",
               fontFamily: "Inter, sans-serif",
               fontWeight: "500",
@@ -186,7 +211,7 @@ export default function CreatePassword() {
               marginTop: "24px"
             }}
           >
-            To protect your chat data, set a password. If you forget it, you'll need to reset the service, which will permanently delete all data.
+            {Locale.Onboarding.Encryption.Description}
           </Typography>
         </Box>
 
@@ -211,7 +236,7 @@ export default function CreatePassword() {
             value={password}
             onChange={handlePasswordChange}
             error={!!passwordError}
-            placeholder={`Enter ${MIN_PASSWORD_LENGTH}–${MAX_PASSWORD_LENGTH} characters.`}
+            placeholder={Locale.Onboarding.Encryption.Placeholder(MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH)}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
@@ -233,7 +258,7 @@ export default function CreatePassword() {
 
               "& .MuiOutlinedInput-root": {
                 borderRadius: "8px",
-                backgroundColor: "white",
+                backgroundColor: "var(--bg-primary)",
                 height: "48px",
                 fontFamily: "Inter, sans-serif",
                 border: "none",
@@ -249,12 +274,13 @@ export default function CreatePassword() {
                 width: "100% !important",
                 padding: "0 14px",
                 height: "100%",
-                color: "#131A28",
+                color: "var(--text-primary)",
                 fontSize: "16px",
                 fontFamily: "Inter, sans-serif",
                 fontWeight: "400",
                 border: "none",
-                "&::placeholder": { opacity: 1, color: "#CACACA" },
+                "&::placeholder": { opacity: 1, color: "var(--text-secondary)" },
+                backgroundColor: "var(--bg-primary)",
               },
             }}
           />
@@ -283,7 +309,7 @@ export default function CreatePassword() {
             value={confirmPassword}
             onChange={handleConfirmPasswordChange}
             error={!!confirmPasswordError}
-            placeholder="Confirm password"
+            placeholder={Locale.Onboarding.Encryption.ConfirmPlaceholder}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
@@ -305,7 +331,7 @@ export default function CreatePassword() {
 
               "& .MuiOutlinedInput-root": {
                 borderRadius: "8px",
-                backgroundColor: "white",
+                backgroundColor: "var(--bg-primary)",
                 height: "48px",
                 fontFamily: "Inter, sans-serif",
                 border: "none",
@@ -321,12 +347,13 @@ export default function CreatePassword() {
                 width: "100% !important",
                 padding: "0 14px",
                 height: "100%",
-                color: "#131A28",
+                color: "var(--text-primary)",
                 fontSize: "16px",
                 fontFamily: "Inter, sans-serif",
                 fontWeight: "400",
                 border: "none",
-                "&::placeholder": { opacity: 1, color: "#CACACA" },
+                backgroundColor: "var(--bg-primary)",
+                "&::placeholder": { opacity: 1, color: "var(--text-secondary)" },
               },
               marginTop: "12px",
             }}
@@ -372,7 +399,7 @@ export default function CreatePassword() {
               },
             }}
           >
-            Confirm
+            {Locale.Onboarding.Encryption.Confirm}
           </Button>
 
           {/* <Button
