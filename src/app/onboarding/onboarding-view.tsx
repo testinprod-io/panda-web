@@ -15,6 +15,7 @@ import TextInputStep from "@/components/onboarding/TextInputStep";
 import TraitsStepView from "@/components/onboarding/TraitsStepView";
 import StreamingText from "@/components/onboarding/StreamingText";
 import Locale from "@/locales";
+import Image from "next/image";
 
 const STEPS = ["intro", "name", "role", "traits", "knowledge"];
 
@@ -127,8 +128,8 @@ export default function OnboardingView() {
           justifyContent: "center",
           alignItems: "center",
           height: "100vh",
-          backgroundColor: "#FFFFFF",
-          color: "#1E1E1E",
+          backgroundColor: "var(--bg-primary)",
+          color: "var(--text-primary)",
         }}
       >
         <Box
@@ -276,8 +277,8 @@ export default function OnboardingView() {
         display: "flex",
         flexDirection: "column",
         height: "100vh",
-        backgroundColor: "#FFFFFF",
-        color: "#1E1E1E",
+        backgroundColor: "var(--bg-primary)",
+        color: "var(--text-primary)",
       }}
     >
       <Box
@@ -303,16 +304,40 @@ export default function OnboardingView() {
             marginBottom: "80px",
           }}
         >
-          <img
-            src="/icons/inverse-icon.svg"
-            alt="Panda AI Logo"
-            width={40}
-            height={40}
-          />
+          <Box
+            sx={{
+              display: "block",
+              ".dark &": {
+                display: "none",
+              },
+            }}
+          >
+            <Image
+              src="/icons/inverse-icon.svg"
+              alt="Panda AI Logo"
+              width={40}
+              height={40}
+            />
+          </Box>
+          <Box
+            sx={{
+              display: "none",
+              ".dark &": {
+                display: "block",
+              },
+            }}
+          >
+            <Image
+              src="/icons/icon-white.svg"
+              alt="Panda AI Logo"
+              width={40}
+              height={40}
+            />
+          </Box>
           <Typography
             fontSize="24px"
             fontWeight="600"
-            color="#131A28"
+            color="var(--text-primary)"
             marginLeft="12px"
           >
             Panda

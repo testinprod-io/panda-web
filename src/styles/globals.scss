@@ -3,99 +3,12 @@
 
 @import "@/styles/animation.scss";
 @import "@/styles/window.scss";
+@import "@/styles/theme.scss";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@mixin light {
-  --theme: light;
-
-  /* color */
-  --white: white;
-  --black: rgb(17, 24, 39);
-  --gray: rgb(249, 250, 251);
-  --primary: var(--black);
-  --second: var(--white);
-  --hover-color: rgb(243, 244, 246);
-  --bar-color: rgba(0, 0, 0, 0.1);
-  --theme-color: var(--bg-primary);
-
-  /* shadow */
-  --shadow: 0px 10px 30px rgba(0, 0, 0, 0.07);
-  --card-shadow: 0px 1px 3px rgba(0, 0, 0, 0.05), 0px 1px 2px rgba(0, 0, 0, 0.06);
-
-  /* stroke */
-  --border-in-light: 1px solid var(--border-primary);
-
-  /* Added variables */
-  --text-primary: var(--black);
-  --text-secondary: rgb(75, 85, 99);
-  --text-disabled: rgb(156, 163, 175);
-  --bg-primary: rgb(249, 250, 251);
-  --bg-secondary: rgb(243, 244, 246);
-  --bg-tertiary: rgb(229, 231, 235);
-  --border-primary: rgb(229, 231, 235);
-  --border-secondary: rgb(209, 213, 219);
-  --icon-primary: var(--black);
-  --icon-secondary: var(--text-secondary);
-  --action-primary: var(--black);
-  --action-primary-hover: var(--text-secondary);
-}
-
-@mixin dark {
-  --theme: dark;
-
-  /* color */
-  --white: rgb(31, 41, 55);
-  --black: rgb(243, 244, 246);
-  --gray: rgb(17, 24, 39);
-  --primary: var(--black);
-  --second: var(--bg-secondary);
-  --hover-color: rgb(55, 65, 81);
-  --bar-color: rgba(255, 255, 255, 0.15);
-
-  /* shadow - dark mode usually has less prominent shadows */
-  --shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
-  --card-shadow: 0px 1px 2px rgba(0, 0, 0, 0.15), 0px 1px 1px rgba(0, 0, 0, 0.1);
-
-  /* stroke */
-  --border-in-light: 1px solid var(--border-primary);
-
-  /* Added/Adjusted variables */
-  --text-primary: var(--black);
-  --text-secondary: rgb(156, 163, 175);
-  --text-disabled: rgb(107, 114, 128);
-  --bg-primary: rgb(17, 24, 39);
-  --bg-secondary: rgb(31, 41, 55);
-  --bg-tertiary: rgb(55, 65, 81);
-  --border-primary: rgb(55, 65, 81);
-  --border-secondary: rgb(75, 85, 99);
-  --icon-primary: var(--black);
-  --icon-secondary: var(--text-secondary);
-  --action-primary: var(--black);
-  --action-primary-hover: var(--text-secondary);
-
-  --theme-color: var(--bg-primary);
-
-  div:not(.no-dark) > svg {
-    filter: none;
-  }
-}
-
-.light {
-  @include light;
-}
-
-.dark {
-  @include dark;
-}
-
-.mask {
-  filter: invert(0.8);
-}
-
 :root {
-  @include light;
 
   --sidebar-width: 256px;
   --window-width: 100vw;
@@ -119,24 +32,6 @@
   }
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    @include light;
-  }
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    @include light;
-  }
-}
-
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  font-family: "Roboto", "Noto Sans", "SF Pro SC", "SF Pro Text", "SF Pro Icons", "PingFang SC", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
-}
 
 body {
   min-height: 100%;

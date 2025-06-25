@@ -41,6 +41,8 @@ import { useAttestationStore } from "@/store/attestation";
 import { AllLangs, ALL_LANG_OPTIONS, changeLang, Lang } from "@/locales";
 import { safeLocalStorage } from "@/utils/utils";
 import Locale from "@/locales";
+import clsx from "clsx";
+import { useTheme } from "next-themes";
 
 interface SettingsModalProps {
   open: boolean;
@@ -86,7 +88,7 @@ export default function SettingsModal({
   const { authenticated, logout } = usePrivy();
   const { clearSessions } = useChatStore();
   const apiClient = useApiClient();
-  const [theme, setTheme] = useState("light");
+  const { theme, setTheme } = useTheme();
   const { lockApp } = useEncryption();
   if (!authenticated) {
     return <div></div>;
@@ -128,6 +130,32 @@ export default function SettingsModal({
   ];
 
   const generalSettingsItems = [
+    {
+      label: "Theme",
+      control: (
+        <Select
+          value={theme ?? "system"}
+          onChange={handleThemeChange}
+          variant="outlined"
+          size="small"
+          className={styles.selectControl}
+          IconComponent={ExpandMoreIcon}
+          MenuProps={{ classes: { paper: styles.selectMenuPaper } }}
+          sx={{
+            fieldset: {
+              border: "none",
+            },
+            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+              border: "none",
+            },
+          }}
+        >
+          <SelectMenuItem value="light">Light mode</SelectMenuItem>
+          <SelectMenuItem value="dark">Dark mode</SelectMenuItem>
+          <SelectMenuItem value="system">System</SelectMenuItem>
+        </Select>
+      ),
+    },
     {
       label: Locale.SettingsModal.Language,
       control: (
@@ -278,6 +306,7 @@ export default function SettingsModal({
 
           <Divider className={styles.divider} />
 
+
           <Box className={styles.mainArea}>
             <Box className={styles.leftNav}>
               <List component="nav">
@@ -314,7 +343,7 @@ export default function SettingsModal({
               {activeNavSection === "faq" && (
                 <Box>
                   <Typography fontSize={24} fontWeight={600} fontFamily={"Inter"}>{Locale.SettingsModal.Help}</Typography>
-                  <p>
+                  <br />
                   <Typography>
                     <a href="https://testinprod.notion.site/Private-Alpha-One-Pager-1ff8fc57f54680d0aa08ce7b8013948a" className={styles.FAQText}>- Private Alpha One Pager</a>
                   </Typography>
@@ -324,7 +353,6 @@ export default function SettingsModal({
                   <Typography>
                     <a href="https://testinprod.notion.site/Panda-Tips-Guides-2148fc57f54680f982b3d32973d20314" className={styles.FAQText}>- Panda Tips & Guides</a>
                   </Typography>
-                  </p>
                 </Box>
               )}
             </Box>
@@ -407,8 +435,4 @@ export default function SettingsModal({
       </Dialog>
     </>
   );
-}
-
-function clsx(...classes: (string | boolean | undefined | null)[]) {
-  return classes.filter(Boolean).join(" ");
 }

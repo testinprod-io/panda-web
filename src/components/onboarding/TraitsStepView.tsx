@@ -94,13 +94,14 @@ export default function TraitsStepView({
           style={{
             display: "flex",
             alignItems: "center",
-            backgroundColor: "#FFFFFF",
+            backgroundColor: "var(--bg-primary)",
             borderRadius: "16px",
             padding: "8px 12px",
             width: "100%",
-            boxShadow: isFocused
-              ? "0 2px 5px rgba(0, 0, 0, 0.2), 0 0 0 2px #000000"
-              : "0 2px 5px rgba(0, 0, 0, 0.2)",
+            border: isFocused ? "1px solid var(--border-primary)" : "1px solid var(--border-secondary)",
+            // boxShadow: isFocused
+            //   ? "0 2px 5px rgba(0, 0, 0, 0.2), 0 0 0 2px #000000"
+            //   : "0 2px 5px rgba(0, 0, 0, 0.2)",
             transition: "box-shadow 0.2s ease-in-out",
           }}
         >
@@ -115,7 +116,7 @@ export default function TraitsStepView({
               marginRight: "12px",
               fontWeight: "bold",
               fontSize: "1rem",
-              color: "#1E1E1E",
+              color: "var(--text-primary)",
             }}
           >
             {avatarInitial}
@@ -138,17 +139,19 @@ export default function TraitsStepView({
             onBlur={() => setIsFocused(false)}
             sx={{
               "& .MuiOutlinedInput-root": {
-                color: "#1E1E1E",
+                color: "var(--text-primary)",
                 fontSize: "1rem",
                 "& fieldset": {
                   border: "none",
                 },
+                backgroundColor: "var(--bg-primary)",
               },
               "& .MuiOutlinedInput-input::placeholder": {
-                color: "#8a8a8a",
+                color: "var(--text-secondary)",
               },
               "& .MuiOutlinedInput-input": {
                 border: "none",
+                backgroundColor: "var(--bg-primary)",
               },
             }}
             autoFocus
@@ -169,17 +172,17 @@ export default function TraitsStepView({
               onClick={() => handleTraitToggle(trait.label)}
               sx={{
                 borderRadius: "48px",
-                border: "1px solid #cacaca",
-                borderColor: selectedTraits.has(trait.label) ? "#1976d2" : "#cacaca",
+                border: "1px solid var(--border-secondary)",
+                borderColor: selectedTraits.has(trait.label) ? "var(--border-primary)" : "var(--border-secondary)",
                 fontSize: "15px",
                 fontWeight: "500",
                 lineHeight: "32px",
                 padding: "4px 8px",
-                backgroundColor: selectedTraits.has(trait.label) ? "#e3f2fd" : "white",
-                color: selectedTraits.has(trait.label) ? "#1976d2" : "#1e1e1e",
+                backgroundColor: selectedTraits.has(trait.label) ? "var(--bg-secondary)" : "var(--bg-primary)",
+                color: selectedTraits.has(trait.label) ? "var(--text-primary)" : "var(--text-secondary)",
                 "&:hover": {
-                  borderColor: "#757575",
-                  backgroundColor: "#f5f5f5",
+                  borderColor: "var(--border-primary)",
+                  backgroundColor: "var(--bg-secondary)",
                 },
               }}
               variant={selectedTraits.has(trait.label) ? "filled" : "outlined"}
@@ -200,6 +203,10 @@ export default function TraitsStepView({
               borderRadius: "8px",
               textTransform: "none",
               fontSize: "16px",
+              "&:disabled": {
+                backgroundColor: "var(--bg-secondary)",
+                color: "var(--text-disabled)",
+              },
             }}
           >
             {Locale.Onboarding.Continue}

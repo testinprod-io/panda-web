@@ -191,7 +191,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
       <div className={styles["chat-message-header"]}>
           {!isUser && (streaming ? (
             <div className={styles["chat-message-avatar"]}>
-              <CircularProgress size={32} sx={{ color: "black" }} />
+              <CircularProgress size={32} sx={{ color: "var(--icon-primary)" }} />
             </div>
           ) : (
             <div className={styles["chat-message-avatar"]} style={{ backgroundColor: "#020202", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "16px" }}>

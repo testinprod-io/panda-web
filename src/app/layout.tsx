@@ -19,6 +19,10 @@ const montserrat = Montserrat({
 export const metadata = {
   title: "Panda",
   description: "Your private AI assistant",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },
+    { media: "(prefers-color-scheme: dark)", color: "#292929" },
+  ],
 };
 
 export default function RootLayout({
@@ -27,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={clsx(inter.className, montserrat.className)}>
         <Providers>
           <React.Suspense fallback={<div></div>}>
