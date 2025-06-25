@@ -310,7 +310,7 @@ export function PasswordModal({
                 fontWeight: "600",
                 boxShadow: "none",
                 "&:hover": {
-                  background: !isSubmitButtonDisabled ? "#131A28" : "#F3F3F3",
+                  background: !isSubmitButtonDisabled ? "var(--icon-primary)" : "var(--bg-tertiary)",
                   boxShadow: "none",
                 },
                 "&.Mui-disabled": {

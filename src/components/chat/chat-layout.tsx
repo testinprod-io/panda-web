@@ -199,7 +199,7 @@ export default function ChatLayoutContent({
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          height: "100%",
+          height: "100vh",
           backgroundColor: "var(--bg-primary)",
         }}
       >
@@ -419,7 +419,7 @@ export default function ChatLayoutContent({
             paddingLeft: "16px",
             paddingRight: "16px",
             boxSizing: "border-box",
-            backgroundColor: "#FFFFFF",
+            backgroundColor: "var(--bg-primary)",
           }}
         >
           {Locale.ChatLayout.Terms1}

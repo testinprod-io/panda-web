@@ -42,6 +42,7 @@ import { AllLangs, ALL_LANG_OPTIONS, changeLang, Lang } from "@/locales";
 import { safeLocalStorage } from "@/utils/utils";
 import Locale from "@/locales";
 import clsx from "clsx";
+import { useTheme } from "next-themes";
 
 interface SettingsModalProps {
   open: boolean;
@@ -87,7 +88,7 @@ export default function SettingsModal({
   const { authenticated, logout } = usePrivy();
   const { clearSessions } = useChatStore();
   const apiClient = useApiClient();
-  const theme = useUserStore((state) => state.get<string>("theme")) ?? "system";
+  const { theme, setTheme } = useTheme();
   const { lockApp } = useEncryption();
   if (!authenticated) {
     return <div></div>;
@@ -117,7 +118,7 @@ export default function SettingsModal({
   };
 
   const handleThemeChange = (event: SelectChangeEvent<string>) => {
-    useUserStore.getState().set("theme", event.target.value as string);
+    setTheme(event.target.value as string);
   };
 
   const passwordExpirationOptions = [
@@ -133,7 +134,7 @@ export default function SettingsModal({
       label: "Theme",
       control: (
         <Select
-          value={theme}
+          value={theme ?? "system"}
           onChange={handleThemeChange}
           variant="outlined"
           size="small"
