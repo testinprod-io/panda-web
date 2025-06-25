@@ -10,6 +10,7 @@ export interface ChallengeResponse {
   signature: string;
   timestamp: string;
   randomHex: string;
+  error?: string;
 }
 
 /**
@@ -43,7 +44,7 @@ function verifyChallengeSignature(
 ): boolean {
   const verify = createVerify("RSA-SHA256");
 
-  const challengeExpiresAt = parseInt(challenge.timestamp) + 60 * 3; // 3 minutes timeout
+  const challengeExpiresAt = parseInt(challenge.timestamp) + 60 * 10; // 10 minutes timeout
   if (challengeExpiresAt < Date.now() / 1000) {
     console.error("Panda Challenge verification failed: Timestamp is too old.");
     return false;
