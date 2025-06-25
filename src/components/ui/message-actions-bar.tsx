@@ -25,6 +25,39 @@ const AttestationInfoPopup: React.FC<{
   verificationResult: VerificationResult;
   challengeResponse: ChallengeResponse;
 }> = ({ verificationResult, challengeResponse }) => {
+  if (challengeResponse?.error) {
+    return (
+      <Box sx={{ p: 1, maxWidth: 300 }}>
+        <Typography variant="subtitle2" gutterBottom sx={{ color: "black" }}>
+          🔒 Verification Failed
+        </Typography>
+        <Typography
+          variant="body2"
+          key={"Verifying"}
+          sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
+        >
+          <strong>Panda's Challenge Verification Failed. Please try again.</strong>
+        </Typography>
+        <Typography
+        variant="body2"
+        key={"ChallengeText"}
+        sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
+      >
+        <strong>Challenge Text:</strong>{" "}
+        {challengeResponse?.challenge}
+      </Typography>
+        <Typography
+          variant="body2"
+          key={"Failure Reason"}
+          sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
+        >
+          <strong>Failure Reason:</strong>{" "}
+          {challengeResponse.error}
+        </Typography>
+      </Box>
+    );
+  }
+
   if (verificationResult.status === VerificationStatus.Pending) {
     return (
       <Box sx={{ p: 1, maxWidth: 300 }}>
