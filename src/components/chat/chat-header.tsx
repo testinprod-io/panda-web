@@ -34,6 +34,8 @@ import Locale from "@/locales";
 import HelpIcon from "@/public/icons/help.svg";
 import SettingsIcon from "@/public/icons/settings.svg";
 import LogoutIcon from "@/public/icons/logout.svg";
+import SidebarIcon from "@/public/icons/sidebar.svg";
+import NewChatIcon from "@/public/icons/new-chat.svg";
 
 interface ChatHeaderProps {
   currentChatId?: string; 
@@ -243,11 +245,7 @@ export default function ChatHeader({
                 onClick={onToggleSidebar}
                 className={styles.revealSidebarButton}
               >
-                <img
-                  src="/icons/sidebar.svg"
-                  alt={Locale.ChatHeader.RevealSidebar}
-                  className={styles.headerActionIconImg}
-                />
+                <SidebarIcon className={styles.headerActionIconImg} />
               </IconButton>
             </Tooltip>
             <Tooltip title="New Chat">
@@ -255,11 +253,7 @@ export default function ChatHeader({
                 onClick={handleNewChat}
                 className={styles.newChatButton}
               >
-                <img
-                  src="/icons/new-chat.svg"
-                  alt={Locale.ChatHeader.NewChat}
-                  className={styles.headerActionIconImg}
-                />
+                <NewChatIcon className={styles.headerActionIconImg}/>
               </IconButton>
             </Tooltip>
           </>
