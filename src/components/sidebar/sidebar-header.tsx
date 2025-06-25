@@ -31,13 +31,38 @@ export default function SidebarHeader({
         )}
         onClick={handleNewChat}
       >
-        <Image
-          src="/icons/inverse-icon.svg"
-          alt="Panda Logo"
-          className={clsx(styles.sidebarHeaderLogoImage, isSidebarCollapsed && styles.collapsed)}
-          width={32}
-          height={32}
-        />
+        <Box
+          sx={{
+            display: "block",
+            ".dark &": {
+              display: "none",
+            },
+          }}
+        >
+          <Image
+            src="/icons/inverse-icon.svg"
+            alt="Panda AI Logo"
+            className={clsx(styles.sidebarHeaderLogoImage, isSidebarCollapsed && styles.collapsed)}
+            width={32}
+            height={32}
+          />
+        </Box>
+        <Box
+          sx={{
+            display: "none",
+            ".dark &": {
+              display: "block",
+            },
+          }}
+        >
+          <Image
+            src="/icons/icon-white.svg"
+            alt="Panda AI Logo"
+            className={clsx(styles.sidebarHeaderLogoImage, isSidebarCollapsed && styles.collapsed)}
+            width={32}
+            height={32}
+          />
+        </Box>
         {!isSidebarCollapsed && (
         <Box
           className={clsx(

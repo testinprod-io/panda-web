@@ -29,7 +29,7 @@
 
 @mixin theme-dark {
   --theme: dark;
-  --white: #111827;
+  --white: #212121;
   --black: #ffffff;
   --gray: #f9fafb;
   --primary: var(--black);
@@ -43,12 +43,12 @@
 
   --text-primary: #fff;
   --text-secondary: #f3f3f3;
-  --text-disabled: #afafaf;
-  --bg-primary: #212121;
-  --bg-secondary: #303030;
-  --bg-tertiary: #414141;
-  --border-primary: #ffffff26;
-  --border-secondary: #ffffff0d;
+  --text-disabled: #8A8A8A;
+  --bg-primary: #292929;
+  --bg-secondary: #2F2F2F;
+  --bg-tertiary: #393939;
+  --border-primary: #ffffff46;
+  --border-secondary: #fffffff0;
   --icon-primary: #e8e8e8;
   --icon-secondary: #cdcdcd;
   --icon-tertiary: #afafaf;

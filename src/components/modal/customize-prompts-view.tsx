@@ -19,6 +19,7 @@ import { useApiClient } from "@/providers/api-client-provider";
 import { CustomizedPromptsData, decryptSystemPrompt, encryptSystemPrompt } from "@/types";
 import { useAppConfig } from "@/store/config";
 import Locale from "@/locales";
+import PlusIcon from "@/public/icons/plus.svg";
 
 interface Trait {
   id: string;
@@ -339,7 +340,7 @@ export default function CustomizePromptsView({
             {traits.map((trait) => (
               <Chip
                 key={trait.id}
-                icon={<img src="/icons/plus.svg" alt="Add" />}
+                icon={<PlusIcon />}
                 label={trait.label}
                 onClick={() => !isSaving && handleTraitToggle(trait.id)}
                 className={clsx(

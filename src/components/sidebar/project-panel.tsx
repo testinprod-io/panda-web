@@ -2,6 +2,7 @@ import React from "react";
 import styles from "./project-panel.module.scss";
 import Locale from "@/locales";
 
+import NewChatIcon from "@/public/icons/new-chat.svg";
 interface ProjectPanelProps {
   onNewChat: () => void;
 }
@@ -19,13 +20,7 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({ onNewChat }) => {
         tabIndex={0}
       >
         <div className={styles.iconContainer}>
-          <div className={styles.iconWrapper}>
-            <img
-              src="/icons/new-chat.svg"
-              alt="New Chat"
-              className={styles.newChatIcon}
-            />
-          </div>
+          <NewChatIcon className={styles.newChatIcon} />
         </div>
         <div className={styles.newChatText}>{Locale.Sidebar.NewChat}</div>
       </div>

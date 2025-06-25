@@ -16,7 +16,7 @@ import { useEncryption } from "@/providers/encryption-provider";
 import Locale from "@/locales";
 
 const MODAL_CONFIG = {
-    iconSrc: "/icons/rounded-logo.svg",
+    iconSrc: "/icons/icon-white.svg",
     iconAlt: "Lock Icon",
     // iconBackgroundColor: "#F33D4F",
     // iconFilter:
@@ -300,8 +300,8 @@ export function PasswordModal({
               fullWidth
               sx={{
                 height: "48px",
-                background: !isSubmitButtonDisabled ? "var(--bg-primary)" : "var(--bg-tertiary)",
-                color: !isSubmitButtonDisabled ? "var(--text-primary)" : "var(--text-secondary)",
+                background: !isSubmitButtonDisabled ? "var(--icon-primary)" : "var(--bg-tertiary)",
+                color: !isSubmitButtonDisabled ? "var(--white)" : "var(--text-secondary)",
                 borderRadius: "24px",
                 padding: "0 10px",
                 textTransform: "none",
@@ -314,8 +314,8 @@ export function PasswordModal({
                   boxShadow: "none",
                 },
                 "&.Mui-disabled": {
-                  background: "#F3F3F3",
-                  color: "#CACACA",
+                  background: "var(--bg-secondary)",
+                  color: "var(--text-disabled)",
                 },
                 marginTop: "12px",
               }}

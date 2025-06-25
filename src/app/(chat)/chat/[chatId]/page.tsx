@@ -97,9 +97,10 @@ export default function ChatPage() {
           justifyContent: "center",
           alignItems: "center",
           height: "100%",
+          backgroundColor: "var(--bg-primary)",
         }}
       >
-        <CircularProgress />
+        <CircularProgress color="primary" />
       </Box>
     );
   }
@@ -112,9 +113,10 @@ export default function ChatPage() {
           justifyContent: "center",
           alignItems: "center",
           height: "100%",
+          backgroundColor: "var(--bg-primary)",
         }}
       >
-        <CircularProgress />
+        <CircularProgress color="primary" />
       </Box>
     );
   }
@@ -127,9 +129,10 @@ export default function ChatPage() {
           justifyContent: "center",
           alignItems: "center",
           height: "100%",
+          backgroundColor: "var(--bg-primary)",
         }}
       >
-        <CircularProgress />
+        <CircularProgress color="primary" />
       </Box>
     );
   }

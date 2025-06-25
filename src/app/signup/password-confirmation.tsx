@@ -5,6 +5,7 @@ import { Box, Button, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import Locale from "@/locales";
 import { EncryptionService } from "@/services/encryption-service";
+import Image from "next/image";
 
 const TEXT_TO_ANIMATE = Locale.Onboarding.Encryption.PasswordCreatedDescription;
 
@@ -75,7 +76,36 @@ export default function PasswordConfirmation() {
       }}
     >
       <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', maxWidth: '410px', marginRight: 'auto', mb: 10 }}>
-        <img src="/icons/inverse-icon.svg" alt="Panda AI Logo" width={40} height={40} />
+      <Box
+          sx={{
+            display: "block",
+            ".dark &": {
+              display: "none",
+            },
+          }}
+        >
+          <Image
+            src="/icons/inverse-icon.svg"
+            alt="Panda AI Logo"
+            width={40}
+            height={40}
+          />
+        </Box>
+        <Box
+          sx={{
+            display: "none",
+            ".dark &": {
+              display: "block",
+            },
+          }}
+        >
+          <Image
+            src="/icons/icon-white.svg"
+            alt="Panda AI Logo"
+            width={40}
+            height={40}
+          />
+        </Box>
         <Typography fontSize="24px" fontWeight="600" color="#131A28" marginLeft="12px">
           Panda
         </Typography>
@@ -104,7 +134,7 @@ export default function PasswordConfirmation() {
             variant="h5"
             component="div"
             sx={{
-              color: "#131A28",
+              color: "var(--text-primary)",
               fontSize: "24px",
               fontFamily: "Inter, sans-serif",
               fontWeight: "600",
@@ -118,7 +148,7 @@ export default function PasswordConfirmation() {
           variant="h5"
           component="div"
           sx={{
-            color: "#131A28",
+            color: "var(--text-primary)",
             fontSize: "16px",
             fontFamily: "Inter, sans-serif",
             fontWeight: "500",

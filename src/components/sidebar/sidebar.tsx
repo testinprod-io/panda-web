@@ -26,6 +26,10 @@ import { useChatStore } from "@/store/chat";
 import { useAppConfig } from "@/store/config";
 import { AuthService } from "@/services/auth-service";
 import Locale from "@/locales";
+import MenuIcon from "@/public/icons/menu.svg";
+import NewChatIcon from "@/public/icons/new-chat.svg";
+import SettingsIcon from "@/public/icons/settings.svg";
+import LogoutIcon from "@/public/icons/logout.svg";
 
 interface SidebarProps {
   isSidebarCollapsed: boolean;
@@ -76,11 +80,7 @@ export default function Sidebar({
     {
       id: "menu",
       icon: (
-        <img
-          src="/icons/menu.svg"
-          alt="Menu"
-          className={styles.navMenuIcon}
-        />
+        <MenuIcon className={styles.navMenuIcon} />
       ),
       text: Locale.Sidebar.Menu,
       action: onToggleSidebar,
@@ -88,11 +88,7 @@ export default function Sidebar({
     {
       id: "newChat",
       icon: (
-        <img
-          src="/icons/new-chat.svg"
-          alt="New Chat"
-          className={styles.navMenuIcon}
-        />
+        <NewChatIcon className={styles.navMenuIcon} />
       ),
       text: Locale.Sidebar.NewChat,
       action: handleNewChat,
@@ -101,11 +97,7 @@ export default function Sidebar({
     {
       id: "settings",
       icon: (
-        <img
-          src="/icons/settings.svg"
-          alt="Settings"
-          className={styles.navMenuIcon}
-        />
+        <SettingsIcon className={styles.navMenuIcon} />
       ),
       text: Locale.Sidebar.Settings,
       action: handleSettings,
@@ -113,11 +105,7 @@ export default function Sidebar({
     {
       id: "logout",
       icon: (
-        <img
-          src="/icons/logout.svg"
-          alt="Log out"
-          className={styles.navMenuIcon}
-        />
+        <LogoutIcon className={styles.navMenuIcon} />
       ),
       text: Locale.Sidebar.Logout,
       action: handleLogout,

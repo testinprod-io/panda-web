@@ -31,6 +31,9 @@ import { AuthService } from "@/services/auth-service";
 import { useEncryption } from "@/providers/encryption-provider";
 import { useApiClient } from "@/providers/api-client-provider";
 import Locale from "@/locales";
+import HelpIcon from "@/public/icons/help.svg";
+import SettingsIcon from "@/public/icons/settings.svg";
+import LogoutIcon from "@/public/icons/logout.svg";
 
 interface ChatHeaderProps {
   currentChatId?: string; 
@@ -437,11 +440,7 @@ export default function ChatHeader({
                 className={styles.profileMenuItem}
               >
                 <ListItemIcon className={styles.profileMenuItemIconWrapper}>
-                  <img
-                    src="/icons/help.svg"
-                    alt="Help & FAQ"
-                    className={styles.profileMenuIcon}
-                  />
+                  <HelpIcon className={styles.profileMenuIcon} />
                 </ListItemIcon>
                 <ListItemText
                   primary={Locale.ProfileMenu.Help}
@@ -455,11 +454,7 @@ export default function ChatHeader({
                 className={styles.profileMenuItem}
               >
                 <ListItemIcon className={styles.profileMenuItemIconWrapper}>
-                  <img
-                    src="/icons/settings.svg"
-                    alt="Settings"
-                    className={styles.profileMenuIcon}
-                  />
+                  <SettingsIcon className={styles.profileMenuIcon} />
                 </ListItemIcon>
                 <ListItemText
                   primary={Locale.ProfileMenu.Settings}
@@ -471,11 +466,7 @@ export default function ChatHeader({
                 className={styles.profileMenuItem}
               >
                 <ListItemIcon className={styles.profileMenuItemIconWrapper}>
-                  <img
-                    src="/icons/logout.svg"
-                    alt="Logout"
-                    className={styles.profileMenuIcon}
-                  />
+                  <LogoutIcon className={styles.profileMenuIcon} />
                 </ListItemIcon>
                 <ListItemText
                   primary={Locale.ProfileMenu.Logout}

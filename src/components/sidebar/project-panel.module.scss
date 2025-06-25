@@ -62,6 +62,12 @@
 .newChatIcon {
   width: 20px;
   height: 20px;
+  color: var(--icon-primary);
+  svg {
+    color: var(--icon-primary);
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .newChatText {

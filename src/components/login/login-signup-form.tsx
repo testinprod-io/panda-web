@@ -171,8 +171,37 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
       }}
     >
       <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', maxWidth: '410px', marginRight: 'auto', mb: 10 }}>
-        <img src="/icons/inverse-icon.svg" alt="Panda AI Logo" width={40} height={40} />
-        <Typography fontSize="24px" fontWeight="600" color="#131A28" marginLeft="12px">
+      <Box
+          sx={{
+            display: "block",
+            ".dark &": {
+              display: "none",
+            },
+          }}
+        >
+          <Image
+            src="/icons/inverse-icon.svg"
+            alt="Panda AI Logo"
+            width={40}
+            height={40}
+          />
+        </Box>
+        <Box
+          sx={{
+            display: "none",
+            ".dark &": {
+              display: "block",
+            },
+          }}
+        >
+          <Image
+            src="/icons/icon-white.svg"
+            alt="Panda AI Logo"
+            width={40}
+            height={40}
+          />
+        </Box>
+        <Typography fontSize="24px" fontWeight="600" color="var(--text-primary)" marginLeft="12px">
             Panda
           </Typography>
         </Box>

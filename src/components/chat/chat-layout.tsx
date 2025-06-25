@@ -200,6 +200,7 @@ export default function ChatLayoutContent({
           justifyContent: "center",
           alignItems: "center",
           height: "100%",
+          backgroundColor: "var(--bg-primary)",
         }}
       >
         <CircularProgress color="primary" />

@@ -4,7 +4,8 @@ import * as React from "react";
 import { PrivyProvider } from "@privy-io/react-auth";
 import { Toaster } from "react-hot-toast";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v14-appRouter";
-import { ThemeProvider } from "@mui/material/styles";
+import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
+import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes";
 import CssBaseline from "@mui/material/CssBaseline";
 import { lightTheme, darkTheme } from "@/theme";
 import { useUserStore } from "@/store/user";
@@ -15,31 +16,25 @@ import { ApiClientProvider } from "@/providers/api-client-provider";
 import { EncryptionProvider } from "@/providers/encryption-provider";
 
 function ThemeWrapper({ children }: { children: React.ReactNode }) {
-  const themeMode = useUserStore((state) => state.get<string>("theme")) ?? "system";
-  const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
+  const { resolvedTheme, theme } = useTheme();
+  const setUserTheme = useUserStore((state) => state.set);
 
-  const muiTheme = React.useMemo(() => {
-    return themeMode === "system"
-      ? prefersDarkMode
-        ? darkTheme
-        : lightTheme
-      : themeMode === "dark"
-        ? darkTheme
-        : lightTheme;
-  }, [themeMode, prefersDarkMode]);
+  const muiTheme = React.useMemo(
+    () => (resolvedTheme === "dark" ? darkTheme : lightTheme),
+    [resolvedTheme],
+  );
 
   React.useEffect(() => {
-    const body = document.body;
-    const newTheme = muiTheme.palette.mode;
-    body.classList.remove("light", "dark");
-    body.classList.add(newTheme);
-  }, [muiTheme]);
+    if (theme) {
+      setUserTheme("theme", theme);
+    }
+  }, [theme, setUserTheme]);
 
   return (
-    <ThemeProvider theme={muiTheme}>
+    <MuiThemeProvider theme={muiTheme}>
       <CssBaseline />
       {children}
-    </ThemeProvider>
+    </MuiThemeProvider>
   );
 }
 
@@ -69,30 +64,37 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <AppRouterCacheProvider>
-      <ThemeWrapper>
-        {privyAppId ? (
-          <PrivyProvider
-            appId={privyAppId}
-            config={{
-              appearance: {
-                theme: "light",
-                accentColor: "#676FFF",
-              },
-              loginMethods: ["email", "google", "github", "wallet"],
-              embeddedWallets: { ethereum: { createOnLogin: "all-users" } },
-            }}
-          >
-            <ApiClientProvider>
-              <AuthenticatedContentWrapper>
-                {children}
-              </AuthenticatedContentWrapper>
-            </ApiClientProvider>
-          </PrivyProvider>
-        ) : (
-          <SnackbarProvider>{children}</SnackbarProvider>
-        )}
-        <Toaster position="top-right" />
-      </ThemeWrapper>
+      <NextThemesProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        storageKey="theme"
+      >
+        <ThemeWrapper>
+          {privyAppId ? (
+            <PrivyProvider
+              appId={privyAppId}
+              config={{
+                appearance: {
+                  theme: "light",
+                  accentColor: "#676FFF",
+                },
+                loginMethods: ["email", "google", "github", "wallet"],
+                embeddedWallets: { ethereum: { createOnLogin: "all-users" } },
+              }}
+            >
+              <ApiClientProvider>
+                <AuthenticatedContentWrapper>
+                  {children}
+                </AuthenticatedContentWrapper>
+              </ApiClientProvider>
+            </PrivyProvider>
+          ) : (
+            <SnackbarProvider>{children}</SnackbarProvider>
+          )}
+          <Toaster position="top-right" />
+        </ThemeWrapper>
+      </NextThemesProvider>
     </AppRouterCacheProvider>
   );
 }

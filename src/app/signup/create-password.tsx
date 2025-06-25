@@ -9,6 +9,7 @@ import { useSnackbar } from "@/providers/snackbar-provider";
 import { AuthService } from "@/services/auth-service";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import Locale from "@/locales";
+import Image from "next/image";
 // import { useForm } from "react-hook-form";
 
 const MIN_PASSWORD_LENGTH = 10;
@@ -132,8 +133,37 @@ export default function CreatePassword() {
       }}
     >
       <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', maxWidth: '410px', marginRight: 'auto', mb: 10 }}>
-        <img src="/icons/inverse-icon.svg" alt="Panda AI Logo" width={40} height={40} />
-        <Typography fontSize="24px" fontWeight="600" color="#131A28" marginLeft="12px">
+        <Box
+          sx={{
+            display: "block",
+            ".dark &": {
+              display: "none",
+            },
+          }}
+        >
+          <Image
+            src="/icons/inverse-icon.svg"
+            alt="Panda AI Logo"
+            width={40}
+            height={40}
+          />
+        </Box>
+        <Box
+          sx={{
+            display: "none",
+            ".dark &": {
+              display: "block",
+            },
+          }}
+        >
+          <Image
+            src="/icons/icon-white.svg"
+            alt="Panda AI Logo"
+            width={40}
+            height={40}
+          />
+        </Box>
+        <Typography fontSize="24px" fontWeight="600" color="var(--text-primary)" marginLeft="12px">
           Panda
         </Typography>
       </Box>
@@ -161,7 +191,7 @@ export default function CreatePassword() {
             variant="h5"
             component="div"
             sx={{
-              color: "#131A28",
+              color: "var(--text-primary)",
               fontSize: "24px",
               fontFamily: "Inter, sans-serif",
               fontWeight: "600",
@@ -173,7 +203,7 @@ export default function CreatePassword() {
           <Typography
             variant="body1"
             sx={{
-              color: "#131A28",
+              color: "var(--text-primary)",
               fontSize: "16px",
               fontFamily: "Inter, sans-serif",
               fontWeight: "500",
@@ -228,7 +258,7 @@ export default function CreatePassword() {
 
               "& .MuiOutlinedInput-root": {
                 borderRadius: "8px",
-                backgroundColor: "white",
+                backgroundColor: "var(--bg-primary)",
                 height: "48px",
                 fontFamily: "Inter, sans-serif",
                 border: "none",
@@ -244,12 +274,13 @@ export default function CreatePassword() {
                 width: "100% !important",
                 padding: "0 14px",
                 height: "100%",
-                color: "#131A28",
+                color: "var(--text-primary)",
                 fontSize: "16px",
                 fontFamily: "Inter, sans-serif",
                 fontWeight: "400",
                 border: "none",
-                "&::placeholder": { opacity: 1, color: "#CACACA" },
+                "&::placeholder": { opacity: 1, color: "var(--text-secondary)" },
+                backgroundColor: "var(--bg-primary)",
               },
             }}
           />
@@ -300,7 +331,7 @@ export default function CreatePassword() {
 
               "& .MuiOutlinedInput-root": {
                 borderRadius: "8px",
-                backgroundColor: "white",
+                backgroundColor: "var(--bg-primary)",
                 height: "48px",
                 fontFamily: "Inter, sans-serif",
                 border: "none",
@@ -316,12 +347,13 @@ export default function CreatePassword() {
                 width: "100% !important",
                 padding: "0 14px",
                 height: "100%",
-                color: "#131A28",
+                color: "var(--text-primary)",
                 fontSize: "16px",
                 fontFamily: "Inter, sans-serif",
                 fontWeight: "400",
                 border: "none",
-                "&::placeholder": { opacity: 1, color: "#CACACA" },
+                backgroundColor: "var(--bg-primary)",
+                "&::placeholder": { opacity: 1, color: "var(--text-secondary)" },
               },
               marginTop: "12px",
             }}
