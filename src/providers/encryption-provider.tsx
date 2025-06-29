@@ -9,7 +9,7 @@ import React, {
   useRef,
   ReactNode,
 } from "react";
-import { EncryptionService } from "@/services/encryption-service";
+// import { EncryptionService } from "@/services/encryption-service";
 import { PasswordModal } from "@/components/login/password-modal";
 // import { useApiClient } from "@/providers/api-client-provider";
 import { usePrivy } from "@privy-io/react-auth";
@@ -52,8 +52,8 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   const { user, authenticated, ready } = usePrivy();
   const pathname = usePathname();
   const router = useRouter();
-  const sdk = usePandaSDK();
-  const { isLocked, encryptedId } = useAuth();
+  const { sdk } = usePandaSDK();
+  const { isLocked, encryptedId, lockApp: lockAppHook, unlockApp: unlockAppHook, createPassword: createPasswordHook } = useAuth();
 
   const isFirstTimeUser = encryptedId === null && sdk.initialized;
   const passwordExpirationMinutes =
@@ -140,13 +140,13 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     // EncryptionService.clearKey();
     // setIsLocked(true);
     setHasError(false); // Clear any errors when manually locking
-    EncryptionService.clearKey();
+    lockAppHook();
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
       inactivityTimerRef.current = null;
     }
     console.log("[EncryptionProvider] App locked.");
-  }, []);
+  }, [lockAppHook]);
 
   // Handle successful unlock
   const handleUnlockSuccess = useCallback(() => {
@@ -266,6 +266,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   };
 
   if (!ready || !sdk.initialized) {
+    console.log("[EncryptionProvider] SDK not initialized. Locking app.");
     return (
       <EncryptionContext.Provider value={contextValue}>
         {children}

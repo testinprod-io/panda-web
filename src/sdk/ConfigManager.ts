@@ -1,6 +1,8 @@
 import { ServerModelInfo } from './client/types';
+import { EncryptionService } from './EncryptionService';
 import { EventBus } from './events';
 import { CustomizedPromptsData } from '@/types';
+import { decryptSystemPrompt, encryptSystemPrompt } from '@/types/chat';
 
 export interface PandaConfig {
   models: ServerModelInfo[];
@@ -15,13 +17,36 @@ const DEFAULT_CUSTOMIZED_PROMPTS: CustomizedPromptsData = {
 };
 
 export class ConfigManager {
+  private encryptionService: EncryptionService;
+  private bus: EventBus;
   private config: PandaConfig = {
     models: [],
     defaultModel: undefined,
     customizedPrompts: DEFAULT_CUSTOMIZED_PROMPTS,
   };
 
-  constructor(private bus: EventBus) {}
+  constructor(bus: EventBus, encryptionService: EncryptionService) {
+    this.encryptionService = encryptionService;
+    this.bus = bus;
+
+    this.bus.on("app.unlocked", () => {
+      console.log("app.unlocked", this.config.customizedPrompts);
+      this.config.customizedPrompts = decryptSystemPrompt(
+        this.config.customizedPrompts,
+        this.encryptionService.decrypt.bind(this.encryptionService),
+      );
+      this.bus.emit("config.updated", { config: this.getConfig() });
+      console.log("app.unlocked", this.config.customizedPrompts);
+    });
+
+    this.bus.on("app.locked", () => {
+      this.config.customizedPrompts = encryptSystemPrompt(
+        this.config.customizedPrompts,
+        this.encryptionService.encrypt.bind(this.encryptionService),
+      );
+      this.bus.emit("config.updated", { config: this.getConfig() });
+    });
+  }
 
   public setModels(models: ServerModelInfo[]) {
     console.log("setModels", models);

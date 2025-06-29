@@ -62,7 +62,7 @@ export default function ChatHeader({
 
   const { lockApp } = useEncryption();
   // const apiClient = useApiClient();
-  const sdk = usePandaSDK();
+  const { sdk } = usePandaSDK();
   const [currentChatModel, setCurrentChatModel] = useState<ServerModelInfo | undefined>();
 
   const [profileAnchorEl, setProfileAnchorEl] = useState<null | HTMLElement>(

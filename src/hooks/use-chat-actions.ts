@@ -38,7 +38,7 @@
 //   const store = useChatStore();
 //   const apiClient = useApiClient();
 //   const appConfig = useAppConfig();
-//   // const sdk = usePandaSDK();
+//   // const { sdk } = usePandaSDK();
 
 //   const loadSessionsFromServer = useCallback(
 //     async (options?: { cursor?: string | null; limit?: number }) => {

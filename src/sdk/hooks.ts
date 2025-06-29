@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from 'react';
+import { useSyncExternalStore, useCallback } from 'react';
 import { usePandaSDK } from '@/providers/sdk-provider';
 import { Chat } from "./Chat";
 import { UserData } from './User';
@@ -15,8 +15,8 @@ import { CustomizedPromptsData } from '@/types';
  *          and whether more chats are available for pagination.
  */
 export function useChatList() {
-  const sdk = usePandaSDK();
-  const chatManager = sdk.chat;
+  const { sdk, isInitialized } = usePandaSDK();
+  const chatManager = sdk?.chat;
 
   const state = useSyncExternalStore(
     (callback) => sdk.bus.on('chat.list.updated', callback),
@@ -35,21 +35,37 @@ export function useChatList() {
  * @returns The current state of the chat, including messages, loading status, etc.
  */
 export function useChat(chat: Chat | null) {
-  const sdk = usePandaSDK();
+  const { sdk } = usePandaSDK();
   
+  const subscribe = useCallback((callback: () => void) => {
+    if (!chat) {
+      console.log("[useChat] No chat provided, not subscribing.");
+      return () => {};
+    }
+    const eventName = `chat.updated:${chat.id}` as const;
+    console.log(`[useChat] Subscribing to ${eventName}`);
+    const unsubscribe = sdk.bus.on(eventName, () => {
+      console.log(`[useChat] Received update for ${eventName}`);
+      callback();
+    });
+
+    return () => {
+      console.log(`[useChat] Unsubscribing from ${eventName}`);
+      unsubscribe();
+    }
+  }, [sdk.bus, chat]);
+
   const state = useSyncExternalStore(
-    (callback) => {
-      if (!chat) return () => {};
-      return sdk.bus.on('chat.updated', callback);
-    },
+    subscribe,
     () => chat?.getState(),
+    () => chat?.getState()
   );
 
   return state || chat?.getState() || { messages: [], isLoading: true, hasMoreMessages: false };
 }
 
 export function useAuth() {
-  const sdk = usePandaSDK();
+  const { sdk } = usePandaSDK();
   const authManager = sdk.auth;
   const state = useSyncExternalStore(
     (callback) => sdk.bus.on('auth.state.updated', callback),
@@ -58,11 +74,16 @@ export function useAuth() {
     },
     () => authManager.getState(),
   );
-  return state || authManager.getState();
+  return { 
+    ...(state || authManager.getState()),
+    lockApp: authManager.lock.bind(authManager),
+    unlockApp: authManager.unlock.bind(authManager),
+    createPassword: authManager.createPassword.bind(authManager),
+  }
 }
 
 export function useAttestation() {
-  const sdk = usePandaSDK();
+  const { sdk } = usePandaSDK();
   const attestationManager = sdk.attestation;
   const state = useSyncExternalStore(
     (callback) => sdk.bus.on('attestation.status.updated', callback),
@@ -75,7 +96,7 @@ export function useAttestation() {
 }
 
 export function useUser() {
-  const sdk = usePandaSDK();
+  const { sdk } = usePandaSDK();
   const userManager = sdk.user;
   const state = useSyncExternalStore(
     (callback) => sdk.bus.on('user.updated', callback),

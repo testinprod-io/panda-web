@@ -1,4 +1,4 @@
-import { ServerModelInfo, Summary, Conversation, ConversationUpdateRequest } from "@/client/types";
+import { ServerModelInfo, Summary, Conversation, ConversationUpdateRequest, SummaryCreateRequest } from "@/client/types";
 import { Chat } from "@/sdk/Chat";
 import { ChatMessage } from "@/types";
 
@@ -46,7 +46,7 @@ export interface IStorage {
 
   /*  Summaries  */
   getSummaries(chatId: string): Promise<Summary[]>;
-  saveSummary(chatId: string, summary: Summary): Promise<void>;
+  saveSummary(chatId: string, summary : SummaryCreateRequest): Promise<Summary>;
   deleteSummary(id: string): Promise<void>;
 
   /*  Misc  */

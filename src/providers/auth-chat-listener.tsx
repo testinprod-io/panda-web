@@ -13,7 +13,7 @@
 // export function AuthChatListener() {
 //   const { ready, authenticated } = usePrivy();
 //   const apiClient = useApiClient();
-//   // const sdk = usePandaSDK();
+//   // const { sdk } = usePandaSDK();
 //   // Get actions from the hook
 //   const actions = useChatActions();
 

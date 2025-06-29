@@ -5,7 +5,7 @@ import { UUID } from 'crypto';
 import { EncryptionService } from './EncryptionService';
 import { EventBus } from './events';
 import { Conversation, ServerModelInfo } from '@/client/types';
-import { CustomizedPromptsData } from '@/types';
+import { CustomizedPromptsData, generateSystemPrompt } from '@/types';
 import { AttestationManager } from './AttestationManager';
 import { IStorage } from './storage/i-storage';
 import { ConfigManager } from './ConfigManager';
@@ -21,6 +21,7 @@ export class ChatManager {
   
   public conversations: Chat[] = [];
   public activeChat: Chat | null = null;
+  public activeChatId: UUID | null = null;
 
   // State from chat-list.tsx
   public hasMore: boolean = true;
@@ -32,6 +33,7 @@ export class ChatManager {
     isLoading: boolean;
     hasMore: boolean;
     activeChat: Chat | null;
+    activeChatId: UUID | null;
   };
 
   constructor(
@@ -84,6 +86,7 @@ export class ChatManager {
       isLoading: this.isLoading,
       hasMore: this.hasMore,
       activeChat: this.activeChat,
+      activeChatId: this.activeChatId,
     };
   }
 
@@ -93,7 +96,10 @@ export class ChatManager {
   }
 
   private insertChat(chat: Chat) {
-    this.conversations = [chat, ...this.conversations];
+    this.conversations = [
+      chat,
+      ...this.conversations.filter((c) => c.id !== chat.id),
+    ];
     this.updateState();
   }
 
@@ -140,9 +146,10 @@ export class ChatManager {
     modelConfig?: ServerModelInfo,
     customizedPrompts?: CustomizedPromptsData
   ): Promise<Chat> {
+    const customizedPrompt = customizedPrompts ? this.encryptionService.encrypt(generateSystemPrompt(customizedPrompts)) : null;
     const newConversation = await this.storage.createChat(topic, {
       default_model_name: modelConfig?.model_name,
-      customized_prompts: customizedPrompts,
+      customized_prompts: customizedPrompt,
     });
     const chat = this.fromConversation(newConversation);
     this.insertChat(chat);
@@ -220,20 +227,31 @@ export class ChatManager {
     this.updateState();
     return chat;
   }
+  public setActiveChatId(chatId: UUID) {
+    this.activeChatId = chatId;
+    this.updateState();
+  }
 
   public async getChat(conversationId: UUID): Promise<Chat | undefined> {
-    const existingChat = this.conversations.find(c => c.id === conversationId);
+    const existingChat = this.conversations.find(
+      (c) => c.id === conversationId,
+    );
     if (existingChat) {
       return existingChat;
     } else {
       try {
         const conversation = await this.storage.getChat(conversationId as string);
         if (conversation) {
-          return this.fromConversation(conversation);
+          const chat = this.fromConversation(conversation);
+          this.insertChat(chat);
+          return chat;
         }
         return undefined;
       } catch (error) {
-        console.error(`[SDK-ChatManager] Failed to get chat ${conversationId}:`, error);
+        console.error(
+          `[SDK-ChatManager] Failed to get chat ${conversationId}:`,
+          error,
+        );
         return undefined;
       }
     }

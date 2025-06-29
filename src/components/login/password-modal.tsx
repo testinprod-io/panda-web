@@ -53,7 +53,7 @@ export function PasswordModal({
   const [password, setPassword] = useState(initialPassword);
   const [error, setError] = useState("");
   const router = useRouter();
-  const sdk = usePandaSDK();
+  const { sdk } = usePandaSDK();
   const currentConfig = MODAL_CONFIG;
 
   useEffect(() => {

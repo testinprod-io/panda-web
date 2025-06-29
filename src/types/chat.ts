@@ -72,12 +72,13 @@ export function generateSystemPrompt(data: CustomizedPromptsData): string {
 
 export function encryptSystemPrompt(
   prompt: CustomizedPromptsData,
+  encryptFunction: (text: string) => string,
 ): CustomizedPromptsData {
   const encryptedPersonalInfo: { [key: string]: string } = {};
   if (prompt.personal_info) {
     for (const key in prompt.personal_info) {
       if (Object.prototype.hasOwnProperty.call(prompt.personal_info, key)) {
-        encryptedPersonalInfo[key] = EncryptionService.encrypt(
+        encryptedPersonalInfo[key] = encryptFunction(
           prompt.personal_info[key],
         );
       }
@@ -88,7 +89,7 @@ export function encryptSystemPrompt(
   if (prompt.prompts) {
     for (const key in prompt.prompts) {
       if (Object.prototype.hasOwnProperty.call(prompt.prompts, key)) {
-        encryptedPrompts[key] = EncryptionService.encrypt(prompt.prompts[key]);
+        encryptedPrompts[key] = encryptFunction(prompt.prompts[key]);
       }
     }
   }
@@ -106,12 +107,13 @@ export function encryptSystemPrompt(
 
 export function decryptSystemPrompt(
   prompt: CustomizedPromptsData,
+  decryptFunction: (text: string) => string,
 ): CustomizedPromptsData {
   const decryptedPersonalInfo: { [key: string]: string } = {};
   if (prompt.personal_info) {
     for (const key in prompt.personal_info) {
       if (Object.prototype.hasOwnProperty.call(prompt.personal_info, key)) {
-        decryptedPersonalInfo[key] = EncryptionService.decrypt(
+        decryptedPersonalInfo[key] = decryptFunction(
           prompt.personal_info[key],
         );
       }
@@ -122,7 +124,7 @@ export function decryptSystemPrompt(
   if (prompt.prompts) {
     for (const key in prompt.prompts) {
       if (Object.prototype.hasOwnProperty.call(prompt.prompts, key)) {
-        decryptedPrompts[key] = EncryptionService.decrypt(prompt.prompts[key]);
+        decryptedPrompts[key] = decryptFunction(prompt.prompts[key]);
       }
     }
   }

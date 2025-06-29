@@ -28,16 +28,17 @@ import { useChatStore } from "@/store";
 export function ChatComponent({ sessionId }: { sessionId: UUID }) {
   const config = useAppConfig();
   const { showSnackbar } = useSnackbar();
-  const sdk = usePandaSDK();
+  const { sdk } = usePandaSDK();
   const chatStore = useChatStore();
 
-  const { activeChat } = useChatList();
-  console.log(`[ChatComponent] Active chat: ${activeChat?.id}`);
+  const { activeChatId } = useChatList();
+  const [activeChat, setActiveChat] = useState<Chat | null>(null);
   const { messages: displayedMessages, isLoading: isLoadingMessages, hasMoreMessages } = useChat(activeChat);
-  console.log(`[ChatComponent] Displayed messages: ${displayedMessages.length}`);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [internalHitBottom, setInternalHitBottom] = useState(true);
 
+  console.log(`[ChatComponent] Rendering for session ${sessionId}. Active chat ID: ${activeChat?.id}. Displayed messages: ${displayedMessages.length}`);
+  
   // When the component mounts or sessionId changes, ensure the correct chat is active.
   // useEffect(() => {
   //   // If there is no active chat or the active chat is not the one for this page, set it.
@@ -55,11 +56,20 @@ export function ChatComponent({ sessionId }: { sessionId: UUID }) {
   
   // When the active chat changes and has no messages, load them.
   useEffect(() => {
-    if (activeChat && activeChat.messages.length === 0) {
+    const loadChat = async () => {
+      const chat = await sdk.chat.getChat(activeChatId as UUID);
+      if (chat) {
+        setActiveChat(chat);
+      }
+    }
+    loadChat();
+  }, [activeChatId, sdk.chat]);
+  useEffect(() => {
+    if (activeChat && activeChat.id === sessionId && activeChat.messages.length === 0) {
       console.log(`[ChatComponent] Loading initial messages for chat ${activeChat.id}`);
       activeChat.loadInitial();
     }
-  }, [activeChat]);
+  }, [activeChat, sessionId]);
 
   const { scrollDomToBottom, setAutoScroll } = useScrollToBottom(scrollRef, !internalHitBottom, displayedMessages);
 
@@ -73,9 +83,7 @@ export function ChatComponent({ sessionId }: { sessionId: UUID }) {
 
   const onResend = useCallback(async (messageId: UUID) => {
     if (!activeChat) return;
-    const defaultModel = config.models.find((m) => m.model_name === config.defaultModel);
-    if (!defaultModel) return;
-    activeChat.resendMessage(messageId, defaultModel);
+    activeChat.resendMessage(messageId);
   }, [activeChat]);
 
   const onEditSubmit = useCallback(async (messageId: UUID, newText: string) => {
@@ -109,7 +117,6 @@ export function ChatComponent({ sessionId }: { sessionId: UUID }) {
     }
   }, 200, { leading: false, trailing: true });
 
-  console.log(`[ChatComponent] Rendering messages: ${displayedMessages.length} ${displayedMessages.map(m => m.role)}`);
   return (
     <div className={styles["chat-body-container"]}>
       <div

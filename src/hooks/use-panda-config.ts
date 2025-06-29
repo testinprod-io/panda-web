@@ -3,7 +3,7 @@ import { usePandaSDK } from '@/providers/sdk-provider';
 import { PandaConfig } from '@/sdk/ConfigManager';
 
 export function usePandaConfig() {
-  const sdk = usePandaSDK();
+  const { sdk } = usePandaSDK();
   const [config, setConfig] = useState<PandaConfig>(() => sdk.config.getConfig());
 
   useEffect(() => {

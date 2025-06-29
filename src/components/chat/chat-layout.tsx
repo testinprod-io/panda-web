@@ -54,7 +54,7 @@ export default function ChatLayoutContent({
   const router = useRouter();
   const pandaConfig = usePandaConfig();
   const prevIsMobile = usePrevious(isMobile);
-  const sdk = usePandaSDK();
+  const { sdk } = usePandaSDK();
   const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
 
   // const { newSession } = useChatActions();
@@ -178,6 +178,7 @@ export default function ChatLayoutContent({
       currentChatId,
       onSendMessageHandlerFromStore,
       router,
+      pandaConfig,
       showSnackbar,
     ],
   );

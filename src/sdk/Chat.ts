@@ -17,9 +17,10 @@ import {
   MessageCreateRequest,
   ServerModelInfo,
   ConversationUpdateRequest,
+  SummaryCreateRequest,
 } from "@/client/types";
 import { MultimodalContent, LLMConfig } from "@/client/api";
-import { mapApiMessagesToChatMessages } from "@/services/api-service";
+// import { mapApiMessagesToChatMessages } from "@/services/api-service";
 import { EventBus } from "./events";
 import { IStorage } from "./storage/i-storage";
 import { EncryptionService } from "./EncryptionService";
@@ -73,16 +74,16 @@ export class Chat {
     };
   }
 
-  get customizedPromptsData (): CustomizedPromptsData | undefined {
-    return this.customData?.customized_prompts as CustomizedPromptsData | undefined;
+  get customizedPromptsData (): string | undefined {
+    return this.customData?.customized_prompts as string | undefined;
   }
 
-  set customizedPromptsData (data: CustomizedPromptsData | undefined) {
-    this.customData = {
-      ...this.customData,
-      customized_prompts: data,
-    };
-  }
+  // set customizedPromptsData (data: string | undefined) {
+  //   this.customData = {
+  //     ...this.customData,
+  //     customized_prompts: data,
+  //   };
+  // }
 
   constructor(
     bus: EventBus,
@@ -113,14 +114,14 @@ export class Chat {
 
     this.bus.on("app.unlocked", () => {
       this.messages.forEach((m) => {
-        m.visibleContent = this.encryptionService.decrypt(m.visibleContent);
+        m.visibleContent = this.encryptionService.decrypt(m.content);
       });
       this.updateState();
     });
 
     this.bus.on("app.locked", () => {
       this.messages.forEach((m) => {
-        m.visibleContent = m.visibleContent;
+        m.visibleContent = m.content;
       });
       this.updateState();
     });
@@ -138,7 +139,8 @@ export class Chat {
 
   private updateState() {
     this.state = this.buildState();
-    this.bus.emit("chat.updated", undefined);
+    console.log(`[SDK-Chat] Emitting update for ${this.id}`);
+    this.bus.emit(`chat.updated:${this.id}`, undefined);
   }
   /**
    * Performs the initial load of messages and summaries for this chat.
@@ -202,7 +204,8 @@ export class Chat {
    */
   public async loadMoreMessages() {
     if (this.isLoading || !this.hasMoreMessages) return;
-
+    if (!this.nextMessageCursor) return;
+    
     console.log(
       `[SDK-Chat] Loading more messages for ${this.id}, cursor: ${this.nextMessageCursor}`
     );
@@ -212,7 +215,7 @@ export class Chat {
     try {
       const result = await this.storage.listMessages(
         this.id as string,
-        this.nextMessageCursor ?? undefined,
+        this.nextMessageCursor,
         20
       );
 
@@ -312,6 +315,8 @@ export class Chat {
       syncState: MessageSyncState.PENDING_CREATE,
     });
     await this.storage.saveMessage(this.id as string, userMessage);
+    userMessage.syncState = MessageSyncState.SYNCED;
+    console.log("userMessage", userMessage);
     this.messages.push(userMessage);
     this.updateState();
     this._sendMessages(this.getModelConfig(), options);
@@ -377,7 +382,7 @@ export class Chat {
       targetEndpoint: modelConfig.url,
       useSearch: options.enableSearch ?? false,
       customizedPrompts: this.customizedPromptsData
-        ? this.encryptionService.decrypt(JSON.stringify(this.customizedPromptsData))
+        ? this.encryptionService.decrypt(this.customizedPromptsData)
         : undefined,
     };
 
@@ -469,6 +474,93 @@ export class Chat {
     });
   }
 
+  private async _triggerSummarization() {
+    if (this.isSummarizing) {
+      return;
+    }
+    console.log("[SDK-Chat] Triggering summarization", this.lastSummarizedMessageId);
+    const SUMMARIZE_INTERVAL = 10;
+    let messagesToConsiderForSummarization: ChatMessage[];
+
+    if (this.lastSummarizedMessageId) {
+      const lastSummarizedMsgIndex = this.messages.findIndex(
+        (msg: ChatMessage) => msg.id === this.lastSummarizedMessageId,
+      );
+      if (lastSummarizedMsgIndex !== -1) {
+        messagesToConsiderForSummarization = this.messages.slice(
+          lastSummarizedMsgIndex + 1,
+        );
+      } else {
+        console.warn(
+          `[SDK-Chat] Summarization Trigger: lastSummarizedMessageId ${this.lastSummarizedMessageId} not found in messages. Considering all messages.`,
+        );
+        messagesToConsiderForSummarization = this.messages;
+      }
+    } else {
+      messagesToConsiderForSummarization = this.messages;
+    }
+    console.log("messagesToConsiderForSummarization", messagesToConsiderForSummarization);
+    const finalMessagesToConsider = messagesToConsiderForSummarization.filter(
+      (msg: ChatMessage) =>
+        msg.syncState === MessageSyncState.SYNCED && !msg.isError,
+    );
+    console.log("finalMessagesToConsider", finalMessagesToConsider);
+    if (finalMessagesToConsider.length >= SUMMARIZE_INTERVAL) {
+      console.log("[SDK-Chat] Summarizing", finalMessagesToConsider.length);
+      const batchToSummarize = finalMessagesToConsider.slice(
+        0,
+        SUMMARIZE_INTERVAL,
+      )
+
+      console.log(
+        `[SDK-Chat] Triggering summarization with ${batchToSummarize.length} messages.`,
+      );
+      this.isSummarizing = true;
+      try {
+        const modelConfig = this.getModelConfig();
+        const summarizationConfig: LLMConfig = {
+          model: modelConfig.name,
+          temperature: 0.7,
+          top_p: 1,
+          reasoning: false,
+          stream: false,
+          targetEndpoint: modelConfig.url,
+        };
+        const summaryResponse = await this.api.llm.summary(
+          summarizationConfig,
+          batchToSummarize.map((msg) => ({
+            role: msg.role,
+            content: msg.visibleContent,
+            attachments: msg.attachments,
+          })),
+        );
+        const summaryCreateRequest: SummaryCreateRequest = {
+          start_message_id: batchToSummarize[0].id,
+          end_message_id: batchToSummarize[batchToSummarize.length - 1].id,
+          content: this.encryptionService.encrypt(summaryResponse.summary),
+        };
+        const newSummary = await this.storage.saveSummary(
+          this.id as string,
+          summaryCreateRequest,
+        );
+        newSummary.content = this.encryptionService.decrypt(newSummary.content);
+        if (newSummary) {
+          this.summaries.push(newSummary);
+          this.summaries.sort(
+            (a, b) =>
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime(),
+          );
+          this.lastSummarizedMessageId = newSummary.end_message_id;
+        }
+      } catch (error) {
+        console.error("[SDK-Chat] Error during summarization:", error);
+      } finally {
+        this.isSummarizing = false;
+      }
+    }
+  }
+
   private _finalizeMessage(
     messageId: UUID,
     finalContent: string,
@@ -499,16 +591,20 @@ export class Chat {
       }
       return msg;
     });
-
+    console.log("messageToSave", messageToSave);
     if (messageToSave) {
       this.storage.saveMessage(this.id as string, messageToSave);
     } else {
       console.error(
-        `[SDK-Chat] _finalizeMessage: Message with ID ${messageId} not found. Cannot save to server.`
+        `[SDK-Chat] _finalizeMessage: Message with ID ${messageId} not found. Cannot save to server.`,
       );
     }
 
     this.updateState();
+
+    if (!isError) {
+      this._triggerSummarization();
+    }
   }
 
   public async resendMessage(messageId: UUID) {

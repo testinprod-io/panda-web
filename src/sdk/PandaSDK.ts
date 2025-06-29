@@ -35,11 +35,11 @@ export class PandaSDK {
   constructor(getAccessToken: GetAccessTokenFn, authProvider: AuthProvider) {
     console.log('[PandaSDK] Constructor called from:', new Error().stack);
     this.api = new ApiService(getAccessToken);
-    this.config = new ConfigManager(this.bus);
-
+    
     this.encryption = new EncryptionService();
     this.attestation = new AttestationManager(this.api, this.bus);
-
+    
+    this.config = new ConfigManager(this.bus, this.encryption);
     this.auth = new AuthManager(this.bus, this.api, authProvider, this.encryption);
     
     this.storage = new ServerStorage(this.bus, this.api, this.auth, this.encryption);
@@ -75,6 +75,7 @@ export class PandaSDK {
     this.config.setModels(info.models);
     
     this.initialized = true;
+    this.bus.emit('sdk.initialized', true);
   }
   // You could add global SDK methods here if needed, for example:
   public getStatus() {

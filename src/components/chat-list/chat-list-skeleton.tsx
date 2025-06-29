@@ -27,6 +27,7 @@ export function ChatListSkeleton({ targetHeight }: ChatListSkeletonProps) {
     return null;
   }
 
+  console.log("[ChatListSkeleton] targetHeight", targetHeight);
   while (accumulatedHeight < targetHeight) {
     const numItemsInGroup =
       Math.floor(

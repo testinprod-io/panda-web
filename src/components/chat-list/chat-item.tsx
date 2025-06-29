@@ -15,10 +15,11 @@ import styles from "./chat-list.module.scss";
 import type { ChatSession } from "@/types/session";
 import Locale from "@/locales";
 import { useEncryption } from "@/providers/encryption-provider";
-import { EncryptionService } from "@/services/encryption-service";
+// import { EncryptionService } from "@/services/encryption-service";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import { Chat } from "@/sdk/Chat";
+import { usePandaSDK } from "@/providers/sdk-provider";
 
 interface ChatItemProps {
   onClick?: () => void;
@@ -62,13 +63,14 @@ export function ChatItem({
   const [isAnimating, setIsAnimating] = useState(false);
   const animationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [visibleTopic, setVisibleTopic] = useState(session.title);
+  const { sdk } = usePandaSDK();
 
   useEffect(() => {
     const topic = session.title || Locale.Store.DefaultTopic;
     if (isLocked) {
       setVisibleTopic(topic);
     } else {
-      setVisibleTopic(EncryptionService.decrypt(topic));
+      setVisibleTopic(sdk.encryption.decrypt(topic));
     }
   }, [isLocked, session.title]);
 

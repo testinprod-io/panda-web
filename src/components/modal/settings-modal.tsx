@@ -72,7 +72,7 @@ export default function SettingsModal({
   // const apiClient = useApiClient();
   const [theme, setTheme] = useState("light");
   const { lockApp } = useEncryption();
-  const sdk = usePandaSDK();
+  const { sdk } = usePandaSDK();
   
   if (!authenticated) {
     return <div></div>;

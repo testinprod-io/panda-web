@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import Locale from "@/locales";
 import { ChatItem } from "./chat-item";
@@ -50,13 +50,16 @@ const getMonthYearSortKey = (groupName: string, currentYear: number): string => 
 
 export function ChatList(props: ChatListProps) {
   const router = useRouter();
-  const sdk = usePandaSDK();
+  const { sdk } = usePandaSDK();
+  const params = useParams();
   const chatManager = sdk.chat;
   const chatStore = useChatStore();
 
   const { conversations, isLoading, hasMore, activeChat } = useChatList();
   
   const observerRef = useRef<HTMLDivElement | null>(null);
+  // const isLoading 
+  const chatId = params.chatId as string;
 
   useEffect(() => {
     if (conversations.length === 0 && hasMore && !isLoading) {
@@ -128,6 +131,8 @@ export function ChatList(props: ChatListProps) {
     return <ChatListSkeleton targetHeight={500} />;
   }
 
+  console.log("[ChatList] isLoading", isLoading, conversations.length);
+
   return (
     <div className={styles["chat-list"]}>
       {sortedGroupNames.map((groupName) => (
@@ -139,7 +144,7 @@ export function ChatList(props: ChatListProps) {
                 session={item as any}
                 key={item.id}
                 index={i}
-                selected={item.id === activeChat?.id}
+                selected={item.id === chatId}
                 onClick={() => handleSelectItem(item)}
                 onDelete={() => handleDeleteItem(item)}
                 onRename={(newTitle) => handleRenameItem(item, newTitle)}
@@ -152,7 +157,7 @@ export function ChatList(props: ChatListProps) {
         <div ref={observerRef} style={{ height: "1px", marginTop: "-1px" }} />
       )}
       {isLoading && conversations.length > 0 && (
-        <ChatListSkeleton targetHeight={100} />
+        <ChatListSkeleton targetHeight={250} />
       )}
       {!isLoading && conversations.length === 0 && !hasMore && (
           <div className={styles["chat-date-header"]}>

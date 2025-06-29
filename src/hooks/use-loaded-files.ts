@@ -19,7 +19,7 @@ export function useLoadedFiles(
   sessionId: UUID,
   isLocked: boolean,
 ): LoadedFile[] {
-  const sdk = usePandaSDK();
+  const { sdk } = usePandaSDK();
   const [loadedFiles, setLoadedFiles] = useState<LoadedFile[]>([]);
 
   // Create a stable dependency based on the content of messageFiles

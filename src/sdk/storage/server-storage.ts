@@ -17,8 +17,11 @@ import {
   ServerModelInfo,
   Conversation,
   ConversationUpdateRequest,
+  Message as ApiMessage,
 } from '@/client/types';
-import { mapApiMessagesToChatMessages } from '@/services/api-service';
+import { createMessage, MessageSyncState, Role } from "@/types/chat";
+
+// import { mapApiMessagesToChatMessages } from '@/services/api-service';
 import { EncryptionService } from '../EncryptionService';
 
 
@@ -99,7 +102,7 @@ export class ServerStorage implements IStorage {
       limit,
       cursor,
     });
-    const messages = mapApiMessagesToChatMessages(
+    const messages = this.mapApiMessagesToChatMessages(
       result.data.slice().reverse(),
     );
 
@@ -137,13 +140,13 @@ export class ServerStorage implements IStorage {
     const summaries = await this.api.app.getSummaries(chatId as UUID);
     return summaries;
   }
-  async saveSummary(chatId: string, summary: Summary): Promise<void> {
+  async saveSummary(chatId: string, summary: SummaryCreateRequest): Promise<Summary> {
     const summaryCreate: SummaryCreateRequest = {
       content: summary.content,
       start_message_id: summary.start_message_id,
       end_message_id: summary.end_message_id,
     };
-    await this.api.app.createSummary(chatId as UUID, summaryCreate);
+    return (await this.api.app.createSummary(chatId as UUID, summaryCreate)).data;
   }
 
   async deleteSummary(id: string): Promise<void> {
@@ -162,4 +165,30 @@ export class ServerStorage implements IStorage {
   setModels(models: ServerModelInfo[]): void {
     // this.models = models;
   }
+
+mapApiMessagesToChatMessages(
+  messages: ApiMessage[],
+): ChatMessage[] {
+  return messages.map((msg) => this.mapApiMessageToChatMessage(msg));
+}
+
+mapApiMessageToChatMessage(message: ApiMessage): ChatMessage {
+  return createMessage({
+    id: message.message_id,
+    role: message.sender_type,
+    content: message.content,
+    visibleContent: this.encryptionService.decrypt(message.content),
+    files: message.files,
+    date: new Date(message.timestamp),
+    reasoning: message.reasoning_content,
+    visibleReasoning: message.reasoning_content ? this.encryptionService.decrypt(message.reasoning_content) : undefined,
+    reasoningTime: message.reasoning_time
+      ? parseInt(message.reasoning_time)
+      : undefined,
+    useSearch: message.custom_data?.useSearch ?? false,
+    syncState: MessageSyncState.SYNCED,
+    isError: message.is_error,
+    errorMessage: message.error_message,
+  });
+}
 }

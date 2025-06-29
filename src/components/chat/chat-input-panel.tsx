@@ -33,7 +33,7 @@ import CloseIcon from "@mui/icons-material/Close";
 // import { useApiClient } from "@/providers/api-client-provider";
 // import { useChatActions } from "@/hooks/use-chat-actions";
 import { SessionState, SubmittedFile } from "@/types/session";
-import { EncryptionService } from "@/services/encryption-service";
+// import { EncryptionService } from "@/services/encryption-service";
 import { FileCircularProgress } from "../ui/file-circular-progress";
 import { supportsImages, supportsPdf, supportsSearch } from "@/utils/model";
 import { usePandaSDK } from "@/providers/sdk-provider";
@@ -75,7 +75,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
 
     const chatStore = useChatStore();
     // const chatActions = useChatActions();
-    const sdk = usePandaSDK();
+    const { sdk } = usePandaSDK();
     const [activeSessionId, setActiveSessionId] = useState<UUID | undefined>(
       propSessionId,
     );

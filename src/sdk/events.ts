@@ -3,18 +3,20 @@ import { AttestationResult } from "@/types/attestation";
 import { VerificationStatus } from "@/hooks/use-attestation-manager";
 // import { Chat, ChatMessage, FileWithProgress } from "./Chat";
 import { PandaConfig } from "./ConfigManager";
+import { Chat } from './Chat';
 
 /* event-bus.ts */
 export interface SDKEventMap {
+  "sdk.initialized": boolean;
   "app.locked": void;                          // no payload
   "app.unlocked": void;
-  "chat.updated": void;
   "chat.list.updated": void;
   "user.updated": void;
   "auth.status.updated": boolean;
   "auth.state.updated": { isAuthenticated: boolean, isLocked: boolean, user: User | null };
   "attestation.status.updated": { status: VerificationStatus, attestationResult?: AttestationResult, publicKey: string };
   "config.updated": { config: PandaConfig };
+  [key: `chat.updated:${string}`]: undefined;
 }
 
 /** Generic handler type that is aware of the payload shape */

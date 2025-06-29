@@ -3,7 +3,7 @@ import { UUID } from "crypto";
 import { StoreKey } from "../types/constant";
 import Locale from "@/locales";
 import { createPersistStore, MakeUpdater } from "@/utils/store";
-import { ModelConfig } from "@/types/constant";
+// import { ModelConfig } from "@/types/constant";
 import {
   ChatSession,
   SessionSyncState,
@@ -13,7 +13,7 @@ import {
 import { ChatMessage, MessageSyncState } from "@/types/chat";
 import { Conversation } from "@/client/types";
 import { createJSONStorage } from "zustand/middleware";
-import { mapConversationToSession } from "@/services/api-service";
+// import { mapConversationToSession } from "@/services/api-service";
 
 export const DEFAULT_TOPIC = Locale.Store.DefaultTopic; // Use locale
 
@@ -49,114 +49,114 @@ export const useChatStore = createPersistStore(
       };
     }
 
-    function mergeSessions(
-      localSessions: ChatSession[],
-      serverConvos: Conversation[],
-    ): { mergedSessions: ChatSession[]; newCurrentIndex: number } {
-      const serverConvoMap = new Map(
-        serverConvos.map((c) => [c.conversation_id, c]),
-      );
+    // function mergeSessions(
+    //   localSessions: ChatSession[],
+    //   serverConvos: Conversation[],
+    // ): { mergedSessions: ChatSession[]; newCurrentIndex: number } {
+    //   const serverConvoMap = new Map(
+    //     serverConvos.map((c) => [c.conversation_id, c]),
+    //   );
 
-      const mergedSessions: ChatSession[] = [];
-      const usedServerIds = new Set<UUID>();
-      const currentSession = get().currentSession();
+    //   const mergedSessions: ChatSession[] = [];
+    //   const usedServerIds = new Set<UUID>();
+    //   const currentSession = get().currentSession();
 
-      localSessions.forEach((localSession) => {
-        const serverId = localSession.id;
-        if (serverId && serverConvoMap.has(serverId)) {
-          const serverConvo = serverConvoMap.get(serverId)!;
-          // Merge: Prioritize server title, keep local messages (until loaded), take max update time
-          mergedSessions.push({
-            ...localSession,
-            topic: serverConvo.title || localSession.topic || DEFAULT_TOPIC,
-            lastUpdate: Math.max(
-              localSession.lastUpdate,
-              new Date(serverConvo.updated_at).getTime(),
-            ),
-            syncState: SessionSyncState.SYNCED, // Mark as synced if server version exists
-            messagesLoadState:
-              localSession.messagesLoadState === MessagesLoadState.FULL
-                ? MessagesLoadState.FULL
-                : MessagesLoadState.NONE, // Reset load state unless fully loaded
-          });
-          usedServerIds.add(serverId);
-        } else if (
-          !serverId &&
-          localSession.syncState === SessionSyncState.PENDING_CREATE
-        ) {
-          // Keep local-only sessions pending creation
-          mergedSessions.push(localSession);
-        } else if (!serverId) {
-          // Keep purely local sessions (maybe user created offline and never synced)
-          console.log(`[Merge] Keeping local-only session ${localSession.id}`);
-          mergedSessions.push({
-            ...localSession,
-            syncState: SessionSyncState.LOCAL,
-          });
-        } else {
-          // Local session points to a server ID that doesn't exist anymore (deleted elsewhere?)
-          console.warn(
-            `[Merge] Local session ${localSession.id} points to deleted server ConvID ${serverId}. Converting to local.`,
-          );
-          mergedSessions.push({
-            ...localSession,
-            id: localSession.id,
-            syncState: SessionSyncState.LOCAL,
-            topic: localSession.topic || DEFAULT_TOPIC,
-            messagesLoadState: MessagesLoadState.NONE,
-          });
-        }
-      });
+    //   localSessions.forEach((localSession) => {
+    //     const serverId = localSession.id;
+    //     if (serverId && serverConvoMap.has(serverId)) {
+    //       const serverConvo = serverConvoMap.get(serverId)!;
+    //       // Merge: Prioritize server title, keep local messages (until loaded), take max update time
+    //       mergedSessions.push({
+    //         ...localSession,
+    //         topic: serverConvo.title || localSession.topic || DEFAULT_TOPIC,
+    //         lastUpdate: Math.max(
+    //           localSession.lastUpdate,
+    //           new Date(serverConvo.updated_at).getTime(),
+    //         ),
+    //         syncState: SessionSyncState.SYNCED, // Mark as synced if server version exists
+    //         messagesLoadState:
+    //           localSession.messagesLoadState === MessagesLoadState.FULL
+    //             ? MessagesLoadState.FULL
+    //             : MessagesLoadState.NONE, // Reset load state unless fully loaded
+    //       });
+    //       usedServerIds.add(serverId);
+    //     } else if (
+    //       !serverId &&
+    //       localSession.syncState === SessionSyncState.PENDING_CREATE
+    //     ) {
+    //       // Keep local-only sessions pending creation
+    //       mergedSessions.push(localSession);
+    //     } else if (!serverId) {
+    //       // Keep purely local sessions (maybe user created offline and never synced)
+    //       console.log(`[Merge] Keeping local-only session ${localSession.id}`);
+    //       mergedSessions.push({
+    //         ...localSession,
+    //         syncState: SessionSyncState.LOCAL,
+    //       });
+    //     } else {
+    //       // Local session points to a server ID that doesn't exist anymore (deleted elsewhere?)
+    //       console.warn(
+    //         `[Merge] Local session ${localSession.id} points to deleted server ConvID ${serverId}. Converting to local.`,
+    //       );
+    //       mergedSessions.push({
+    //         ...localSession,
+    //         id: localSession.id,
+    //         syncState: SessionSyncState.LOCAL,
+    //         topic: localSession.topic || DEFAULT_TOPIC,
+    //         messagesLoadState: MessagesLoadState.NONE,
+    //       });
+    //     }
+    //   });
 
-      // Add server conversations that weren't in local state
-      serverConvoMap.forEach((serverConvo, serverId) => {
-        if (!usedServerIds.has(serverId)) {
-          // Convert server convo to local session format
-          const newLocalSession = mapConversationToSession(serverConvo);
-          newLocalSession.syncState = SessionSyncState.SYNCED;
-          newLocalSession.messagesLoadState = MessagesLoadState.NONE; // Needs loading
-          mergedSessions.push(newLocalSession);
-          console.log(`[Merge] Added new session from server: ${serverId}`);
-        }
-      });
+    //   // Add server conversations that weren't in local state
+    //   serverConvoMap.forEach((serverConvo, serverId) => {
+    //     if (!usedServerIds.has(serverId)) {
+    //       // Convert server convo to local session format
+    //       const newLocalSession = mapConversationToSession(serverConvo);
+    //       newLocalSession.syncState = SessionSyncState.SYNCED;
+    //       newLocalSession.messagesLoadState = MessagesLoadState.NONE; // Needs loading
+    //       mergedSessions.push(newLocalSession);
+    //       console.log(`[Merge] Added new session from server: ${serverId}`);
+    //     }
+    //   });
 
-      // Ensure there's always at least one session (create a new local one if needed)
-      if (mergedSessions.length === 0) {
-        console.log("[Merge] No sessions after merge, returning empty array.");
-        //  mergedSessions.push(createEmptySession()); // Creates a 'local' session
-      }
+    //   // Ensure there's always at least one session (create a new local one if needed)
+    //   if (mergedSessions.length === 0) {
+    //     console.log("[Merge] No sessions after merge, returning empty array.");
+    //     //  mergedSessions.push(createEmptySession()); // Creates a 'local' session
+    //   }
 
-      // Sort sessions by last update time (most recent first)
-      mergedSessions.sort((a, b) => b.lastUpdate - a.lastUpdate);
+    //   // Sort sessions by last update time (most recent first)
+    //   mergedSessions.sort((a, b) => b.lastUpdate - a.lastUpdate);
 
-      // Determine the new currentSessionIndex
-      let newCurrentIndex = 0; // Default to the first (most recent)
-      if (currentSession) {
-        // Try to find the previously selected session in the merged list
-        const idx = mergedSessions.findIndex(
-          (s) => s.id && s.id === currentSession.id,
-        );
-        if (idx !== -1) {
-          newCurrentIndex = idx; // Keep the same session selected if found
-        } else {
-          console.log(
-            "[Merge] Previously selected session not found after merge, selecting most recent.",
-          );
-        }
-      } else if (mergedSessions.length > 0) {
-        console.log(
-          "[Merge] No previous session selected, selecting most recent.",
-        );
-      } else {
-        console.log("[Merge] No sessions to select.");
-        newCurrentIndex = -1; // Should not happen due to creation above, but safety check
-      }
+    //   // Determine the new currentSessionIndex
+    //   let newCurrentIndex = 0; // Default to the first (most recent)
+    //   if (currentSession) {
+    //     // Try to find the previously selected session in the merged list
+    //     const idx = mergedSessions.findIndex(
+    //       (s) => s.id && s.id === currentSession.id,
+    //     );
+    //     if (idx !== -1) {
+    //       newCurrentIndex = idx; // Keep the same session selected if found
+    //     } else {
+    //       console.log(
+    //         "[Merge] Previously selected session not found after merge, selecting most recent.",
+    //       );
+    //     }
+    //   } else if (mergedSessions.length > 0) {
+    //     console.log(
+    //       "[Merge] No previous session selected, selecting most recent.",
+    //     );
+    //   } else {
+    //     console.log("[Merge] No sessions to select.");
+    //     newCurrentIndex = -1; // Should not happen due to creation above, but safety check
+    //   }
 
-      console.log(
-        `[Merge] Merged ${localSessions.length} local and ${serverConvos.length} server sessions into ${mergedSessions.length}. New index: ${newCurrentIndex}`,
-      );
-      return { mergedSessions, newCurrentIndex };
-    }
+    //   console.log(
+    //     `[Merge] Merged ${localSessions.length} local and ${serverConvos.length} server sessions into ${mergedSessions.length}. New index: ${newCurrentIndex}`,
+    //   );
+    //   return { mergedSessions, newCurrentIndex };
+    // }
 
     // Merging logic stays within the store
     function mergeMessages(
@@ -375,60 +375,60 @@ export const useChatStore = createPersistStore(
         set({ ...DEFAULT_CHAT_STATE });
       },
 
-      updateCurrentSessionModel(newModelConfig: ModelConfig) {
-        const session = get().currentSession();
+      // updateCurrentSessionModel(newModelConfig: ModelConfig) {
+      //   const session = get().currentSession();
         
-        if (!session) return;
-        get().updateTargetSession(session, (sess) => {
-          // sess.modelConfig is typed as ModelConfig from app/constant.ts
-          sess.modelConfig = newModelConfig;
-        });
-      },
+      //   if (!session) return;
+      //   get().updateTargetSession(session, (sess) => {
+      //     // sess.modelConfig is typed as ModelConfig from app/constant.ts
+      //     sess.modelConfig = newModelConfig;
+      //   });
+      // },
 
-      // Called by loadSessionsFromServer action after successful API call
-      // Expects serverConvos to have titles already decrypted by ApiService
-      _onServerSessionsLoaded(serverConvos: Conversation[]) {
-        const localSessions = _get().sessions;
-        const { mergedSessions, newCurrentIndex } = mergeSessions(
-          localSessions,
-          serverConvos,
-        );
-        set({
-          sessions: mergedSessions,
-          currentSessionIndex: newCurrentIndex,
-        });
-      },
+      // // Called by loadSessionsFromServer action after successful API call
+      // // Expects serverConvos to have titles already decrypted by ApiService
+      // _onServerSessionsLoaded(serverConvos: Conversation[]) {
+      //   const localSessions = _get().sessions;
+      //   const { mergedSessions, newCurrentIndex } = mergeSessions(
+      //     localSessions,
+      //     serverConvos,
+      //   );
+      //   set({
+      //     sessions: mergedSessions,
+      //     currentSessionIndex: newCurrentIndex,
+      //   });
+      // },
 
-      setOnSendMessageHandler: (
-        handler: ((sessionState: SessionState) => Promise<void>) | null,
-      ) => {
-        set({ onSendMessageHandler: handler });
-      },
-      setHitBottom: (isAtBottom: boolean) => {
-        set({ hitBottom: isAtBottom });
-      },
-      setScrollToBottomHandler: (handler: (() => void) | null) => {
-        set({ scrollToBottomHandler: handler });
-      },
-      setShowPromptModalHandler: (handler: (() => void) | null) => {
-        set({ showPromptModalHandler: handler });
-      },
-      setShowShortcutKeyModalHandler: (handler: (() => void) | null) => {
-        set({ showShortcutKeyModalHandler: handler });
-      },
-      setIsChatComponentBusy: (isBusy: boolean) => {
-        set({ isChatComponentBusy: isBusy });
-      },
+      // setOnSendMessageHandler: (
+      //   handler: ((sessionState: SessionState) => Promise<void>) | null,
+      // ) => {
+      //   set({ onSendMessageHandler: handler });
+      // },
+      // setHitBottom: (isAtBottom: boolean) => {
+      //   set({ hitBottom: isAtBottom });
+      // },
+      // setScrollToBottomHandler: (handler: (() => void) | null) => {
+      //   set({ scrollToBottomHandler: handler });
+      // },
+      // setShowPromptModalHandler: (handler: (() => void) | null) => {
+      //   set({ showPromptModalHandler: handler });
+      // },
+      // setShowShortcutKeyModalHandler: (handler: (() => void) | null) => {
+      //   set({ showShortcutKeyModalHandler: handler });
+      // },
+      // setIsChatComponentBusy: (isBusy: boolean) => {
+      //   set({ isChatComponentBusy: isBusy });
+      // },
 
-      clearChatInteractionHandlers: () => {
-        set({
-          onSendMessageHandler: null,
-          scrollToBottomHandler: null,
-          showPromptModalHandler: null,
-          showShortcutKeyModalHandler: null,
-          isChatComponentBusy: false,
-        });
-      },
+      // clearChatInteractionHandlers: () => {
+      //   set({
+      //     onSendMessageHandler: null,
+      //     scrollToBottomHandler: null,
+      //     showPromptModalHandler: null,
+      //     showShortcutKeyModalHandler: null,
+      //     isChatComponentBusy: false,
+      //   });
+      // },
     };
 
     return { ...methods };

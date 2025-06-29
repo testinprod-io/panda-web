@@ -56,7 +56,7 @@ export default function OnboardingView() {
     extra_params: "",
   });
   const [isSaving, setIsSaving] = useState(false);
-  const sdk = usePandaSDK();
+  const { sdk } = usePandaSDK();
   // const apiClient = useApiClient();
   const { setCustomizedPrompts } = useAppConfig();
   const router = useRouter();
@@ -100,9 +100,13 @@ export default function OnboardingView() {
     if (Object.keys(payload.prompts!).length === 0) delete payload.prompts;
 
     try {
-      const encryptedPayload = encryptSystemPrompt(payload);
+      const encryptedPayload = encryptSystemPrompt(
+        payload,
+        sdk.encryption.encrypt.bind(sdk.encryption),
+      );
       const responseData = decryptSystemPrompt(
-        await sdk.api.app.createCustomizedPrompts(encryptedPayload)
+        await sdk.api.app.createCustomizedPrompts(encryptedPayload),
+        sdk.encryption.decrypt.bind(sdk.encryption),
       );
       setCustomizedPrompts(responseData);
       router.push("/");
@@ -112,7 +116,7 @@ export default function OnboardingView() {
       // Optional: Show an error message to the user
       router.push("/"); // For now, just navigate away
     }
-  }, [sdk.api.app, data, router, setCustomizedPrompts]);
+  }, [sdk.api.app, data, router, setCustomizedPrompts, sdk.encryption]);
 
   useEffect(() => {
     if (step === STEPS.length && !isSaving) {

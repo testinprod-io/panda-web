@@ -17,6 +17,7 @@ import styles from "./customize-prompts-view.module.scss";
 import { CustomizedPromptsResponse } from "@/client/types";
 // import { useApiClient } from "@/providers/api-client-provider";
 import { CustomizedPromptsData, decryptSystemPrompt, encryptSystemPrompt } from "@/types";
+
 // import { useAppConfig } from "@/store/config";
 import { usePandaSDK } from "@/providers/sdk-provider";
 import { useUser } from "@/sdk/hooks";
@@ -62,7 +63,7 @@ export default function CustomizePromptsView({
   const [traits, setTraits] = useState<Trait[]>(
     initialTraits.map((t) => ({ ...t, selected: false })),
   );
-  const sdk = usePandaSDK();
+  const { sdk } = usePandaSDK();
   // const apiClient = useApiClient();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -79,7 +80,7 @@ export default function CustomizePromptsView({
       setIsLoading(true);
       setError(null);
       try {
-        const data = decryptSystemPrompt(await sdk.api.app.getCustomizedPrompts());
+        const data = decryptSystemPrompt(await sdk.api.app.getCustomizedPrompts(), sdk.encryption.decrypt.bind(sdk.encryption));
         setName(data.personal_info?.name || "");
         setJob(data.personal_info?.job || "");
         const currentTraitsText = data.prompts?.traits || "";
@@ -207,12 +208,12 @@ export default function CustomizePromptsView({
     payload.prompts!.extra_params = extraParams.trim();
     
     try {
-      const encryptedPayload = encryptSystemPrompt(payload);
+      const encryptedPayload = encryptSystemPrompt(payload, sdk.encryption.encrypt.bind(sdk.encryption));
       let responseData: CustomizedPromptsData;
       if (isUpdateMode) {
-        responseData = decryptSystemPrompt(await sdk.api.app.updateCustomizedPrompts(encryptedPayload));
+        responseData = decryptSystemPrompt(await sdk.api.app.updateCustomizedPrompts(encryptedPayload), sdk.encryption.decrypt.bind(sdk.encryption));
       } else {
-        responseData = decryptSystemPrompt(await sdk.api.app.createCustomizedPrompts(encryptedPayload));
+        responseData = decryptSystemPrompt(await sdk.api.app.createCustomizedPrompts(encryptedPayload), sdk.encryption.decrypt.bind(sdk.encryption));
       }
       updateCustomizedPrompts(responseData);
       setName(responseData.personal_info?.name || "");

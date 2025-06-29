@@ -107,7 +107,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
   } = message;
   const { isLocked } = useEncryption();
   const { attestationResults, verificationResults } = useAttestation();
-  const sdk = usePandaSDK();
+  const { sdk } = usePandaSDK();
 
   const loadedFiles = useLoadedFiles(files, sessionId, isLocked);
 

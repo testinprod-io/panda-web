@@ -109,11 +109,11 @@ export class EncryptionService {
    * Verify that the provided password can correctly decrypt the verification token
    * This confirms the password is correct
    */
-  public verifyKey(
+  public verifyKey = (
     verificationToken: string,
     userId: string,
     password: string
-  ): boolean {
+  ): boolean => {
     if (typeof window === "undefined") {
       console.error("[EncryptionService] verifyKey called outside of browser.");
       return false; // Cannot verify outside of browser
@@ -134,7 +134,7 @@ export class EncryptionService {
       console.error("[EncryptionService] Verification failed:", error);
       return false;
     }
-  }
+  };
 
   public encrypt(text: string): string {
     if (!this.isKeySet()) {

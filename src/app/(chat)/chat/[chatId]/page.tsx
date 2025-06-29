@@ -15,7 +15,7 @@ export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
   const store = useChatStore();
-  const sdk = usePandaSDK();
+  const { sdk } = usePandaSDK();
   const chatId = params?.chatId as UUID | undefined;
   const { isReady: isAuthReady, isAuthenticated } = useAuthStatus();
 
@@ -49,6 +49,7 @@ export default function ChatPage() {
       }
   
       const currentSession = await sdk.chat.getChat(chatId);
+      sdk.chat.setActiveChatId(chatId);
       if (currentSession) {
         console.log(`[ChatPage] Session found`);
         sdk.chat.setActiveChat(currentSession);
