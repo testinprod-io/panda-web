@@ -364,6 +364,7 @@ export class Chat {
       });
     });
 
+    let reasoningStartTimeForThisQuery: number | null = null;
     const botMessage = createMessage({
       role: Role.ASSISTANT,
       streaming: true,
@@ -398,6 +399,7 @@ export class Chat {
               }
             : m;
         });
+        reasoningStartTimeForThisQuery = Date.now();
         this.updateState();
         options.onReasoningStart?.(localBotMessageId);
       },
@@ -418,6 +420,11 @@ export class Chat {
         options.onReasoningChunk?.(localBotMessageId, chunk);
       },
       onReasoningEnd: () => {
+          let duration = 0;
+          if (reasoningStartTimeForThisQuery !== null) {
+            duration = Date.now() - reasoningStartTimeForThisQuery;
+            reasoningStartTimeForThisQuery = null;
+          }
         this.messages = this.messages.map((msg) => {
           return msg.id === localBotMessageId
             ? {
@@ -426,6 +433,7 @@ export class Chat {
                 reasoning: this.encryptionService.encrypt(
                   msg.visibleReasoning ?? ""
                 ),
+                reasoningTime: duration
               }
             : msg;
         });

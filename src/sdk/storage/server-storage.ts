@@ -115,6 +115,7 @@ export class ServerStorage implements IStorage {
 
   async saveMessage(chatId: string, msg: ChatMessage): Promise<void> {
     console.log(`[ServerStorage] Saving message ${msg.id} to chat ${chatId}`);
+    console.log("msg", msg.reasoningTime);
     const request: MessageCreateRequest = {
       message_id: msg.id,
       sender_type: msg.role,

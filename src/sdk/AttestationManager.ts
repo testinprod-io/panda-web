@@ -3,10 +3,10 @@ import { optimism } from "viem/chains";
 import { createPublicClient, http, Hex, PublicClient } from "viem";
 import { ABI } from "@/services/kms-contract";
 import {
-  TdxPayload,
+  // TdxPayload,
   Jwks,
-  EventLogEntry,
-  AttestationResult,
+  // EventLogEntry,
+  // AttestationResult,
 } from "@/types/attestation";
 import { jwtVerify, JWTPayload, importJWK, JWK } from "jose";
 import {
@@ -14,6 +14,7 @@ import {
   VerificationStatus,
 } from "@/hooks/use-attestation-manager";
 import { EventBus, SDKEventMap } from "@/sdk/events";
+import { AttestationResponse } from "@/client/types";
 
 export class AttestationManager {
   private api: ApiService;
@@ -25,6 +26,7 @@ export class AttestationManager {
 
   private attestationResults: Record<string, AttestationResult> = {};
   private verificationResults: Record<string, VerificationResult> = {};
+  
   private state: {
     attestationResults: Record<string, AttestationResult>;
     verificationResults: Record<string, VerificationResult>;
@@ -52,121 +54,267 @@ export class AttestationManager {
     return this.state;
   }
 
+  private async verifyLocalCert(
+    publicKeyHex: string,
+    attestationResponse: AttestationResponse
+  ): Promise<AttestationResult> {
+    const jwksResponse = await fetch("/trust-authority-certs.txt");
+    const rawJwks = await jwksResponse.text();
+    const jwks = JSON.parse(rawJwks) as Jwks;
+    const lastKey = jwks.keys[jwks.keys.length - 1];
+
+    const publicKey = await importJWK(lastKey, "RS256");
+
+    const { payload: verifiedPayload } = await jwtVerify(
+      attestationResponse.token,
+      publicKey,
+      { algorithms: ["RS256"], clockTolerance: "1 year" }
+    );
+    const jwtPayload = verifiedPayload as JWTPayload & TdxPayload;
+
+    const computedQuoteHash = await sha256Hex(attestationResponse.quote);
+    const expectedQuoteHash = `0x${jwtPayload.tdx.tdx_collateral.quotehash}`;
+    if (computedQuoteHash !== expectedQuoteHash) {
+      throw new Error(
+        `quotehash mismatch:\n  expected ${expectedQuoteHash}\n  got      ${computedQuoteHash}`
+      );
+    }
+
+    const deviceId = await deviceIdFromQuote(attestationResponse.quote);
+
+    const eventLog: EventLogEntry[] = JSON.parse(attestationResponse.event_log);
+
+    const rtmr: string[] = await replayRtmr(eventLog);
+    for (let i = 0; i < 4; i++) {
+      const claimName = `tdx_rtmr${i}` as keyof TdxPayload["tdx"];
+      const expected = `0x${jwtPayload.tdx[claimName]}`;
+      if (rtmr[i] !== expected) {
+        throw new Error(
+          `RTMR${i} mismatch:\n  expected ${expected}\n  got      ${rtmr[i]}`
+        );
+      }
+    }
+
+    // 10) Parse event_log again to pick out app_id, key_provider, compose_hash
+    const bootInfo = extractBootInfo(eventLog);
+    const { appId, keyProvider, composeHash, instanceId, osImageHash } =
+      bootInfo;
+
+    if (!appId || !keyProvider || !composeHash || !osImageHash) {
+      throw new Error(
+        "Missing one of app-id, key-provider, or compose-hash, or os-image-hash in event_log"
+      );
+    }
+
+    const { mrAggregated, mrSystem } = await buildMrHashes(
+      jwtPayload.tdx,
+      keyProvider
+    );
+
+    const attestationResult: AttestationResult = {
+      appId,
+      mrSystem,
+      osImageHash,
+      composeHash,
+      deviceId,
+      instanceId,
+      mrAggregated,
+      tcbStatus: "",
+      advisoryIds: [],
+    };
+    return attestationResult;
+  }
+
+  private async verifyOnchain(
+    publicKeyHex: string,
+    attestationResponse: AttestationResponse
+  ) {
+    if (!attestationResponse.tx_hash) {
+      throw new Error("tx_hash is required for v1 attestation");
+    }
+
+    const txHash = `0x${attestationResponse.tx_hash}` as `0x${string}`;
+
+    const [tx, receipt] = await Promise.all([
+      this.client.getTransaction({ hash: txHash }),
+      this.client.getTransactionReceipt({ hash: txHash }),
+    ]);
+
+    const calldataBytes = hexToBuf(tx.input as `0x${string}`);
+    const quoteBytes = calldataBytes.slice(68, calldataBytes.length - 18);
+    const quoteHex = bufToHex(quoteBytes);
+
+    if (quoteHex !== `0x${attestationResponse.quote}`) {
+      throw new Error("quote in tx input ≠ quote in REST payload");
+    }
+
+    const logData = hexToBuf(receipt.logs[0].data as `0x${string}`);
+    const successWord = bufToHex(logData.slice(0, 32));
+    if (successWord !== "0x" + "1".padStart(64, "0"))
+      throw new Error("attestation contract emitted success = 0");
+
+    const output = logData.slice(128); // skip 4 × 32-byte words
+    const rawQuote = output.slice(13, 13 + 584); // SGX quote body
+
+    const reportData = rawQuote.slice(-64, -32); // last 32 bytes of REPORTDATA
+    const pubKeyHash = await sha256Hex(publicKeyHex); // util helper
+
+    if (bufToHex(reportData) !== pubKeyHash)
+      throw new Error("public-key hash mismatch");
+
+    const deviceId = await deviceIdFromQuote(quoteHex);
+
+    const eventLog: EventLogEntry[] = JSON.parse(attestationResponse.event_log);
+
+    const replayedRtmr: string[] = await replayRtmr(eventLog);
+    const rtmrOnChain = [...Array(4)].map((_, i) =>
+      bufToHex(rawQuote.slice(328 + i * 48, 328 + (i + 1) * 48))
+    );
+
+    rtmrOnChain.forEach((rtmr, i) => {
+      if (rtmr !== replayedRtmr[i])
+        throw new Error(`RTMR${i} mismatch (on-chain vs replay)`);
+    });
+
+    const bootInfo = extractBootInfo(eventLog);
+    const { appId, keyProvider, composeHash, instanceId, osImageHash } =
+      bootInfo;
+
+    if (!appId || !keyProvider || !composeHash || !osImageHash || !instanceId) {
+      throw new Error(
+        "Missing one of app-id, key-provider, or compose-hash, or os-image-hash, or instance-id in event_log"
+      );
+    }
+
+    const attestationResult: AttestationResult = {
+      appId,
+      mrSystem: "0".repeat(64),
+      osImageHash,
+      composeHash,
+      deviceId,
+      instanceId,
+      mrAggregated: "0".repeat(64),
+      tcbStatus: "0".repeat(64),
+      advisoryIds: [],
+    };
+    return attestationResult;
+  }
+
   public async verifyContract(
     publicKeyHex: string,
     attestationResult: AttestationResult
   ): Promise<VerificationResult> {
     try {
-    if (this.verificationResults.hasOwnProperty(attestationResult.appId)) {
-      if (
-        this.verificationResults[attestationResult.appId].status ===
-        VerificationStatus.ContractVerified
-      ) {
-        console.log("Contract already verified, returning true");
-        return this.verificationResults[attestationResult.appId];
-      } else if (
-        this.verificationResults[attestationResult.appId].status ===
-        VerificationStatus.Pending
-      ) {
-        console.log("Contract already pending");
-        return this.verificationResults[attestationResult.appId];
+      if (this.verificationResults.hasOwnProperty(publicKeyHex)) {
+        if (
+          this.verificationResults[publicKeyHex].status ===
+          VerificationStatus.ContractVerified
+        ) {
+          console.log("Contract already verified, returning true");
+          return this.verificationResults[publicKeyHex];
+        } else if (
+          this.verificationResults[publicKeyHex].status ===
+          VerificationStatus.Pending
+        ) {
+          console.log("Contract already pending");
+          return this.verificationResults[publicKeyHex];
+        }
       }
+
+      this.verificationResults[publicKeyHex] = {
+        status: VerificationStatus.Pending,
+        attestationResult,
+        publicKey: publicKeyHex,
+      };
+      this.updateState({
+        status: VerificationStatus.Pending,
+        attestationResult,
+        publicKey: publicKeyHex,
+      });
+
+      // if (!ready) {
+      //   console.log("Privy not ready, cannot verify contract");
+      // }
+      // if (wallets.length === 0) {
+      //   console.log("No wallets found, cannot verify contract");
+      //   const verificationResult: VerificationResult = {
+      //     status: VerificationStatus.Failed,
+      //     attestationResult,
+      //     publicKey: publicKeyHex,
+      //   };
+      //   setVerificationResult(attestationResult.appId, verificationResult);
+      //   return verificationResult;
+      // }
+
+      // const wallet = wallets[0];
+      // if (process.env.NEXT_PUBLIC_KMS_CONTRACT_NETWORK === "optimism") {
+      //   await wallet.switchChain(optimism.id);
+      // } else if (process.env.NEXT_PUBLIC_KMS_CONTRACT_NETWORK === "sepolia") {
+      //   await wallet.switchChain(sepolia.id);
+      // }
+
+      // const provider = await wallet.getEthereumProvider();
+      // const client = createPublicClient({
+      //   chain: process.env.NEXT_PUBLIC_KMS_CONTRACT_NETWORK === "optimism" ? optimism : sepolia,
+      //   transport: custom(provider),
+      // });
+
+      // console.log(`Reading contract isAppAllowed with wallet address: ${wallet.address} and contract address: ${ADDRESS}`);
+
+      const toHex = (value: string) =>
+        (value.startsWith("0x") ? value : `0x${value}`) as Hex;
+
+      const [isAllowed, reason] = (await this.client.readContract({
+        // account: wallet.address as Hex,
+        address:
+          (process.env.NEXT_PUBLIC_KMS_CONTRACT_ADDRESS as `0x${string}`) ||
+          "0x3366E906D7C2362cE4C336f43933Cccf76509B23",
+        abi: ABI,
+        functionName: "isAppAllowed",
+        args: [
+          {
+            appId: toHex(attestationResult.appId),
+            composeHash: toHex(attestationResult.composeHash),
+            instanceId: toHex(attestationResult.instanceId),
+            deviceId: toHex(attestationResult.deviceId),
+            mrAggregated: toHex(attestationResult.mrAggregated),
+            mrSystem: toHex(attestationResult.mrSystem),
+            osImageHash: toHex(attestationResult.osImageHash),
+            tcbStatus: attestationResult.tcbStatus,
+            advisoryIds: attestationResult.advisoryIds,
+          },
+        ],
+      })) as [boolean, string];
+
+      const verificationResult = {
+        status: isAllowed
+          ? VerificationStatus.ContractVerified
+          : VerificationStatus.Failed,
+        attestationResult,
+        publicKey: publicKeyHex,
+      };
+      this.verificationResults[publicKeyHex] = verificationResult;
+      console.log("isAllowed:", isAllowed, "reason:", reason);
+      this.updateState({
+        status: verificationResult.status,
+        attestationResult,
+        publicKey: publicKeyHex,
+      });
+      return verificationResult;
+    } catch (e) {
+      this.verificationResults[publicKeyHex] = {
+        status: VerificationStatus.Failed,
+        attestationResult,
+        publicKey: publicKeyHex,
+      };
+      this.updateState({
+        status: VerificationStatus.Failed,
+        attestationResult,
+        publicKey: publicKeyHex,
+      });
+      console.error("Failed to verify contract", e);
+      throw new Error("Failed to verify contract");
     }
-
-    this.verificationResults[attestationResult.appId] = {
-      status: VerificationStatus.Pending,
-      attestationResult,
-      publicKey: publicKeyHex,
-    };
-    this.updateState({
-      status: VerificationStatus.Pending,
-      attestationResult,
-      publicKey: publicKeyHex,
-    });
-
-    // if (!ready) {
-    //   console.log("Privy not ready, cannot verify contract");
-    // }
-    // if (wallets.length === 0) {
-    //   console.log("No wallets found, cannot verify contract");
-    //   const verificationResult: VerificationResult = {
-    //     status: VerificationStatus.Failed,
-    //     attestationResult,
-    //     publicKey: publicKeyHex,
-    //   };
-    //   setVerificationResult(attestationResult.appId, verificationResult);
-    //   return verificationResult;
-    // }
-
-    // const wallet = wallets[0];
-    // if (process.env.NEXT_PUBLIC_KMS_CONTRACT_NETWORK === "optimism") {
-    //   await wallet.switchChain(optimism.id);
-    // } else if (process.env.NEXT_PUBLIC_KMS_CONTRACT_NETWORK === "sepolia") {
-    //   await wallet.switchChain(sepolia.id);
-    // }
-
-    // const provider = await wallet.getEthereumProvider();
-    // const client = createPublicClient({
-    //   chain: process.env.NEXT_PUBLIC_KMS_CONTRACT_NETWORK === "optimism" ? optimism : sepolia,
-    //   transport: custom(provider),
-    // });
-
-    // console.log(`Reading contract isAppAllowed with wallet address: ${wallet.address} and contract address: ${ADDRESS}`);
-
-    const toHex = (value: string) =>
-      (value.startsWith("0x") ? value : `0x${value}`) as Hex;
-
-    const [isAllowed, reason] = (await this.client.readContract({
-      // account: wallet.address as Hex,
-      address:
-        (process.env.NEXT_PUBLIC_KMS_CONTRACT_ADDRESS as `0x${string}`) ||
-        "0x3366E906D7C2362cE4C336f43933Cccf76509B23",
-      abi: ABI,
-      functionName: "isAppAllowed",
-      args: [
-        {
-          appId: toHex(attestationResult.appId),
-          composeHash: toHex(attestationResult.composeHash),
-          instanceId: toHex(attestationResult.instanceId),
-          deviceId: toHex(attestationResult.deviceId),
-          mrAggregated: toHex(attestationResult.mrAggregated),
-          mrSystem: toHex(attestationResult.mrSystem),
-          osImageHash: toHex(attestationResult.osImageHash),
-          tcbStatus: attestationResult.tcbStatus,
-          advisoryIds: attestationResult.advisoryIds,
-        },
-      ],
-    })) as [boolean, string];
-
-    const verificationResult = {
-      status: isAllowed
-        ? VerificationStatus.ContractVerified
-        : VerificationStatus.Failed,
-      attestationResult,
-      publicKey: publicKeyHex,
-    };
-    this.verificationResults[attestationResult.appId] = verificationResult;
-    console.log("isAllowed:", isAllowed, "reason:", reason);
-    this.updateState({
-      status: verificationResult.status,
-      attestationResult,
-      publicKey: publicKeyHex,
-    });
-    return verificationResult;
-  } catch(e) { 
-    this.verificationResults[attestationResult.appId] = {
-      status: VerificationStatus.Failed,
-      attestationResult,
-      publicKey: publicKeyHex,
-    };
-    this.updateState({
-      status: VerificationStatus.Failed,
-      attestationResult,
-      publicKey: publicKeyHex,
-    });
-    console.error("Failed to verify contract", e);
-    throw new Error("Failed to verify contract");
-  }
   }
 
   public async verifyAttestation(
@@ -186,214 +334,23 @@ export class AttestationManager {
       const attestationResponse =
         await this.api.app.getAttestation(publicKeyHex);
 
-      // Load the Trust Authority JWKs
-      const jwksResponse = await fetch("/trust-authority-certs.txt");
-      const rawJwks = await jwksResponse.text();
-      const jwks = JSON.parse(rawJwks) as Jwks;
-      const lastKey = jwks.keys[jwks.keys.length - 1];
-
-      // 3) Import the last JWK as a public key
-      const publicKey = await importJWK(lastKey, "RS256");
-
-      // 4) Verify the JWT (ignoring expiration)
-      const { payload: verifiedPayload } = await jwtVerify(
-        attestationResponse.token,
-        publicKey,
-        { algorithms: ["RS256"], clockTolerance: "1 year" }
-      );
-      const jwtPayload = verifiedPayload as JWTPayload & TdxPayload;
-
-      const bufferToHex = (buffer: ArrayBuffer) => {
-        return [...new Uint8Array(buffer)]
-          .map((b) => b.toString(16).padStart(2, "0"))
-          .join("");
-      };
-
-      // 5) Compare "quotehash"
-      //    Compute SHA-256 over the raw quote bytes (hex → Buffer)
-      const quoteBytes = Buffer.from(attestationResponse.quote, "hex");
-      const computedQuoteHashBuffer = await crypto.subtle.digest(
-        "SHA-256",
-        quoteBytes
-      );
-      const computedQuoteHash = bufferToHex(computedQuoteHashBuffer);
-
-      if (computedQuoteHash !== jwtPayload.tdx.tdx_collateral.quotehash) {
-        throw new Error(
-          `quotehash mismatch:\n  expected ${jwtPayload.tdx.tdx_collateral.quotehash}\n  got      ${computedQuoteHash}`
+      let attestationResult: AttestationResult;
+      if (attestationResponse.version === "v1") {
+        console.log("verifying onchain attestation");
+        attestationResult = await this.verifyOnchain(
+          publicKeyHex,
+          attestationResponse
+        );
+      } else {
+        console.log("verifying local cert attestation");
+        attestationResult = await this.verifyLocalCert(
+          publicKeyHex,
+          attestationResponse
         );
       }
-
-      // 6) Extract `user_data` from the quote:
-      //    quote is a hex string; header.user_data starts at byte offset 28, length 20 bytes
-      //    which corresponds to hex indices [28*2 .. 48*2).
-      const userDataHex = attestationResponse.quote.slice(28 * 2, 48 * 2);
-
-      // 7) Compute device_id = SHA-256(user_data)
-      const deviceIdBuffer = await crypto.subtle.digest(
-        "SHA-256",
-        Buffer.from(userDataHex, "hex")
-      );
-      const deviceId = bufferToHex(deviceIdBuffer);
-
-      console.log("attestationResponse:", attestationResponse);
-
-      // 8) Replay event_log to recompute RTMR[] values
-      const eventLog: EventLogEntry[] = JSON.parse(
-        attestationResponse.event_log
-      );
-      const rtmr: string[] = Array(4).fill("0".repeat(96));
-
-      for (const event of eventLog) {
-        // previous value (hex) + event.digest (hex) → Buffer, then SHA-384
-        const prevHex = rtmr[event.imr];
-        const concatenated = Buffer.from(prevHex + event.digest, "hex");
-        const newRtmrBuffer = await crypto.subtle.digest(
-          "SHA-384",
-          concatenated
-        );
-        const newRtmr = bufferToHex(newRtmrBuffer);
-        rtmr[event.imr] = newRtmr;
-      }
-
-      // 9) Compare each rtmr[i] against jwtPayload.tdx[`tdx_rtmr${i}`]
-      for (let i = 0; i < 4; i++) {
-        const claimName = `tdx_rtmr${i}` as keyof TdxPayload["tdx"];
-        const expected = jwtPayload.tdx[claimName];
-        if (rtmr[i] !== expected) {
-          throw new Error(
-            `RTMR${i} mismatch:\n  expected ${expected}\n  got      ${rtmr[i]}`
-          );
-        }
-      }
-
-      // 10) Parse event_log again to pick out app_id, key_provider, compose_hash
-      let appId = "";
-      let keyProvider = "";
-      let composeHash = "";
-      let instanceId = "0x0000000000000000000000000000000000000000";
-      let osImageHash = "";
-      for (const event of eventLog) {
-        if (event.event === "app-id") {
-          appId = event.event_payload;
-        } else if (event.event === "key-provider") {
-          keyProvider = event.event_payload;
-        } else if (event.event === "compose-hash") {
-          composeHash = event.event_payload;
-        } else if (event.event === "instance-id") {
-          instanceId = event.event_payload;
-        } else if (event.event === "os-image-hash") {
-          osImageHash = event.event_payload;
-        }
-      }
-      if (!appId || !keyProvider || !composeHash || !osImageHash) {
-        throw new Error(
-          "Missing one of app-id, key-provider, or compose-hash, or os-image-hash in event_log"
-        );
-      }
-
-      // 10.5) Compute mr_aggregated:
-      let mrAggregatedConcat =
-        jwtPayload.tdx.tdx_mrtd +
-        jwtPayload.tdx.tdx_rtmr0 +
-        jwtPayload.tdx.tdx_rtmr1 +
-        jwtPayload.tdx.tdx_rtmr2 +
-        jwtPayload.tdx.tdx_rtmr3;
-
-      const zero48bytes = "0".repeat(96);
-      if (
-        jwtPayload.tdx.tdx_mrconfigid !== zero48bytes ||
-        jwtPayload.tdx.tdx_mrowner !== zero48bytes ||
-        jwtPayload.tdx.tdx_mrownerconfig !== zero48bytes
-      ) {
-        mrAggregatedConcat +=
-          jwtPayload.tdx.tdx_mrconfigid +
-          jwtPayload.tdx.tdx_mrowner +
-          jwtPayload.tdx.tdx_mrownerconfig;
-      }
-
-      const mrAggregatedBuffer = await crypto.subtle.digest(
-        "SHA-256",
-        Buffer.from(mrAggregatedConcat, "hex")
-      );
-      const mrAggregated = bufferToHex(mrAggregatedBuffer);
-
-      // 11) Compute mr_system:
-      //     mr_system = SHA-256(
-      //        tdx_mrtd
-      //      + tdx_rtmr0
-      //      + tdx_rtmr1
-      //      + tdx_rtmr2
-      //      + SHA-256(key_provider)
-      //     )
-      const sha256OfKeyProviderBuffer = await crypto.subtle.digest(
-        "SHA-256",
-        Buffer.from(keyProvider, "hex")
-      );
-      const sha256OfKeyProvider = bufferToHex(sha256OfKeyProviderBuffer);
-
-      const mrSystemConcat =
-        jwtPayload.tdx.tdx_mrtd +
-        jwtPayload.tdx.tdx_rtmr0 +
-        jwtPayload.tdx.tdx_rtmr1 +
-        jwtPayload.tdx.tdx_rtmr2 +
-        sha256OfKeyProvider;
-
-      const mrSystemBuffer = await crypto.subtle.digest(
-        "SHA-256",
-        Buffer.from(mrSystemConcat, "hex")
-      );
-      const mrSystem = bufferToHex(mrSystemBuffer);
-
-      // 12) Compute mr_image:
-      //     mr_image = SHA-256(
-      //        tdx_mrtd
-      //      + tdx_rtmr1
-      //      + tdx_rtmr2
-      //     )
-      // const osImageHashConcat =
-      //   jwtPayload.tdx.tdx_mrtd +
-      //   jwtPayload.tdx.tdx_rtmr1 +
-      //   jwtPayload.tdx.tdx_rtmr2;
-      // const osImageHashBuffer = await crypto.subtle.digest(
-      //   "SHA-256",
-      //   Buffer.from(osImageHashConcat, "hex")
-      // );
-      // const osImageHash = bufferToHex(osImageHashBuffer);
-
-      // 13) (Optional) Verify a hardcoded expected mr_image:
-      const expectedosImageHash = process.env.NEXT_PUBLIC_OS_IMAGE_HASH;
-      if (osImageHash !== expectedosImageHash) {
-        throw new Error(
-          `mr_image mismatch: expected ${expectedosImageHash}, got ${osImageHash}`
-        );
-      }
-
-      // 14) Log or return the fields needed for KmsAuth.isAppAllowed():
-      console.log("appId:", appId);
-      console.log("composeHash:", composeHash);
-      console.log("instanceId:", instanceId);
-      console.log("deviceId:", deviceId);
-      console.log("mrAggregated:", mrAggregated);
-      console.log("mrSystem:", mrSystem);
-      console.log("osImageHash:", osImageHash);
-
-      // If you need to return them for further processing, you could:
-      const attestationResult: AttestationResult = {
-        appId,
-        mrSystem,
-        osImageHash,
-        composeHash,
-        deviceId,
-        instanceId,
-        mrAggregated,
-        tcbStatus: "",
-        advisoryIds: [],
-      };
 
       this.attestationResults[publicKeyHex] = attestationResult;
-
-      this.verificationResults[appId] = {
+      this.verificationResults[publicKeyHex] = {
         status: VerificationStatus.AttestationVerified,
         attestationResult,
         publicKey: publicKeyHex,
@@ -406,9 +363,178 @@ export class AttestationManager {
       });
       this.verifyContract(publicKeyHex, attestationResult);
       return attestationResult;
-    } catch(e) {
-      console.error("Failed to verify attestation", e);
+    } catch (e) {
+      console.log("Failed to verify attestation", e);
+      this.verificationResults[publicKeyHex] = {
+        status: VerificationStatus.Failed,
+        attestationResult: undefined,
+        publicKey: publicKeyHex,
+      };
+      this.updateState({
+        status: VerificationStatus.Failed,
+        attestationResult: undefined,
+        publicKey: publicKeyHex,
+      });
       throw new Error("Failed to verify attestation");
     }
   }
 }
+
+export interface EventLogEntry {
+  imr: number; //0 | 1 | 2 | 3;
+  digest: string; // hex
+  event: string; //"app-id" | "key-provider" | "compose-hash" | "instance-id" | "os-image-hash";
+  event_payload: string; // hex
+}
+
+export interface TdxPayload {
+  tdx: {
+    tdx_collateral: {
+      quotehash: string;
+    };
+    tdx_rtmr0: string;
+    tdx_rtmr1: string;
+    tdx_rtmr2: string;
+    tdx_rtmr3: string;
+    tdx_mrtd: string;
+
+    tdx_mrowner: string;
+    tdx_mrconfigid: string;
+    tdx_mrownerconfig: string;
+  };
+}
+
+export interface AttestationResult {
+  appId: string;
+  mrSystem: string;
+  osImageHash: string;
+  composeHash: string;
+  deviceId: string;
+  instanceId: string;
+  mrAggregated: string;
+  tcbStatus: string;
+  advisoryIds: string[];
+}
+
+/* ---------- tiny helpers ------------------------------------------------ */
+
+export const hexToBuf = (hex: string): Uint8Array => {
+  const hexString = hex.startsWith("0x") ? hex.slice(2) : hex;
+  return Uint8Array.from(
+    hexString.match(/.{1,2}/g)!.map((b) => parseInt(b, 16))
+  );
+};
+
+export const bufToHex = (buf: ArrayBuffer | Uint8Array): string =>
+  "0x" +
+  [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+
+export const sha256Hex = async (
+  hexOrBuf: string | ArrayBuffer
+): Promise<string> =>
+  bufToHex(
+    await crypto.subtle.digest(
+      "SHA-256",
+      typeof hexOrBuf === "string" ? hexToBuf(hexOrBuf) : hexOrBuf
+    )
+  );
+
+export const sha384Hex = async (
+  hexOrBuf: string | ArrayBuffer
+): Promise<string> =>
+  bufToHex(
+    await crypto.subtle.digest(
+      "SHA-384",
+      typeof hexOrBuf === "string" ? hexToBuf(hexOrBuf) : hexOrBuf
+    )
+  );
+
+/* ---------- reusable building blocks ----------------------------------- */
+
+export const verifyJwtWithJwks = async <P extends JWTPayload>(
+  token: string,
+  jwksUrl: string
+): Promise<P> => {
+  const raw = await (await fetch(jwksUrl)).text();
+  const { keys } = JSON.parse(raw);
+  const publicKey = await importJWK(keys[keys.length - 1], "RS256");
+  const { payload } = await jwtVerify(token, publicKey, {
+    algorithms: ["RS256"],
+    clockTolerance: "1 year",
+  });
+  return payload as P;
+};
+
+export const quoteHash = (quoteHex: string) => sha256Hex(quoteHex);
+
+/** user_data = quote[28*2 .. 48*2) → device_id = SHA-256(user_data) */
+export const deviceIdFromQuote = async (quoteHex: string): Promise<string> => {
+  const rawHex = quoteHex.startsWith("0x") ? quoteHex.slice(2) : quoteHex;
+  return sha256Hex(rawHex.slice(28 * 2, 48 * 2));
+};
+
+/** Replay the event log to regenerate the four RTMR registers */
+export const replayRtmr = async (log: EventLogEntry[]): Promise<string[]> => {
+  const rtmr = Array(4).fill("0".repeat(96));
+  for (const ev of log) {
+    rtmr[ev.imr] = await sha384Hex(rtmr[ev.imr] + ev.digest);
+  }
+  return rtmr;
+};
+
+export const extractBootInfo = (log: EventLogEntry[]) => {
+  const out = {
+    appId: "",
+    keyProvider: "",
+    composeHash: "",
+    instanceId: "0x0000000000000000000000000000000000000000",
+    osImageHash: "",
+  };
+  for (const ev of log) {
+    // @ts-ignore – key is guaranteed present
+    if (ev.event === "app-id") {
+      out.appId = ev.event_payload;
+    } else if (ev.event === "key-provider") {
+      out.keyProvider = ev.event_payload;
+    } else if (ev.event === "compose-hash") {
+      out.composeHash = ev.event_payload;
+    } else if (ev.event === "instance-id") {
+      out.instanceId = ev.event_payload;
+    } else if (ev.event === "os-image-hash") {
+      out.osImageHash = ev.event_payload;
+    }
+  }
+  return out;
+};
+
+/** Builds mrAggregated & mrSystem exactly once, reuse everywhere. */
+export const buildMrHashes = async (
+  tdx: TdxPayload["tdx"],
+  keyProvider: string
+): Promise<{ mrAggregated: string; mrSystem: string }> => {
+  // mrAggregated ----------------------------------------------------------
+  let concat =
+    tdx.tdx_mrtd +
+    tdx.tdx_rtmr0 +
+    tdx.tdx_rtmr1 +
+    tdx.tdx_rtmr2 +
+    tdx.tdx_rtmr3;
+
+  const zero48 = "0".repeat(96);
+  if (
+    tdx.tdx_mrconfigid !== zero48 ||
+    tdx.tdx_mrowner !== zero48 ||
+    tdx.tdx_mrownerconfig !== zero48
+  ) {
+    concat += tdx.tdx_mrconfigid + tdx.tdx_mrowner + tdx.tdx_mrownerconfig;
+  }
+  const mrAggregated = await sha256Hex(concat);
+
+  // mrSystem --------------------------------------------------------------
+  const kpHash = await sha256Hex(keyProvider);
+  const mrSystem = await sha256Hex(
+    tdx.tdx_mrtd + tdx.tdx_rtmr0 + tdx.tdx_rtmr1 + tdx.tdx_rtmr2 + kpHash
+  );
+
+  return { mrAggregated, mrSystem };
+};

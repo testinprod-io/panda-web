@@ -7,7 +7,7 @@ import {
   VerificationResult,
   VerificationStatus,
 } from "@/hooks/use-attestation-manager";
-import { ChallengeResponse } from "@/client/platforms/panda-challenge";
+import { ChallengeResponse } from "@/sdk/client/panda-challenge";
 
 interface MessageActionsBarProps {
   isUser: boolean;

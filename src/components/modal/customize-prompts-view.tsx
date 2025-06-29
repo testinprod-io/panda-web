@@ -164,7 +164,6 @@ export default function CustomizePromptsView({
   };
 
   const isFormDirty = () => {
-    console.log("isFormDirty", name, job, traitsText, extraParams);
     if (!initialData)
       return (
         name.trim() !== "" ||
