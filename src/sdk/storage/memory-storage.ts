@@ -17,23 +17,9 @@ import {
 import { createMessage, MessageSyncState, Role } from "@/types/chat";
 import { EncryptionService } from '../EncryptionService';
 
-interface StoredMessage {
-  message_id: string;
-  conversation_id: string;
-  sender_type: string;
-  content: string;
-  files?: any[];
-  timestamp: string;
-  reasoning_content?: string;
-  reasoning_time?: string;
-  custom_data?: any;
-  is_error?: boolean;
-  error_message?: string;
-}
-
 export class MemoryStorage implements IStorage {
   private conversations: Map<string, Conversation> = new Map();
-  private messages: Map<string, StoredMessage[]> = new Map();
+  private messages: Map<string, ChatMessage[]> = new Map();
   private summaries: Map<string, Summary[]> = new Map();
   private files: Map<string, Map<string, File>> = new Map();
   private customizedPrompts: CustomizedPromptsData = {
@@ -158,12 +144,12 @@ export class MemoryStorage implements IStorage {
   ): Promise<PaginatedMessages> {
     const chatMessages = this.messages.get(chatId) || [];
     const sortedMessages = [...chatMessages].sort((a, b) => 
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
     let startIndex = 0;
     if (cursor) {
-      const cursorIndex = sortedMessages.findIndex(msg => msg.message_id === cursor);
+      const cursorIndex = sortedMessages.findIndex(msg => msg.id === cursor);
       if (cursorIndex !== -1) {
         startIndex = cursorIndex + 1;
       }
@@ -171,10 +157,10 @@ export class MemoryStorage implements IStorage {
 
     const messagesSlice = sortedMessages.slice(startIndex, startIndex + limit);
     const hasMore = startIndex + limit < sortedMessages.length;
-    const nextCursor = hasMore ? messagesSlice[messagesSlice.length - 1]?.message_id || null : null;
+    const nextCursor = hasMore ? messagesSlice[messagesSlice.length - 1]?.id || null : null;
 
     // Reverse to get chronological order (oldest first)
-    const messages = messagesSlice.reverse().map(msg => this.mapStoredMessageToChatMessage(msg));
+    const messages = messagesSlice.reverse();
 
     return {
       messages,
@@ -185,27 +171,13 @@ export class MemoryStorage implements IStorage {
 
   async saveMessage(chatId: string, msg: ChatMessage): Promise<void> {
     console.log(`[MemoryStorage] Saving message ${msg.id} to chat ${chatId}`);
-    const messageToStore: StoredMessage = {
-      message_id: msg.id,
-      conversation_id: chatId,
-      sender_type: msg.role,
-      content: msg.content, // Already encrypted
-      files: msg.files,
-      timestamp: msg.date.toISOString(),
-      reasoning_content: msg.reasoning,
-      reasoning_time: msg.reasoningTime?.toString(),
-      custom_data: { useSearch: msg.useSearch },
-      is_error: msg.isError,
-      error_message: msg.errorMessage,
-    };
-
     const chatMessages = this.messages.get(chatId) || [];
-    const existingIndex = chatMessages.findIndex(m => m.message_id === msg.id);
+    const existingIndex = chatMessages.findIndex(m => m.id === msg.id);
     
     if (existingIndex !== -1) {
-      chatMessages[existingIndex] = messageToStore;
+      chatMessages[existingIndex] = msg;
     } else {
-      chatMessages.push(messageToStore);
+      chatMessages.push(msg);
     }
     
     this.messages.set(chatId, chatMessages);
@@ -213,14 +185,14 @@ export class MemoryStorage implements IStorage {
 
   async deleteMessage(chatId: string, messageId: string): Promise<void> {
     const chatMessages = this.messages.get(chatId) || [];
-    const filteredMessages = chatMessages.filter(msg => msg.message_id !== messageId);
+    const filteredMessages = chatMessages.filter(msg => msg.id !== messageId);
     this.messages.set(chatId, filteredMessages);
   }
 
   async deleteMessages(chatId: string, messageIds: string[]): Promise<void> {
     const chatMessages = this.messages.get(chatId) || [];
     const messageIdSet = new Set(messageIds);
-    const filteredMessages = chatMessages.filter(msg => !messageIdSet.has(msg.message_id));
+    const filteredMessages = chatMessages.filter(msg => !messageIdSet.has(msg.id));
     this.messages.set(chatId, filteredMessages);
   }
 
@@ -366,26 +338,5 @@ export class MemoryStorage implements IStorage {
 
   setModels(models: ServerModelInfo[]): void {
     this.models = [...models];
-  }
-
-  // Helper method to convert stored message to chat message
-  private mapStoredMessageToChatMessage(message: StoredMessage): ChatMessage {
-    return createMessage({
-      id: message.message_id as UUID,
-      role: message.sender_type as Role,
-      content: message.content,
-      visibleContent: this.encryptionService.decrypt(message.content),
-      files: message.files,
-      date: new Date(message.timestamp),
-      reasoning: message.reasoning_content,
-      visibleReasoning: message.reasoning_content ? this.encryptionService.decrypt(message.reasoning_content) : undefined,
-      reasoningTime: message.reasoning_time
-        ? parseInt(message.reasoning_time)
-        : undefined,
-      useSearch: message.custom_data?.useSearch ?? false,
-      syncState: MessageSyncState.SYNCED,
-      isError: message.is_error,
-      errorMessage: message.error_message,
-    });
   }
 }
