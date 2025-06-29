@@ -15,35 +15,35 @@ import TextInputStep from "@/components/onboarding/TextInputStep";
 import TraitsStepView from "@/components/onboarding/TraitsStepView";
 import StreamingText from "@/components/onboarding/StreamingText";
 import { usePandaSDK } from "@/providers/sdk-provider";
+import Locale from "@/locales";
+import Image from "next/image";
 
 const STEPS = ["intro", "name", "role", "traits", "knowledge"];
 
 const getQuestion = (step: string, name: string): string => {
   switch (step) {
     case "intro":
-      return "Welcome to Panda AI! Let's get you set up.";
+      return Locale.Onboarding.Welcome;
     case "name":
-      return "First, what should Panda AI call you?";
+      return Locale.Onboarding.NameTitle;
     case "role":
       return `${
-        name ? `Great, ${name}.` : ""
-      } What's your role or profession?`;
+        name ? `${Locale.Onboarding.RoleTitle1} ${name}.` : ""
+      } ${Locale.Onboarding.RoleTitle2}`;
     case "traits":
-      return "Got it. What traits should Panda AI have?";
+      return Locale.Onboarding.TraitsTitle;
     case "knowledge":
-      return `Finally, is there anything else Panda AI should know about you${
-        name ? `, ${name}` : ""
-      }?`;
+      return Locale.Onboarding.ExtraInformationTitle;
     default:
       return "";
   }
 };
 
 const PLACEHOLDERS: Record<string, string> = {
-  name: "e.g. Alex",
-  role: "e.g. Software Engineer",
-  traits: "e.g. Witty, Encouraging, Straight shooting",
-  knowledge: "e.g. I prefer concise, data-driven responses.",
+  name: Locale.Onboarding.NamePlaceholder,
+  role: Locale.Onboarding.RolePlaceholder,
+  traits: Locale.Onboarding.TraitsPlaceholder,
+  knowledge: Locale.Onboarding.ExtraInformationPlaceholder,
 };
 
 export default function OnboardingView() {
@@ -134,8 +134,8 @@ export default function OnboardingView() {
           justifyContent: "center",
           alignItems: "center",
           height: "100vh",
-          backgroundColor: "#FFFFFF",
-          color: "#1E1E1E",
+          backgroundColor: "var(--bg-primary)",
+          color: "var(--text-primary)",
         }}
       >
         <Box
@@ -199,7 +199,7 @@ export default function OnboardingView() {
                         fontSize: "16px",
                       }}
                     >
-                      Continue
+                      {Locale.Onboarding.Continue}
                     </Button>
                     <Button
                       type="button"
@@ -214,7 +214,7 @@ export default function OnboardingView() {
                         fontSize: "16px",
                       }}
                     >
-                      Skip
+                      {Locale.Onboarding.Skip}
                     </Button>
                   </Box>
                 );
@@ -283,8 +283,8 @@ export default function OnboardingView() {
         display: "flex",
         flexDirection: "column",
         height: "100vh",
-        backgroundColor: "#FFFFFF",
-        color: "#1E1E1E",
+        backgroundColor: "var(--bg-primary)",
+        color: "var(--text-primary)",
       }}
     >
       <Box
@@ -310,16 +310,40 @@ export default function OnboardingView() {
             marginBottom: "80px",
           }}
         >
-          <img
-            src="/icons/inverse-icon.svg"
-            alt="Panda AI Logo"
-            width={40}
-            height={40}
-          />
+          <Box
+            sx={{
+              display: "block",
+              ".dark &": {
+                display: "none",
+              },
+            }}
+          >
+            <Image
+              src="/icons/inverse-icon.svg"
+              alt="Panda AI Logo"
+              width={40}
+              height={40}
+            />
+          </Box>
+          <Box
+            sx={{
+              display: "none",
+              ".dark &": {
+                display: "block",
+              },
+            }}
+          >
+            <Image
+              src="/icons/icon-white.svg"
+              alt="Panda AI Logo"
+              width={40}
+              height={40}
+            />
+          </Box>
           <Typography
             fontSize="24px"
             fontWeight="600"
-            color="#131A28"
+            color="var(--text-primary)"
             marginLeft="12px"
           >
             Panda

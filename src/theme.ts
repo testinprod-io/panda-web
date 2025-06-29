@@ -1,6 +1,7 @@
-import { createTheme } from "@mui/material/styles";
+import { createTheme, ThemeOptions } from "@mui/material/styles";
+import { lightColors, darkColors } from "./theme/colors";
 
-const theme = createTheme({
+const base: ThemeOptions = {
   transitions: {
     easing: {
       easeInOut: "cubic-bezier(0.4, 0, 0.2, 1)",
@@ -16,19 +17,6 @@ const theme = createTheme({
       complex: 375,
       enteringScreen: 200,
       leavingScreen: 100,
-    },
-  },
-  palette: {
-    mode: "light",
-    primary: {
-      main: "#1E1E1E",
-    },
-    background: {
-      default: "#ffffff",
-      paper: "#f7f7f8",
-    },
-    action: {
-      hoverOpacity: 0,
     },
   },
   typography: {
@@ -57,6 +45,44 @@ const theme = createTheme({
       },
     },
   },
+};
+
+export const lightTheme = createTheme({
+  ...base,
+  palette: {
+    mode: "light",
+    primary: { main: lightColors.primary },
+    background: {
+      default: lightColors.bgPrimary,
+      paper: lightColors.bgSecondary,
+    },
+    text: {
+      primary: lightColors.textPrimary,
+      secondary: lightColors.textSecondary,
+      disabled: lightColors.textDisabled,
+    },
+    action: {
+      hoverOpacity: 0,
+    },
+  },
 });
 
-export default theme;
+export const darkTheme = createTheme({
+  ...base,
+  palette: {
+    mode: "dark",
+    primary: { main: darkColors.primary },
+    background: {
+      default: darkColors.bgPrimary,
+      paper: darkColors.bgSecondary,
+    },
+    text: {
+      primary: darkColors.textPrimary,
+      secondary: darkColors.textSecondary,
+      disabled: darkColors.textDisabled,
+    },
+    action: {
+      hoverOpacity: 0,
+    },
+  },
+});

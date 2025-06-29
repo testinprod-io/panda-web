@@ -48,8 +48,8 @@ export default function OnboardingPage() {
         justifyContent: "center",
         alignItems: "center",
         height: "100vh",
-        backgroundColor: "#FFFFFF",
-        color: "#1E1E1E",
+        backgroundColor: "var(--bg-primary)",
+        color: "var(--text-primary)",
       }}>
         <CircularProgress color="inherit" />
       </Box>

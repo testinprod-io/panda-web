@@ -391,29 +391,6 @@ export function getOperationId(operation: {
   );
 }
 
-export function clientUpdate() {
-  // this a wild for updating client app
-  return window.__TAURI__?.updater
-    .checkUpdate()
-    .then((updateResult) => {
-      if (updateResult.shouldUpdate) {
-        window.__TAURI__?.updater
-          .installUpdate()
-          .then((result) => {
-            safeShowSnackbar(Locale.Settings.Update.Success, "success");
-          })
-          .catch((e) => {
-            console.error("[Install Update Error]", e);
-            safeShowSnackbar(Locale.Settings.Update.Failed, "error");
-          });
-      }
-    })
-    .catch((e) => {
-      console.error("[Check Update Error]", e);
-      safeShowSnackbar(Locale.Settings.Update.Failed, "error");
-    });
-}
-
 // https://gist.github.com/iwill/a83038623ba4fef6abb9efca87ae9ccb
 export function semverCompare(a: string, b: string) {
   if (a.startsWith(b + "-")) return -1;

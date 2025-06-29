@@ -25,6 +25,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useEncryption } from "@/providers/encryption-provider";
+import Locale from "@/locales";
 
 interface LoginSignupFormProps {
   mode: "login" | "signup";
@@ -138,7 +139,7 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
   const isSubmittingCode = emailState.status === "submitting-code";
   const isOauthLoading = oauthState.status === "loading";
 
-  const title = mode === "signup" ? "Create an account" : "Sign in";
+  const title = mode === "signup" ? Locale.Signup.Title : Locale.SignIn.Title;
   const switchLinkHref = mode === "login" ? "/signup" : "/login";
 
   if (!ready) {
@@ -170,8 +171,37 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
       }}
     >
       <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', maxWidth: '410px', marginRight: 'auto', mb: 10 }}>
-        <img src="/icons/inverse-icon.svg" alt="Panda AI Logo" width={40} height={40} />
-        <Typography fontSize="24px" fontWeight="600" color="#131A28" marginLeft="12px">
+      <Box
+          sx={{
+            display: "block",
+            ".dark &": {
+              display: "none",
+            },
+          }}
+        >
+          <Image
+            src="/icons/inverse-icon.svg"
+            alt="Panda AI Logo"
+            width={40}
+            height={40}
+          />
+        </Box>
+        <Box
+          sx={{
+            display: "none",
+            ".dark &": {
+              display: "block",
+            },
+          }}
+        >
+          <Image
+            src="/icons/icon-white.svg"
+            alt="Panda AI Logo"
+            width={40}
+            height={40}
+          />
+        </Box>
+        <Typography fontSize="24px" fontWeight="600" color="var(--text-primary)" marginLeft="12px">
             Panda
           </Typography>
         </Box>
@@ -183,11 +213,11 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
         </Box>
 
         <form onSubmit={handleEmailSubmit}>
-          <Typography variant="body2" sx={{ fontWeight: '500', mb: 1 }}>Email address</Typography>
+          <Typography variant="body2" sx={{ fontWeight: '500', mb: 1 }}>{Locale.Signup.Email}</Typography>
           <TextField
             type="email"
             fullWidth
-            placeholder="name@email.com"
+            placeholder={Locale.Signup.Placeholder}
             value={email}
             size="medium"
             onChange={(e) => setEmail(e.target.value)}
@@ -198,11 +228,11 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
 
           {isCodeEntryVisible && (
             <>
-              <Typography variant="body2" sx={{ fontWeight: '500', mb: 1 }}>Verification Code</Typography>
+              <Typography variant="body2" sx={{ fontWeight: '500', mb: 1 }}>{Locale.Signup.VerificationCode}</Typography>
               <TextField
                 type="text"
                 fullWidth
-                placeholder="Enter the code sent to your email"
+                placeholder={Locale.Signup.VerificationCodePlaceholder}
                 value={code}
                 size="medium"
                 inputProps={{ style: { fontSize: '14px', height: '40px' } }}
@@ -223,13 +253,13 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
               }
               label={
                 <Typography variant="body2" color="text.secondary">
-                  I agree to the{" "}
+                  {Locale.Signup.TermsOfService1} {" "}
                   <MuiLink component={Link} href="/terms" sx={{textDecoration: 'underline', color: 'text.primary'}}>
-                    Terms of Service
+                    {Locale.Signup.TermsOfService2}
                   </MuiLink>
-                  {" and "}
+                  {` ${Locale.Signup.TermsOfService3} `}
                   <MuiLink component={Link} href="/privacy" sx={{textDecoration: 'underline', color: 'text.primary'}}>
-                    Privacy Policy
+                    {Locale.Signup.TermsOfService4}
                   </MuiLink>
                 </Typography>
               }
@@ -255,15 +285,15 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
             {isSendingCode || isSubmittingCode ? (
               <CircularProgress size={24} color="inherit" />
             ) : isCodeEntryVisible ? (
-              mode === 'signup' ? 'Sign Up' : 'Log In'
+              mode === 'signup' ? Locale.Signup.Submit : Locale.SignIn.Submit
             ) : (
-              "Continue"
+              Locale.Signup.Continue
             )}
           </Button>
         </form>
 
         <Divider sx={{ my: 4, '&::before, &::after': { borderColor: 'grey.300' } }}>
-            <Typography variant="body2" color="text.secondary">Or continue with</Typography>
+            <Typography variant="body2" color="text.secondary">{Locale.Signup.OrContinueWith}</Typography>
         </Divider>
 
         <Box sx={{ display: "flex", flexDirection: "row", gap: 1.5 }}>
@@ -304,9 +334,9 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
         </Box>
         <Box sx={{ mt: 4, textAlign: "center" }}>
           <Typography variant="body2" color="text.secondary">
-            {mode === 'signup' ? 'Already have an account? ' : "Don't have an account? "}
+            {`${mode === 'signup' ? Locale.SignIn.AlreadyHaveAccount : Locale.Signup.DontHaveAccount} `}
             <MuiLink component={Link} href={switchLinkHref} sx={{textDecoration: 'underline', color: 'text.primary', fontWeight: 500}}>
-              {mode === 'signup' ? 'Sign in' : "Sign up"}
+              {mode === 'signup' ? Locale.SignIn.Title : Locale.Signup.Title}
             </MuiLink>
           </Typography>
         </Box>

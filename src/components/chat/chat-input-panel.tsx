@@ -774,7 +774,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
                   className={styles.inputActionIcon}
                 />
               </span>
-              <span className={styles["search-button-text"]}>Search</span>
+              <span className={styles["search-button-text"]}>{Locale.Chat.Search}</span>
             </button>
           </div>
           <div className={styles["chat-input-controls-right"]}>
