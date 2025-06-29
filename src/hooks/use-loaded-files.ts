@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { UUID } from "crypto";
 import { FileInfo } from "@/client/types"; // Corrected type for messageFiles elements
 import { ClientApi } from "@/client/api"; // Corrected: apiClient is of type ClientApi
-import { EncryptionService } from "@/services/encryption-service";
+// import { EncryptionService } from "@/services/encryption-service";
 import { usePandaSDK } from "@/providers/sdk-provider";
 export interface LoadedFile {
   id: UUID;
@@ -35,7 +35,7 @@ export function useLoadedFiles(
 
   // Extract the specific function to be used in the effect's dependency array
   // This helps if apiClient object reference changes but apiClient.app.getFile function reference is stable.
-  const getFileFunction = sdk.api.app.getFile;
+  const getFileFunction = sdk.storage.getFile;
 
   // Ref to store previous dependencies for logging
   const prevDepsRef = useRef<{
@@ -121,7 +121,7 @@ export function useLoadedFiles(
     ): Promise<LoadedFile> => {
       try {
         // Use the extracted getFileFunction here
-        const response = await sdk.api.app.getFile(
+        const response = await sdk.storage.getFile(
           sessionId,
           fileInfo.file_id as UUID,
         );
@@ -129,34 +129,33 @@ export function useLoadedFiles(
           throw new Error("File response is undefined");
         }
 
-        const contentType =
-          response.headers.get("Content-Type") || "application/octet-stream";
-        const contentDisposition = response.headers.get("Content-Disposition");
-        let fileName = fileInfo.file_name;
+        // const contentType =
+        //   response.headers.get("Content-Type") || "application/octet-stream";
+        // const contentDisposition = response.headers.get("Content-Disposition");
+        // let fileName = fileInfo.file_name;
 
-        if (contentDisposition) {
-          const match = contentDisposition.match(/filename="?([^\"]+)"?/i);
-          if (match && match[1]) {
-            fileName = match[1];
-          }
-        }
+        // if (contentDisposition) {
+        //   const match = contentDisposition.match(/filename="?([^\"]+)"?/i);
+        //   if (match && match[1]) {
+        //     fileName = match[1];
+        //   }
+        // }
+        // const reader = response.getReader();
+        // if (!reader) {
+        //   throw new Error("ReadableStream not available");
+        // }
 
-        const reader = response.body?.getReader();
-        if (!reader) {
-          throw new Error("ReadableStream not available");
-        }
-
-        const chunks: Uint8Array[] = [];
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          if (value) {
-            chunks.push(value);
-          }
-        }
-        const blob = new Blob(chunks, { type: contentType });
-        let fileToProcess = new File([blob], fileName, { type: contentType });
-        let decryptedFileName = fileName;
+        // const chunks: Uint8Array[] = [];
+        // while (true) {
+        //   const { done, value } = await reader.read();
+        //   if (done) break;
+        //   if (value) {
+        //     chunks.push(value);
+        //   }
+        // }
+        // const blob = new Blob(chunks, { type: contentType });
+        let fileToProcess = response; // new File([blob], fileName, { type: contentType });
+        let decryptedFileName = response.name;
 
         if (!sdk.auth.getState().isLocked) {
           try {
@@ -166,12 +165,12 @@ export function useLoadedFiles(
             // console.error("Error decrypting file:", fileInfo.file_id, decryptionError); // Keep console for debug if needed
             return {
               id: fileInfo.file_id as UUID,
-              name: fileName,
+              name: decryptedFileName,
               type: "other",
               url: "",
               isLoading: false,
               error: "Decryption failed",
-              originalType: contentType,
+              originalType: fileInfo.file_type,
             };
           }
         }
@@ -185,7 +184,7 @@ export function useLoadedFiles(
           type: fileInfo.file_type as "image" | "pdf" | "other",
           url: url,
           isLoading: false,
-          originalType: contentType,
+          originalType: fileInfo.file_type,
         };
       } catch (error) {
         // console.error("Error fetching or processing file:", fileInfo.file_id, error); // Keep console for debug if needed

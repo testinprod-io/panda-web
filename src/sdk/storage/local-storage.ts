@@ -13,9 +13,8 @@ import {
   ServerModelInfo,
   Conversation,
   ConversationUpdateRequest,
-  Message as ApiMessage,
 } from '@/client/types';
-import { createMessage, MessageSyncState, Role } from "@/types/chat";
+import { createMessage, CustomizedPromptsData, MessageSyncState, Role } from "@/types/chat";
 import { EncryptionService } from '../EncryptionService';
 
 // IndexedDB configuration
@@ -25,24 +24,8 @@ const CONVERSATIONS_STORE = 'conversations';
 const MESSAGES_STORE = 'messages';
 const SUMMARIES_STORE = 'summaries';
 const METADATA_STORE = 'metadata';
-
-interface LocalConversation extends Omit<Conversation, 'conversation_id'> {
-  conversation_id: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface LocalMessage extends Omit<ApiMessage, 'message_id' | 'conversation_id'> {
-  message_id: string;
-  conversation_id: string;
-}
-
-interface LocalSummary extends Omit<Summary, 'summary_id' | 'conversation_id' | 'start_message_id' | 'end_message_id'> {
-  summary_id: string;
-  conversation_id: string;
-  start_message_id: string;
-  end_message_id: string;
-}
+const FILES_STORE = 'files';
+const CUSTOMIZED_PROMPTS_STORE = 'customized_prompts';
 
 export class LocalStorage implements IStorage {
   private db: IDBDatabase | null = null;
@@ -97,6 +80,18 @@ export class LocalStorage implements IStorage {
           messagesStore.createIndex('conversation_timestamp', ['conversation_id', 'timestamp'], { unique: false });
         }
 
+        // Files store
+        if (!db.objectStoreNames.contains(FILES_STORE)) {
+          db.createObjectStore(FILES_STORE, {
+            keyPath: ['conversation_id', 'file_id'],
+          });
+        }
+
+        // Customized prompts store
+        if (!db.objectStoreNames.contains(CUSTOMIZED_PROMPTS_STORE)) {
+          db.createObjectStore(CUSTOMIZED_PROMPTS_STORE, { keyPath: 'id' });
+        }
+
         // Summaries store
         if (!db.objectStoreNames.contains(SUMMARIES_STORE)) {
           const summariesStore = db.createObjectStore(SUMMARIES_STORE, {
@@ -122,7 +117,7 @@ export class LocalStorage implements IStorage {
     const index = store.index('updated_at');
 
     return new Promise((resolve, reject) => {
-      const conversations: LocalConversation[] = [];
+      const conversations: Conversation[] = [];
       let count = 0;
       let hasMore = false;
       let nextCursor: string | null = null;
@@ -149,7 +144,7 @@ export class LocalStorage implements IStorage {
           return;
         }
 
-        const conversation = cursorResult.value as LocalConversation;
+        const conversation = cursorResult.value as Conversation;
 
         // If we have a cursor, skip until we find the starting point
         if (cursor && !foundStart) {
@@ -203,7 +198,7 @@ export class LocalStorage implements IStorage {
         const request = store.get(id);
 
         request.onsuccess = () => {
-          const conversation = request.result as LocalConversation | undefined;
+          const conversation = request.result as Conversation | undefined;
           if (conversation) {
             resolve({
               ...conversation,
@@ -236,8 +231,8 @@ export class LocalStorage implements IStorage {
     const conversationId = crypto.randomUUID();
     const encryptedTitle = this.encryptionService.encrypt(title.trim());
 
-    const conversation: LocalConversation = {
-      conversation_id: conversationId,
+    const conversation: Conversation = {
+      conversation_id: conversationId as UUID,
       title: encryptedTitle,
       created_at: now,
       updated_at: now,
@@ -273,13 +268,13 @@ export class LocalStorage implements IStorage {
       const getRequest = store.get(chatId);
 
       getRequest.onsuccess = () => {
-        const conversation = getRequest.result as LocalConversation;
+        const conversation = getRequest.result as Conversation;
         if (!conversation) {
           reject(new Error(`Conversation ${chatId} not found`));
           return;
         }
 
-        const updatedConversation: LocalConversation = {
+        const updatedConversation: Conversation = {
           ...conversation,
           title: data.title || conversation.title,
           custom_data: data.custom_data !== undefined ? data.custom_data : conversation.custom_data,
@@ -305,10 +300,11 @@ export class LocalStorage implements IStorage {
 
   async deleteChat(id: string): Promise<void> {
     const db = await this.initDB();
-    const transaction = db.transaction([CONVERSATIONS_STORE, MESSAGES_STORE, SUMMARIES_STORE], 'readwrite');
+    const transaction = db.transaction([CONVERSATIONS_STORE, MESSAGES_STORE, SUMMARIES_STORE, FILES_STORE], 'readwrite');
     const conversationsStore = transaction.objectStore(CONVERSATIONS_STORE);
     const messagesStore = transaction.objectStore(MESSAGES_STORE);
     const summariesStore = transaction.objectStore(SUMMARIES_STORE);
+    const filesStore = transaction.objectStore(FILES_STORE);
 
     return new Promise((resolve, reject) => {
       // Delete the conversation
@@ -320,6 +316,17 @@ export class LocalStorage implements IStorage {
 
       deleteMessagesRequest.onsuccess = () => {
         const cursor = deleteMessagesRequest.result;
+        if (cursor) {
+          cursor.delete();
+          cursor.continue();
+        }
+      };
+
+      // Delete all files for this conversation
+      const fileRange = IDBKeyRange.bound([id, ''], [id, '\uffff']);
+      const deleteFilesRequest = filesStore.openCursor(fileRange);
+      deleteFilesRequest.onsuccess = () => {
+        const cursor = deleteFilesRequest.result;
         if (cursor) {
           cursor.delete();
           cursor.continue();
@@ -348,6 +355,30 @@ export class LocalStorage implements IStorage {
     });
   }
 
+  async deleteAllChats(): Promise<void> {
+    const db = await this.initDB();
+    const transaction = db.transaction([CONVERSATIONS_STORE, MESSAGES_STORE, SUMMARIES_STORE, FILES_STORE], 'readwrite');
+    const conversationsStore = transaction.objectStore(CONVERSATIONS_STORE);
+    const messagesStore = transaction.objectStore(MESSAGES_STORE);
+    const summariesStore = transaction.objectStore(SUMMARIES_STORE);
+    const filesStore = transaction.objectStore(FILES_STORE);
+
+    return new Promise((resolve, reject) => {
+      conversationsStore.clear();
+      messagesStore.clear();
+      summariesStore.clear();
+      filesStore.clear();
+
+      transaction.oncomplete = () => {
+        resolve();
+      };
+
+      transaction.onerror = () => {
+        reject(new Error('Failed to delete all chats'));
+      };
+    });
+  }
+
   /* Messages */
   async listMessages(
     chatId: string,
@@ -360,7 +391,7 @@ export class LocalStorage implements IStorage {
     const index = store.index('conversation_timestamp');
 
     return new Promise((resolve, reject) => {
-      const messages: LocalMessage[] = [];
+      const messages: any[] = [];
       let count = 0;
       let hasMore = false;
       let nextCursor: string | null = null;
@@ -377,7 +408,7 @@ export class LocalStorage implements IStorage {
 
         if (!cursorResult) {
           // End of data - reverse messages to get chronological order
-          const chatMessages = messages.reverse().map(msg => this.mapLocalMessageToChatMessage(msg));
+          const chatMessages = messages.reverse().map(msg => this.mapStoredMessageToChatMessage(msg));
           resolve({
             messages: chatMessages,
             hasMore,
@@ -386,7 +417,7 @@ export class LocalStorage implements IStorage {
           return;
         }
 
-        const message = cursorResult.value as LocalMessage;
+        const message = cursorResult.value;
 
         // If we have a cursor, skip until we find the starting point
         if (cursor && !foundStart) {
@@ -410,7 +441,7 @@ export class LocalStorage implements IStorage {
         } else {
           hasMore = true;
           nextCursor = message.message_id;
-          const chatMessages = messages.reverse().map(msg => this.mapLocalMessageToChatMessage(msg));
+          const chatMessages = messages.reverse().map(msg => this.mapStoredMessageToChatMessage(msg));
           resolve({
             messages: chatMessages,
             hasMore,
@@ -434,11 +465,12 @@ export class LocalStorage implements IStorage {
     const transaction = db.transaction([MESSAGES_STORE], 'readwrite');
     const store = transaction.objectStore(MESSAGES_STORE);
 
-    const localMessage: LocalMessage = {
+    // Storing in a format similar to the API for consistency
+    const messageToStore = {
       message_id: msg.id,
       conversation_id: chatId,
       sender_type: msg.role,
-      content: msg.content, // Already encrypted from the UI layer
+      content: msg.content, // Already encrypted
       files: msg.files,
       timestamp: msg.date.toISOString(),
       reasoning_content: msg.reasoning,
@@ -449,7 +481,7 @@ export class LocalStorage implements IStorage {
     };
 
     return new Promise((resolve, reject) => {
-      const request = store.put(localMessage);
+      const request = store.put(messageToStore);
 
       request.onsuccess = () => {
         resolve();
@@ -518,13 +550,13 @@ export class LocalStorage implements IStorage {
     const index = store.index('conversation_id');
 
     return new Promise((resolve, reject) => {
-      const summaries: LocalSummary[] = [];
+      const summaries: Summary[] = [];
       const request = index.openCursor(IDBKeyRange.only(chatId));
 
       request.onsuccess = () => {
         const cursor = request.result;
         if (cursor) {
-          summaries.push(cursor.value as LocalSummary);
+          summaries.push(cursor.value as Summary);
           cursor.continue();
         } else {
           resolve(summaries.map(summary => ({
@@ -551,11 +583,11 @@ export class LocalStorage implements IStorage {
     const now = new Date().toISOString();
     const summaryId = crypto.randomUUID();
 
-    const localSummary: LocalSummary = {
-      summary_id: summaryId,
-      conversation_id: chatId,
-      start_message_id: summary.start_message_id as string,
-      end_message_id: summary.end_message_id as string,
+    const localSummary: Summary = {
+      summary_id: summaryId as UUID,
+      conversation_id: chatId as UUID,
+      start_message_id: summary.start_message_id as UUID,
+      end_message_id: summary.end_message_id as UUID,
       content: summary.content,
       created_at: now,
       updated_at: now,
@@ -598,13 +630,152 @@ export class LocalStorage implements IStorage {
     });
   }
 
+  /* Files */
+  async getFile(conversationId: UUID, fileId: UUID): Promise<File> {
+    const db = await this.initDB();
+    const transaction = db.transaction([FILES_STORE], 'readonly');
+    const store = transaction.objectStore(FILES_STORE);
+    return new Promise((resolve, reject) => {
+      const request = store.get([conversationId, fileId]);
+      request.onsuccess = () => {
+        if (request.result) {
+          resolve(request.result.file);
+        } else {
+          reject(new Error(`File ${fileId} not found in conversation ${conversationId}`));
+        }
+      };
+      request.onerror = () => {
+        reject(new Error(`Failed to get file ${fileId}`));
+      };
+    });
+  }
+
+  async uploadFile(
+    conversationId: UUID,
+    file: File,
+    onUploadProgress?: (progress: number) => void,
+  ): Promise<{ fileId: UUID; abort: () => void }> {
+    const encryptedFile = await this.encryptionService.encryptFile(file);
+    
+    const db = await this.initDB();
+    const transaction = db.transaction([FILES_STORE], 'readwrite');
+    const store = transaction.objectStore(FILES_STORE);
+
+    const fileId = crypto.randomUUID() as UUID;
+
+    const fileRecord = {
+      conversation_id: conversationId,
+      file_id: fileId,
+      file: encryptedFile,
+    };
+
+    return new Promise((resolve, reject) => {
+      const request = store.put(fileRecord);
+      request.onsuccess = () => {
+        if (onUploadProgress) {
+          onUploadProgress(100);
+        }
+        resolve({
+          fileId,
+          abort: () => {
+            console.warn('Abort is not supported for local storage uploads.');
+          },
+        });
+      };
+      request.onerror = () => {
+        reject(new Error(`Failed to upload file ${file.name}`));
+      };
+    });
+  }
+
+  async deleteFile(conversationId: UUID, fileId: UUID): Promise<void> {
+    const db = await this.initDB();
+    const transaction = db.transaction([FILES_STORE], 'readwrite');
+    const store = transaction.objectStore(FILES_STORE);
+    return new Promise((resolve, reject) => {
+      const request = store.delete([conversationId, fileId]);
+      request.onsuccess = () => {
+        resolve();
+      };
+      request.onerror = () => {
+        reject(new Error(`Failed to delete file ${fileId}`));
+      };
+    });
+  }
+
+  /* Customized Prompts */
+  async getCustomizedPrompts(): Promise<CustomizedPromptsData> {
+    const db = await this.initDB();
+    const transaction = db.transaction([CUSTOMIZED_PROMPTS_STORE], 'readonly');
+    const store = transaction.objectStore(CUSTOMIZED_PROMPTS_STORE);
+    return new Promise((resolve, reject) => {
+      const request = store.get('customized_prompts');
+      request.onsuccess = () => {
+        if (request.result) {
+          resolve(request.result);
+        } else {
+          resolve({
+            personal_info: {},
+            prompts: {},
+            enabled: true,
+          });
+        }
+      };
+    });
+  }
+
+  async createCustomizedPrompts(data: CustomizedPromptsData): Promise<CustomizedPromptsData> {
+    const db = await this.initDB();
+    const transaction = db.transaction([CUSTOMIZED_PROMPTS_STORE], 'readwrite');
+    const store = transaction.objectStore(CUSTOMIZED_PROMPTS_STORE);
+    return new Promise((resolve, reject) => {
+      const request = store.put(data);
+      request.onsuccess = () => {
+        resolve(data);
+      };
+      request.onerror = () => {
+        reject(new Error('Failed to create customized prompts'));
+      };
+    });
+  }
+
+  async updateCustomizedPrompts(data: CustomizedPromptsData): Promise<CustomizedPromptsData> {
+    const db = await this.initDB();
+    const transaction = db.transaction([CUSTOMIZED_PROMPTS_STORE], 'readwrite');
+    const store = transaction.objectStore(CUSTOMIZED_PROMPTS_STORE);
+    return new Promise((resolve, reject) => {
+      const request = store.put(data);
+      request.onsuccess = () => {
+        resolve(data);
+      };
+      request.onerror = () => {
+        reject(new Error('Failed to update customized prompts'));
+      };
+    });
+  }
+
+  async deleteCustomizedPrompts(): Promise<void> {
+    const db = await this.initDB();
+    const transaction = db.transaction([CUSTOMIZED_PROMPTS_STORE], 'readwrite');
+    const store = transaction.objectStore(CUSTOMIZED_PROMPTS_STORE);
+    return new Promise((resolve, reject) => {
+      const request = store.delete('customized_prompts'); 
+      request.onsuccess = () => {
+        resolve();
+      };
+      request.onerror = () => {
+        reject(new Error('Failed to delete customized prompts'));
+      };
+    });
+  }
+
   /* Misc */
   async clear(): Promise<void> {
     const db = await this.initDB();
-    const transaction = db.transaction([CONVERSATIONS_STORE, MESSAGES_STORE, SUMMARIES_STORE, METADATA_STORE], 'readwrite');
+    const transaction = db.transaction([CONVERSATIONS_STORE, MESSAGES_STORE, SUMMARIES_STORE, METADATA_STORE, FILES_STORE, CUSTOMIZED_PROMPTS_STORE], 'readwrite');
 
     return new Promise((resolve, reject) => {
-      const stores = [CONVERSATIONS_STORE, MESSAGES_STORE, SUMMARIES_STORE, METADATA_STORE];
+      const stores = [CONVERSATIONS_STORE, MESSAGES_STORE, SUMMARIES_STORE, METADATA_STORE, FILES_STORE, CUSTOMIZED_PROMPTS_STORE];
       let completed = 0;
 
       for (const storeName of stores) {
@@ -637,9 +808,9 @@ export class LocalStorage implements IStorage {
   }
 
   // Helper method to convert local message to chat message
-  private mapLocalMessageToChatMessage(message: LocalMessage): ChatMessage {
+  private mapStoredMessageToChatMessage(message: any): ChatMessage {
     return createMessage({
-      id: message.message_id as UUID,
+      id: message.message_id,
       role: message.sender_type,
       content: message.content,
       visibleContent: this.encryptionService.decrypt(message.content),

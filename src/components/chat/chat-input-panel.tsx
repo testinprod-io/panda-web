@@ -339,11 +339,9 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
             "DEBUG [executeFileUploads] Uploading file with session ID",
             currentSessionIdToUse,
           );
-          const uploadPromise = sdk.api.app.uploadFile(
-            currentSessionIdToUse!,
-            await sdk.encryption.encryptFile(clientFile.originalFile),
-            sdk.encryption.encrypt(clientFile.name),
-            clientFile.size,
+          const uploadPromise = sdk.storage.uploadFile(
+            currentSessionIdToUse,
+            clientFile.originalFile,
             (progress) => {
               setAttachedFiles((prev) =>
                 prev.map((f) =>
@@ -355,57 +353,52 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
             },
           );
 
-          uploadPromise
-            .then((uploadResponse) => {
-              activeUploadsRef.current.set(
-                clientFile.clientId,
-                uploadResponse.abort,
-              );
+          uploadPromise.then(({ fileId }) => {
+            activeUploadsRef.current.set(
+              clientFile.clientId,
+              () => {
+                if (activeSessionId && fileId) {
+                  sdk.storage.deleteFile(activeSessionId, fileId);
+                }
+              },
+            );
 
-              if (
-                !uploadResponse ||
-                !uploadResponse.fileResponse ||
-                !uploadResponse.fileResponse.file_id
-              ) {
-              }
+            setAttachedFiles((prev) =>
+              prev.map((f) =>
+                f.clientId === clientFile.clientId
+                  ? {
+                      ...f,
+                      uploadStatus: "success" as const,
+                      fileId: fileId as UUID,
+                      fileType: clientFile.type,
+                      uploadProgress: 100,
+                      abortUpload: activeUploadsRef.current.get(clientFile.clientId),
+                    }
+                  : f,
+              ),
+            );
+          }).catch((error) => {
+            activeUploadsRef.current.delete(clientFile.clientId);
+            let errorMessage = `Upload failed for ${clientFile.name}`;
+            if (error && error.message) {
+              errorMessage += `: ${error.message}`;
+            } else if (error && error.statusText) {
+              errorMessage += `: ${error.statusText}`;
+            } else if (typeof error === "string") {
+              errorMessage += `: ${error}`;
+            } else {
+              errorMessage += ": Unknown error";
+            }
 
-              setAttachedFiles((prev) =>
-                prev.map((f) =>
-                  f.clientId === clientFile.clientId
-                    ? {
-                        ...f,
-                        uploadStatus: "success" as const,
-                        fileId: uploadResponse.fileResponse.file_id as UUID,
-                        fileType: uploadResponse.fileResponse.type,
-                        uploadProgress: 100,
-                        abortUpload: uploadResponse.abort,
-                      }
-                    : f,
-                ),
-              );
-            })
-            .catch((error) => {
-              activeUploadsRef.current.delete(clientFile.clientId);
-              let errorMessage = `Upload failed for ${clientFile.name}`;
-              if (error && error.message) {
-                errorMessage += `: ${error.message}`;
-              } else if (error && error.statusText) {
-                errorMessage += `: ${error.statusText}`;
-              } else if (typeof error === "string") {
-                errorMessage += `: ${error}`;
-              } else {
-                errorMessage += ": Unknown error";
-              }
-
-              setAttachedFiles((prev) =>
-                prev.map((f) =>
-                  f.clientId === clientFile.clientId
-                    ? { ...f, uploadStatus: "error" as const }
-                    : f,
-                ),
-              );
-              showSnackbar(errorMessage, "error");
-            });
+            setAttachedFiles((prev) =>
+              prev.map((f) =>
+                f.clientId === clientFile.clientId
+                  ? { ...f, uploadStatus: "error" as const }
+                  : f,
+              ),
+            );
+            showSnackbar(errorMessage, "error");
+          });
         }
       },
       [
@@ -610,7 +603,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
         }
 
         if (activeSessionId && file.fileId) {
-          sdk.api.app.deleteFile(activeSessionId, file.fileId);
+          sdk.storage.deleteFile(activeSessionId, file.fileId);
         }
 
         setAttachedFiles((prev) =>

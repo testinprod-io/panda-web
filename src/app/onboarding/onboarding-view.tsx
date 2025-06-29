@@ -105,7 +105,7 @@ export default function OnboardingView() {
         sdk.encryption.encrypt.bind(sdk.encryption),
       );
       const responseData = decryptSystemPrompt(
-        await sdk.api.app.createCustomizedPrompts(encryptedPayload),
+        await sdk.storage.createCustomizedPrompts(encryptedPayload),
         sdk.encryption.decrypt.bind(sdk.encryption),
       );
       setCustomizedPrompts(responseData);
@@ -116,7 +116,7 @@ export default function OnboardingView() {
       // Optional: Show an error message to the user
       router.push("/"); // For now, just navigate away
     }
-  }, [sdk.api.app, data, router, setCustomizedPrompts, sdk.encryption]);
+  }, [sdk.storage, data, router, setCustomizedPrompts, sdk.encryption]);
 
   useEffect(() => {
     if (step === STEPS.length && !isSaving) {

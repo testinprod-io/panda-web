@@ -112,7 +112,7 @@ export default function SettingsModal({
   };
 
   const confirmDeleteAllChats = () => {
-    sdk.api.app.deleteConversations();
+    sdk.storage.deleteAllChats();
     clearSessions();
     router.replace("/");
     console.log("All chats deleted after confirmation");

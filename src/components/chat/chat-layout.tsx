@@ -195,7 +195,7 @@ export default function ChatLayoutContent({
     effectiveIsSidebarCollapsed = true;
   }
 
-  if (!privyReady || !sdk.initialized) {
+  if (!privyReady || (!sdk.initialized && sdk.auth.getState().isAuthenticated)) {
     return (
       <Box
         sx={{

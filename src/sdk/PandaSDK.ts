@@ -8,7 +8,7 @@ import { AuthProvider } from './auth/types';
 import { MemoryUserDataStore, UserManager } from './User';
 import { EventBus } from './events';
 import { IStorage } from './storage/i-storage';
-import { ServerStorage } from './storage/server-storage';
+import { ServerStorage, LocalStorage } from './storage';
 import { ConfigManager } from './ConfigManager';
 /**
  * The main entry point for the Panda SDK.
@@ -28,7 +28,7 @@ export class PandaSDK {
   public readonly user: UserManager;
   public readonly config: ConfigManager;
 
-  private readonly storage: IStorage;
+  public readonly storage: IStorage;
   public readonly api: ApiService;
   public initialized: boolean = false;
   private initializing: boolean = false;
@@ -42,6 +42,7 @@ export class PandaSDK {
     this.config = new ConfigManager(this.bus, this.encryption);
     this.auth = new AuthManager(this.bus, this.api, authProvider, this.encryption);
     
+    // this.storage = new LocalStorage(this.bus, this.encryption);
     this.storage = new ServerStorage(this.bus, this.api, this.auth, this.encryption);
     this.chat = new ChatManager(this.bus, this.api, this.auth, this.encryption, this.attestation, this.storage, this.config);
     this.user = new UserManager(new MemoryUserDataStore(), this.bus);

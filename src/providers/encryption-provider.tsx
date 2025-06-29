@@ -265,7 +265,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     createPassword: handleCreatePassword,
   };
 
-  if (!ready || !sdk.initialized) {
+  if (!ready || !sdk.initialized || !sdk.auth.getState().isAuthenticated) {
     console.log("[EncryptionProvider] SDK not initialized. Locking app.");
     return (
       <EncryptionContext.Provider value={contextValue}>
