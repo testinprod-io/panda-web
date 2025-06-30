@@ -1,0 +1,19 @@
+{
+  "name": "panda-vault",
+  "version": "1.0.0",
+  "description": "Panda cryptographic vault - sandboxed iframe for secure key operations",
+  "main": "vault.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc && cp index.html dist/",
+    "dev": "tsc --watch",
+    "serve": "python3 -m http.server 3001 --directory dist",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "keywords": ["cryptography", "security", "sandbox", "iframe"],
+  "author": "Panda Team",
+  "license": "PROPRIETARY"
+}
