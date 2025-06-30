@@ -1,5 +1,5 @@
 import { CACHE_URL_PREFIX } from "@/types/constant";
-import { MultimodalContent, RequestMessage } from "@/client/api";
+import { MultimodalContent, RequestMessage } from "@/sdk/client";
 
 export function compressImage(file: Blob, maxSize: number): Promise<string> {
   return new Promise((resolve, reject) => {

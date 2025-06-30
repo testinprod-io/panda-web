@@ -4,7 +4,7 @@ import { Chat } from './Chat';
 import { UUID } from 'crypto';
 import { EncryptionService } from './EncryptionService';
 import { EventBus } from './events';
-import { Conversation, ServerModelInfo } from '@/client/types';
+import { Conversation, ServerModelInfo } from '@/sdk/client';
 import { CustomizedPromptsData, generateSystemPrompt } from '@/types';
 import { AttestationManager } from './AttestationManager';
 import { IStorage } from './storage/i-storage';

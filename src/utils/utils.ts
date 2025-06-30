@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import Locale from "@/locales";
-import { RequestMessage } from "@/client/api";
+import { RequestMessage } from "@/sdk/client";
 import {
   REQUEST_TIMEOUT_MS,
   REQUEST_TIMEOUT_MS_FOR_THINKING,
   ServiceProvider,
 } from "../types/constant";
 import { ModelSize } from "@/types";
-import { ModelConfig } from "@/types/constant";
 
 export function trimTopic(topic: string) {
   // Fix an issue where double quotes still show in the Indonesian language

@@ -633,11 +633,17 @@ export class Chat {
 
     if (!isError) {
       this._triggerSummarization();
+
+      if (this.messages.length === 2) {
+        this.generateSessionTitle(
+          this.messages[0].visibleContent,
+          this.messages[1].visibleContent
+        );
+      }
     }
   }
 
   private async generateSessionTitle(
-    sessionId: UUID,
     userMessageContent: string,
     assistantMessageContent: string
   ) {
