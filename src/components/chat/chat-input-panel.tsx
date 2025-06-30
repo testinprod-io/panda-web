@@ -12,7 +12,6 @@ import { useDebouncedCallback } from "use-debounce";
 import { usePrivy } from "@privy-io/react-auth";
 import TextareaAutosize from "react-textarea-autosize";
 
-import { DEFAULT_TOPIC, useChatStore } from "@/store";
 import { UNFINISHED_INPUT } from "@/types/constant";
 import {
   autoGrowTextArea,
@@ -57,9 +56,6 @@ interface ChatInputPanelProps {
     sessionId: UUID | undefined,
     SessionState: SessionState,
   ) => Promise<void>;
-  scrollToBottom: () => void;
-  setShowPromptModal: () => void;
-  setShowShortcutKeyModal: () => void;
 }
 
 export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
@@ -70,10 +66,8 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
       customizedPrompts,
       isLoading,
       onSubmit,
-      scrollToBottom,
     } = props;
 
-    const chatStore = useChatStore();
     // const chatActions = useChatActions();
     const { sdk } = usePandaSDK();
     const [activeSessionId, setActiveSessionId] = useState<UUID | undefined>(
@@ -236,7 +230,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
           }
 
           const session = await sdk.chat.createNewChat(
-            DEFAULT_TOPIC,
+            Locale.Store.DefaultTopic,
             modelConfig,
             customizedPrompts,
           );
@@ -522,7 +516,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
         userInput.length <= 0 &&
         !(e.metaKey || e.altKey || e.ctrlKey)
       ) {
-        setUserInput(chatStore.lastInput ?? "");
+        setUserInput("");
         e.preventDefault();
         return;
       }
@@ -708,8 +702,6 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
               onInput={(e) => setUserInput(e.currentTarget.value)}
               value={userInput}
               onKeyDown={onInputKeyDown}
-              onFocus={scrollToBottom}
-              onClick={scrollToBottom}
               onPaste={handlePaste}
               minRows={1}
               maxRows={20}

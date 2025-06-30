@@ -1,5 +1,5 @@
 import { ChatSession } from "@/types/session";
-import { useAppConfig, useChatStore } from "@/store";
+import { useAppConfig} from "@/store";
 import { StoreKey } from "@/types/constant";
 import { merge } from "./merge";
 
@@ -25,12 +25,10 @@ export type GetStoreState<T> = T extends { getState: () => infer U }
   : never;
 
 const LocalStateSetters = {
-  [StoreKey.Chat]: useChatStore.setState,
   [StoreKey.Config]: useAppConfig.setState,
 } as const;
 
 const LocalStateGetters = {
-  [StoreKey.Chat]: () => getNonFunctionFileds(useChatStore.getState()),
   [StoreKey.Config]: () => getNonFunctionFileds(useAppConfig.getState()),
 } as const;
 
@@ -51,27 +49,6 @@ type StateMerger = {
 
 // we merge remote state to local state
 const MergeStates: StateMerger = {
-  [StoreKey.Chat]: (localState, remoteState) => {
-    // merge sessions
-    const localSessions: Record<string, ChatSession> = {};
-    localState.sessions.forEach((s) => (localSessions[s.id] = s));
-
-    remoteState.sessions.forEach((remoteSession) => {
-      const localSession = localSessions[remoteSession.id];
-      if (!localSession) {
-        // if remote session is new, just merge it
-        localState.sessions.push(remoteSession);
-      }
-    });
-
-    // sort local sessions with date field in desc order
-    localState.sessions.sort(
-      (a, b) =>
-        new Date(b.lastUpdate).getTime() - new Date(a.lastUpdate).getTime(),
-    );
-
-    return localState;
-  },
   [StoreKey.Config]: mergeWithUpdate<AppState[StoreKey.Config]>,
 };
 

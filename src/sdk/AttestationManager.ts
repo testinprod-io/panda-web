@@ -7,12 +7,10 @@ import {
   Jwks,
   // EventLogEntry,
   // AttestationResult,
-} from "@/types/attestation";
-import { jwtVerify, JWTPayload, importJWK, JWK } from "jose";
-import {
   VerificationResult,
   VerificationStatus,
-} from "@/hooks/use-attestation-manager";
+} from "@/types/attestation";
+import { jwtVerify, JWTPayload, importJWK, JWK } from "jose";
 import { EventBus, SDKEventMap } from "@/sdk/events";
 import { AttestationResponse } from "@/sdk/client/types";
 

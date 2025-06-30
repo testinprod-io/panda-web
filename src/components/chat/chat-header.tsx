@@ -22,12 +22,8 @@ import { getAccessToken, usePrivy } from "@privy-io/react-auth";
 import styles from "./chat-header.module.scss";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
-import {
-//   useAttestationManager,
-  VerificationResult,
-  VerificationStatus,
-} from "@/hooks/use-attestation-manager";
-import { AttestationResult } from "@/types/attestation";
+import {   VerificationResult,
+  VerificationStatus, } from "@/types/attestation";
 import { useAttestation } from "@/sdk/hooks";
 import { useEncryption } from "@/providers/encryption-provider";
 import { usePandaSDK } from "@/providers/sdk-provider";

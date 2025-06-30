@@ -30,8 +30,7 @@ export enum Theme {
   Light = "light",
 }
 
-
-export type ChatConfig = {
+export type AppConfig = {
   lastUpdate: number;
   submitKey: SubmitKey;
   avatar: string;
@@ -42,21 +41,10 @@ export type ChatConfig = {
   sendPreviewBubble: boolean;
   enableAutoGenerateTitle: boolean;
   sidebarWidth: number;
-  apiProvider: ServiceProvider;
-  enableArtifacts: boolean;
-  enableCodeFold: boolean;
-  disablePromptHint: boolean;
-  dontShowMaskSplashScreen: boolean;
-  hideBuiltinMasks: boolean;
-  customModels: string;
-  
-  models: ServerModelInfo[];
-  defaultModel: string;
-
-  customizedPrompts: CustomizedPromptsData;
+  passwordExpirationMinutes: number;
 };
 
-export const DEFAULT_CONFIG: ChatConfig = {
+export const DEFAULT_CONFIG: AppConfig = {
   lastUpdate: Date.now(),
 
   submitKey: SubmitKey.Enter,
@@ -68,25 +56,7 @@ export const DEFAULT_CONFIG: ChatConfig = {
   sendPreviewBubble: false,
   enableAutoGenerateTitle: true,
   sidebarWidth: DEFAULT_SIDEBAR_WIDTH,
-
-  apiProvider: ServiceProvider.Panda,
-
-  enableArtifacts: true,
-  enableCodeFold: true,
-  disablePromptHint: true,
-  dontShowMaskSplashScreen: false,
-  hideBuiltinMasks: false,
-
-  customModels: "",
-  
-  models: [],
-  defaultModel: "",
-  
-  customizedPrompts: {
-    enabled: false,
-    personal_info: { name: "", job: "" },
-    prompts: { traits: "", extra_params: "" },
-  } as CustomizedPromptsData,
+  passwordExpirationMinutes: 10,
 };
 
 export function limitNumber(
@@ -111,65 +81,36 @@ export const useAppConfig = createPersistStore(
       }));
     },
 
-    setApiProvider(modelName: string) {
-      console.log("[AppConfigStore] setApiProvider called with:", {
-        modelName,
-      });
-      const models = get().models;
-      const selectedModelDetail = models.find((m) => m.model_name === modelName);
-
-      if (selectedModelDetail) {
-        set((state) => {
-          return {
-            ...state,
-            defaultModel: modelName,
-          };
-        });
-      } else {
-        console.warn(
-          `[AppConfigStore] setApiProvider - Model ${modelName} with provider Panda not found. Cannot set API provider.`,
-        );
-      }
-    },
-
-    setModels(serverModels: ServerModelInfo[]) {
-      set({ models: serverModels });
-
-      const currentModelName = get().defaultModel;
-      const isCurrentModelInNewList = serverModels.some(
-        (m) => m.name === currentModelName,
-      );
-
-      if (
-        (!currentModelName || !isCurrentModelInNewList) &&
-        serverModels.length > 0
-      ) {
-        const defaultModel = serverModels[0];
-        if (defaultModel) {
-          set((state) => ({
-            ...state,
-            defaultModel: defaultModel.model_name,
-          }));
-        }
-      }
-    },
-
-    setCustomizedPrompts(data: CustomizedPromptsData) {
+    setPasswordExpirationMinutes(minutes: number) {
       set(() => ({
-        customizedPrompts: data,
+        passwordExpirationMinutes: minutes,
       }));
     },
-
-    allModels() {
-      return get().models;
+    
+    setTheme(theme: Theme) {
+      set(() => ({
+        theme: theme,
+      }));
     },
   }),
   {
     name: StoreKey.Config,
-    version: 1.3,
+    version: 1.4,
     storage: createJSONStorage(() => indexedDBStorage),
-    migrate: (persistedState: unknown, version: number): ChatConfig => {
-      const oldState = persistedState as Partial<ChatConfig>;
+    migrate: (persistedState: unknown, version: number): AppConfig => {
+      const oldState = persistedState as Partial<AppConfig>;
+
+      if (version < 1.4) {
+        console.log(
+          `[AppConfigStore] Migrating config from version ${version} to 1.4`,
+        );
+        return {
+          ...DEFAULT_CONFIG,
+          ...oldState,
+          theme: oldState.theme ?? Theme.Auto,
+          passwordExpirationMinutes: oldState.passwordExpirationMinutes ?? 10,
+        };
+      }
 
       if (version < 1.3) {
         console.log(
@@ -178,11 +119,11 @@ export const useAppConfig = createPersistStore(
         return {
           ...DEFAULT_CONFIG,
           ...oldState,
-          models: [],
           lastUpdate: Date.now(),
         };
       }
-      return { ...DEFAULT_CONFIG, ...oldState } as ChatConfig;
+
+      return { ...DEFAULT_CONFIG, ...oldState } as AppConfig;
     },
   },
 );

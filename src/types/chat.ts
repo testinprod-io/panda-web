@@ -1,5 +1,4 @@
-import { ServiceProvider, ModelType } from "./constant";
-import { nanoid } from "nanoid";
+import { ServiceProvider } from "./constant";
 import { MultimodalContent, RequestMessage } from "@/sdk/client/";
 import { UUID } from "crypto";
 import { FileInfo } from "@/sdk/client/types";
@@ -155,7 +154,7 @@ export type ChatMessage = Omit<RequestMessage, "content"> & {
   isError: boolean;
   errorMessage?: string;
   id: UUID;
-  model?: ModelType;
+  model?: string;
   syncState: MessageSyncState;
   reasoning?: string; // Add reasoning field
   visibleReasoning?: string;
@@ -164,46 +163,6 @@ export type ChatMessage = Omit<RequestMessage, "content"> & {
   useSearch: boolean; // To track if the message is using search
   challengeResponse?: ChallengeResponse;
 };
-
-/**
- * Represents the structure stored in IndexedDB.
- * Content is always stored encrypted.
- */
-export type EncryptedMessage = {
-  id: string;
-  role: Role;
-  /** Encrypted representation of string | MultimodalContent[] */
-  content: string;
-  date: Date;
-  model?: ModelType;
-  syncState?: MessageSyncState;
-  // Fields needed for UI rendering/state, but not encrypted
-  streaming?: boolean; // Transient state, not persisted encrypted
-  isError?: boolean; // Transient state, not persisted encrypted
-};
-
-/**
- * Creates a new chat message in its ENCRYPTED form suitable for storing.
- * Requires the caller to provide already encrypted content.
- * @param override - Partial message properties including encryptedContent
- * @returns A new EncryptedMessage
- */
-export function createEncryptedMessage(
-  override: Partial<EncryptedMessage> & { content: string },
-): EncryptedMessage {
-  const date = override.date instanceof Date ? override.date : new Date();
-
-  return {
-    id: override.id ?? nanoid(),
-    role: override.role ?? Role.USER,
-    date: date,
-    syncState: override.syncState ?? MessageSyncState.PENDING_CREATE,
-    content: override.content,
-    model: override.model,
-    streaming: override.streaming ?? false,
-    isError: override.isError ?? false,
-  };
-}
 
 /**
  * Creates a new chat message with the given overrides
@@ -221,6 +180,7 @@ export function createMessage(override: Partial<ChatMessage>): ChatMessage {
     isError: false,
     syncState: MessageSyncState.PENDING_CREATE,
     isReasoning: false,
+    model: override.model ?? "",
     content: override.content ?? "",
     visibleContent: override.content ?? "",
     reasoning: override.reasoning ?? "",

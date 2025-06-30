@@ -8,14 +8,15 @@ import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes";
 import CssBaseline from "@mui/material/CssBaseline";
 import { lightTheme, darkTheme } from "@/theme";
-import { useUserStore } from "@/store/user";
 import { SnackbarProvider } from "@/providers/snackbar-provider";
 import { EncryptionProvider } from "@/providers/encryption-provider";
 import { PandaSDKProvider } from "@/providers/sdk-provider";
+import { useAppConfig } from "@/store/config";
+import { Theme } from "@/store/config";
 
 function ThemeWrapper({ children }: { children: React.ReactNode }) {
   const { resolvedTheme, theme } = useTheme();
-  const setUserTheme = useUserStore((state) => state.set);
+  const appConfig = useAppConfig();
 
   const muiTheme = React.useMemo(
     () => (resolvedTheme === "dark" ? darkTheme : lightTheme),
@@ -24,9 +25,9 @@ function ThemeWrapper({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     if (theme) {
-      setUserTheme("theme", theme);
+      appConfig.setTheme(theme as Theme);
     }
-  }, [theme, setUserTheme]);
+  }, [theme]);
 
   return (
     <MuiThemeProvider theme={muiTheme}>

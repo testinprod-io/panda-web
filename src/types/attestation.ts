@@ -40,3 +40,15 @@ export interface AttestationResult {
   tcbStatus: string;
   advisoryIds: string[];
 }
+
+export enum VerificationStatus {
+  Failed = "Failed",
+  Pending = "Pending",
+  ContractVerified = "ContractVerified",
+  AttestationVerified = "AttestationVerified",
+}
+export interface VerificationResult {
+  status: VerificationStatus;
+  attestationResult?: AttestationResult;
+  publicKey: string;
+}

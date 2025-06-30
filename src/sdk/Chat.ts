@@ -18,8 +18,8 @@ import {
   ServerModelInfo,
   ConversationUpdateRequest,
   SummaryCreateRequest,
-  MultimodalContent, 
-  LLMConfig 
+  MultimodalContent,
+  LLMConfig,
 } from "@/sdk/client/types";
 // import { mapApiMessagesToChatMessages } from "@/services/api-service";
 import { EventBus } from "./events";
@@ -28,7 +28,7 @@ import { EncryptionService } from "./EncryptionService";
 import { ChallengeResponse } from "@/sdk/client/panda-challenge";
 import { AttestationManager } from "./AttestationManager";
 import { ConfigManager } from "./ConfigManager";
-
+import Locale from "@/locales";
 export class Chat {
   private bus: EventBus;
   private encryptionService: EncryptionService;
@@ -61,7 +61,7 @@ export class Chat {
     isLoading: boolean;
     hasMoreMessages: boolean;
   };
-  
+
   public customData?: Record<string, any>;
 
   get defaultModelName(): string | undefined {
@@ -75,7 +75,7 @@ export class Chat {
     };
   }
 
-  get customizedPromptsData (): string | undefined {
+  get customizedPromptsData(): string | undefined {
     return this.customData?.customized_prompts as string | undefined;
   }
 
@@ -97,7 +97,7 @@ export class Chat {
     encryptedTitle: string,
     updatedAt: number,
     createdAt: number,
-    customData?: Record<string, any>,
+    customData?: Record<string, any>
   ) {
     this.bus = bus;
     this.api = api;
@@ -115,7 +115,9 @@ export class Chat {
 
     this.bus.on("app.unlocked", () => {
       this.messages.forEach((m) => {
-        m.visibleReasoning = m.reasoning ? this.encryptionService.decrypt(m.reasoning) : undefined;
+        m.visibleReasoning = m.reasoning
+          ? this.encryptionService.decrypt(m.reasoning)
+          : undefined;
         m.visibleContent = this.encryptionService.decrypt(m.content);
       });
       this.updateState();
@@ -165,7 +167,9 @@ export class Chat {
 
       // Process messages
       this.messages = messagesResult.messages.map((m) => {
-        m.visibleReasoning = m.reasoning ? this.encryptionService.decrypt(m.reasoning) : undefined;
+        m.visibleReasoning = m.reasoning
+          ? this.encryptionService.decrypt(m.reasoning)
+          : undefined;
         m.visibleContent = this.encryptionService.decrypt(m.visibleContent);
         return m;
       });
@@ -209,7 +213,7 @@ export class Chat {
   public async loadMoreMessages() {
     if (this.isLoading || !this.hasMoreMessages) return;
     if (!this.nextMessageCursor) return;
-    
+
     console.log(
       `[SDK-Chat] Loading more messages for ${this.id}, cursor: ${this.nextMessageCursor}`
     );
@@ -224,7 +228,9 @@ export class Chat {
       );
 
       const olderMessages = result.messages.map((m) => {
-        m.visibleReasoning = m.reasoning ? this.encryptionService.decrypt(m.reasoning) : undefined;
+        m.visibleReasoning = m.reasoning
+          ? this.encryptionService.decrypt(m.reasoning)
+          : undefined;
         m.visibleContent = this.encryptionService.decrypt(m.visibleContent);
         return m;
       });
@@ -248,11 +254,14 @@ export class Chat {
   }
 
   private getModelConfig(): ServerModelInfo {
-    const modelNameToUse = this.defaultModelName ?? this.config.getConfig().defaultModel?.model_name;
+    const modelNameToUse =
+      this.defaultModelName ?? this.config.getConfig().defaultModel?.model_name;
     if (!modelNameToUse) {
       throw new Error("No model selected for chat and no default model set.");
     }
-    const modelConfig = this.config.getConfig().models.find(m => m.model_name === modelNameToUse);
+    const modelConfig = this.config
+      .getConfig()
+      .models.find((m) => m.model_name === modelNameToUse);
     if (!modelConfig) {
       throw new Error(`Model ${modelNameToUse} not found in available models.`);
     }
@@ -324,6 +333,7 @@ export class Chat {
     console.log("userMessage", userMessage);
     this.messages.push(userMessage);
     this.updateState();
+
     this._sendMessages(this.getModelConfig(), options);
   }
 
@@ -425,11 +435,11 @@ export class Chat {
         options.onReasoningChunk?.(localBotMessageId, chunk);
       },
       onReasoningEnd: () => {
-          let duration = 0;
-          if (reasoningStartTimeForThisQuery !== null) {
-            duration = Date.now() - reasoningStartTimeForThisQuery;
-            reasoningStartTimeForThisQuery = null;
-          }
+        let duration = 0;
+        if (reasoningStartTimeForThisQuery !== null) {
+          duration = Date.now() - reasoningStartTimeForThisQuery;
+          reasoningStartTimeForThisQuery = null;
+        }
         this.messages = this.messages.map((msg) => {
           return msg.id === localBotMessageId
             ? {
@@ -438,7 +448,7 @@ export class Chat {
                 reasoning: this.encryptionService.encrypt(
                   msg.visibleReasoning ?? ""
                 ),
-                reasoningTime: duration
+                reasoningTime: duration,
               }
             : msg;
         });
@@ -491,42 +501,48 @@ export class Chat {
     if (this.isSummarizing) {
       return;
     }
-    console.log("[SDK-Chat] Triggering summarization", this.lastSummarizedMessageId);
+    console.log(
+      "[SDK-Chat] Triggering summarization",
+      this.lastSummarizedMessageId
+    );
     const SUMMARIZE_INTERVAL = 10;
     let messagesToConsiderForSummarization: ChatMessage[];
 
     if (this.lastSummarizedMessageId) {
       const lastSummarizedMsgIndex = this.messages.findIndex(
-        (msg: ChatMessage) => msg.id === this.lastSummarizedMessageId,
+        (msg: ChatMessage) => msg.id === this.lastSummarizedMessageId
       );
       if (lastSummarizedMsgIndex !== -1) {
         messagesToConsiderForSummarization = this.messages.slice(
-          lastSummarizedMsgIndex + 1,
+          lastSummarizedMsgIndex + 1
         );
       } else {
         console.warn(
-          `[SDK-Chat] Summarization Trigger: lastSummarizedMessageId ${this.lastSummarizedMessageId} not found in messages. Considering all messages.`,
+          `[SDK-Chat] Summarization Trigger: lastSummarizedMessageId ${this.lastSummarizedMessageId} not found in messages. Considering all messages.`
         );
         messagesToConsiderForSummarization = this.messages;
       }
     } else {
       messagesToConsiderForSummarization = this.messages;
     }
-    console.log("messagesToConsiderForSummarization", messagesToConsiderForSummarization);
+    console.log(
+      "messagesToConsiderForSummarization",
+      messagesToConsiderForSummarization
+    );
     const finalMessagesToConsider = messagesToConsiderForSummarization.filter(
       (msg: ChatMessage) =>
-        msg.syncState === MessageSyncState.SYNCED && !msg.isError,
+        msg.syncState === MessageSyncState.SYNCED && !msg.isError
     );
     console.log("finalMessagesToConsider", finalMessagesToConsider);
     if (finalMessagesToConsider.length >= SUMMARIZE_INTERVAL) {
       console.log("[SDK-Chat] Summarizing", finalMessagesToConsider.length);
       const batchToSummarize = finalMessagesToConsider.slice(
         0,
-        SUMMARIZE_INTERVAL,
-      )
+        SUMMARIZE_INTERVAL
+      );
 
       console.log(
-        `[SDK-Chat] Triggering summarization with ${batchToSummarize.length} messages.`,
+        `[SDK-Chat] Triggering summarization with ${batchToSummarize.length} messages.`
       );
       this.isSummarizing = true;
       try {
@@ -545,7 +561,7 @@ export class Chat {
             role: msg.role,
             content: msg.visibleContent,
             attachments: msg.attachments,
-          })),
+          }))
         );
         const summaryCreateRequest: SummaryCreateRequest = {
           start_message_id: batchToSummarize[0].id,
@@ -554,7 +570,7 @@ export class Chat {
         };
         const newSummary = await this.storage.saveSummary(
           this.id as string,
-          summaryCreateRequest,
+          summaryCreateRequest
         );
         newSummary.content = this.encryptionService.decrypt(newSummary.content);
         if (newSummary) {
@@ -562,7 +578,7 @@ export class Chat {
           this.summaries.sort(
             (a, b) =>
               new Date(b.created_at).getTime() -
-              new Date(a.created_at).getTime(),
+              new Date(a.created_at).getTime()
           );
           this.lastSummarizedMessageId = newSummary.end_message_id;
         }
@@ -609,7 +625,7 @@ export class Chat {
       this.storage.saveMessage(this.id as string, messageToSave);
     } else {
       console.error(
-        `[SDK-Chat] _finalizeMessage: Message with ID ${messageId} not found. Cannot save to server.`,
+        `[SDK-Chat] _finalizeMessage: Message with ID ${messageId} not found. Cannot save to server.`
       );
     }
 
@@ -617,6 +633,75 @@ export class Chat {
 
     if (!isError) {
       this._triggerSummarization();
+    }
+  }
+
+  private async generateSessionTitle(
+    sessionId: UUID,
+    userMessageContent: string,
+    assistantMessageContent: string
+  ) {
+    const defaultTopic = Locale.Store.DefaultTopic
+    if (this.title !== defaultTopic) {
+      console.log(
+        `[Title Generation Action] Session already has a title, skipping.`
+      );
+      return;
+    }
+
+    // Model for Title Generation (adapts original store's getSummarizeModelConfig)
+    const modelConfig = this.getModelConfig();
+    const llmConfig: LLMConfig = {
+      model: modelConfig.name,
+      temperature: 0.3,
+      top_p: 1,
+      stream: false,
+      reasoning: false,
+      targetEndpoint: modelConfig.url,
+    };
+
+    const prompt = `**Prompt**\n\nYou are a chat‑title generator.\n\nInput\nUser: ${userMessageContent}\nAssistant: ${assistantMessageContent}\n\nTask\n1. If the messages revolve around a specific topic, produce a short, informative title (3–6 words, Title Case, no trailing punctuation).\n2. If they are too vague or empty to summarize meaningfully, output exactly:\n   ${defaultTopic}\n\nRules\n- Output **only** the title text (or "${defaultTopic}")—no extra words or quotation marks.\n- Keep the title neutral and descriptive; do not include the words "user" or "assistant".\n`;
+
+    try {
+      await this.api.llm.chat({
+        messages: [
+          {
+            role: Role.USER,
+            content: prompt,
+          },
+        ],
+        config: llmConfig,
+        onFinish: (finalContent, timestamp, _, challengeResponse) => {
+          const encryptedTitle = this.encryptionService.encrypt(finalContent);
+          console.log(
+            `[Title Generation Action] LLM generated title: "${finalContent}"`
+          );
+
+          // Update local state only if the title is new and not the default
+          if (finalContent !== defaultTopic && finalContent !== this.title) {
+            this.title = finalContent;
+            this.encryptedTitle = encryptedTitle;
+            console.log(
+              `[Title Generation Action] Updated local topic to: "${finalContent}"`
+            );
+            this.updateState();
+
+            console.log(
+              `[Title Generation Action] Attempting to update server title for ConvID: ${this.id}`
+            );
+            const updateReq: ConversationUpdateRequest = {
+              title: encryptedTitle,
+            };
+            this.api.app.updateConversation(this.id, updateReq);
+          } else {
+            console.log(
+              `[Title Generation Action] Generated title is default or unchanged, not updating.`
+            );
+          }
+        },
+      });
+    } catch (error) {
+      console.log(`[Title Generation Action] LLM API call failed:`, error);
     }
   }
 

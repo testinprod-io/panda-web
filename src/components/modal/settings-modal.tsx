@@ -20,6 +20,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Theme,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -32,19 +33,15 @@ import CustomizePromptsView from "./customize-prompts-view";
 import { useRouter } from "next/navigation";
 // import { useApiClient } from "@/providers/api-client-provider";
 import { usePrivy } from "@privy-io/react-auth";
-import { useChatStore } from "@/store";
-import { useAppConfig, useAppConfig as useAppConfigStore } from "@/store/config";
-import { useUserStore } from "@/store/user";
 import { useEncryption } from "@/providers/encryption-provider";
 import { useAuth } from "@/sdk/hooks";
-import { useAttestationStore } from "@/store/attestation";
 import { usePandaSDK } from "@/providers/sdk-provider";
 import { AllLangs, ALL_LANG_OPTIONS, changeLang, Lang } from "@/locales";
 import { safeLocalStorage } from "@/utils/utils";
 import Locale from "@/locales";
 import clsx from "clsx";
 import { useTheme } from "next-themes";
-
+import { useAppConfig, Theme as AppTheme } from "@/store/config";
 interface SettingsModalProps {
   open: boolean;
   currentPage: SettingsPage | null;
@@ -77,17 +74,14 @@ export default function SettingsModal({
     }
   };
 
-  const passwordExpirationMinutes =
-    useUserStore((state) => state.get<number>("passwordExpirationMinutes")) ?? 0;
-
   const handlePasswordExpirationChange = (event: SelectChangeEvent<string>) => {
     const value = parseInt(event.target.value, 10);
-    useUserStore.getState().set("passwordExpirationMinutes", value);
+    appConfig.setPasswordExpirationMinutes(value);
   };
 
   const router = useRouter();
-  const { clearSessions } = useChatStore();
   const { theme, setTheme } = useTheme();
+  const appConfig = useAppConfig();
   const { lockApp } = useEncryption();
   const { sdk } = usePandaSDK();
   const { logout, isAuthenticated } = useAuth();
@@ -113,7 +107,6 @@ export default function SettingsModal({
 
   const confirmDeleteAllChats = () => {
     sdk.storage.deleteAllChats();
-    clearSessions();
     router.replace("/");
     console.log("All chats deleted after confirmation");
     setDeleteConfirmOpen(false);
@@ -202,7 +195,7 @@ export default function SettingsModal({
       label: Locale.SettingsModal.InactivityLockTimer,
       control: (
         <Select
-          value={passwordExpirationMinutes.toString()}
+          value={appConfig.passwordExpirationMinutes.toString()}
           onChange={handlePasswordExpirationChange}
           variant="outlined"
           size="small"

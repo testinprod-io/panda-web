@@ -16,7 +16,6 @@ import Sidebar from "@/components/sidebar/sidebar";
 import ChatHeader from "@/components/chat/chat-header";
 
 import { ChatInputPanel } from "@/components/chat/chat-input-panel";
-import { useChatStore, DEFAULT_TOPIC } from "@/store";
 import { UNFINISHED_INPUT } from "@/types/constant";
 import { SessionState } from "@/types/session";
 import { safeLocalStorage } from "@/utils/utils";
@@ -68,23 +67,6 @@ export default function ChatLayoutContent({
   // const { newSession } = useChatActions();
   const { showSnackbar } = useSnackbar();
 
-  const onSendMessageHandlerFromStore = useChatStore(
-    (state) => state.onSendMessageHandler,
-  );
-  const hitBottomFromStore = useChatStore((state) => state.hitBottom);
-  const scrollToBottomHandlerFromStore = useChatStore(
-    (state) => state.scrollToBottomHandler,
-  );
-  const showPromptModalHandlerFromStore = useChatStore(
-    (state) => state.showPromptModalHandler,
-  );
-  const showShortcutKeyModalHandlerFromStore = useChatStore(
-    (state) => state.showShortcutKeyModalHandler,
-  );
-  const isChatComponentBusyFromStore = useChatStore(
-    (state) => state.isChatComponentBusy,
-  );
-
   const [internalIsSubmitting, setInternalIsSubmitting] = useState(false);
   const [contentOpacity, setContentOpacity] = useState(1);
   const [isNavigatingAway, setIsNavigatingAway] = useState(false);
@@ -116,9 +98,6 @@ export default function ChatLayoutContent({
       )
         return;
       setInternalIsSubmitting(true);
-      console.log(
-        `[handleLayoutSubmit] sessionId: ${sessionId} currentChatId: ${currentChatId} onSendMessageHandlerFromStore: ${onSendMessageHandlerFromStore}`,
-      );
       try {
         let chat: Chat | undefined;
         if (currentChatId && sdk.chat.activeChat?.id === currentChatId) {
@@ -146,7 +125,7 @@ export default function ChatLayoutContent({
             return;
           }
           chat = await sdk.chat.createNewChat(
-            DEFAULT_TOPIC,
+            Locale.Store.DefaultTopic,
             modelConfig,
             pandaConfig.customizedPrompts,
           );
@@ -184,7 +163,6 @@ export default function ChatLayoutContent({
     },
     [
       currentChatId,
-      onSendMessageHandlerFromStore,
       router,
       pandaConfig,
       showSnackbar,
@@ -401,19 +379,6 @@ export default function ChatLayoutContent({
             customizedPrompts={pandaConfig.customizedPrompts}
             isLoading={internalIsSubmitting}
             onSubmit={handleLayoutSubmit}
-            scrollToBottom={
-              scrollToBottomHandlerFromStore ||
-              (() => console.warn("ScrollToBottom handler not set in store"))
-            }
-            setShowPromptModal={
-              showPromptModalHandlerFromStore ||
-              (() => console.warn("ShowPromptModal handler not set in store"))
-            }
-            setShowShortcutKeyModal={
-              showShortcutKeyModalHandlerFromStore ||
-              (() =>
-                console.warn("ShowShortcutKeyModal handler not set in store"))
-            }
           />
         <Typography
           hidden={isMobile}

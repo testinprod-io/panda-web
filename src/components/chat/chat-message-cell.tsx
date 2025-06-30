@@ -2,7 +2,6 @@ import React, { useState, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
 import { ChatMessage } from "@/types";
-import { MultimodalContent } from "@/client/api";
 import { ActionButton } from "@/components/ui/action-button";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
 import { Box, CircularProgress } from "@mui/material";
@@ -14,12 +13,6 @@ import { FilePreviewItem } from "../ui/file-preview-item";
 import { MessageActionsBar } from "../ui/message-actions-bar";
 import { ReasoningDisplay } from "../ui/reasoning-display";
 import { EditMessageForm } from "../ui/edit-message-form";
-import {
-  // useAttestationManager,
-  VerificationStatus,
-  VerificationResult,
-} from "@/hooks/use-attestation-manager";
-import { AttestationResult } from "@/types/attestation";
 import { useAttestation } from "@/sdk/hooks";
 import { usePandaSDK } from "@/providers/sdk-provider";
 const Markdown = dynamic(

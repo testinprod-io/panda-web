@@ -13,10 +13,9 @@ import { PasswordModal } from "@/components/login/password-modal";
 import { usePrivy } from "@privy-io/react-auth";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { useUserStore } from "@/store/user";
 import { usePandaSDK } from "./sdk-provider";
 import { useAuth } from "@/sdk/hooks";
-
+import { useAppConfig } from "@/store/config";
 interface EncryptionContextType {
   isLocked: boolean;
   isFirstTimeUser: boolean | null;
@@ -54,8 +53,9 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   const { isLocked, encryptedId, lockApp: lockAppHook, unlockApp: unlockAppHook, createPassword: createPasswordHook } = useAuth();
 
   const isFirstTimeUser = sdk.ready ? encryptedId === null : null;
-  const passwordExpirationMinutes =
-    (useUserStore((state) => state.get<number>("passwordExpirationMinutes")) ?? 10) * 60 * 1000;
+  const appConfig = useAppConfig();
+  
+  const passwordExpirationMinutes = appConfig.passwordExpirationMinutes;
   
   // Set up error handling for encryption-related operations
   useEffect(() => {
@@ -124,6 +124,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     // Only set a new timer if the app is *not* locked and expiration is not "Never"
     if (!isLocked && passwordExpirationMinutes > 0) {
       const timeoutMs = passwordExpirationMinutes * 60 * 1000;
+      console.log("[EncryptionProvider] Inactivity timer set for", timeoutMs, "ms");
       inactivityTimerRef.current = setTimeout(() => {
         console.log(
           "[EncryptionProvider] Inactivity timeout reached. Locking app.",

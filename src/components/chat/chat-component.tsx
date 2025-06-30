@@ -71,14 +71,6 @@ export function ChatComponent({ sessionId }: { sessionId: UUID }) {
 
   const { scrollDomToBottom, setAutoScroll } = useScrollToBottom(scrollRef, !internalHitBottom, displayedMessages);
 
-  // Register/unregister submit handler with the store
-  // useEffect(() => {
-  //   chatStore.setOnSendMessageHandler(doSubmit);
-  //   return () => {
-  //     chatStore.setOnSendMessageHandler(null);
-  //   };
-  // }, [chatStore, doSubmit]);
-
   const onResend = useCallback(async (messageId: UUID) => {
     if (!activeChat) return;
     activeChat.resendMessage(messageId);

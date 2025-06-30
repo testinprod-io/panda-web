@@ -21,8 +21,6 @@ import { useRouter } from "next/navigation";
 import { useEncryption } from "@/providers/encryption-provider";
 import { usePrivy } from "@privy-io/react-auth";
 import { Tooltip } from "@mui/material";
-import { useChatStore } from "@/store/chat";
-import { useAppConfig } from "@/store/config";
 import Locale from "@/locales";
 import MenuIcon from "@/public/icons/menu.svg";
 import NewChatIcon from "@/public/icons/new-chat.svg";
@@ -45,8 +43,6 @@ export default function Sidebar({
   const { logout, isAuthenticated } = useAuth();
   const { authenticated } = usePrivy();
   const [showConfirm, setShowConfirm] = useState(false);
-  const { sessions, currentSessionIndex, removeSession } = useChatStore();
-  const { models, setApiProvider } = useAppConfig();
 
   if (!isAuthenticated) {
     return null;

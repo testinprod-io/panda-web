@@ -17,7 +17,6 @@ import styles from "./customize-prompts-view.module.scss";
 import { CustomizedPromptsResponse } from "@/sdk/client/types";
 // import { useApiClient } from "@/providers/api-client-provider";
 import { CustomizedPromptsData, decryptSystemPrompt, encryptSystemPrompt } from "@/types";
-// import { useAppConfig } from "@/store/config";
 import { usePandaSDK } from "@/providers/sdk-provider";
 import { useUser } from "@/sdk/hooks";
 import Locale from "@/locales";
@@ -74,7 +73,6 @@ export default function CustomizePromptsView({
     useState<CustomizedPromptsData | null>(null);
   const [enableForNewChats, setEnableForNewChats] = useState(true);
   const { updateCustomizedPrompts } = useUser();
-  // const { customizedPrompts, setCustomizedPrompts } = useAppConfig();
 
   useEffect(() => {
     const fetchPrompts = async () => {

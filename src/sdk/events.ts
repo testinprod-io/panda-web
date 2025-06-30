@@ -1,6 +1,6 @@
 import { User } from "./auth/types";
 import { PandaConfig } from "./ConfigManager";
-import { VerificationStatus } from "@/hooks/use-attestation-manager";
+import { VerificationStatus } from "@/types/attestation";
 import { ServerModelInfo } from "./client/types";
 import { AttestationResult } from "@/types/attestation";
 import { Chat } from './Chat';

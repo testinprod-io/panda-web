@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 // import { useApiClient } from "@/providers/api-client-provider";
-import { useAppConfig } from "@/store/config";
 import {
   CustomizedPromptsData,
   encryptSystemPrompt,
@@ -17,6 +16,7 @@ import StreamingText from "@/components/onboarding/StreamingText";
 import { usePandaSDK } from "@/providers/sdk-provider";
 import Locale from "@/locales";
 import Image from "next/image";
+import { useUser } from "@/sdk/hooks";
 
 const STEPS = ["intro", "name", "role", "traits", "knowledge"];
 
@@ -58,7 +58,7 @@ export default function OnboardingView() {
   const [isSaving, setIsSaving] = useState(false);
   const { sdk } = usePandaSDK();
   // const apiClient = useApiClient();
-  const { setCustomizedPrompts } = useAppConfig();
+  const { updateCustomizedPrompts } = useUser();
   const router = useRouter();
 
   const handleNext = (value: string) => {
@@ -108,7 +108,7 @@ export default function OnboardingView() {
         await sdk.storage.createCustomizedPrompts(encryptedPayload),
         sdk.encryption.decrypt.bind(sdk.encryption),
       );
-      setCustomizedPrompts(responseData);
+      updateCustomizedPrompts(responseData);
       router.push("/");
     } catch (error) {
       console.error("Failed to save onboarding data:", error);
@@ -116,7 +116,7 @@ export default function OnboardingView() {
       // Optional: Show an error message to the user
       router.push("/"); // For now, just navigate away
     }
-  }, [sdk.storage, data, router, setCustomizedPrompts, sdk.encryption]);
+  }, [sdk.storage, data, router, updateCustomizedPrompts, sdk.encryption]);
 
   useEffect(() => {
     if (step === STEPS.length && !isSaving) {
