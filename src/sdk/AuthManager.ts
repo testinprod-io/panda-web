@@ -39,7 +39,7 @@ export class AuthManager {
     console.log("AuthManager initialized");
 
     this.authProvider.addAuthStateListener(this.handleAuthStateChange);
-    this.initializeAuthState();
+    // this.initializeAuthState();
   }
 
   // This is required by the EventEmitter base class
@@ -48,7 +48,7 @@ export class AuthManager {
   }
 
   private updateState(newState: Partial<typeof this.state>) {
-    if (newState.isAuthenticated && newState.isAuthenticated !== this.state.isAuthenticated) {
+    if (newState.isAuthenticated !== undefined && newState.isAuthenticated !== this.state.isAuthenticated) {
       this.bus.emit("auth.status.updated", newState.isAuthenticated);
     }
 
@@ -59,13 +59,16 @@ export class AuthManager {
   public async initializeAuthState() {
     const isAuthenticated = await this.authProvider.getIsAuthenticated();
     const user = await this.authProvider.getUser();
-    const encryptedId = (await this.api.app.getEncryptedId()).encrypted_id;
-
     this.updateState({
       isAuthenticated,
       user,
-      encryptedId,
     });
+    try {
+      const encryptedId = (await this.api.app.getEncryptedId()).encrypted_id;
+      this.updateState({
+        encryptedId,
+        }); 
+    } catch { }
   }
 
   private handleAuthStateChange = async (payload: {
@@ -93,11 +96,11 @@ export class AuthManager {
       throw new Error("User ID not found");
     }
 
-    const encryptedVerificationToken =
-      this.encryptionService.encryptVerificationToken(this.state.user.id);
+    this.encryptionService.setKeyFromPassword(password);
+    
+    const encryptedVerificationToken = this.encryptionService.encryptVerificationToken(this.state.user.id);
     await this.api.app.createEncryptedId(encryptedVerificationToken);
 
-    this.encryptionService.setKeyFromPassword(password);
     this.updateState({ isLocked: false });
     this.bus.emit("app.unlocked", undefined);
   }

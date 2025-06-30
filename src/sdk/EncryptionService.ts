@@ -86,7 +86,7 @@ export class EncryptionService {
       console.error(
         "[EncryptionService] encryptVerificationToken called without key set."
       );
-      return "";
+      throw new Error("Key not set");
     }
 
     try {
@@ -101,7 +101,7 @@ export class EncryptionService {
         "[EncryptionService] Failed to encrypt verification token:",
         error
       );
-      return "";
+      throw new Error("Failed to encrypt verification token");
     }
   }
 

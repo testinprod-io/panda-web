@@ -114,6 +114,7 @@ export class Chat {
 
     this.bus.on("app.unlocked", () => {
       this.messages.forEach((m) => {
+        m.visibleReasoning = m.reasoning ? this.encryptionService.decrypt(m.reasoning) : undefined;
         m.visibleContent = this.encryptionService.decrypt(m.content);
       });
       this.updateState();
@@ -121,6 +122,7 @@ export class Chat {
 
     this.bus.on("app.locked", () => {
       this.messages.forEach((m) => {
+        m.visibleReasoning = m.reasoning;
         m.visibleContent = m.content;
       });
       this.updateState();
@@ -162,6 +164,7 @@ export class Chat {
 
       // Process messages
       this.messages = messagesResult.messages.map((m) => {
+        m.visibleReasoning = m.reasoning ? this.encryptionService.decrypt(m.reasoning) : undefined;
         m.visibleContent = this.encryptionService.decrypt(m.visibleContent);
         return m;
       });
@@ -220,6 +223,7 @@ export class Chat {
       );
 
       const olderMessages = result.messages.map((m) => {
+        m.visibleReasoning = m.reasoning ? this.encryptionService.decrypt(m.reasoning) : undefined;
         m.visibleContent = this.encryptionService.decrypt(m.visibleContent);
         return m;
       });

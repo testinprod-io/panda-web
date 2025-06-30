@@ -56,6 +56,14 @@ export default function ChatLayoutContent({
   const prevIsMobile = usePrevious(isMobile);
   const { sdk } = usePandaSDK();
   const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
+  const [isSDKReady, setIsSDKReady] = useState(sdk.ready);
+
+  useEffect(() => {
+    const unsubscribe = sdk.bus.on('sdk.ready', (isReady) => {
+      setIsSDKReady(isReady);
+    });
+    return unsubscribe;
+  }, [sdk.bus]);
 
   // const { newSession } = useChatActions();
   const { showSnackbar } = useSnackbar();
@@ -195,7 +203,7 @@ export default function ChatLayoutContent({
     effectiveIsSidebarCollapsed = true;
   }
 
-  if (!privyReady || !sdk.initialized) {
+  if (!privyReady || !sdk.initialized || (privyAuthenticated && !isSDKReady)) {
     return (
       <Box
         sx={{

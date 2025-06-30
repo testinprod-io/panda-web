@@ -14,7 +14,7 @@ interface SDKProviderProps {
 
 interface PandaSDKContextValue {
   sdk: PandaSDK;
-  isInitialized: boolean;
+  isReady: boolean;
 }
 
 const SDKContext = createContext<PandaSDKContextValue | null>(null);
@@ -23,7 +23,7 @@ const SDKContext = createContext<PandaSDKContextValue | null>(null);
 export function PandaSDKProvider({ children, getAccessToken }: SDKProviderProps) {
   const privy = usePrivy();
   const { ready, authenticated, user } = privy;
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   const authAdapter = useMemo(() => {
     // if (!ready) return null;
@@ -44,13 +44,13 @@ export function PandaSDKProvider({ children, getAccessToken }: SDKProviderProps)
   
   useEffect(() => {
     if (sdk) {
-      const handleInitialized = (initialized: boolean) => {
-        setIsInitialized(initialized);
+      const handleReady = (ready: boolean) => {
+        setIsReady(ready);
       };
-      sdk.bus.on('sdk.initialized', handleInitialized);
+      sdk.bus.on('sdk.ready', handleReady);
       
       return () => {
-        sdk.bus.off('sdk.initialized', handleInitialized);
+        sdk.bus.off('sdk.ready', handleReady);
       };
     }
   }, [sdk]);
@@ -61,7 +61,7 @@ export function PandaSDKProvider({ children, getAccessToken }: SDKProviderProps)
     }
   }, [sdk, ready, authenticated]);
 
-  // if (!sdk || !isInitialized) { 
+  // if (!sdk || !isReady) { 
   //   return (
   //     <Box
   //       sx={{
@@ -80,8 +80,8 @@ export function PandaSDKProvider({ children, getAccessToken }: SDKProviderProps)
   if (sdk) { 
     const contextValue = useMemo(() => ({
       sdk,
-      isInitialized,
-  }), [sdk, isInitialized]);
+      isReady,
+  }), [sdk, isReady]);
 
   return (
     <SDKContext.Provider value={contextValue}>

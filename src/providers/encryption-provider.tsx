@@ -55,7 +55,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   const { sdk } = usePandaSDK();
   const { isLocked, encryptedId, lockApp: lockAppHook, unlockApp: unlockAppHook, createPassword: createPasswordHook } = useAuth();
 
-  const isFirstTimeUser = encryptedId === null && sdk.initialized;
+  const isFirstTimeUser = sdk.ready ? encryptedId === null : null;
   const passwordExpirationMinutes =
     (useUserStore((state) => state.get<number>("passwordExpirationMinutes")) ?? 10) * 60 * 1000;
   
@@ -265,7 +265,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     createPassword: handleCreatePassword,
   };
 
-  if (!ready || !sdk.initialized) {
+  if (!ready || !sdk.ready) {
     console.log("[EncryptionProvider] SDK not initialized. Locking app.");
     return (
       <EncryptionContext.Provider value={contextValue}>

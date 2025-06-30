@@ -1,13 +1,15 @@
 import { User } from "./auth/types";
-import { AttestationResult } from "@/types/attestation";
-import { VerificationStatus } from "@/hooks/use-attestation-manager";
-// import { Chat, ChatMessage, FileWithProgress } from "./Chat";
 import { PandaConfig } from "./ConfigManager";
+import { VerificationStatus } from "@/hooks/use-attestation-manager";
+import { ServerModelInfo } from "./client/types";
+import { AttestationResult } from "@/types/attestation";
 import { Chat } from './Chat';
+import { EventBus as EventBusImplementation } from './events';
+// import { Chat, ChatMessage, FileWithProgress } from "./Chat";
 
 /* event-bus.ts */
 export interface SDKEventMap {
-  "sdk.initialized": boolean;
+  "sdk.ready": boolean;
   "app.locked": void;                          // no payload
   "app.unlocked": void;
   "chat.list.updated": void;
@@ -15,7 +17,10 @@ export interface SDKEventMap {
   "auth.status.updated": boolean;
   "auth.state.updated": { isAuthenticated: boolean, isLocked: boolean, user: User | null };
   "attestation.status.updated": { status: VerificationStatus, attestationResult?: AttestationResult, publicKey: string };
+  "attestation.manager.status.updated": { [key: string]: { status: VerificationStatus, attestationResult?: AttestationResult, publicKey: string } };
   "config.updated": { config: PandaConfig };
+  "config.models.updated": ServerModelInfo[];
+  "config.customizedPrompts.updated": any[];
   [key: `chat.updated:${string}`]: undefined;
 }
 

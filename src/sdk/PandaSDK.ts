@@ -8,8 +8,9 @@ import { AuthProvider } from './auth/types';
 import { MemoryUserDataStore, UserManager } from './User';
 import { EventBus } from './events';
 import { IStorage } from './storage/i-storage';
-import { ServerStorage } from './storage/server-storage';
+import { ServerStorage /*, LocalStorage, MemoryStorage */ } from './storage';
 import { ConfigManager } from './ConfigManager';
+import { ApiError } from './client/types';
 /**
  * The main entry point for the Panda SDK.
  * This class instantiates and manages all the different modules
@@ -31,7 +32,8 @@ export class PandaSDK {
   private readonly storage: IStorage;
   public readonly api: ApiService;
   public initialized: boolean = false;
-  private initializing: boolean = false;
+  public ready: boolean = false;
+  private isReadying: boolean = false;
   constructor(getAccessToken: GetAccessTokenFn, authProvider: AuthProvider) {
     console.log('[PandaSDK] Constructor called from:', new Error().stack);
     this.api = new ApiService(getAccessToken);
@@ -42,7 +44,9 @@ export class PandaSDK {
     this.config = new ConfigManager(this.bus, this.encryption);
     this.auth = new AuthManager(this.bus, this.api, authProvider, this.encryption);
     
+    // this.storage = new LocalStorage(this.bus, this.encryption);
     this.storage = new ServerStorage(this.bus, this.api, this.auth, this.encryption);
+    // this.storage = new MemoryStorage(this.bus, this.encryption);
     this.chat = new ChatManager(this.bus, this.api, this.auth, this.encryption, this.attestation, this.storage, this.config);
     this.user = new UserManager(new MemoryUserDataStore(), this.bus);
     
@@ -50,32 +54,39 @@ export class PandaSDK {
       if (isAuthenticated) {
         console.log("auth.status.updated", isAuthenticated);
         this.handleAuthenticated();
+      } else {
+        this.ready = false;
+        this.bus.emit('sdk.ready', false);
       }
     });
     
+    this.initialized = true;
     console.log('PandaSDK initialized successfully!');
   }
 
   public async handleAuthenticated() {
-    if (this.initialized || this.initializing) {
+    if (this.ready || this.isReadying) {
       return;
     }
     console.log("handleAuthenticated");
     console.log("[PandaSDK] handleAuthenticated called from:", new Error().stack);
-    this.initializing = true;
+    this.isReadying = true;
     
-    const [customizedPrompts, info, authState] = await Promise.all([
-      this.api.app.getCustomizedPrompts(),
+    const [info, authState] = await Promise.all([
       this.api.app.getInfo(),
       this.auth.initializeAuthState(),
     ]);
-
-    this.user.updateData({customizedPromptsData: customizedPrompts});
-    this.config.setCustomizedPrompts(customizedPrompts);
+    
+    try {
+      const customizedPrompts = await this.api.app.getCustomizedPrompts()
+      this.user.updateData({customizedPromptsData: customizedPrompts});
+      this.config.setCustomizedPrompts(customizedPrompts);
+    } catch { }
     this.config.setModels(info.models);
     
-    this.initialized = true;
-    this.bus.emit('sdk.initialized', true);
+    this.ready = true;
+    this.isReadying = false;
+    this.bus.emit('sdk.ready', true);
   }
   // You could add global SDK methods here if needed, for example:
   public getStatus() {
