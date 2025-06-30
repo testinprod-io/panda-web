@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import styles from "./customize-prompts-view.module.scss";
-import { CustomizedPromptsResponse } from "@/client/types";
+import { CustomizedPromptsResponse } from "@/sdk/client/types";
 // import { useApiClient } from "@/providers/api-client-provider";
 import { CustomizedPromptsData, decryptSystemPrompt, encryptSystemPrompt } from "@/types";
 // import { useAppConfig } from "@/store/config";

@@ -9,8 +9,6 @@ import { ChatListSkeleton } from "./chat-list-skeleton";
 import styles from "./chat-list.module.scss";
 import { usePandaSDK } from "@/providers/sdk-provider";
 import { useChatList } from "@/sdk/hooks";
-import { Conversation } from "@/client/types";
-import { useChatStore } from "@/store";
 import { Chat } from "@/sdk/Chat";
 
 interface ChatListProps {
@@ -78,7 +76,6 @@ export function ChatList(props: ChatListProps) {
   const { sdk } = usePandaSDK();
   const params = useParams();
   const chatManager = sdk.chat;
-  const chatStore = useChatStore();
 
   const { conversations, isLoading, hasMore, activeChat } = useChatList();
   

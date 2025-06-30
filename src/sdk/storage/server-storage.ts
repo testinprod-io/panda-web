@@ -18,7 +18,7 @@ import {
   Conversation,
   ConversationUpdateRequest,
   Message as ApiMessage,
-} from '@/client/types';
+} from '@/sdk/client/types';
 import { createMessage, MessageSyncState, Role } from "@/types/chat";
 
 // import { mapApiMessagesToChatMessages } from '@/services/api-service';

@@ -19,9 +19,6 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { getAccessToken, usePrivy } from "@privy-io/react-auth";
-import { useAuthStatus } from "@/hooks/use-auth-status";
-import { useChatStore } from "@/store";
-import { ApiPath } from "@/types/constant";
 import styles from "./chat-header.module.scss";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
@@ -32,17 +29,16 @@ import {
 } from "@/hooks/use-attestation-manager";
 import { AttestationResult } from "@/types/attestation";
 import { useAttestation } from "@/sdk/hooks";
-import { AuthService } from "@/services/auth-service";
 import { useEncryption } from "@/providers/encryption-provider";
 import { usePandaSDK } from "@/providers/sdk-provider";
 import { UUID } from "crypto";
 import { ServerModelInfo } from "@/sdk/client/types";
-import { usePandaConfig } from "@/hooks/use-panda-config";
+import { useConfig } from "@/sdk/hooks";
 import Locale from "@/locales";
 import HelpIcon from "@/public/icons/help.svg";
 import SettingsIcon from "@/public/icons/settings.svg";
 import LogoutIcon from "@/public/icons/logout.svg";
-
+import { useAuth } from "@/sdk/hooks";
 interface ChatHeaderProps {
   currentChatId?: string;
   isSidebarCollapsed: boolean;
@@ -50,22 +46,17 @@ interface ChatHeaderProps {
   isMobile?: boolean;
 }
 
-type EncryptionStatus = "SUCCESSFUL" | "FAILED" | "IN_PROGRESS";
-
 export default function ChatHeader({
   currentChatId,
   isSidebarCollapsed,
   onToggleSidebar,
   isMobile,
 }: ChatHeaderProps) {
-  const { login, logout, user, getAccessToken } = usePrivy();
-  const { isReady, isAuthenticated } = useAuthStatus();
-  const pandaConfig = usePandaConfig();
+  const { login, user, getAccessToken } = usePrivy();
+  const pandaConfig = useConfig();
   const { attestationResults, verificationResults } = useAttestation();
-
-  const { lockApp } = useEncryption();
-  // const apiClient = useApiClient();
-  const { sdk } = usePandaSDK();
+  const { logout, lockApp, isAuthenticated } = useAuth();
+  const { sdk, isReady } = usePandaSDK();
   const [currentChatModel, setCurrentChatModel] = useState<ServerModelInfo | undefined>();
 
   const [profileAnchorEl, setProfileAnchorEl] = useState<null | HTMLElement>(
@@ -109,7 +100,7 @@ export default function ChatHeader({
   };
 
   const handleLogout = () => {
-    AuthService.handleLogout(logout, lockApp);
+    logout();
   };
 
   const handleModelSelect = (modelName: string) => {
@@ -151,10 +142,9 @@ export default function ChatHeader({
   };
 
   const router = useRouter();
-  const store = useChatStore();
 
   const handleNewChat = () => {
-    store.setCurrentSessionIndex(-1);
+    sdk.chat.clearActiveChat();
     router.push(`/`);
   };
 
@@ -216,7 +206,7 @@ export default function ChatHeader({
   return (
     <Box className={styles.chatHeader}>
       <Box className={styles.headerLeft}>
-        {isReady && isAuthenticated && isSidebarCollapsed && isMobile && (
+        {isAuthenticated && isSidebarCollapsed && isMobile && (
           <>
             <Tooltip title="Reveal Sidebar">
               <IconButton
@@ -245,7 +235,7 @@ export default function ChatHeader({
           </>
         )}
 
-        {isReady && isAuthenticated && (
+        {isAuthenticated && (
           <Box className={styles.modelSelectorContainer}>
             <Button
               id="model-selector-button"
@@ -374,9 +364,7 @@ export default function ChatHeader({
             </Box>
           </Tooltip>
         )}
-        {!isReady ? (
-          <Box className={styles.loadingPlaceholder} />
-        ) : isAuthenticated ? (
+        {isAuthenticated ? (
           <>
             <Tooltip title={user?.email?.address || "Profile"}>
               <Avatar

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { UUID } from "crypto";
-import { FileInfo } from "@/client/types"; // Corrected type for messageFiles elements
+import { FileInfo } from "@/sdk/client/types"; // Corrected type for messageFiles elements
 import { ClientApi } from "@/client/api"; // Corrected: apiClient is of type ClientApi
 // import { EncryptionService } from "@/services/encryption-service";
 import { usePandaSDK } from "@/providers/sdk-provider";

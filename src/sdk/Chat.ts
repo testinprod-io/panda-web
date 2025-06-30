@@ -18,7 +18,7 @@ import {
   ServerModelInfo,
   ConversationUpdateRequest,
   SummaryCreateRequest,
-} from "@/client/types";
+} from "@/sdk/client/types";
 import { MultimodalContent, LLMConfig } from "@/client/api";
 // import { mapApiMessagesToChatMessages } from "@/services/api-service";
 import { EventBus } from "./events";

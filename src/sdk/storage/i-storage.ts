@@ -1,4 +1,4 @@
-import { ServerModelInfo, Summary, Conversation, ConversationUpdateRequest, SummaryCreateRequest } from "@/client/types";
+import { ServerModelInfo, Summary, Conversation, ConversationUpdateRequest, SummaryCreateRequest } from "@/sdk/client/types";
 import { Chat } from "@/sdk/Chat";
 import { ChatMessage, CustomizedPromptsData } from "@/types";
 import { UUID } from "crypto";

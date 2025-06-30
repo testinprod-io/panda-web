@@ -13,7 +13,7 @@ import {
   ServerModelInfo,
   Conversation,
   ConversationUpdateRequest,
-} from '@/client/types';
+} from '@/sdk/client/types';
 import { createMessage, MessageSyncState, Role } from "@/types/chat";
 import { EncryptionService } from '../EncryptionService';
 

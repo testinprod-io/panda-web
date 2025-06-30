@@ -14,7 +14,7 @@ import {
   VerificationStatus,
 } from "@/hooks/use-attestation-manager";
 import { EventBus, SDKEventMap } from "@/sdk/events";
-import { AttestationResponse } from "@/client/types";
+import { AttestationResponse } from "@/sdk/client/types";
 
 export class AttestationManager {
   private api: ApiService;

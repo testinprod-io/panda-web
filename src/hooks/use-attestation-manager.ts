@@ -5,17 +5,6 @@ import {
   EventLogEntry,
   AttestationResult,
 } from "@/types/attestation";
-import { useCallback, useEffect } from "react";
-
-import { usePrivy, useWallets, useCreateWallet } from "@privy-io/react-auth";
-import { jwtVerify, JWTPayload, importJWK, JWK } from "jose";
-import { ADDRESS, ABI } from "@/services/kms-contract";
-import { optimism, sepolia } from "viem/chains";
-import { createPublicClient, Hex, custom, http } from "viem";
-import { useAttestationStore } from "@/store/attestation";
-import { AttestationResponse } from "@/client/types";
-import * as attestationUtils from "@/utils/attestation-utils";
-import { bufToHex, sha256Hex } from "@/utils/attestation-utils";
 
 export enum VerificationStatus {
   Failed = "Failed",

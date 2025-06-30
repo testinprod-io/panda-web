@@ -2,8 +2,8 @@ import { ServiceProvider, ModelType } from "./constant";
 import { nanoid } from "nanoid";
 import { MultimodalContent, RequestMessage } from "@/client/api";
 import { UUID } from "crypto";
-import { FileInfo } from "@/client/types";
-import { EncryptionService } from "../services/encryption-service";
+import { FileInfo } from "@/sdk/client/types";
+
 import { ChallengeResponse } from "@/client/platforms/panda-challenge";
 
 export enum Role {

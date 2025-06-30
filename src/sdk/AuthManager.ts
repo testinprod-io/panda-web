@@ -139,9 +139,8 @@ export class AuthManager {
   }
 
   public async logout(): Promise<void> {
-    this.updateState({ isLocked: true, isAuthenticated: false });
-    this.encryptionService.clearKey();
+    this.updateState({ isAuthenticated: false });
+    await this.lock();
     await this.authProvider.logout();
-    this.bus.emit("app.locked", undefined);
   }
 }

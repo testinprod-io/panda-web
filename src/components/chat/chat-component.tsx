@@ -23,13 +23,11 @@ import { SessionState } from "@/types/session";
 import { usePandaSDK } from "@/providers/sdk-provider";
 import { useChatList, useChat } from "@/sdk/hooks";
 import { Chat } from "@/sdk/Chat";
-import { useChatStore } from "@/store";
 
 export function ChatComponent({ sessionId }: { sessionId: UUID }) {
   const config = useAppConfig();
   const { showSnackbar } = useSnackbar();
   const { sdk } = usePandaSDK();
-  const chatStore = useChatStore();
 
   const { activeChatId } = useChatList();
   const [activeChat, setActiveChat] = useState<Chat | null>(null);

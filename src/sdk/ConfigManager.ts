@@ -19,6 +19,7 @@ const DEFAULT_CUSTOMIZED_PROMPTS: CustomizedPromptsData = {
 export class ConfigManager {
   private encryptionService: EncryptionService;
   private bus: EventBus;
+
   private config: PandaConfig = {
     models: [],
     defaultModel: undefined,
@@ -74,6 +75,6 @@ export class ConfigManager {
   }
 
   public getConfig(): PandaConfig {
-    return { ...this.config };
+    return this.config;
   }
 } 

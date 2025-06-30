@@ -9,9 +9,7 @@ import React, {
   useRef,
   ReactNode,
 } from "react";
-// import { EncryptionService } from "@/services/encryption-service";
 import { PasswordModal } from "@/components/login/password-modal";
-// import { useApiClient } from "@/providers/api-client-provider";
 import { usePrivy } from "@privy-io/react-auth";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";

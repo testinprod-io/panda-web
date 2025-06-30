@@ -221,12 +221,19 @@ export class ChatManager {
       throw error;
     }
   }  
-  
+
+  public clearActiveChat() {
+    this.activeChat = null;
+    this.activeChatId = null;
+    this.updateState();
+  }
+
   public setActiveChat(chat: Chat): Chat {
     this.activeChat = chat;
     this.updateState();
     return chat;
   }
+
   public setActiveChatId(chatId: UUID) {
     this.activeChatId = chatId;
     this.updateState();

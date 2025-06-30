@@ -11,7 +11,6 @@ import {
   SessionState,
 } from "@/types/session";
 import { ChatMessage, MessageSyncState } from "@/types/chat";
-import { Conversation } from "@/client/types";
 import { createJSONStorage } from "zustand/middleware";
 // import { mapConversationToSession } from "@/services/api-service";
 
@@ -162,7 +161,7 @@ export const useChatStore = createPersistStore(
     function mergeMessages(
       localMessages: ChatMessage[],
       serverMessages: ChatMessage[],
-      currentLoadState: MessagesLoadState,
+      currentLoadState: MessagesLoadState
     ): {
       mergedMessages: ChatMessage[];
       newLoadState: MessagesLoadState;
@@ -190,7 +189,7 @@ export const useChatStore = createPersistStore(
             messageMap.set(localMsg.id, localMsg);
           } else {
             console.warn(
-              `[Merge Messages] Local message ${localMsg.id} marked synced but not found in server batch. Ignoring.`,
+              `[Merge Messages] Local message ${localMsg.id} marked synced but not found in server batch. Ignoring.`
             );
           }
         } else {
@@ -236,7 +235,7 @@ export const useChatStore = createPersistStore(
       // We just return the merged messages.
 
       console.log(
-        `[Merge Messages] Merged ${localMessages.length} local and ${serverMessages.length} server messages into ${merged.length}`,
+        `[Merge Messages] Merged ${localMessages.length} local and ${serverMessages.length} server messages into ${merged.length}`
       );
       return { mergedMessages: merged, newLoadState: currentLoadState }; // Return currentLoadState, action updates it
     }
@@ -290,7 +289,7 @@ export const useChatStore = createPersistStore(
       // Updates a session identified by its local id or conversationId
       updateTargetSession(
         identifier: { id?: UUID },
-        updater: (session: ChatSession) => void,
+        updater: (session: ChatSession) => void
       ) {
         set((state) => {
           let index = -1;
@@ -301,7 +300,7 @@ export const useChatStore = createPersistStore(
           if (index === -1) {
             console.warn(
               `[updateTargetSession] Session not found for identifier:`,
-              identifier,
+              identifier
             );
             return state; // Return current state if no session found
           }
@@ -348,7 +347,7 @@ export const useChatStore = createPersistStore(
       updateMemoryPrompt(
         sessionId: UUID,
         prompt: string,
-        lastSummarizeIndex: number,
+        lastSummarizeIndex: number
       ) {
         // Prompt is likely generated and used in decrypted form
         get().updateTargetSession({ id: sessionId }, (session) => {
@@ -377,7 +376,7 @@ export const useChatStore = createPersistStore(
 
       // updateCurrentSessionModel(newModelConfig: ModelConfig) {
       //   const session = get().currentSession();
-        
+
       //   if (!session) return;
       //   get().updateTargetSession(session, (sess) => {
       //     // sess.modelConfig is typed as ModelConfig from app/constant.ts
@@ -458,7 +457,7 @@ export const useChatStore = createPersistStore(
       const state = persistedState as Partial<ChatState>;
       if (version < 1.1 && state) {
         console.log(
-          "[ChatStore Migration] Migrating state from version < 1.1 to add chat interaction state.",
+          "[ChatStore Migration] Migrating state from version < 1.1 to add chat interaction state."
         );
         state.onSendMessageHandler = null;
         state.hitBottom = true; // Default for existing users
@@ -470,5 +469,5 @@ export const useChatStore = createPersistStore(
 
       return state as HydratedChatState;
     },
-  },
+  }
 );

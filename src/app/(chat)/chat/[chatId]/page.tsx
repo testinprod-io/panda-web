@@ -2,11 +2,10 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { Box, CircularProgress } from "@mui/material";
-import { useChatStore } from "@/store/chat";
 import { useCallback, useEffect, useState } from "react";
 import { ChatComponent } from "@/components/chat/chat-component";
 import { usePandaSDK } from "@/providers/sdk-provider";
-import { useAuthStatus } from "@/hooks/use-auth-status";
+import { useAuth } from "@/sdk/hooks";
 import toast from "react-hot-toast";
 import { Chat } from "@/sdk/Chat";
 import { UUID } from "crypto";
@@ -14,10 +13,9 @@ import { UUID } from "crypto";
 export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
-  const store = useChatStore();
-  const { sdk } = usePandaSDK();
+  const { sdk, isReady } = usePandaSDK();
   const chatId = params?.chatId as UUID | undefined;
-  const { isReady: isAuthReady, isAuthenticated } = useAuthStatus();
+  const { isAuthenticated } = useAuth();
 
   const [isLoadingState, setIsLoadingState] = useState(true);
   const [isValidSession, setIsValidSession] = useState<boolean>(false);
@@ -26,13 +24,13 @@ export default function ChatPage() {
 
   useEffect(() => {
     const validateSession = async () => {
-      if (!isAuthReady) {
+      if (!isReady) {
         console.log(`[ChatPage] Not ready`);
         setIsLoadingState(true);
         return;
       }
   
-      if (isAuthReady && !isAuthenticated) {
+      if (!isAuthenticated) {
         console.log(`[ChatPage] Not authenticated`);
         setIsLoadingState(false);
         setIsValidSession(false);
@@ -65,7 +63,7 @@ export default function ChatPage() {
     validateSession();
     }, [
       chatId,
-      isAuthReady,
+      isReady,
       isAuthenticated,
       router,
       sdk,
@@ -77,7 +75,7 @@ export default function ChatPage() {
       if (isAuthenticated) {
         toast.error(`Chat session not found: ${chatId || "Invalid ID"}`);
         router.replace("/");
-      } else if (isAuthReady && !isAuthenticated) {
+      } else if (!isReady && !isAuthenticated) {
         // toast.error("Please log in to access chat sessions.");
         router.replace("/");
       }
@@ -88,7 +86,7 @@ export default function ChatPage() {
     chatId,
     router,
     isAuthenticated,
-    isAuthReady,
+    isReady,
   ]);
 
   if (isLoadingState) {
@@ -107,7 +105,7 @@ export default function ChatPage() {
     );
   }
 
-  if (isAuthReady && !isAuthenticated) {
+  if (!isReady && !isAuthenticated) {
     return (
       <Box
         sx={{

@@ -1,4 +1,4 @@
-import { ServerModelInfo } from "@/client/types";
+import { ServerModelInfo } from "@/sdk/client/types";
 import {
   // DEFAULT_MODELS,
   DEFAULT_SIDEBAR_WIDTH,
@@ -12,7 +12,6 @@ import {
   // ModelConfig,
 } from "@/types/constant";
 import { createPersistStore } from "@/utils/store";
-import { useChatStore } from "./chat";
 import { indexedDBStorage } from "@/utils/indexedDB-storage";
 import { createJSONStorage } from "zustand/middleware";
 import { CustomizedPromptsData } from "@/types";

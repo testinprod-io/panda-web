@@ -9,10 +9,7 @@ import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes";
 import CssBaseline from "@mui/material/CssBaseline";
 import { lightTheme, darkTheme } from "@/theme";
 import { useUserStore } from "@/store/user";
-import useMediaQuery from "@mui/material/useMediaQuery";
 import { SnackbarProvider } from "@/providers/snackbar-provider";
-// import { AuthChatListener } from "@/providers/auth-chat-listener";
-// import { ApiClientProvider } from "@/providers/api-client-provider";
 import { EncryptionProvider } from "@/providers/encryption-provider";
 import { PandaSDKProvider } from "@/providers/sdk-provider";
 

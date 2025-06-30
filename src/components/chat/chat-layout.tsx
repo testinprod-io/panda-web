@@ -29,7 +29,7 @@ import sidebarStyles from "@/components/sidebar/sidebar.module.scss";
 import { usePrivy } from "@privy-io/react-auth";
 import { usePandaSDK } from "@/providers/sdk-provider";
 import { Chat } from "@/sdk/Chat";
-import { usePandaConfig } from "@/hooks/use-panda-config";
+import { useConfig } from "@/sdk/hooks";
 const localStorage = safeLocalStorage();
 
 function usePrevious<T>(value: T): T | undefined {
@@ -52,7 +52,7 @@ export default function ChatLayoutContent({
   );
   const params = useParams();
   const router = useRouter();
-  const pandaConfig = usePandaConfig();
+  const pandaConfig = useConfig();
   const prevIsMobile = usePrevious(isMobile);
   const { sdk } = usePandaSDK();
   const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();

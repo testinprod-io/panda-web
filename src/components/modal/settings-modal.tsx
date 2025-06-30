@@ -35,8 +35,8 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useChatStore } from "@/store";
 import { useAppConfig, useAppConfig as useAppConfigStore } from "@/store/config";
 import { useUserStore } from "@/store/user";
-import { AuthService } from "@/services/auth-service";
 import { useEncryption } from "@/providers/encryption-provider";
+import { useAuth } from "@/sdk/hooks";
 import { useAttestationStore } from "@/store/attestation";
 import { usePandaSDK } from "@/providers/sdk-provider";
 import { AllLangs, ALL_LANG_OPTIONS, changeLang, Lang } from "@/locales";
@@ -86,13 +86,13 @@ export default function SettingsModal({
   };
 
   const router = useRouter();
-  const { authenticated, logout } = usePrivy();
   const { clearSessions } = useChatStore();
   const { theme, setTheme } = useTheme();
   const { lockApp } = useEncryption();
   const { sdk } = usePandaSDK();
+  const { logout, isAuthenticated } = useAuth();
   
-  if (!authenticated) {
+  if (!isAuthenticated) {
     return <div></div>;
   }
 
@@ -102,7 +102,7 @@ export default function SettingsModal({
   };
 
   const handleLogOut = async () => {
-    AuthService.handleLogout(logout, lockApp);
+    logout();
     setDeleteConfirmOpen(false);
     router.replace("/");
   };

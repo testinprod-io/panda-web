@@ -5,7 +5,7 @@ import { usePandaSDK } from '@/providers/sdk-provider';
 import { Chat } from "./Chat";
 import { UserData } from './User';
 import { CustomizedPromptsData } from '@/types';
-
+import { PandaConfig } from './ConfigManager';
 /**
  * A modern hook to subscribe to the state of the ChatManager.
  * It uses useSyncExternalStore to efficiently update components
@@ -15,7 +15,7 @@ import { CustomizedPromptsData } from '@/types';
  *          and whether more chats are available for pagination.
  */
 export function useChatList() {
-  const { sdk, isInitialized } = usePandaSDK();
+  const { sdk } = usePandaSDK();
   const chatManager = sdk?.chat;
 
   const state = useSyncExternalStore(
@@ -76,6 +76,7 @@ export function useAuth() {
   );
   return { 
     ...(state || authManager.getState()),
+    logout: authManager.logout.bind(authManager),
     lockApp: authManager.lock.bind(authManager),
     unlockApp: authManager.unlock.bind(authManager),
     createPassword: authManager.createPassword.bind(authManager),
@@ -112,3 +113,16 @@ export function useUser() {
     clearData: userManager.clearData.bind(userManager),
   };
 }
+
+export function useConfig() {
+  const { sdk } = usePandaSDK();
+  const configManager = sdk.config;
+  
+  const state = useSyncExternalStore(
+    (callback) => sdk.bus.on('config.updated', callback),
+    () => { return configManager.getConfig() } ,
+    () => configManager.getConfig()
+  );
+
+  return state || configManager.getConfig();
+} 
