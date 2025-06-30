@@ -1,6 +1,6 @@
 import { UUID } from "crypto";
 import { Role } from "@/types";
-import { ChallengeResponse } from "@/client/platforms/panda-challenge";
+import { ChallengeResponse } from "@/sdk/client/panda-challenge";
 import { CustomizedPromptsData } from "@/types";
 
 export type GetAccessTokenFn = () => Promise<string | null>;

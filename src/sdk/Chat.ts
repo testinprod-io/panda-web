@@ -18,13 +18,14 @@ import {
   ServerModelInfo,
   ConversationUpdateRequest,
   SummaryCreateRequest,
+  MultimodalContent, 
+  LLMConfig 
 } from "@/sdk/client/types";
-import { MultimodalContent, LLMConfig } from "@/client/api";
 // import { mapApiMessagesToChatMessages } from "@/services/api-service";
 import { EventBus } from "./events";
 import { IStorage } from "./storage/i-storage";
 import { EncryptionService } from "./EncryptionService";
-import { ChallengeResponse } from "@/client/platforms/panda-challenge";
+import { ChallengeResponse } from "@/sdk/client/panda-challenge";
 import { AttestationManager } from "./AttestationManager";
 import { ConfigManager } from "./ConfigManager";
 

@@ -1,9 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { UUID } from "crypto";
-import { FileInfo } from "@/sdk/client/types"; // Corrected type for messageFiles elements
-import { ClientApi } from "@/client/api"; // Corrected: apiClient is of type ClientApi
-// import { EncryptionService } from "@/services/encryption-service";
+import { FileInfo } from "@/sdk/client/types";
 import { usePandaSDK } from "@/providers/sdk-provider";
+
 export interface LoadedFile {
   id: UUID;
   name: string;

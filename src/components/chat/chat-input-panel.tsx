@@ -21,7 +21,7 @@ import {
 import Locale from "@/locales";
 import { useSubmitHandler } from "@/hooks/use-submit-handler";
 import { useSnackbar } from "@/providers/snackbar-provider";
-import { ChatControllerPool } from "@/client/controller";
+import { ChatControllerPool } from "@/sdk/client/controller";
 
 import { ActionButton } from "@/components/ui/action-button";
 import ArrowUpwardRoundedIcon from "@mui/icons-material/ArrowUpwardRounded";
