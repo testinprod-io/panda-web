@@ -93,6 +93,10 @@ export class ServerStorage implements IStorage {
     await this.api.app.deleteConversation(id as UUID);
   }
 
+  async deleteAllChats(): Promise<void> {
+    await this.api.app.deleteConversations();
+  }
+
   async listMessages(
     chatId: string,
     cursor?: string | undefined,
@@ -161,6 +165,63 @@ export class ServerStorage implements IStorage {
       'ServerStorage.clear() is not implemented, as it is a destructive action.',
     );
     return Promise.resolve();
+  }
+
+  /* Files */
+  async getFile(conversationId: UUID, fileId: UUID): Promise<File> {
+    const response = await this.api.app.getFile(conversationId, fileId);
+    const blob = await response.blob();
+    const contentDisposition = response.headers.get("content-disposition");
+    let fileName = "unknown";
+    if (contentDisposition) {
+      const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+      if (fileNameMatch && fileNameMatch.length > 1) {
+        fileName = fileNameMatch[1];
+      }
+    }
+    return new File([blob], fileName, { type: blob.type });
+  }
+
+  async uploadFile(
+    conversationId: UUID,
+    file: File,
+    onUploadProgress?: (progress: number) => void,
+  ): Promise<{ fileId: UUID; abort: () => void }> {
+    const encryptedFile = await this.encryptionService.encryptFile(file);
+    const encryptedFileName = this.encryptionService.encrypt(file.name);
+    const { fileResponse, abort } = await this.api.app.uploadFile(
+      conversationId,
+      encryptedFile,
+      encryptedFileName,
+      file.size,
+      onUploadProgress,
+    );
+    return { fileId: fileResponse.file_id as UUID, abort };
+  }
+
+  async deleteFile(conversationId: UUID, fileId: UUID): Promise<void> {
+    await this.api.app.deleteFile(conversationId, fileId);
+  }
+
+
+  /* Customized Prompts */
+  async getCustomizedPrompts(): Promise<CustomizedPromptsData> {
+    const response = await this.api.app.getCustomizedPrompts();
+    return response;
+  }
+
+  async createCustomizedPrompts(data: CustomizedPromptsData): Promise<CustomizedPromptsData> { 
+    const response = await this.api.app.createCustomizedPrompts(data);
+    return response;
+  }
+
+  async updateCustomizedPrompts(data: CustomizedPromptsData): Promise<CustomizedPromptsData> {
+    const response = await this.api.app.updateCustomizedPrompts(data);
+    return response;
+  }
+
+  async deleteCustomizedPrompts(): Promise<void> {
+    await this.api.app.deleteCustomizedPrompts();
   }
 
   setModels(models: ServerModelInfo[]): void {

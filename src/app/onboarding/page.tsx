@@ -14,7 +14,7 @@ export default function OnboardingPage() {
   useEffect(() => {
     const checkOnboardingStatus = async () => {
       try {
-        await sdk.api.app.getCustomizedPrompts();
+        await sdk.storage.getCustomizedPrompts();
         setNeedsOnboarding(true);
       } catch (error: any) {
         if (error && typeof error === "object" && "status" in error && error.status === 404) {

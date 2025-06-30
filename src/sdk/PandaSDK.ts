@@ -29,7 +29,7 @@ export class PandaSDK {
   public readonly user: UserManager;
   public readonly config: ConfigManager;
 
-  private readonly storage: IStorage;
+  public readonly storage: IStorage;
   public readonly api: ApiService;
   public initialized: boolean = false;
   public ready: boolean = false;
