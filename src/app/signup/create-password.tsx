@@ -13,7 +13,7 @@ import Image from "next/image";
 // import { useForm } from "react-hook-form";
 
 const MIN_PASSWORD_LENGTH = 10;
-const MAX_PASSWORD_LENGTH = 20;
+const MAX_PASSWORD_LENGTH = 100;
 
 export default function CreatePassword() {
   const [password, setPassword] = useState("");
