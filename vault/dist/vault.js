@@ -12,6 +12,7 @@ class VaultService {
     setupMessageListener() {
         addEventListener('message', (event) => {
             if (event.data && event.data.cmd === 'init') {
+                console.log('[Vault] Received init command.');
                 this.handleInit(event);
             }
         });
@@ -29,7 +30,7 @@ class VaultService {
         }
         this.port = port;
         this.port.onmessage = (e) => this.handlePortMessage(e);
-        const ackMsg = { ok: true };
+        const ackMsg = { ok: true, origin: self.origin };
         this.port.postMessage(ackMsg);
         console.log('[Vault] Initialized and acknowledged');
     }
@@ -187,6 +188,6 @@ class VaultService {
         return bytes.buffer;
     }
 }
-console.log('[Vault] Starting vault service');
+console.log('[Vault] Vault script loaded. Waiting for init message...');
 new VaultService();
 export {};

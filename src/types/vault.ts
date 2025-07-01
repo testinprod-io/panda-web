@@ -6,6 +6,7 @@ export interface InitMsg {
 
 export interface AckMsg {
   ok: true;
+  origin?: string;
 }
 
 export interface DeriveReq {

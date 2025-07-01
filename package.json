@@ -3,8 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npm run dev:vault & next dev --turbopack",
-    "dev:vault": "cd vault && npm install && npm run build && npm run serve",
+    "dev": "(cd vault && npm run dev) & next dev --turbopack",
     "build": "npm run build:vault && next build",
     "build:vault": "cd vault && npm install && npm run build",
     "start": "next start",

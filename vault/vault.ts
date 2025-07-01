@@ -37,7 +37,22 @@ class VaultService {
 
   private setupMessageListener(): void {
     addEventListener('message', (event: MessageEvent) => {
+      // For local development, we can be more lenient.
+      // In production, this should be locked down to your app's origin.
+      // const isDevelopment = event.origin.includes('localhost');
+      // const expectedOrigin = isDevelopment
+      //   ? 'http://localhost:3000'
+      //   : 'https://app.panda.chat'; // Your production app URL
+
+      // console.log(`[Vault] Received message from origin: ${event.origin}. Expecting: ${expectedOrigin}.`);
+
+      // if (event.origin !== expectedOrigin) {
+      //   console.warn(`[Vault] Ignoring message from unexpected origin.`);
+      //   return;
+      // }
+
       if (event.data && event.data.cmd === 'init') {
+        console.log('[Vault] Received init command.');
         this.handleInit(event);
       }
     });
@@ -61,7 +76,7 @@ class VaultService {
     this.port.onmessage = (e) => this.handlePortMessage(e);
 
     // Send acknowledgment
-    const ackMsg: AckMsg = { ok: true };
+    const ackMsg: AckMsg = { ok: true, origin: self.origin };
     this.port.postMessage(ackMsg);
 
     console.log('[Vault] Initialized and acknowledged');
@@ -315,5 +330,5 @@ class VaultService {
 }
 
 // Initialize the vault service
-console.log('[Vault] Starting vault service');
+console.log('[Vault] Vault script loaded. Waiting for init message...');
 new VaultService();

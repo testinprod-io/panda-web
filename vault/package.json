@@ -6,11 +6,11 @@
   "type": "module",
   "scripts": {
     "build": "tsc && cp index.html dist/",
-    "dev": "tsc --watch",
-    "serve": "python3 -m http.server 3001 --directory dist",
+    "dev": "npm install && npm run build && serve -l 3001 dist --cors='*'",
     "clean": "rm -rf dist"
   },
   "devDependencies": {
+    "serve": "^14.2.3",
     "typescript": "^5.0.0"
   },
   "keywords": ["cryptography", "security", "sandbox", "iframe"],
