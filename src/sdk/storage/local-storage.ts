@@ -475,7 +475,10 @@ export class LocalStorage implements IStorage {
       timestamp: msg.date.toISOString(),
       reasoning_content: msg.reasoning,
       reasoning_time: msg.reasoningTime?.toString(),
-      custom_data: { useSearch: msg.useSearch },
+      custom_data: { 
+        useSearch: msg.useSearch,
+        processEvents: msg.processEvents || []
+      },
       is_error: msg.isError,
       error_message: msg.errorMessage,
     };
@@ -822,6 +825,7 @@ export class LocalStorage implements IStorage {
         ? parseInt(message.reasoning_time)
         : undefined,
       useSearch: message.custom_data?.useSearch ?? false,
+      processEvents: message.custom_data?.processEvents ?? [],
       syncState: MessageSyncState.SYNCED,
       isError: message.is_error,
       errorMessage: message.error_message,
