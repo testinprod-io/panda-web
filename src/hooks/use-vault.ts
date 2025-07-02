@@ -1,6 +1,7 @@
 // useVault hook - manages communication with sandboxed vault iframe
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { usePrivy } from '@privy-io/react-auth';
 import type {
   InitMsg,
   AckMsg,
@@ -36,6 +37,7 @@ interface UseVaultResult {
 }
 
 export function useVault(): UseVaultResult {
+  const { getAccessToken } = usePrivy();
   const [state, setState] = useState<VaultState>({
     isReady: false,
     isLoading: false,
@@ -109,7 +111,10 @@ export function useVault(): UseVaultResult {
       iframe.src = process.env.NODE_ENV === 'development'
         ? 'http://localhost:3001'
         : 'https://vault.panda.chat';
-      iframe.sandbox.add('allow-scripts', 'allow-same-origin'); // Allow scripts and inherit origin
+      // Add necessary sandbox permissions for network requests
+      iframe.sandbox.add('allow-scripts');
+      // iframe.sandbox.add('allow-same-origin'); // Needed for proper origin and cookies
+      iframe.sandbox.add('allow-forms'); // Needed for fetch requests
       iframe.style.display = 'none';
       iframe.style.position = 'absolute';
       iframe.style.left = '-9999px';
@@ -151,11 +156,18 @@ export function useVault(): UseVaultResult {
       portRef.current = port1;
 
       // Send init message with port2 to vault
-      const initMsg: InitMsg = { cmd: 'init' };
+      // Include the access token for API requests
+      const accessToken = await getAccessToken(); // Get Privy access token
+      
+      if (!accessToken) {
+        throw new Error('No access token available - user must be authenticated');
+      }
+      
+      const initMsg: InitMsg = { cmd: 'init', accessToken };
       const vaultOrigin = process.env.NODE_ENV === 'development'
       ? 'http://localhost:3001'
       : 'https://vault.panda.chat';
-      console.log('[useVault] Sent init message. Waiting for ACK... to origin:', vaultOrigin);
+      console.log('[useVault] Sent init message to vault origin:', vaultOrigin);
       iframe.contentWindow?.postMessage(initMsg, '*', [port2]);
 
       // Wait for ACK from vault

@@ -1,6 +1,3 @@
-// Vault implementation - runs in sandboxed iframe
-// Strict constraints: no DOM manipulation, no external deps, only postMessage and Web Crypto
-
 import type {
   InitMsg,
   AckMsg,
@@ -58,12 +55,18 @@ class VaultService {
     });
   }
 
+  private accessToken: string | null = null;
+
   private handleInit(event: MessageEvent): void {
     const initMsg = event.data as InitMsg;
     if (initMsg.cmd !== 'init') {
       console.error('[Vault] Invalid init message');
       return;
     }
+
+    // Store the access token for API requests (no need for appOrigin with same-origin requests)
+    this.accessToken = initMsg.accessToken || null;
+    console.log('[Vault] Received access token:', this.accessToken ? 'YES' : 'NO');
 
     // Get the MessagePort from the event
     const [port] = event.ports;
@@ -102,10 +105,10 @@ class VaultService {
       // Reset idle timer
       this.resetIdleTimer();
 
-      switch (request.cmd) {
-        case 'derive':
-          response = await this.handleDerive(request);
-          break;
+              switch (request.cmd) {
+          case 'derive':
+            response = await this.handleDerive(request);
+            break;
         case 'encrypt':
           response = await this.handleEncrypt(request);
           break;
@@ -215,30 +218,23 @@ class VaultService {
     }
   }
 
-  private async fetchAndUnwrapKey(): Promise<void> {
-    // TODO: This is a simplified version. In reality, you'd need:
-    // 1. A device key pair (RSA-OAEP) stored securely
-    // 2. Proper key unwrapping logic
-    
-    // For now, generate a temporary key for testing
-    console.log('[Vault] Generating temporary AES key for testing');
-    this.masterKey = await crypto.subtle.generateKey(
-      {
-        name: "AES-GCM",
-        length: 256,
-      },
-      false, // non-extractable
-      ["encrypt", "decrypt"]
-    );
-
-    /*
-    // Real implementation would look like:
+    private async fetchAndUnwrapKey(): Promise<void> {
+    // Real implementation that fetches wrapped key from local BFF (same-origin)
     try {
-      const response = await fetch('https://api.panda.chat/deriveKey', {
+      if (!this.accessToken) {
+        throw new Error('Access token not available - vault not properly initialized');
+      }
+      
+      // Make same-origin request to our local BFF API
+      const deriveKeyUrl = '/api/vault/deriveKey';
+      
+      console.log('[Vault] Fetching wrapped key from local BFF:', deriveKeyUrl);
+      
+      const response = await fetch(deriveKeyUrl, {
         method: 'POST',
-        credentials: 'include', // Include HttpOnly cookies
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.accessToken}`, // Use access token directly
         },
       });
 
@@ -247,16 +243,29 @@ class VaultService {
       }
 
       const data: DeriveKeyResponse = await response.json();
-      const wrappedKeyBuffer = this.b64ToBuf(data.wrappedKey);
+      console.log('[Vault] Received wrapped key from BFF');
       
-      // Unwrap using device private key
-      this.masterKey = await this.unwrapKey(wrappedKeyBuffer, devicePrivateKey);
+      // For now, since we're getting a mock wrapped key, we'll generate a temporary key
+      // In a real implementation, you would:
+      // 1. Have a device key pair (RSA-OAEP) stored securely
+      // 2. Unwrap the actual key using: await this.unwrapKey(wrappedKeyBuffer, devicePrivateKey);
+      
+      console.log('[Vault] Mock implementation - generating temporary AES key');
+      this.masterKey = await crypto.subtle.generateKey(
+        {
+          name: "AES-GCM",
+          length: 256,
+        },
+        false, // non-extractable
+        ["encrypt", "decrypt"]
+      );
+      
+      console.log('[Vault] Key derivation successful');
       
     } catch (error) {
       console.error('[Vault] Failed to fetch and unwrap key:', error);
       throw error;
     }
-    */
   }
 
   // Crypto utilities (copied locally to avoid external deps)

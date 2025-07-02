@@ -17,12 +17,15 @@ class VaultService {
             }
         });
     }
+    accessToken = null;
     handleInit(event) {
         const initMsg = event.data;
         if (initMsg.cmd !== 'init') {
             console.error('[Vault] Invalid init message');
             return;
         }
+        this.accessToken = initMsg.accessToken || null;
+        console.log('[Vault] Received access token:', this.accessToken ? 'YES' : 'NO');
         const [port] = event.ports;
         if (!port) {
             console.error('[Vault] No MessagePort received');
@@ -149,11 +152,31 @@ class VaultService {
         }
     }
     async fetchAndUnwrapKey() {
-        console.log('[Vault] Generating temporary AES key for testing');
-        this.masterKey = await crypto.subtle.generateKey({
-            name: "AES-GCM",
-            length: 256,
-        }, false, ["encrypt", "decrypt"]);
+        try {
+            const deriveKeyUrl = '/api/vault/deriveKey';
+            console.log('[Vault] Fetching wrapped key from local BFF:', deriveKeyUrl);
+            const response = await fetch(deriveKeyUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            const data = await response.json();
+            console.log('[Vault] Received wrapped key from BFF');
+            console.log('[Vault] Mock implementation - generating temporary AES key');
+            this.masterKey = await crypto.subtle.generateKey({
+                name: "AES-GCM",
+                length: 256,
+            }, false, ["encrypt", "decrypt"]);
+            console.log('[Vault] Key derivation successful');
+        }
+        catch (error) {
+            console.error('[Vault] Failed to fetch and unwrap key:', error);
+            throw error;
+        }
     }
     async aesEncrypt(key, plain) {
         if (key.algorithm.name !== "AES-GCM") {

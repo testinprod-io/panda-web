@@ -2,11 +2,18 @@
 
 export interface InitMsg {
   cmd: "init";
+  accessToken?: string; // Privy access token for authentication
 }
 
 export interface AckMsg {
   ok: true;
   origin?: string;
+}
+
+export interface UpdateKeyEvent { 
+  id: string;
+  cmd: "updateKey";
+  encryptedKey: string;
 }
 
 export interface DeriveReq {
@@ -27,15 +34,13 @@ export interface EncryptReq {
 
 export interface EncryptRes {
   id: string;
-  ciphertext: ArrayBuffer;
-  iv: ArrayBuffer;
+  encrypted: string;
 }
 
 export interface DecryptReq {
   id: string;
   cmd: "decrypt";
-  cipher: ArrayBuffer;
-  iv: ArrayBuffer;
+  encrypted: string;
 }
 
 export interface DecryptRes {

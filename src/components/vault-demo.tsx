@@ -93,6 +93,11 @@ export function VaultDemo({ autoRun = false }: VaultDemoProps) {
     }
   };
 
+  const runDerive = async () => {
+    await vault.derive();
+    addLog('✓ Key derived successfully');
+  };
+
   // Auto-run test if enabled
   useEffect(() => {
     if (autoRun && vault.state.isReady && !isRunning) {
@@ -160,7 +165,7 @@ export function VaultDemo({ autoRun = false }: VaultDemoProps) {
         </button>
         
         <button 
-          onClick={() => setLogs([])}
+          onClick={() => runDerive()}
           disabled={isRunning}
           style={{ 
             padding: '10px 20px',

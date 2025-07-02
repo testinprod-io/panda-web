@@ -132,7 +132,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         lockApp();
       }, timeoutMs);
     }
-  }, [isLocked, passwordExpirationMinutes]); // Rerun when lock state or expiration changes
+  }, [isLocked, passwordExpirationMinutes, inactivityTimerRef]); // Rerun when lock state or expiration changes
 
   const lockApp = useCallback(() => {
     // We're not clearing the key for now as requested

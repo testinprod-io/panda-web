@@ -6,14 +6,25 @@
   "type": "module",
   "scripts": {
     "build": "tsc && cp index.html dist/",
-    "dev": "npm install && npm run build && serve -l 3001 dist --cors='*'",
+    "dev": "npm install && npm run build && node server.js",
+    "start": "node server.js",
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "serve": "^14.2.3",
     "typescript": "^5.0.0"
   },
-  "keywords": ["cryptography", "security", "sandbox", "iframe"],
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.0.0",
+    "express": "^5.1.0"
+  },
+  "keywords": [
+    "cryptography",
+    "security",
+    "sandbox",
+    "iframe"
+  ],
   "author": "Panda Team",
   "license": "PROPRIETARY"
 }
