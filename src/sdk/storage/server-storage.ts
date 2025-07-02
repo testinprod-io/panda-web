@@ -125,7 +125,10 @@ export class ServerStorage implements IStorage {
       sender_type: msg.role,
       content: msg.content,
       files: msg.files,
-      custom_data: { useSearch: msg.useSearch },
+      custom_data: { 
+        useSearch: msg.useSearch,
+        processEvents: msg.processEvents || []
+      },
       reasoning_content: msg.reasoning,
       reasoning_time: msg.reasoningTime?.toString(),
     };
@@ -248,6 +251,7 @@ mapApiMessageToChatMessage(message: ApiMessage): ChatMessage {
       ? parseInt(message.reasoning_time)
       : undefined,
     useSearch: message.custom_data?.useSearch ?? false,
+    processEvents: message.custom_data?.processEvents ?? [],
     syncState: MessageSyncState.SYNCED,
     isError: message.is_error,
     errorMessage: message.error_message,

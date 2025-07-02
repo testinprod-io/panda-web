@@ -12,6 +12,7 @@ import { useLoadedFiles, LoadedFile } from "@/hooks/use-loaded-files";
 import { FilePreviewItem } from "../ui/file-preview-item";
 import { MessageActionsBar } from "../ui/message-actions-bar";
 import { ReasoningDisplay } from "../ui/reasoning-display";
+import { ProcessEventsDisplay } from "../ui/process-events-display";
 import { EditMessageForm } from "../ui/edit-message-form";
 import { useAttestation } from "@/sdk/hooks";
 import { usePandaSDK } from "@/providers/sdk-provider";
@@ -51,7 +52,7 @@ function messagePropsAreEqual(
 
   const prevMsg = prevProps.message;
   const nextMsg = nextProps.message;
-  console.log(`[ChatMessageCell] Comparing messages: ${prevMsg.id} ${nextMsg.id} ${prevMsg.visibleContent} ${nextMsg.visibleContent} ${prevMsg.streaming} ${nextMsg.streaming} ${prevMsg.isError} ${nextMsg.isError} ${prevMsg.isReasoning} ${nextMsg.isReasoning} ${prevMsg.visibleReasoning} ${nextMsg.visibleReasoning} ${prevMsg.syncState} ${nextMsg.syncState} ${prevMsg.files?.length} ${nextMsg.files?.length}`);
+  console.log(`[ChatMessageCell] Comparing messages: ${prevMsg.id} ${nextMsg.id} ${prevMsg.visibleContent} ${nextMsg.visibleContent} ${prevMsg.streaming} ${nextMsg.streaming} ${prevMsg.isError} ${nextMsg.isError} ${prevMsg.isReasoning} ${nextMsg.isReasoning} ${prevMsg.visibleReasoning} ${nextMsg.visibleReasoning} ${prevMsg.syncState} ${nextMsg.syncState} ${prevMsg.files?.length} ${nextMsg.files?.length} ${prevMsg.processEvents?.length} ${nextMsg.processEvents?.length}`);
   console.log(`[ChatMessageCell] Next message: ${nextMsg.visibleContent}`);
   if (
     prevMsg.id !== nextMsg.id ||
@@ -61,7 +62,8 @@ function messagePropsAreEqual(
     prevMsg.isReasoning !== nextMsg.isReasoning ||
     prevMsg.visibleReasoning !== nextMsg.visibleReasoning ||
     prevMsg.syncState !== nextMsg.syncState ||
-    prevMsg.files?.length !== nextMsg.files?.length
+    prevMsg.files?.length !== nextMsg.files?.length ||
+    prevMsg.processEvents?.length !== nextMsg.processEvents?.length
   ) {
     return false;
   }
@@ -96,6 +98,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     visibleContent: content,
     visibleReasoning: reasoning,
     reasoningTime,
+    processEvents,
     challengeResponse,
   } = message;
   const { isLocked } = useEncryption();
@@ -257,6 +260,14 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
         )}
 
         <Box className={styles["chat-message-item"]}>
+          {!isUser && processEvents && processEvents.length > 0 && (
+            <ProcessEventsDisplay
+              events={processEvents}
+              fontSize={fontSize}
+              fontFamily={fontFamily}
+            />
+          )}
+          
           {shouldShowReasoning && (
             <ReasoningDisplay
               reasoning={reasoning}
