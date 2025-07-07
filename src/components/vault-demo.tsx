@@ -54,12 +54,12 @@ export function VaultDemo({ autoRun = false }: VaultDemoProps) {
       
       // Step 2: Encrypt test data
       addLog(`Encrypting: "${testInput}"`);
-      const { ciphertext, iv } = await vault.encrypt(testInput);
-      addLog(`✓ Encrypted successfully (${ciphertext.byteLength} bytes)`);
+      const encrypted = await vault.encrypt(testInput);
+      addLog(`✓ Encrypted successfully (${encrypted.length} bytes)`);
       
       // Step 3: Decrypt back
       addLog('Decrypting...');
-      const decrypted = await vault.decrypt(ciphertext, iv);
+      const decrypted = await vault.decrypt(encrypted);
       addLog(`✓ Decrypted: "${decrypted}"`);
       
       // Step 4: Verify round-trip
@@ -78,7 +78,7 @@ export function VaultDemo({ autoRun = false }: VaultDemoProps) {
       
       for (const testStr of testStrings) {
         const encrypted = await vault.encrypt(testStr);
-        const decrypted = await vault.decrypt(encrypted.ciphertext, encrypted.iv);
+        const decrypted = await vault.decrypt(encrypted);
         results.push({ original: testStr, decrypted });
         addLog(`  "${testStr}" -> "${decrypted}"`);
       }

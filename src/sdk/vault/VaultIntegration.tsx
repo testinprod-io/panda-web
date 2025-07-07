@@ -2,8 +2,8 @@
 // This demonstrates how to migrate from CryptoJS-based EncryptionService to Vault
 
 import React from 'react';
-import { useVault } from '@/hooks/use-vault';
-import { EncryptionService } from '@/sdk/EncryptionService';
+import { useVault } from "../../hooks/use-vault";
+import { EncryptionService } from "../EncryptionService";
 
 /**
  * VaultIntegration provides a bridge between the existing SDK and the new Vault system
@@ -147,19 +147,19 @@ export function useVaultIntegration(): VaultIntegration {
   return integration;
 }
 
+// Context for vault integration
+const VaultIntegrationContext = React.createContext<VaultIntegration | null>(null);
+
 // Provider component for vault integration
 export function VaultIntegrationProvider({ children }: { children: React.ReactNode }) {
   const integration = useVaultIntegration();
   
-  return React.createElement(
-    VaultIntegrationContext.Provider,
-    { value: integration },
-    children
+  return (
+    <VaultIntegrationContext.Provider value={integration}>
+      {children}
+    </VaultIntegrationContext.Provider>
   );
 }
-
-// Context for vault integration
-const VaultIntegrationContext = React.createContext<VaultIntegration | null>(null);
 
 // Hook to use vault integration from context
 export function useVaultIntegrationContext(): VaultIntegration {
@@ -168,38 +168,4 @@ export function useVaultIntegrationContext(): VaultIntegration {
     throw new Error('useVaultIntegrationContext must be used within VaultIntegrationProvider');
   }
   return context;
-}
-
-// Usage example:
-/*
-// In your app root (next to other providers):
-React.createElement(VaultIntegrationProvider, {}, YourAppComponents)
-
-// In any component that needs encryption:
-function MyComponent() {
-  const vault = useVaultIntegrationContext();
-  
-  const handleEncrypt = async () => {
-    try {
-      const encrypted = await vault.encrypt("sensitive data");
-      console.log("Encrypted:", encrypted);
-      
-      const decrypted = await vault.decrypt(encrypted);
-      console.log("Decrypted:", decrypted);
-    } catch (error) {
-      console.error("Crypto operation failed:", error);
-    }
-  };
-  
-  return React.createElement("button", { onClick: handleEncrypt }, "Test Encryption");
-}
-
-// Or get the EncryptionService directly:
-function AnotherComponent() {
-  const vault = useVaultIntegrationContext();
-  const encryptionService = vault.getEncryptionService();
-  
-  // Use encryptionService as before, but it will use vault when available
-  const encrypted = await encryptionService.encrypt("data");
-}
-*/
+} 

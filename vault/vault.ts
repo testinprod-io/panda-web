@@ -1,17 +1,4 @@
-import type {
-  InitMsg,
-  AckMsg,
-  VaultRequest,
-  VaultResponse,
-  DeriveReq,
-  DeriveRes,
-  EncryptReq,
-  EncryptRes,
-  DecryptReq,
-  DecryptRes,
-  ErrorRes,
-  DeriveKeyResponse,
-} from './types';
+// Types and dependencies are included in the concatenated bundle
 
 // Rate limiting
 interface RateLimitState {
@@ -21,7 +8,8 @@ interface RateLimitState {
 
 class VaultService {
   private port: MessagePort | null = null;
-  private masterKey: CryptoKey | null = null;
+  private passwordKey: CryptoKey | null = null; // Non-extractable password key for encryption
+  private encryptionService: EncryptionService = new EncryptionService();
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
   private rateLimitState: RateLimitState = { count: 0, windowStart: Date.now() };
   private readonly IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
@@ -34,20 +22,6 @@ class VaultService {
 
   private setupMessageListener(): void {
     addEventListener('message', (event: MessageEvent) => {
-      // For local development, we can be more lenient.
-      // In production, this should be locked down to your app's origin.
-      // const isDevelopment = event.origin.includes('localhost');
-      // const expectedOrigin = isDevelopment
-      //   ? 'http://localhost:3000'
-      //   : 'https://app.panda.chat'; // Your production app URL
-
-      // console.log(`[Vault] Received message from origin: ${event.origin}. Expecting: ${expectedOrigin}.`);
-
-      // if (event.origin !== expectedOrigin) {
-      //   console.warn(`[Vault] Ignoring message from unexpected origin.`);
-      //   return;
-      // }
-
       if (event.data && event.data.cmd === 'init') {
         console.log('[Vault] Received init command.');
         this.handleInit(event);
@@ -55,18 +29,12 @@ class VaultService {
     });
   }
 
-  private accessToken: string | null = null;
-
   private handleInit(event: MessageEvent): void {
-    const initMsg = event.data as InitMsg;
+    const initMsg = event.data;
     if (initMsg.cmd !== 'init') {
       console.error('[Vault] Invalid init message');
       return;
     }
-
-    // Store the access token for API requests (no need for appOrigin with same-origin requests)
-    this.accessToken = initMsg.accessToken || null;
-    console.log('[Vault] Received access token:', this.accessToken ? 'YES' : 'NO');
 
     // Get the MessagePort from the event
     const [port] = event.ports;
@@ -79,10 +47,53 @@ class VaultService {
     this.port.onmessage = (e) => this.handlePortMessage(e);
 
     // Send acknowledgment
-    const ackMsg: AckMsg = { ok: true, origin: self.origin };
+    const ackMsg = { ok: true, origin: self.origin };
     this.port.postMessage(ackMsg);
 
     console.log('[Vault] Initialized and acknowledged');
+  }
+
+  private async tryBootstrapPassword(encryptedPassword: string): Promise<void> {
+    try {
+      console.log('[Vault] Attempting to bootstrap password from stored encrypted password');
+      
+      // Get server keys as strings
+      const { oldKey, newKey } = await this.fetchServerKeys();
+      
+      if (!oldKey) {
+        console.log('[Vault] Server indicates password rotation needed - oldKey is null');
+        return; // Need fresh password input
+      }
+      
+      // Decrypt password and get CryptoKey
+      const passwordPlain = await decryptPassword(encryptedPassword, oldKey);
+      
+      // Import password as CryptoKey for encryption operations
+      this.passwordKey = await crypto.subtle.importKey(
+        "raw",
+        new TextEncoder().encode(passwordPlain),
+        "PBKDF2",
+        false,
+        ["deriveKey", "deriveBits"]
+      );
+      
+      // Re-encrypt with new key
+      const newEncryptedPassword = await encryptPassword(passwordPlain, newKey);
+      
+      // Notify main app about the new encrypted password (key rotation)
+      if (this.port && newEncryptedPassword !== encryptedPassword) {
+        this.port.postMessage({
+          cmd: 'passwordUpdated',
+          encryptedPassword: newEncryptedPassword
+        });
+      }
+      
+      console.log('[Vault] Password bootstrapped successfully');
+      this.resetIdleTimer();
+    } catch (error) {
+      console.log('[Vault] Failed to bootstrap password, user will need to input password:', error);
+      // Not an error - just means we need fresh password input
+    }
   }
 
   private async handlePortMessage(event: MessageEvent): Promise<void> {
@@ -91,13 +102,13 @@ class VaultService {
       return;
     }
 
-    const request = event.data as VaultRequest;
-    let response: VaultResponse;
+    const request = event.data;
+    let response;
 
     try {
       // Check rate limiting
       if (!this.checkRateLimit()) {
-        const errorResponse: ErrorRes = { id: request.id, error: 'locked' };
+        const errorResponse = { id: request.id, error: 'locked' };
         this.port.postMessage(errorResponse);
         return;
       }
@@ -105,10 +116,16 @@ class VaultService {
       // Reset idle timer
       this.resetIdleTimer();
 
-              switch (request.cmd) {
-          case 'derive':
-            response = await this.handleDerive(request);
-            break;
+      switch (request.cmd) {
+        case 'setPassword':
+          response = await this.handleSetPassword(request);
+          break;
+        case 'updateKey':
+          response = await this.handleUpdateKey(request);
+          break;
+        case 'derive':
+          response = await this.handleDerive(request);
+          break;
         case 'encrypt':
           response = await this.handleEncrypt(request);
           break;
@@ -116,15 +133,14 @@ class VaultService {
           response = await this.handleDecrypt(request);
           break;
         default:
-          // TypeScript can't narrow the request type in default case, so we assert it
-          response = { id: (request as VaultRequest).id, error: 'unknown command' } as ErrorRes;
+          response = { id: request.id, error: 'unknown command' };
       }
     } catch (error) {
       console.error('[Vault] Error handling message:', error);
       response = {
         id: request.id,
         error: error instanceof Error ? error.message : 'unknown error'
-      } as ErrorRes;
+      };
     }
 
     this.port.postMessage(response);
@@ -154,19 +170,103 @@ class VaultService {
     }
 
     this.idleTimer = setTimeout(() => {
-      console.log('[Vault] Idle timeout reached, clearing key');
-      this.clearKey();
+      console.log('[Vault] Idle timeout reached, clearing password');
+      this.clearPassword();
     }, this.IDLE_TIMEOUT_MS);
   }
 
-  private clearKey(): void {
-    this.masterKey = null;
-    console.log('[Vault] Master key cleared from memory');
+  private clearPassword(): void {
+    this.passwordKey = null;
+    console.log('[Vault] Password cleared from memory');
   }
 
-  private async handleDerive(request: DeriveReq): Promise<DeriveRes | ErrorRes> {
+  private async handleSetPassword(request: any): Promise<any> {
     try {
-      await this.fetchAndUnwrapKey();
+      // Get server keys as strings
+      const { newKey } = await this.fetchServerKeys();
+      
+      // Encrypt the password with new server key
+      const encryptedPassword = await encryptPassword(request.password, newKey);
+      
+      // Import password as CryptoKey for encryption operations
+      this.passwordKey = await crypto.subtle.importKey(
+        "raw",
+        new TextEncoder().encode(request.password),
+        "PBKDF2",
+        false,
+        ["deriveKey", "deriveBits"]
+      );
+      
+      console.log('[Vault] Password set and encrypted successfully');
+      this.resetIdleTimer();
+      
+      return {
+        id: request.id,
+        ok: true,
+        encryptedPassword
+      };
+    } catch (error) {
+      console.error('[Vault] Failed to set password:', error);
+      return {
+        id: request.id,
+        error: error instanceof Error ? error.message : 'password setup failed'
+      };
+    }
+  }
+
+  private async handleUpdateKey(request: any): Promise<any> {
+    try {
+      // Get server keys as strings
+      const { oldKey, newKey } = await this.fetchServerKeys();
+      
+      if (!oldKey) {
+        return {
+          id: request.id,
+          error: 'server key rotation required - password input needed'
+        };
+      }
+      
+      // Decrypt password 
+      console.log('[Vault] Decrypting password with old key', request.encryptedPassword, "oldKey", oldKey);
+      const passwordPlain = await decryptPassword(request.encryptedPassword, oldKey);
+      
+      // Import password as CryptoKey for encryption operations
+      this.passwordKey = await crypto.subtle.importKey(
+        "raw",
+        new TextEncoder().encode(passwordPlain),
+        "PBKDF2",
+        false,
+        ["deriveKey", "deriveBits"]
+      );
+      
+      // Re-encrypt with new key
+      const newEncryptedPassword = await encryptPassword(passwordPlain, newKey);
+      
+      console.log('[Vault] Password key updated successfully');
+      this.resetIdleTimer();
+      
+      return {
+        id: request.id,
+        ok: true,
+        newEncryptedPassword
+      };
+    } catch (error) {
+      console.error('[Vault] Key update failed:', error);
+      return {
+        id: request.id,
+        error: error instanceof Error ? error.message : 'key update failed'
+      };
+    }
+  }
+
+  private async handleDerive(request: any): Promise<any> {
+    try {
+      if (!this.passwordKey) {
+        return { id: request.id, error: 'password not set' };
+      }
+      
+      // Password CryptoKey is already available and ready for encryption operations
+      console.log('[Vault] Password CryptoKey is ready for encryption operations');
       return { id: request.id, ok: true };
     } catch (error) {
       console.error('[Vault] Key derivation failed:', error);
@@ -177,17 +277,18 @@ class VaultService {
     }
   }
 
-  private async handleEncrypt(request: EncryptReq): Promise<EncryptRes | ErrorRes> {
-    if (!this.masterKey) {
-      return { id: request.id, error: 'key not derived' };
+  private async handleEncrypt(request: any): Promise<any> {
+    if (!this.passwordKey) {
+      return { id: request.id, error: 'password not set' };
     }
 
     try {
-      const result = await this.aesEncrypt(this.masterKey, request.plain);
+      // Use the CryptoKey to encrypt with PBKDF2 + AES-GCM
+      const encrypted = await this.encryptWithPasswordKey(request.plain, this.passwordKey);
+      
       return {
         id: request.id,
-        ciphertext: result.ciphertext,
-        iv: result.iv,
+        encrypted
       };
     } catch (error) {
       console.error('[Vault] Encryption failed:', error);
@@ -198,16 +299,18 @@ class VaultService {
     }
   }
 
-  private async handleDecrypt(request: DecryptReq): Promise<DecryptRes | ErrorRes> {
-    if (!this.masterKey) {
-      return { id: request.id, error: 'key not derived' };
+  private async handleDecrypt(request: any): Promise<any> {
+    if (!this.passwordKey) {
+      return { id: request.id, error: 'password not set' };
     }
 
     try {
-      const plain = await this.aesDecrypt(this.masterKey, request.cipher, request.iv);
+      // Use the CryptoKey to decrypt with PBKDF2 + AES-GCM
+      const plain = await this.decryptWithPasswordKey(request.encrypted, this.passwordKey);
+      
       return {
         id: request.id,
-        plain,
+        plain
       };
     } catch (error) {
       console.error('[Vault] Decryption failed:', error);
@@ -218,123 +321,125 @@ class VaultService {
     }
   }
 
-    private async fetchAndUnwrapKey(): Promise<void> {
-    // Real implementation that fetches wrapped key from local BFF (same-origin)
+  private async encryptWithPasswordKey(plaintext: string, passwordKey: CryptoKey): Promise<string> {
+    // Generate random salt and IV
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    
+    // Derive AES key from password using PBKDF2
+    const aesKey = await crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt: salt,
+        iterations: 100000,
+        hash: "SHA-256"
+      },
+      passwordKey,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt", "decrypt"]
+    );
+    
+    // Encrypt the plaintext
+    const ciphertext = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv: iv },
+      aesKey,
+      new TextEncoder().encode(plaintext)
+    );
+    
+    // Combine salt + iv + ciphertext
+    const combined = new Uint8Array(salt.length + iv.length + ciphertext.byteLength);
+    combined.set(salt, 0);
+    combined.set(iv, salt.length);
+    combined.set(new Uint8Array(ciphertext), salt.length + iv.length);
+    
+    // Return base64url encoded result
+    return this.base64urlEncode(combined);
+  }
+
+  private async decryptWithPasswordKey(encryptedData: string, passwordKey: CryptoKey): Promise<string> {
+    // Decode the encrypted data
+    const combined = this.base64urlDecode(encryptedData);
+    
+    // Extract salt, iv, and ciphertext
+    const salt = combined.slice(0, 16);
+    const iv = combined.slice(16, 28);
+    const ciphertext = combined.slice(28);
+    
+    // Derive AES key from password using PBKDF2
+    const aesKey = await crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt: salt,
+        iterations: 100000,
+        hash: "SHA-256"
+      },
+      passwordKey,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt", "decrypt"]
+    );
+    
+    // Decrypt the ciphertext
+    const plaintext = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: iv },
+      aesKey,
+      ciphertext
+    );
+    
+    return new TextDecoder().decode(plaintext);
+  }
+
+  private async fetchServerKeys(): Promise<{ oldKey: string | null; newKey: string }> {
     try {
-      if (!this.accessToken) {
-        throw new Error('Access token not available - vault not properly initialized');
-      }
-      
       // Make same-origin request to our local BFF API
       const deriveKeyUrl = '/api/vault/deriveKey';
       
-      console.log('[Vault] Fetching wrapped key from local BFF:', deriveKeyUrl);
+      console.log('[Vault] Fetching server keys from local BFF:', deriveKeyUrl);
       
       const response = await fetch(deriveKeyUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.accessToken}`, // Use access token directly
-        },
       });
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const data: DeriveKeyResponse = await response.json();
-      console.log('[Vault] Received wrapped key from BFF');
+      const data = await response.json();
+      console.log('[Vault] Received server keys from BFF');
       
-      // For now, since we're getting a mock wrapped key, we'll generate a temporary key
-      // In a real implementation, you would:
-      // 1. Have a device key pair (RSA-OAEP) stored securely
-      // 2. Unwrap the actual key using: await this.unwrapKey(wrappedKeyBuffer, devicePrivateKey);
-      
-      console.log('[Vault] Mock implementation - generating temporary AES key');
-      this.masterKey = await crypto.subtle.generateKey(
-        {
-          name: "AES-GCM",
-          length: 256,
-        },
-        false, // non-extractable
-        ["encrypt", "decrypt"]
-      );
-      
-      console.log('[Vault] Key derivation successful');
+      return { oldKey: data.old_key, newKey: data.new_key };
       
     } catch (error) {
-      console.error('[Vault] Failed to fetch and unwrap key:', error);
+      console.error('[Vault] Failed to fetch server keys:', error);
       throw error;
     }
   }
 
-  // Crypto utilities (copied locally to avoid external deps)
-  private async aesEncrypt(key: CryptoKey, plain: string): Promise<{
-    ciphertext: ArrayBuffer;
-    iv: ArrayBuffer;
-  }> {
-    if (key.algorithm.name !== "AES-GCM") {
-      throw new Error("Key must be AES-GCM");
-    }
-
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const encoder = new TextEncoder();
-    const data = encoder.encode(plain);
-
-    const ciphertext = await crypto.subtle.encrypt(
-      { name: "AES-GCM", iv: iv },
-      key,
-      data
-    );
-
-    return { ciphertext, iv: iv.buffer };
+  private base64urlEncode(buffer: Uint8Array): string {
+    return btoa(String.fromCharCode(...buffer))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
   }
 
-  private async aesDecrypt(
-    key: CryptoKey,
-    cipher: ArrayBuffer,
-    iv: ArrayBuffer
-  ): Promise<string> {
-    if (key.algorithm.name !== "AES-GCM") {
-      throw new Error("Key must be AES-GCM");
-    }
-
-    const decrypted = await crypto.subtle.decrypt(
-      { name: "AES-GCM", iv: iv },
-      key,
-      cipher
-    );
-
-    const decoder = new TextDecoder();
-    return decoder.decode(decrypted);
+  private base64urlDecode(str: string): Uint8Array {
+    str = str.replace(/-/g, "+").replace(/_/g, "/");
+    while (str.length % 4) str += "=";
+    return Uint8Array.from(atob(str), (c) => c.charCodeAt(0));
   }
 
-  private async unwrapKey(
-    wrapped: ArrayBuffer,
-    wrappingPriv: CryptoKey
-  ): Promise<CryptoKey> {
-    if (wrappingPriv.algorithm.name !== "RSA-OAEP") {
-      throw new Error("Unwrapping key must be RSA-OAEP");
-    }
-
-    return await crypto.subtle.unwrapKey(
-      "raw",
-      wrapped,
-      wrappingPriv,
-      { name: "RSA-OAEP" },
-      { name: "AES-GCM", length: 256 },
-      false, // non-extractable
-      ["encrypt", "decrypt"]
-    );
-  }
-
-  private b64ToBuf(b64: string): ArrayBuffer {
-    const binary = atob(b64);
+  private base64ToUint8Array(keyString: string): Uint8Array {
+    console.log('[Vault] Converting string to Uint8Array:', keyString);
+    
+    // First encode the string as base64, then decode it to Uint8Array
+    const base64Encoded = btoa(keyString);
+    const binary = atob(base64Encoded);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) {
       bytes[i] = binary.charCodeAt(i);
     }
-    return bytes.buffer;
+    return bytes;
   }
 }
 

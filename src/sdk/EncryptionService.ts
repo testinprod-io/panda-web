@@ -1,8 +1,28 @@
 import CryptoJS from "crypto-js";
+import { useVault } from "@/hooks/use-vault";
 
 export class EncryptionService {
   private inMemoryKey: CryptoJS.lib.WordArray | null = null;
   private inMemoryIv: CryptoJS.lib.WordArray | null = null;
+  private vault: ReturnType<typeof useVault> | null = null;
+  private useVaultForOperations: boolean = false;
+
+  /**
+   * Set the vault instance for secure operations
+   * When vault is set and ready, all encryption/decryption will be delegated to vault
+   */
+  public setVault(vault: ReturnType<typeof useVault>): void {
+    this.vault = vault;
+    this.useVaultForOperations = vault.state.isReady;
+    console.log('[EncryptionService] Vault integration:', this.useVaultForOperations ? 'enabled' : 'disabled');
+  }
+
+  /**
+   * Check if vault operations are available
+   */
+  public isVaultReady(): boolean {
+    return !!(this.vault && this.vault.state.isReady);
+  }
 
   public generateKeyFromPassword(password: string): {
     key: CryptoJS.lib.WordArray;
@@ -38,8 +58,14 @@ export class EncryptionService {
   /**
    * Derives and sets the encryption key and IV from a user password.
    * Stores them in memory.
+   * @deprecated Use vault.setPassword() instead for new implementations
    */
   public setKeyFromPassword(password: string) {
+    if (this.isVaultReady()) {
+      console.warn('[EncryptionService] setKeyFromPassword called but vault is available. Consider using vault.setPassword() instead.');
+      return;
+    }
+
     if (!password) {
       console.error("[EncryptionService] Cannot set key from empty password.");
       this.clearKey();
@@ -75,13 +101,22 @@ export class EncryptionService {
    * Checks if the encryption key and IV are currently set in memory.
    */
   public isKeySet(): boolean {
+    if (this.isVaultReady()) {
+      // When vault is ready, we always consider the key as "set"
+      return true;
+    }
     return !!this.inMemoryKey && !!this.inMemoryIv;
   }
 
   /**
    * Encrypt the verification token to test decryption later
+   * @deprecated This method is legacy and may not work with vault-based passwords
    */
   public encryptVerificationToken(userId: string): string {
+    if (this.isVaultReady()) {
+      throw new Error("encryptVerificationToken is not supported with vault. Use vault-based password verification instead.");
+    }
+
     if (!this.isKeySet()) {
       console.error(
         "[EncryptionService] encryptVerificationToken called without key set."
@@ -108,6 +143,7 @@ export class EncryptionService {
   /**
    * Verify that the provided password can correctly decrypt the verification token
    * This confirms the password is correct
+   * @deprecated Use vault-based password verification instead
    */
   public verifyKey = (
     verificationToken: string,
@@ -117,6 +153,11 @@ export class EncryptionService {
     if (typeof window === "undefined") {
       console.error("[EncryptionService] verifyKey called outside of browser.");
       return false; // Cannot verify outside of browser
+    }
+
+    if (this.isVaultReady()) {
+      console.warn("[EncryptionService] verifyKey called but vault is available. Use vault-based verification instead.");
+      return false;
     }
 
     try {
@@ -136,14 +177,26 @@ export class EncryptionService {
     }
   };
 
-  public encrypt(text: string): string {
+  public async encrypt(text: string): Promise<string> {
+    if (!text) return text;
+
+    // Use vault if available
+    if (this.isVaultReady()) {
+      try {
+        return await this.vault!.encrypt(text);
+      } catch (error) {
+        console.error("[EncryptionService] Vault encryption failed:", error);
+        throw new Error("Encryption failed");
+      }
+    }
+
+    // Fallback to legacy encryption
     if (!this.isKeySet()) {
       console.warn(
         "[EncryptionService] encrypt called but no key set. Returning plain text."
       );
       return text;
     }
-    if (!text) return text;
 
     try {
       const encrypted = CryptoJS.AES.encrypt(text, this.inMemoryKey!, {
@@ -158,7 +211,29 @@ export class EncryptionService {
     }
   }
 
-  public decrypt(encryptedText: string): string {
+  public async decrypt(encryptedText: string): Promise<string> {
+    if (!encryptedText) return encryptedText;
+
+    // Use vault if available
+    if (this.isVaultReady()) {
+      try {
+        return await this.vault!.decrypt(encryptedText);
+      } catch (error) {
+        console.error("[EncryptionService] Vault decryption failed:", error);
+        // Try fallback to legacy if the data might be legacy encrypted
+        if (this.isKeySet() && isLikelyBase64(encryptedText)) {
+          console.log("[EncryptionService] Attempting legacy decryption fallback");
+          return this.decryptLegacy(encryptedText);
+        }
+        throw error;
+      }
+    }
+
+    // Fallback to legacy decryption
+    return this.decryptLegacy(encryptedText);
+  }
+
+  private decryptLegacy(encryptedText: string): string {
     if (!this.isKeySet()) {
       console.info(
         "[EncryptionService] decrypt called but no key set. Returning plain text."
@@ -194,6 +269,8 @@ export class EncryptionService {
   }
 
   public async encryptFile(file: File): Promise<File> {
+    // File encryption is not yet supported with vault
+    // Fall back to legacy implementation
     if (!this.isKeySet()) {
       throw new Error("Key not set");
     }
@@ -232,6 +309,8 @@ export class EncryptionService {
   }
 
   async decryptFile(file: File): Promise<File> {
+    // File decryption is not yet supported with vault
+    // Fall back to legacy implementation
     if (!this.isKeySet()) {
       throw new Error("Key not set");
     }

@@ -13,6 +13,10 @@ import type {
   EncryptRes,
   DecryptReq,
   DecryptRes,
+  SetPasswordReq,
+  SetPasswordRes,
+  UpdateKeyEvent,
+  UpdateKeyRes,
   ErrorRes,
 } from '@/types/vault';
 
@@ -20,6 +24,7 @@ interface VaultState {
   isReady: boolean;
   isLoading: boolean;
   error: string | null;
+  needsPassword: boolean; // Indicates if user needs to input password
 }
 
 interface PendingRequest {
@@ -30,10 +35,13 @@ interface PendingRequest {
 
 interface UseVaultResult {
   state: VaultState;
+  setPassword: (password: string) => Promise<string>; // Returns encrypted password
+  updateKey: (encryptedPassword: string) => Promise<string>; // Returns new encrypted password
   derive: () => Promise<void>;
-  encrypt: (plain: string) => Promise<{ ciphertext: ArrayBuffer; iv: ArrayBuffer }>;
-  decrypt: (cipher: ArrayBuffer, iv: ArrayBuffer) => Promise<string>;
+  encrypt: (plain: string) => Promise<string>;
+  decrypt: (encrypted: string) => Promise<string>;
   reset: () => void;
+  onPasswordUpdated?: (encryptedPassword: string) => void; // Callback for key rotation
 }
 
 export function useVault(): UseVaultResult {
@@ -42,6 +50,7 @@ export function useVault(): UseVaultResult {
     isReady: false,
     isLoading: false,
     error: null,
+    needsPassword: false,
   });
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -49,6 +58,7 @@ export function useVault(): UseVaultResult {
   const pendingRequestsRef = useRef<Map<string, PendingRequest>>(new Map());
   const requestIdCounterRef = useRef(0);
   const initStartedRef = useRef(false);
+  const onPasswordUpdatedRef = useRef<((encryptedPassword: string) => void) | undefined>(undefined);
 
   const cleanup = useCallback(() => {
     console.log('[useVault] Cleanup called.');
@@ -76,6 +86,16 @@ export function useVault(): UseVaultResult {
 
   const handleVaultMessage = useCallback((event: MessageEvent) => {
     console.log('[useVault] General message handler received:', event.data);
+    
+    // Handle special messages from vault
+    if (event.data.cmd === 'passwordUpdated') {
+      console.log('[useVault] Password was updated due to key rotation');
+      if (onPasswordUpdatedRef.current) {
+        onPasswordUpdatedRef.current(event.data.encryptedPassword);
+      }
+      return;
+    }
+    
     const response = event.data as VaultResponse;
     
     const pendingRequest = pendingRequestsRef.current.get(response.id);
@@ -94,7 +114,7 @@ export function useVault(): UseVaultResult {
   }, []);
 
   // Create iframe and establish communication
-  const initializeVault = useCallback(async (): Promise<void> => {
+  const initializeVault = useCallback(async (encryptedPassword: string | undefined = undefined): Promise<void> => {
     if (initStartedRef.current) {
       return;
     }
@@ -113,7 +133,7 @@ export function useVault(): UseVaultResult {
         : 'https://vault.panda.chat';
       // Add necessary sandbox permissions for network requests
       iframe.sandbox.add('allow-scripts');
-      // iframe.sandbox.add('allow-same-origin'); // Needed for proper origin and cookies
+      iframe.sandbox.add('allow-same-origin'); // Needed for proper origin and cookies
       iframe.sandbox.add('allow-forms'); // Needed for fetch requests
       iframe.style.display = 'none';
       iframe.style.position = 'absolute';
@@ -163,7 +183,11 @@ export function useVault(): UseVaultResult {
         throw new Error('No access token available - user must be authenticated');
       }
       
-      const initMsg: InitMsg = { cmd: 'init', accessToken };
+      const initMsg: InitMsg = { 
+        cmd: 'init', 
+        // accessToken,
+        // encryptedPassword // Pass existi/ng encrypted password if available
+      };
       const vaultOrigin = process.env.NODE_ENV === 'development'
       ? 'http://localhost:3001'
       : 'https://vault.panda.chat';
@@ -240,28 +264,31 @@ export function useVault(): UseVaultResult {
     });
   }, [state.isReady]);
 
+  const setPassword = useCallback(async (password: string): Promise<string> => {
+    const request: Omit<SetPasswordReq, 'id'> = { cmd: 'setPassword', password };
+    const response = await sendRequest<SetPasswordRes>(request);
+    return response.encryptedPassword;
+  }, [sendRequest]);
+
+  const updateKey = useCallback(async (encryptedPassword: string): Promise<string> => {
+    const request: Omit<UpdateKeyEvent, 'id'> = { cmd: 'updateKey', encryptedPassword };
+    const response = await sendRequest<UpdateKeyRes>(request);
+    return response.newEncryptedPassword;
+  }, [sendRequest]);
+
   const derive = useCallback(async (): Promise<void> => {
     const request: Omit<DeriveReq, 'id'> = { cmd: 'derive' };
     await sendRequest<DeriveRes>(request);
   }, [sendRequest]);
 
-  const encrypt = useCallback(async (plain: string): Promise<{
-    ciphertext: ArrayBuffer;
-    iv: ArrayBuffer;
-  }> => {
+  const encrypt = useCallback(async (plain: string): Promise<string> => {
     const request: Omit<EncryptReq, 'id'> = { cmd: 'encrypt', plain };
     const response = await sendRequest<EncryptRes>(request);
-    return {
-      ciphertext: response.ciphertext,
-      iv: response.iv,
-    };
+    return response.encrypted;
   }, [sendRequest]);
 
-  const decrypt = useCallback(async (
-    cipher: ArrayBuffer,
-    iv: ArrayBuffer
-  ): Promise<string> => {
-    const request: Omit<DecryptReq, 'id'> = { cmd: 'decrypt', cipher, iv };
+  const decrypt = useCallback(async (encrypted: string): Promise<string> => {
+    const request: Omit<DecryptReq, 'id'> = { cmd: 'decrypt', encrypted };
     const response = await sendRequest<DecryptRes>(request);
     return response.plain;
   }, [sendRequest]);
@@ -272,8 +299,12 @@ export function useVault(): UseVaultResult {
       isReady: false,
       isLoading: false,
       error: null,
+      needsPassword: false,
     });
   }, [cleanup]);
+
+  // Function for initializing without parameters
+  const initVault = useCallback(() => initializeVault(undefined), [initializeVault]);
 
   // Auto-initialize on mount
   useEffect(() => {
@@ -304,9 +335,12 @@ export function useVault(): UseVaultResult {
 
   return {
     state,
+    setPassword,
+    updateKey,
     derive,
     encrypt,
     decrypt,
     reset,
+    onPasswordUpdated: onPasswordUpdatedRef.current,
   };
 }

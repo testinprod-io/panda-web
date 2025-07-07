@@ -16,9 +16,12 @@ import { useRouter } from "next/navigation";
 import { usePandaSDK } from "./sdk-provider";
 import { useAuth } from "@/sdk/hooks";
 import { useAppConfig } from "@/store/config";
+import { useVault } from "@/hooks/use-vault";
+
 interface EncryptionContextType {
   isLocked: boolean;
   isFirstTimeUser: boolean | null;
+  isVaultReady: boolean;
   unlockApp: (password: string) => Promise<boolean>;
   lockApp: () => void;
   createPassword: (password: string) => Promise<void>;
@@ -40,22 +43,81 @@ interface EncryptionProviderProps {
   children: ReactNode;
 }
 
+const ENCRYPTED_PASSWORD_KEY = 'panda_encrypted_password';
+
 export function EncryptionProvider({ children }: EncryptionProviderProps) {
-  // Always start locked
-  // const [isLocked, setIsLocked] = useState<boolean>(true);
+  const [isLocked, setIsLocked] = useState<boolean>(true);
   const [hasError, setHasError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [encryptedPassword, setEncryptedPassword] = useState<string | null>(null);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { user, authenticated, ready } = usePrivy();
   const pathname = usePathname();
   const router = useRouter();
   const { sdk } = usePandaSDK();
-  const { isLocked, encryptedId, lockApp: lockAppHook, unlockApp: unlockAppHook, createPassword: createPasswordHook } = useAuth();
-
+  const { encryptedId, lockApp: lockAppHook, unlockApp: unlockAppHook, createPassword: createPasswordHook } = useAuth();
   const isFirstTimeUser = sdk.ready ? encryptedId === null : null;
+  
+  const vault = useVault();
   const appConfig = useAppConfig();
   
   const passwordExpirationMinutes = appConfig.passwordExpirationMinutes;
+  
+  // Check if this is a first-time user (no encrypted password stored)
+  // const isFirstTimeUser = sdk.ready ? encryptedPassword === null : null;
+
+  // Set up vault password update callback
+  useEffect(() => {
+    if (vault.onPasswordUpdated) {
+      vault.onPasswordUpdated = (newEncryptedPassword: string) => {
+        console.log('[EncryptionProvider] Password updated due to key rotation');
+        setEncryptedPassword(newEncryptedPassword);
+        localStorage.setItem(ENCRYPTED_PASSWORD_KEY, newEncryptedPassword);
+      };
+    }
+  }, [vault.onPasswordUpdated]);
+
+  // Load encrypted password from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(ENCRYPTED_PASSWORD_KEY);
+      setEncryptedPassword(stored);
+      console.log('[EncryptionProvider] Loaded encrypted password from storage:', !!stored);
+    }
+  }, []);
+
+  // Try to automatically unlock with stored encrypted password
+  useEffect(() => {
+    if (vault.state.isReady && encryptedPassword && isLocked) {
+      console.log('[EncryptionProvider] Attempting auto-unlock with stored password');
+      tryAutoUnlock();
+    }
+  }, [vault.state.isReady, encryptedPassword, isLocked]);
+
+  const tryAutoUnlock = async () => {
+    if (!encryptedPassword) return;
+
+    try {
+      console.log('[EncryptionProvider] Trying to update key with stored password');
+      const newEncryptedPassword = await vault.updateKey(encryptedPassword);
+      
+      // Update stored password if it changed (key rotation)
+      if (newEncryptedPassword !== encryptedPassword) {
+        setEncryptedPassword(newEncryptedPassword);
+        localStorage.setItem(ENCRYPTED_PASSWORD_KEY, newEncryptedPassword);
+      }
+
+      // Vault is now ready with password, unlock the app
+      setIsLocked(false);
+      setHasError(false);
+      resetInactivityTimer();
+      console.log('[EncryptionProvider] Auto-unlock successful');
+    } catch (error) {
+      console.log('[EncryptionProvider] Auto-unlock failed, user needs to input password:', error);
+      // Don't set error state, just require password input
+      // The modal will show automatically since isLocked=true and isFirstTimeUser=false
+    }
+  };
   
   // Set up error handling for encryption-related operations
   useEffect(() => {
@@ -69,12 +131,13 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         typeof error.message === "string" &&
         (error.message.includes("decrypt") ||
           error.message.includes("encrypt") ||
-          error.message.includes("key"))
+          error.message.includes("key") ||
+          error.message.includes("vault"))
       ) {
         console.error("[EncryptionProvider] Caught encryption error:", error);
 
         // Lock the app and show error
-        // setIsLocked(true);
+        setIsLocked(true);
         setHasError(true);
         setErrorMessage(error.message);
 
@@ -90,32 +153,6 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         handleUnhandledRejection,
       );
   }, []);
-
-  // Check for first-time user on mount
-  useEffect(() => {
-    if (!authenticated) {
-      return;
-    }
-
-    const verifyFirstTimeUser = async () => {
-      try {
-        if (isFirstTimeUser) {
-          // setIsFirstTimeUser(false);
-          console.log(
-            "[EncryptionProvider] Verification token found. Existing user.",
-          );
-          return;
-        }
-      } catch (error) {
-        console.error(
-          "[EncryptionProvider] Error verifying first time user:",
-          error,
-        );
-      }
-      // setIsFirstTimeUser(true);
-    };
-    verifyFirstTimeUser();
-  }, [isFirstTimeUser, authenticated]);
 
   const resetInactivityTimer = useCallback(() => {
     if (inactivityTimerRef.current) {
@@ -135,21 +172,18 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   }, [isLocked, passwordExpirationMinutes, inactivityTimerRef]); // Rerun when lock state or expiration changes
 
   const lockApp = useCallback(() => {
-    // We're not clearing the key for now as requested
-    // EncryptionService.clearKey();
-    // setIsLocked(true);
+    setIsLocked(true);
     setHasError(false); // Clear any errors when manually locking
-    lockAppHook();
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
       inactivityTimerRef.current = null;
     }
     console.log("[EncryptionProvider] App locked.");
-  }, [lockAppHook]);
+  }, []);
 
   // Handle successful unlock
   const handleUnlockSuccess = useCallback(() => {
-    // setIsLocked(false);
+    setIsLocked(false);
     setHasError(false); // Clear errors on successful unlock
     resetInactivityTimer(); // Start timer on successful unlock
     console.log("[EncryptionProvider] App unlocked.");
@@ -159,20 +193,30 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   const handleEncryptionError = useCallback((error: Error) => {
     setErrorMessage(error.message);
     setHasError(true);
-    // setIsLocked(true);
+    setIsLocked(true);
   }, []);
 
-  // Simplified unlock function - only for existing users now
+  // Unlock function for existing users with stored encrypted password
   const contextUnlockApp = useCallback(
     async (password: string): Promise<boolean> => {
       try {
-        if (await sdk.auth.unlock(password)) {
-          handleUnlockSuccess();
-          return true;
-        } else {
-          handleEncryptionError(new Error("Invalid password"));
-          return false;
+        if (!vault.state.isReady) {
+          throw new Error('Vault not ready');
         }
+
+        if (encryptedPassword) {
+          // Try to verify the password by updating the key
+          // This will fail if the password is incorrect
+          await vault.updateKey(encryptedPassword);
+        } else {
+          // No stored password, set it with the vault
+          const newEncryptedPassword = await vault.setPassword(password);
+          setEncryptedPassword(newEncryptedPassword);
+          localStorage.setItem(ENCRYPTED_PASSWORD_KEY, newEncryptedPassword);
+        }
+
+        handleUnlockSuccess();
+        return true;
       } catch (error) {
         console.error("[EncryptionProvider] Error during unlock:", error);
         if (error instanceof Error) {
@@ -181,18 +225,26 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         return false;
       }
     },
-    [sdk, handleUnlockSuccess, handleEncryptionError],
+    [vault, encryptedPassword, handleUnlockSuccess, handleEncryptionError],
   );
 
-  // Handler for password creation
+  // Handler for password creation (first-time users)
   const handleCreatePassword = useCallback(
     async (newPassword: string) => {
       try {
         console.log("[EncryptionProvider] Creating new password.");
 
-        await sdk.auth.createPassword(newPassword);
+        if (!vault.state.isReady) {
+          throw new Error('Vault not ready');
+        }
 
-        // setIsFirstTimeUser(false); // No longer a first-time user
+        // Set password with vault and get encrypted version
+        const newEncryptedPassword = await vault.setPassword(newPassword);
+        
+        // Store encrypted password
+        setEncryptedPassword(newEncryptedPassword);
+        localStorage.setItem(ENCRYPTED_PASSWORD_KEY, newEncryptedPassword);
+
         handleUnlockSuccess(); // Unlock the app
         console.log(
           "[EncryptionProvider] New password created and app unlocked.",
@@ -205,12 +257,11 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         if (error instanceof Error) {
           handleEncryptionError(error);
         }
-        // Ensure app remains locked or in a clear error state
-        // setIsLocked(true);
+        setIsLocked(true);
         throw error;
       }
     },
-    [sdk, handleUnlockSuccess, handleEncryptionError],
+    [vault, handleUnlockSuccess, handleEncryptionError],
   );
 
   // Set up global event listeners to reset the timer on user activity
@@ -259,6 +310,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   const contextValue: EncryptionContextType = {
     isLocked,
     isFirstTimeUser,
+    isVaultReady: vault.state.isReady,
     unlockApp: contextUnlockApp,
     lockApp,
     createPassword: handleCreatePassword,
@@ -275,7 +327,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
 
   const isSignupPage = pathname.startsWith("/signup");
   const isOnboardingPage = pathname.startsWith("/onboarding");
-  const showUnlockModal = isLocked && !isSignupPage && isFirstTimeUser === false;
+  const showUnlockModal = isLocked && !isSignupPage && isFirstTimeUser === false && vault.state.isReady;
 
   return (
     <EncryptionContext.Provider value={contextValue}>

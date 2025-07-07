@@ -216,7 +216,7 @@ export const MessageActionsBar: React.FC<MessageActionsBarProps> = ({
   challengeResponse,
   onResend,
 }) => {
-  const contentToCopy = (messageContent || "").trim();
+  const contentToCopy = messageContent?.trim() || "";
 
   let attestationIcon: React.ReactNode = null;
   if (verificationResult && challengeResponse) {

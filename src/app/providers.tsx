@@ -11,6 +11,7 @@ import { lightTheme, darkTheme } from "@/theme";
 import { SnackbarProvider } from "@/providers/snackbar-provider";
 import { EncryptionProvider } from "@/providers/encryption-provider";
 import { PandaSDKProvider } from "@/providers/sdk-provider";
+import { VaultIntegrationProvider } from "@/sdk/vault/VaultIntegration";
 import { useAppConfig } from "@/store/config";
 import { Theme } from "@/store/config";
 
@@ -44,10 +45,12 @@ function AuthenticatedContentWrapper({
 }) {
   return (
     <>
+      <VaultIntegrationProvider>
         <EncryptionProvider>
           {/* <AuthChatListener /> */}
           <SnackbarProvider>{children}</SnackbarProvider>
         </EncryptionProvider>
+      </VaultIntegrationProvider>
     </>
   );
 }

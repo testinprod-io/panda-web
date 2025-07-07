@@ -114,11 +114,11 @@ export class Chat {
     this.createdAt = createdAt;
 
     this.bus.on("app.unlocked", () => {
-      this.messages.forEach((m) => {
+      this.messages.forEach(async (m) => {
         m.visibleReasoning = m.reasoning
-          ? this.encryptionService.decrypt(m.reasoning)
+          ? await this.encryptionService.decrypt(m.reasoning)
           : undefined;
-        m.visibleContent = this.encryptionService.decrypt(m.content);
+        m.visibleContent = await this.encryptionService.decrypt(m.content);
       });
       this.updateState();
     });
@@ -166,13 +166,13 @@ export class Chat {
       ]);
 
       // Process messages
-      this.messages = messagesResult.messages.map((m) => {
+      this.messages = await Promise.all(messagesResult.messages.map(async (m) => {
         m.visibleReasoning = m.reasoning
-          ? this.encryptionService.decrypt(m.reasoning)
+          ? await this.encryptionService.decrypt(m.reasoning)
           : undefined;
-        m.visibleContent = this.encryptionService.decrypt(m.visibleContent);
+        m.visibleContent = await this.encryptionService.decrypt(m.visibleContent);
         return m;
-      });
+      }));
       this.hasMoreMessages = messagesResult.hasMore;
       this.nextMessageCursor = messagesResult.nextCursor;
 
@@ -181,8 +181,8 @@ export class Chat {
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
-      sortedSummaries.forEach((summary) => {
-        summary.content = this.encryptionService.decrypt(summary.content);
+      sortedSummaries.forEach(async (summary) => {
+        summary.content = await this.encryptionService.decrypt(summary.content);
       });
 
       let lastId: UUID | null = null;
@@ -227,13 +227,13 @@ export class Chat {
         20
       );
 
-      const olderMessages = result.messages.map((m) => {
+      const olderMessages = await Promise.all(result.messages.map(async (m) => {
         m.visibleReasoning = m.reasoning
-          ? this.encryptionService.decrypt(m.reasoning)
+          ? await this.encryptionService.decrypt(m.reasoning)
           : undefined;
-        m.visibleContent = this.encryptionService.decrypt(m.visibleContent);
+        m.visibleContent = await this.encryptionService.decrypt(m.visibleContent);
         return m;
-      });
+      }));
 
       this.messages = [...olderMessages, ...this.messages];
 
@@ -321,7 +321,7 @@ export class Chat {
 
     const userMessage = createMessage({
       role: Role.USER,
-      content: this.encryptionService.encrypt(userInput),
+      content: await this.encryptionService.encrypt(userInput),
       visibleContent: userInput,
       attachments: attachments,
       files: files,
@@ -398,7 +398,7 @@ export class Chat {
       targetEndpoint: modelConfig.url,
       useSearch: options.enableSearch ?? false,
       customizedPrompts: this.customizedPromptsData
-        ? this.encryptionService.decrypt(this.customizedPromptsData)
+        ? await this.encryptionService.decrypt(this.customizedPromptsData)
         : undefined,
     };
 
@@ -440,19 +440,7 @@ export class Chat {
           duration = Date.now() - reasoningStartTimeForThisQuery;
           reasoningStartTimeForThisQuery = null;
         }
-        this.messages = this.messages.map((msg) => {
-          return msg.id === localBotMessageId
-            ? {
-                ...msg,
-                isReasoning: false,
-                reasoning: this.encryptionService.encrypt(
-                  msg.visibleReasoning ?? ""
-                ),
-                reasoningTime: duration,
-              }
-            : msg;
-        });
-        this.updateState();
+        this.handleReasoningEnd(localBotMessageId, duration);
         options.onReasoningEnd?.(localBotMessageId);
       },
       onContentChunk: (_id, chunk) => {
@@ -566,13 +554,13 @@ export class Chat {
         const summaryCreateRequest: SummaryCreateRequest = {
           start_message_id: batchToSummarize[0].id,
           end_message_id: batchToSummarize[batchToSummarize.length - 1].id,
-          content: this.encryptionService.encrypt(summaryResponse.summary),
+          content: await this.encryptionService.encrypt(summaryResponse.summary),
         };
         const newSummary = await this.storage.saveSummary(
           this.id as string,
           summaryCreateRequest
         );
-        newSummary.content = this.encryptionService.decrypt(newSummary.content);
+        newSummary.content = await this.encryptionService.decrypt(newSummary.content);
         if (newSummary) {
           this.summaries.push(newSummary);
           this.summaries.sort(
@@ -590,7 +578,7 @@ export class Chat {
     }
   }
 
-  private _finalizeMessage(
+  private async _finalizeMessage(
     messageId: UUID,
     finalContent: string,
     timestamp: Date,
@@ -600,7 +588,7 @@ export class Chat {
   ) {
     let messageToSave: ChatMessage | undefined;
 
-    this.messages = this.messages.map((msg) => {
+    this.messages = await Promise.all(this.messages.map(async (msg) => {
       if (msg.id === messageId) {
         const updatedMsg = { ...msg, streaming: false };
 
@@ -608,7 +596,7 @@ export class Chat {
           updatedMsg.isError = true;
           updatedMsg.errorMessage = errorMessage;
         } else {
-          updatedMsg.content = this.encryptionService.encrypt(finalContent);
+          updatedMsg.content = await this.encryptionService.encrypt(finalContent);
           updatedMsg.visibleContent = finalContent;
           updatedMsg.date = timestamp;
           updatedMsg.syncState = MessageSyncState.SYNCED;
@@ -619,7 +607,7 @@ export class Chat {
         return updatedMsg;
       }
       return msg;
-    });
+    }));
     console.log("messageToSave", messageToSave);
     if (messageToSave) {
       this.storage.saveMessage(this.id as string, messageToSave);
@@ -678,32 +666,10 @@ export class Chat {
         ],
         config: llmConfig,
         onFinish: (finalContent, timestamp, _, challengeResponse) => {
-          const encryptedTitle = this.encryptionService.encrypt(finalContent);
           console.log(
             `[Title Generation Action] LLM generated title: "${finalContent}"`
           );
-
-          // Update local state only if the title is new and not the default
-          if (finalContent !== defaultTopic && finalContent !== this.title) {
-            this.title = finalContent;
-            this.encryptedTitle = encryptedTitle;
-            console.log(
-              `[Title Generation Action] Updated local topic to: "${finalContent}"`
-            );
-            this.updateState();
-
-            console.log(
-              `[Title Generation Action] Attempting to update server title for ConvID: ${this.id}`
-            );
-            const updateReq: ConversationUpdateRequest = {
-              title: encryptedTitle,
-            };
-            this.api.app.updateConversation(this.id, updateReq);
-          } else {
-            console.log(
-              `[Title Generation Action] Generated title is default or unchanged, not updating.`
-            );
-          }
+          this.handleTitleGeneration(finalContent, defaultTopic);
         },
       });
     } catch (error) {
@@ -755,5 +721,81 @@ export class Chat {
     };
     await this.storage.updateChat(this.id as string, updateRequest);
     this.updateState();
+  }
+
+  private async handleReasoningEnd(messageId: UUID, duration: number) {
+    const messageIndex = this.messages.findIndex(m => m.id === messageId);
+    if (messageIndex !== -1) {
+      const messageToUpdate = this.messages[messageIndex];
+      const visibleReasoning = messageToUpdate.visibleReasoning ?? "";
+      
+      try {
+        const encryptedReasoning = await this.encryptionService.encrypt(visibleReasoning);
+        this.messages = this.messages.map(msg => {
+          return msg.id === messageId
+            ? {
+                ...msg,
+                isReasoning: false,
+                reasoning: encryptedReasoning,
+                reasoningTime: duration,
+              }
+            : msg;
+        });
+        this.updateState();
+      } catch (error) {
+        console.error('Error encrypting reasoning:', error);
+        // Fallback: update without encryption
+        this.messages = this.messages.map(msg => {
+          return msg.id === messageId
+            ? {
+                ...msg,
+                isReasoning: false,
+                reasoning: visibleReasoning,
+                reasoningTime: duration,
+              }
+            : msg;
+        });
+        this.updateState();
+      }
+    }
+  }
+
+  private async handleTitleGeneration(finalContent: string, defaultTopic: string) {
+    try {
+      const encryptedTitle = await this.encryptionService.encrypt(finalContent);
+      
+      // Update local state only if the title is new and not the default
+      if (finalContent !== defaultTopic && finalContent !== this.title) {
+        this.title = finalContent;
+        this.encryptedTitle = encryptedTitle;
+        console.log(
+          `[Title Generation Action] Updated local topic to: "${finalContent}"`
+        );
+        this.updateState();
+
+        console.log(
+          `[Title Generation Action] Attempting to update server title for ConvID: ${this.id}`
+        );
+        const updateReq: ConversationUpdateRequest = {
+          title: encryptedTitle,
+        };
+        this.api.app.updateConversation(this.id, updateReq);
+      } else {
+        console.log(
+          `[Title Generation Action] Generated title is default or unchanged, not updating.`
+        );
+      }
+    } catch (error) {
+      console.error('Error encrypting title:', error);
+      // Fallback: use unencrypted title
+      if (finalContent !== defaultTopic && finalContent !== this.title) {
+        this.title = finalContent;
+        this.encryptedTitle = finalContent; // Fallback to plaintext
+        console.log(
+          `[Title Generation Action] Updated local topic to: "${finalContent}" (fallback)`
+        );
+        this.updateState();
+      }
+    }
   }
 }
