@@ -15,8 +15,12 @@ import type {
   DecryptRes,
   SetPasswordReq,
   SetPasswordRes,
+  CreateUserPasswordReq,
+  CreateUserPasswordRes,
   UpdateKeyEvent,
   UpdateKeyRes,
+  BootstrapReq,
+  BootstrapRes,
   ErrorRes,
 } from '@/types/vault';
 
@@ -35,7 +39,9 @@ interface PendingRequest {
 
 interface UseVaultResult {
   state: VaultState;
-  setPassword: (password: string) => Promise<string>; // Returns encrypted password
+  bootstrap: (encryptedId: string, userId: string, encryptedPassword?: string, password?: string) => Promise<BootstrapRes>;
+  setPassword: (password: string, encryptedId: string, userId: string) => Promise<string>; // Returns encrypted password with validation
+  createUserPassword: (password: string, userId: string) => Promise<CreateUserPasswordRes>; // Creates password and encrypted ID
   updateKey: (encryptedPassword: string) => Promise<string>; // Returns new encrypted password
   derive: () => Promise<void>;
   encrypt: (plain: string) => Promise<string>;
@@ -114,7 +120,7 @@ export function useVault(): UseVaultResult {
   }, []);
 
   // Create iframe and establish communication
-  const initializeVault = useCallback(async (encryptedPassword: string | undefined = undefined): Promise<void> => {
+  const initializeVault = useCallback(async (encryptedId?: string, userId?: string, encryptedPassword?: string): Promise<void> => {
     if (initStartedRef.current) {
       return;
     }
@@ -184,9 +190,10 @@ export function useVault(): UseVaultResult {
       }
       
       const initMsg: InitMsg = { 
-        cmd: 'init', 
-        // accessToken,
-        // encryptedPassword // Pass existi/ng encrypted password if available
+        cmd: 'init',
+        encryptedId,
+        userId,
+        encryptedPassword
       };
       const vaultOrigin = process.env.NODE_ENV === 'development'
       ? 'http://localhost:3001'
@@ -264,10 +271,28 @@ export function useVault(): UseVaultResult {
     });
   }, [state.isReady]);
 
-  const setPassword = useCallback(async (password: string): Promise<string> => {
-    const request: Omit<SetPasswordReq, 'id'> = { cmd: 'setPassword', password };
+  const bootstrap = useCallback(async (encryptedId: string, userId: string, encryptedPassword?: string, password?: string): Promise<BootstrapRes> => {
+    const request: Omit<BootstrapReq, 'id'> = { 
+      cmd: 'bootstrap', 
+      encryptedId, 
+      userId, 
+      encryptedPassword, 
+      password 
+    };
+    const response = await sendRequest<BootstrapRes>(request);
+    return response;
+  }, [sendRequest]);
+
+  const setPassword = useCallback(async (password: string, encryptedId: string, userId: string): Promise<string> => {
+    const request: Omit<SetPasswordReq, 'id'> = { cmd: 'setPassword', password, encryptedId, userId };
     const response = await sendRequest<SetPasswordRes>(request);
     return response.encryptedPassword;
+  }, [sendRequest]);
+
+  const createUserPassword = useCallback(async (password: string, userId: string): Promise<CreateUserPasswordRes> => {
+    const request: Omit<CreateUserPasswordReq, 'id'> = { cmd: 'createUserPassword', password, userId };
+    const response = await sendRequest<CreateUserPasswordRes>(request);
+    return response;
   }, [sendRequest]);
 
   const updateKey = useCallback(async (encryptedPassword: string): Promise<string> => {
@@ -284,6 +309,7 @@ export function useVault(): UseVaultResult {
   const encrypt = useCallback(async (plain: string): Promise<string> => {
     const request: Omit<EncryptReq, 'id'> = { cmd: 'encrypt', plain };
     const response = await sendRequest<EncryptRes>(request);
+    console.log('[useVault] Encrypted:', response.encrypted);
     return response.encrypted;
   }, [sendRequest]);
 
@@ -304,7 +330,7 @@ export function useVault(): UseVaultResult {
   }, [cleanup]);
 
   // Function for initializing without parameters
-  const initVault = useCallback(() => initializeVault(undefined), [initializeVault]);
+  const initVault = useCallback(() => initializeVault(), [initializeVault]);
 
   // Auto-initialize on mount
   useEffect(() => {
@@ -335,7 +361,9 @@ export function useVault(): UseVaultResult {
 
   return {
     state,
+    bootstrap,
     setPassword,
+    createUserPassword,
     updateKey,
     derive,
     encrypt,

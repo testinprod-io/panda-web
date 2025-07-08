@@ -9,12 +9,15 @@ interface RateLimitState {
 class VaultService {
   private port: MessagePort | null = null;
   private passwordKey: CryptoKey | null = null; // Non-extractable password key for encryption
-  private encryptionService: EncryptionService = new EncryptionService();
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
   private rateLimitState: RateLimitState = { count: 0, windowStart: Date.now() };
   private readonly IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
   private readonly RATE_LIMIT_MAX = 100; // max operations per minute
   private readonly RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+  
+  // Store for validation
+  private encryptedId: string | null = null;
+  private expectedUserId: string | null = null;
 
   constructor() {
     this.setupMessageListener();
@@ -45,6 +48,19 @@ class VaultService {
 
     this.port = port;
     this.port.onmessage = (e) => this.handlePortMessage(e);
+
+    // Store validation data if provided
+    if (initMsg.encryptedId) {
+      this.encryptedId = initMsg.encryptedId;
+    }
+    if (initMsg.userId) {
+      this.expectedUserId = initMsg.userId;
+    }
+
+    // Try to bootstrap password if encryptedPassword is provided
+    if (initMsg.encryptedPassword) {
+      // this.tryBootstrapPassword(initMsg.encryptedPassword);
+    }
 
     // Send acknowledgment
     const ackMsg = { ok: true, origin: self.origin };
@@ -117,8 +133,14 @@ class VaultService {
       this.resetIdleTimer();
 
       switch (request.cmd) {
+        case 'bootstrap':
+          response = await this.handleBootstrap(request);
+          break;
         case 'setPassword':
           response = await this.handleSetPassword(request);
+          break;
+        case 'createUserPassword':
+          response = await this.handleCreateUserPassword(request);
           break;
         case 'updateKey':
           response = await this.handleUpdateKey(request);
@@ -182,10 +204,27 @@ class VaultService {
 
   private async handleSetPassword(request: any): Promise<any> {
     try {
-      // Get server keys as strings
-      const { newKey } = await this.fetchServerKeys();
+      console.log('[Vault] Setting password with validation');
       
-      // Encrypt the password with new server key
+      // First, validate the password against the provided encryptedId
+      const isValidPassword = await this.validatePasswordAgainstEncryptedId(
+        request.password, 
+        request.encryptedId, 
+        request.userId
+      );
+      
+      if (!isValidPassword) {
+        console.log('[Vault] Password validation failed');
+        return {
+          id: request.id,
+          error: 'Invalid password'
+        };
+      }
+      
+      console.log('[Vault] Password validation successful, proceeding to set password');
+      
+      // Get server keys and encrypt the password for storage
+      const { newKey } = await this.fetchServerKeys();
       const encryptedPassword = await encryptPassword(request.password, newKey);
       
       // Import password as CryptoKey for encryption operations
@@ -210,6 +249,47 @@ class VaultService {
       return {
         id: request.id,
         error: error instanceof Error ? error.message : 'password setup failed'
+      };
+    }
+  }
+
+  private async handleCreateUserPassword(request: any): Promise<any> {
+    try {
+      console.log('[Vault] Creating user password and encrypting user ID');
+      
+      // Import password as CryptoKey for encryption operations
+      this.passwordKey = await crypto.subtle.importKey(
+        "raw",
+        new TextEncoder().encode(request.password),
+        "PBKDF2",
+        false,
+        ["deriveKey", "deriveBits"]
+      );
+      
+      // Encrypt the user ID with the password
+      const encryptedId = await this.encryptWithPasswordKey(request.userId, this.passwordKey);
+      
+      // Call server to create/update the encryptedId
+      await this.createEncryptedIdOnServer(encryptedId);
+      
+      // Get server keys and encrypt the password for storage
+      const { newKey } = await this.fetchServerKeys();
+      const encryptedPassword = await encryptPassword(request.password, newKey);
+      
+      console.log('[Vault] User password created, ID encrypted, and stored on server');
+      this.resetIdleTimer();
+      
+      return {
+        id: request.id,
+        ok: true,
+        encryptedPassword,
+        encryptedId
+      };
+    } catch (error) {
+      console.error('[Vault] Failed to create user password:', error);
+      return {
+        id: request.id,
+        error: error instanceof Error ? error.message : 'password creation failed'
       };
     }
   }
@@ -255,6 +335,133 @@ class VaultService {
       return {
         id: request.id,
         error: error instanceof Error ? error.message : 'key update failed'
+      };
+    }
+  }
+
+  private async handleBootstrap(request: any): Promise<any> {
+    try {
+      console.log('[Vault] Bootstrap request received');
+      
+      // Store validation data from request
+      this.encryptedId = request.encryptedId;
+      this.expectedUserId = request.userId;
+      
+      let password: string;
+      let newEncryptedPassword: string | undefined;
+      
+      if (request.encryptedPassword) {
+        // Try to decrypt stored password
+        console.log('[Vault] Attempting to use stored encrypted password');
+        
+        try {
+          const { oldKey, newKey } = await this.fetchServerKeys();
+          
+          if (!oldKey) {
+            console.log('[Vault] No oldKey available, requiring password input');
+            return {
+              id: request.id,
+              ok: true,
+              needsPassword: true
+            };
+          }
+          
+          // Decrypt password with old key
+          console.log('[Vault] Decrypting password with old key');
+          password = await decryptPassword(request.encryptedPassword, oldKey);
+          console.log('[Vault] Successfully decrypted password');
+          
+          // Re-encrypt with new key
+          newEncryptedPassword = await encryptPassword(password, newKey);
+          console.log('[Vault] Successfully re-encrypted password');
+          
+        } catch (decryptError) {
+          console.error('[Vault] Failed to decrypt stored password:', decryptError);
+          console.log('[Vault] Stored password may be corrupted or from old format, requiring fresh password input');
+          return {
+            id: request.id,
+            ok: true,
+            needsPassword: true
+          };
+        }
+        
+      } else if (request.password) {
+        // Use provided password
+        console.log('[Vault] Using provided password');
+        password = request.password;
+        
+        try {
+          // Encrypt password for storage
+          const { newKey } = await this.fetchServerKeys();
+          newEncryptedPassword = await encryptPassword(password, newKey);
+          console.log('[Vault] Successfully encrypted provided password');
+        } catch (encryptError) {
+          console.error('[Vault] Failed to encrypt provided password:', encryptError);
+          throw new Error('Failed to encrypt password for storage');
+        }
+        
+      } else {
+        // Need password input
+        console.log('[Vault] No password or encrypted password provided, requiring input');
+        return {
+          id: request.id,
+          ok: true,
+          needsPassword: true
+        };
+      }
+      
+      // Validate password by decrypting encryptedId
+      console.log('[Vault] Validating password against encryptedId');
+      try {
+        const isValid = await this.validatePassword(password);
+        console.log('[Vault] Password validation result:', isValid);
+        
+        if (!isValid) {
+          return {
+            id: request.id,
+            ok: true,
+            isValid: false
+          };
+        }
+      } catch (validateError) {
+        console.error('[Vault] Password validation failed:', validateError);
+        return {
+          id: request.id,
+          ok: true,
+          isValid: false
+        };
+      }
+      
+      // Store password as CryptoKey for future operations
+      try {
+        this.passwordKey = await crypto.subtle.importKey(
+          "raw",
+          new TextEncoder().encode(password),
+          "PBKDF2",
+          false,
+          ["deriveKey", "deriveBits"]
+        );
+        console.log('[Vault] Successfully imported password as CryptoKey');
+      } catch (importError) {
+        console.error('[Vault] Failed to import password as CryptoKey:', importError);
+        throw new Error('Failed to import password as CryptoKey');
+      }
+      
+      console.log('[Vault] Bootstrap successful, password validated and stored');
+      this.resetIdleTimer();
+      
+      return {
+        id: request.id,
+        ok: true,
+        isValid: true,
+        encryptedPassword: newEncryptedPassword
+      };
+      
+    } catch (error) {
+      console.error('[Vault] Bootstrap failed:', error);
+      return {
+        id: request.id,
+        error: error instanceof Error ? error.message : 'bootstrap failed'
       };
     }
   }
@@ -406,12 +613,67 @@ class VaultService {
       }
 
       const data = await response.json();
+      
+      // Validate server key format
+      if (data.new_key) {
+        console.log('[Vault] New key length:', data.new_key.length, 'characters');
+        try {
+          const decoded = this.base64urlDecode(data.new_key);
+          console.log('[Vault] New key decoded to:', decoded.length, 'bytes');
+          if (decoded.length !== 32) {
+            console.warn('[Vault] Server key is not 32 bytes!', decoded.length);
+          }
+        } catch (e) {
+          console.error('[Vault] Server key is not valid base64:', e);
+          throw new Error('Invalid server key format');
+        }
+      }
+      
+      if (data.old_key) {
+        console.log('[Vault] Old key length:', data.old_key.length, 'characters');
+        try {
+          const decoded = this.base64urlDecode(data.old_key);
+          console.log('[Vault] Old key decoded to:', decoded.length, 'bytes');
+        } catch (e) {
+          console.error('[Vault] Old server key is not valid base64:', e);
+        }
+      }
+      
       console.log('[Vault] Received server keys from BFF');
       
       return { oldKey: data.old_key, newKey: data.new_key };
       
     } catch (error) {
       console.error('[Vault] Failed to fetch server keys:', error);
+      throw error;
+    }
+  }
+
+  private async createEncryptedIdOnServer(encryptedId: string): Promise<void> {
+    try {
+      // Make same-origin request to our local BFF API
+      const createEncryptedIdUrl = '/api/vault/createEncryptedId';
+      
+      console.log('[Vault] Creating encrypted ID on server via BFF:', createEncryptedIdUrl);
+      
+      const response = await fetch(createEncryptedIdUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          encrypted_id: encryptedId
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      console.log('[Vault] Encrypted ID created on server successfully');
+      
+    } catch (error) {
+      console.error('[Vault] Failed to create encrypted ID on server:', error);
       throw error;
     }
   }
@@ -424,9 +686,14 @@ class VaultService {
   }
 
   private base64urlDecode(str: string): Uint8Array {
-    str = str.replace(/-/g, "+").replace(/_/g, "/");
-    while (str.length % 4) str += "=";
-    return Uint8Array.from(atob(str), (c) => c.charCodeAt(0));
+    try {
+      str = str.replace(/-/g, "+").replace(/_/g, "/");
+      while (str.length % 4) str += "=";
+      return Uint8Array.from(atob(str), (c) => c.charCodeAt(0));
+    } catch (error) {
+      console.error('[Vault] Failed to decode base64url string:', str, error);
+      throw new Error('Invalid base64url encoded data');
+    }
   }
 
   private base64ToUint8Array(keyString: string): Uint8Array {
@@ -440,6 +707,67 @@ class VaultService {
       bytes[i] = binary.charCodeAt(i);
     }
     return bytes;
+  }
+
+  private async validatePassword(password: string): Promise<boolean> {
+    if (!this.encryptedId || !this.expectedUserId) {
+      console.log('[Vault] No encryptedId or expectedUserId available for validation');
+      return false;
+    }
+
+    try {
+      console.log('[Vault] Validating password by decrypting encryptedId');
+      
+      // Import password as CryptoKey for decryption
+      const passwordKey = await crypto.subtle.importKey(
+        "raw",
+        new TextEncoder().encode(password),
+        "PBKDF2",
+        false,
+        ["deriveKey", "deriveBits"]
+      );
+      
+      // Decrypt encryptedId using the password
+      const decryptedUserId = await this.decryptWithPasswordKey(this.encryptedId, passwordKey);
+      
+      // Compare with expected userId
+      const isValid = decryptedUserId === this.expectedUserId;
+      
+      console.log('[Vault] Password validation result:', isValid);
+      return isValid;
+      
+    } catch (error) {
+      console.error('[Vault] Password validation failed:', error);
+      return false;
+    }
+  }
+
+  private async validatePasswordAgainstEncryptedId(password: string, encryptedId: string, expectedUserId: string): Promise<boolean> {
+    try {
+      console.log('[Vault] Validating password against provided encryptedId');
+      
+      // Import password as CryptoKey for decryption
+      const passwordKey = await crypto.subtle.importKey(
+        "raw",
+        new TextEncoder().encode(password),
+        "PBKDF2",
+        false,
+        ["deriveKey", "deriveBits"]
+      );
+      
+      // Decrypt encryptedId using the password
+      const decryptedUserId = await this.decryptWithPasswordKey(encryptedId, passwordKey);
+      
+      // Compare with expected userId
+      const isValid = decryptedUserId === expectedUserId;
+      
+      console.log('[Vault] Password validation against encryptedId result:', isValid);
+      return isValid;
+      
+    } catch (error) {
+      console.error('[Vault] Password validation against encryptedId failed:', error);
+      return false;
+    }
   }
 }
 

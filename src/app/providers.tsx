@@ -38,23 +38,6 @@ function ThemeWrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
-function AuthenticatedContentWrapper({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <>
-      <VaultIntegrationProvider>
-        <EncryptionProvider>
-          {/* <AuthChatListener /> */}
-          <SnackbarProvider>{children}</SnackbarProvider>
-        </EncryptionProvider>
-      </VaultIntegrationProvider>
-    </>
-  );
-}
-
 function SDKWrapper({ children }: { children: React.ReactNode }) {
   const { getAccessToken } = usePrivy();
   // if (!getAccessToken) {
@@ -66,6 +49,25 @@ function SDKWrapper({ children }: { children: React.ReactNode }) {
     <PandaSDKProvider getAccessToken={getAccessToken}>
       {children}
     </PandaSDKProvider>
+  );
+}
+
+function AuthenticatedContentWrapper({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <VaultIntegrationProvider>
+        <SDKWrapper>
+          <EncryptionProvider>
+            {/* <AuthChatListener /> */}
+            <SnackbarProvider>{children}</SnackbarProvider>
+          </EncryptionProvider>
+        </SDKWrapper>
+      </VaultIntegrationProvider>
+    </>
   );
 }
 
@@ -100,11 +102,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 embeddedWallets: { ethereum: { createOnLogin: "all-users" } },
               }}
             >
-              <SDKWrapper>
-                <AuthenticatedContentWrapper>
-                  {children}
-                </AuthenticatedContentWrapper>
-              </SDKWrapper>
+              <AuthenticatedContentWrapper>
+                {children}
+              </AuthenticatedContentWrapper>
             </PrivyProvider>
           ) : (
             <SnackbarProvider>{children}</SnackbarProvider>

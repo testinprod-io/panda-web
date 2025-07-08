@@ -44,35 +44,42 @@ async function deriveAesKey(
   );
 }
 
+// Export functions for vault usage
 async function encryptPassword(
   password: string,
   serverKeyString: string
 ): Promise<string> {
+  // Generate random IV for AES-GCM
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const salt = crypto.getRandomValues(new Uint8Array(16));
   
-  // Convert serverKey string to Uint8Array and then to CryptoKey
+  // Convert server key string directly to AES key
   const serverKeyBytes = base64urlDecode(serverKeyString);
-  const serverKey = await importServerKey(serverKeyBytes);
-  const aesKey = await deriveAesKey(serverKey, salt);
-
-  const cipher = new Uint8Array(
-    await crypto.subtle.encrypt(
-      { name: "AES-GCM", iv, additionalData: enc.encode("PWDv1") },
-      aesKey,
-      enc.encode(password)
-    )
+  
+  // Validate key length
+  if (serverKeyBytes.length !== 32) {
+    throw new Error(`Server key must be 32 bytes, got ${serverKeyBytes.length} bytes`);
+  }
+  
+  // Import as AES-GCM key directly (no HKDF needed since server key rotates)
+  const aesKey = await crypto.subtle.importKey(
+    "raw",
+    serverKeyBytes,
+    "AES-GCM",
+    false,
+    ["encrypt", "decrypt"]
   );
 
-  // Build envelope
-  const header = new Uint8Array([VERSION, FLAG_HKDF]);
-  const envelope = new Uint8Array(
-    header.length + salt.length + iv.length + cipher.length
+  // Encrypt the password
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    aesKey,
+    enc.encode(password)
   );
-  envelope.set(header);
-  envelope.set(salt, header.length);
-  envelope.set(iv, header.length + salt.length);
-  envelope.set(cipher, header.length + salt.length + iv.length);
+
+  // Simple format: IV + ciphertext (no salt needed since server key rotates)
+  const envelope = new Uint8Array(iv.length + ciphertext.byteLength);
+  envelope.set(iv, 0);
+  envelope.set(new Uint8Array(ciphertext), iv.length);
 
   return base64urlEncode(envelope);
 }
@@ -81,12 +88,60 @@ async function decryptPassword(
   envelopeB64: string,
   serverKeyString: string
 ): Promise<string> {
+  const envelope = base64urlDecode(envelopeB64);
+
+  // Check if this is the old format (starts with version byte)
+  if (envelope.length > 2 && envelope[0] === VERSION) {
+    console.log('[Password] Detected old format, attempting legacy decryption');
+    return await decryptPasswordLegacy(envelopeB64, serverKeyString);
+  }
+
+  // New simple format: IV (12 bytes) + ciphertext
+  if (envelope.length < 12) {
+    throw new Error("Invalid encrypted password format: too short");
+  }
+
+  const iv = envelope.slice(0, 12);
+  const ciphertext = envelope.slice(12);
+
+  // Convert server key string directly to AES key
+  const serverKeyBytes = base64urlDecode(serverKeyString);
+  
+  // Validate key length
+  if (serverKeyBytes.length !== 32) {
+    throw new Error(`Server key must be 32 bytes, got ${serverKeyBytes.length} bytes`);
+  }
+  
+  // Import as AES-GCM key directly
+  const aesKey = await crypto.subtle.importKey(
+    "raw",
+    serverKeyBytes,
+    "AES-GCM",
+    false,
+    ["encrypt", "decrypt"]
+  );
+
+  // Decrypt the password
+  const plaintext = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv },
+    aesKey,
+    ciphertext
+  );
+
+  return dec.decode(plaintext);
+}
+
+// Legacy decryption for backward compatibility
+async function decryptPasswordLegacy(
+  envelopeB64: string,
+  serverKeyString: string
+): Promise<string> {
   const blob = base64urlDecode(envelopeB64);
 
   let offset = 0;
   const opts = blob[offset++];
 
-  if (opts !== VERSION) throw new Error("unsupported format");
+  if (opts !== VERSION) throw new Error("unsupported legacy format");
 
   const useHKDF = (opts & FLAG_HKDF) !== 0;
   const salt = useHKDF ? blob.slice(offset, (offset += 16)) : null;

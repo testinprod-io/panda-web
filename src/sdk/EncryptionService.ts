@@ -183,6 +183,7 @@ export class EncryptionService {
     // Use vault if available
     if (this.isVaultReady()) {
       try {
+        console.log("[EncryptionService] Vault encryption called", text);
         return await this.vault!.encrypt(text);
       } catch (error) {
         console.error("[EncryptionService] Vault encryption failed:", error);
@@ -212,20 +213,22 @@ export class EncryptionService {
   }
 
   public async decrypt(encryptedText: string): Promise<string> {
-    if (!encryptedText) return encryptedText;
+    if (!encryptedText || encryptedText === "") return encryptedText;
 
     // Use vault if available
     if (this.isVaultReady()) {
       try {
+        console.log("decrypting with vault", encryptedText);
         return await this.vault!.decrypt(encryptedText);
       } catch (error) {
         console.error("[EncryptionService] Vault decryption failed:", error);
         // Try fallback to legacy if the data might be legacy encrypted
-        if (this.isKeySet() && isLikelyBase64(encryptedText)) {
-          console.log("[EncryptionService] Attempting legacy decryption fallback");
-          return this.decryptLegacy(encryptedText);
-        }
-        throw error;
+        // if (this.isKeySet() && isLikelyBase64(encryptedText)) {
+        //   console.log("[EncryptionService] Attempting legacy decryption fallback");
+        //   return this.decryptLegacy(encryptedText);
+        // }
+        return encryptedText;
+        // throw error;
       }
     }
 

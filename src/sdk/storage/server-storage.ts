@@ -71,7 +71,7 @@ export class ServerStorage implements IStorage {
     title: string,
     customData?: Record<string, any>,
   ): Promise<Conversation> {
-    const encryptedTitle = this.encryptionService.encrypt(title.trim());
+    const encryptedTitle = await this.encryptionService.encrypt(title.trim());
     return await this.api.app.createConversation({
       title: encryptedTitle,
       custom_data: customData,
@@ -106,7 +106,7 @@ export class ServerStorage implements IStorage {
       limit,
       cursor,
     });
-    const messages = this.mapApiMessagesToChatMessages(
+    const messages = await this.mapApiMessagesToChatMessages(
       result.data.slice().reverse(),
     );
 
@@ -188,7 +188,7 @@ export class ServerStorage implements IStorage {
     onUploadProgress?: (progress: number) => void,
   ): Promise<{ fileId: UUID; abort: () => void }> {
     const encryptedFile = await this.encryptionService.encryptFile(file);
-    const encryptedFileName = this.encryptionService.encrypt(file.name);
+    const encryptedFileName = await this.encryptionService.encrypt(file.name);
     const { fileResponse, abort } = await this.api.app.uploadFile(
       conversationId,
       encryptedFile,
@@ -228,22 +228,22 @@ export class ServerStorage implements IStorage {
     // this.models = models;
   }
 
-mapApiMessagesToChatMessages(
+async mapApiMessagesToChatMessages(
   messages: ApiMessage[],
-): ChatMessage[] {
-  return messages.map((msg) => this.mapApiMessageToChatMessage(msg));
+): Promise<ChatMessage[]> {
+  return await Promise.all(messages.map((msg) => this.mapApiMessageToChatMessage(msg)));
 }
 
-mapApiMessageToChatMessage(message: ApiMessage): ChatMessage {
+async mapApiMessageToChatMessage(message: ApiMessage): Promise<ChatMessage> {
   return createMessage({
     id: message.message_id,
     role: message.sender_type,
     content: message.content,
-    visibleContent: this.encryptionService.decrypt(message.content),
+    visibleContent: await this.encryptionService.decrypt(message.content),
     files: message.files,
     date: new Date(message.timestamp),
     reasoning: message.reasoning_content,
-    visibleReasoning: message.reasoning_content ? this.encryptionService.decrypt(message.reasoning_content) : undefined,
+    visibleReasoning: message.reasoning_content ? await this.encryptionService.decrypt(message.reasoning_content) : undefined,
     reasoningTime: message.reasoning_time
       ? parseInt(message.reasoning_time)
       : undefined,

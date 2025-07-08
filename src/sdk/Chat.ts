@@ -170,7 +170,7 @@ export class Chat {
         m.visibleReasoning = m.reasoning
           ? await this.encryptionService.decrypt(m.reasoning)
           : undefined;
-        m.visibleContent = await this.encryptionService.decrypt(m.visibleContent);
+        m.visibleContent = await this.encryptionService.decrypt(m.content);
         return m;
       }));
       this.hasMoreMessages = messagesResult.hasMore;
@@ -231,7 +231,7 @@ export class Chat {
         m.visibleReasoning = m.reasoning
           ? await this.encryptionService.decrypt(m.reasoning)
           : undefined;
-        m.visibleContent = await this.encryptionService.decrypt(m.visibleContent);
+        m.visibleContent = await this.encryptionService.decrypt(m.content);
         return m;
       }));
 
@@ -397,7 +397,7 @@ export class Chat {
       reasoning: true,
       targetEndpoint: modelConfig.url,
       useSearch: options.enableSearch ?? false,
-      customizedPrompts: this.customizedPromptsData
+      customizedPrompts: this.customizedPromptsData 
         ? await this.encryptionService.decrypt(this.customizedPromptsData)
         : undefined,
     };

@@ -4,6 +4,7 @@
 import React from 'react';
 import { useVault } from "../../hooks/use-vault";
 import { EncryptionService } from "../EncryptionService";
+import { BootstrapRes, CreateUserPasswordRes } from '@/types';
 
 /**
  * VaultIntegration provides a bridge between the existing SDK and the new Vault system
@@ -42,10 +43,7 @@ export class VaultIntegration {
     return !!this.vault?.state.isReady;
   }
 
-  /**
-   * Set password (for first-time users)
-   */
-  public async setPassword(password: string): Promise<string> {
+  public async bootstrap(encryptedId: string, userId: string, encryptedPassword?: string): Promise<BootstrapRes> {
     if (!this.vault) {
       throw new Error('Vault not initialized. Call setVault() first.');
     }
@@ -54,7 +52,34 @@ export class VaultIntegration {
       throw new Error('Vault not ready');
     }
 
-    return await this.vault.setPassword(password);
+    return await this.vault.bootstrap(encryptedId, userId, encryptedPassword);
+  }
+
+  /**
+   * Set password (for first-time users)
+   */
+  public async setPassword(password: string, encryptedId: string, userId: string): Promise<string> {
+    if (!this.vault) {
+      throw new Error('Vault not initialized. Call setVault() first.');
+    }
+
+    if (!this.vault.state.isReady) {
+      throw new Error('Vault not ready');
+    }
+
+    return await this.vault.setPassword(password, encryptedId, userId);
+  }
+
+  public async createUserPassword(password: string, userId: string): Promise<CreateUserPasswordRes> {
+    if (!this.vault) {
+      throw new Error('Vault not initialized. Call setVault() first.');
+    }
+
+    if (!this.vault.state.isReady) {
+      throw new Error('Vault not ready');
+    }
+
+    return await this.vault.createUserPassword(password, userId);
   }
 
   /**
@@ -141,8 +166,9 @@ export function useVaultIntegration(): VaultIntegration {
   const [integration] = React.useState(() => new VaultIntegration());
   
   React.useEffect(() => {
+    console.log("useVaultIntegrationContext useEffect");
     integration.setVault(vault);
-  }, [vault, integration]);
+  }, [vault.state.isReady, integration]);
   
   return integration;
 }
@@ -163,6 +189,7 @@ export function VaultIntegrationProvider({ children }: { children: React.ReactNo
 
 // Hook to use vault integration from context
 export function useVaultIntegrationContext(): VaultIntegration {
+  console.log("useVaultIntegrationContext");
   const context = React.useContext(VaultIntegrationContext);
   if (!context) {
     throw new Error('useVaultIntegrationContext must be used within VaultIntegrationProvider');

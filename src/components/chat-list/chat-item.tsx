@@ -70,7 +70,9 @@ export function ChatItem({
     if (isLocked) {
       setVisibleTopic(topic);
     } else {
-      setVisibleTopic(sdk.encryption.decrypt(topic));
+      sdk.encryption.decrypt(topic).then((decryptedTopic) => {
+        setVisibleTopic(decryptedTopic);
+      });
     }
   }, [isLocked, session.title]);
 

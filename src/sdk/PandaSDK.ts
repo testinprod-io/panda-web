@@ -4,6 +4,7 @@ import { ChatManager } from './ChatManager';
 import { AttestationManager } from './AttestationManager';
 import { GetAccessTokenFn, ServerModelInfo } from './client/types';
 import { EncryptionService } from '@/sdk/EncryptionService';
+import { VaultIntegration } from '@/sdk/vault/VaultIntegration';
 import { AuthProvider } from './auth/types';
 import { MemoryUserDataStore, UserManager } from './User';
 import { EventBus } from './events';
@@ -34,11 +35,18 @@ export class PandaSDK {
   public initialized: boolean = false;
   public ready: boolean = false;
   private isReadying: boolean = false;
-  constructor(getAccessToken: GetAccessTokenFn, authProvider: AuthProvider) {
+  private vaultIntegration: VaultIntegration | null = null;
+  
+  constructor(getAccessToken: GetAccessTokenFn, authProvider: AuthProvider, vaultIntegration?: VaultIntegration) {
     console.log('[PandaSDK] Constructor called from:', new Error().stack);
     this.api = new ApiService(getAccessToken);
     
-    this.encryption = new EncryptionService();
+    // Use vault-integrated encryption service if available, otherwise create new one
+    this.vaultIntegration = vaultIntegration || null;
+    this.encryption = vaultIntegration ? vaultIntegration.getEncryptionService() : new EncryptionService();
+    
+    console.log('[PandaSDK] Using encryption service:', vaultIntegration ? 'vault-integrated' : 'legacy');
+    
     this.attestation = new AttestationManager(this.api, this.bus);
     
     this.config = new ConfigManager(this.bus, this.encryption);
@@ -62,6 +70,20 @@ export class PandaSDK {
     
     this.initialized = true;
     console.log('PandaSDK initialized successfully!');
+  }
+
+  /**
+   * Get the vault integration instance
+   */
+  public getVaultIntegration(): VaultIntegration | null {
+    return this.vaultIntegration;
+  }
+
+  /**
+   * Check if vault integration is available and ready
+   */
+  public isVaultReady(): boolean {
+    return !!this.vaultIntegration?.isVaultReady();
   }
 
   public async handleAuthenticated() {
