@@ -20,6 +20,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Theme,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -30,20 +31,17 @@ import styles from "./settings-modal.module.scss";
 import { SettingsPage } from "./settings-modal-handler";
 import CustomizePromptsView from "./customize-prompts-view";
 import { useRouter } from "next/navigation";
-import { useApiClient } from "@/providers/api-client-provider";
+// import { useApiClient } from "@/providers/api-client-provider";
 import { usePrivy } from "@privy-io/react-auth";
-import { useChatStore } from "@/store";
-import { useAppConfig, useAppConfig as useAppConfigStore } from "@/store/config";
-import { useUserStore } from "@/store/user";
-import { AuthService } from "@/services/auth-service";
 import { useEncryption } from "@/providers/encryption-provider";
-import { useAttestationStore } from "@/store/attestation";
+import { useAuth } from "@/sdk/hooks";
+import { usePandaSDK } from "@/providers/sdk-provider";
 import { AllLangs, ALL_LANG_OPTIONS, changeLang, Lang } from "@/locales";
 import { safeLocalStorage } from "@/utils/utils";
 import Locale from "@/locales";
 import clsx from "clsx";
 import { useTheme } from "next-themes";
-
+import { useAppConfig, Theme as AppTheme } from "@/store/config";
 interface SettingsModalProps {
   open: boolean;
   currentPage: SettingsPage | null;
@@ -76,21 +74,19 @@ export default function SettingsModal({
     }
   };
 
-  const passwordExpirationMinutes =
-    useUserStore((state) => state.get<number>("passwordExpirationMinutes")) ?? 0;
-
   const handlePasswordExpirationChange = (event: SelectChangeEvent<string>) => {
     const value = parseInt(event.target.value, 10);
-    useUserStore.getState().set("passwordExpirationMinutes", value);
+    appConfig.setPasswordExpirationMinutes(value);
   };
 
   const router = useRouter();
-  const { authenticated, logout } = usePrivy();
-  const { clearSessions } = useChatStore();
-  const apiClient = useApiClient();
   const { theme, setTheme } = useTheme();
+  const appConfig = useAppConfig();
   const { lockApp } = useEncryption();
-  if (!authenticated) {
+  const { sdk } = usePandaSDK();
+  const { logout, isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) {
     return <div></div>;
   }
 
@@ -100,7 +96,7 @@ export default function SettingsModal({
   };
 
   const handleLogOut = async () => {
-    AuthService.handleLogout(logout, lockApp);
+    logout();
     setDeleteConfirmOpen(false);
     router.replace("/");
   };
@@ -110,8 +106,7 @@ export default function SettingsModal({
   };
 
   const confirmDeleteAllChats = () => {
-    apiClient.app.deleteConversations();
-    clearSessions();
+    sdk.storage.deleteAllChats();
     router.replace("/");
     console.log("All chats deleted after confirmation");
     setDeleteConfirmOpen(false);
@@ -200,7 +195,7 @@ export default function SettingsModal({
       label: Locale.SettingsModal.InactivityLockTimer,
       control: (
         <Select
-          value={passwordExpirationMinutes.toString()}
+          value={appConfig.passwordExpirationMinutes.toString()}
           onChange={handlePasswordExpirationChange}
           variant="outlined"
           size="small"

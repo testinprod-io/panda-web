@@ -2,25 +2,19 @@ import React, { useState, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
 import { ChatMessage } from "@/types";
-import { MultimodalContent } from "@/client/api";
 import { ActionButton } from "@/components/ui/action-button";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
 import { Box, CircularProgress } from "@mui/material";
 import styles from "./chat.module.scss";
 import { UUID } from "crypto";
-import { useApiClient } from "@/providers/api-client-provider";
 import { useEncryption } from "@/providers/encryption-provider";
 import { useLoadedFiles, LoadedFile } from "@/hooks/use-loaded-files";
 import { FilePreviewItem } from "../ui/file-preview-item";
 import { MessageActionsBar } from "../ui/message-actions-bar";
 import { ReasoningDisplay } from "../ui/reasoning-display";
 import { EditMessageForm } from "../ui/edit-message-form";
-import {
-  useAttestationManager,
-  VerificationStatus,
-  VerificationResult,
-} from "@/hooks/use-attestation-manager";
-import { AttestationResult } from "@/types/attestation";
+import { useAttestation } from "@/sdk/hooks";
+import { usePandaSDK } from "@/providers/sdk-provider";
 const Markdown = dynamic(
   async () => (await import("../ui/markdown")).Markdown,
   {
@@ -41,6 +35,38 @@ interface ChatMessageCellProps {
   renderMessagesLength: number;
   onResend: (messageId: UUID) => void;
   onEditSubmit: (messageId: UUID, newText: string) => void;
+}
+
+function messagePropsAreEqual(
+  prevProps: Readonly<ChatMessageCellProps>,
+  nextProps: Readonly<ChatMessageCellProps>,
+) {
+  if (
+    prevProps.isLoading !== nextProps.isLoading ||
+    prevProps.renderMessagesLength !== nextProps.renderMessagesLength
+  ) {
+    console.log(`[ChatMessageCell] Comparing messages: ${prevProps.isLoading} ${nextProps.isLoading} ${prevProps.renderMessagesLength} ${nextProps.renderMessagesLength}`);
+    return false;
+  }
+
+  const prevMsg = prevProps.message;
+  const nextMsg = nextProps.message;
+  console.log(`[ChatMessageCell] Comparing messages: ${prevMsg.id} ${nextMsg.id} ${prevMsg.visibleContent} ${nextMsg.visibleContent} ${prevMsg.streaming} ${nextMsg.streaming} ${prevMsg.isError} ${nextMsg.isError} ${prevMsg.isReasoning} ${nextMsg.isReasoning} ${prevMsg.visibleReasoning} ${nextMsg.visibleReasoning} ${prevMsg.syncState} ${nextMsg.syncState} ${prevMsg.files?.length} ${nextMsg.files?.length}`);
+  console.log(`[ChatMessageCell] Next message: ${nextMsg.visibleContent}`);
+  if (
+    prevMsg.id !== nextMsg.id ||
+    prevMsg.visibleContent !== nextMsg.visibleContent ||
+    prevMsg.streaming !== nextMsg.streaming ||
+    prevMsg.isError !== nextMsg.isError ||
+    prevMsg.isReasoning !== nextMsg.isReasoning ||
+    prevMsg.visibleReasoning !== nextMsg.visibleReasoning ||
+    prevMsg.syncState !== nextMsg.syncState ||
+    prevMsg.files?.length !== nextMsg.files?.length
+  ) {
+    return false;
+  }
+
+  return true;
 }
 
 export const ChatMessageCell = React.memo(function ChatMessageCell(
@@ -73,44 +99,40 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     challengeResponse,
   } = message;
   const { isLocked } = useEncryption();
-  const apiClient = useApiClient();
+  const { attestationResults, verificationResults } = useAttestation();
+  const { sdk } = usePandaSDK();
 
-  const loadedFiles = useLoadedFiles(files, sessionId, apiClient, isLocked);
-  const { verifyAttestation, verifyContract } = useAttestationManager();
-  
-  const [verificationResult, setVerificationResult] = useState<VerificationResult | undefined>(undefined);
-  // const [attestationStatus, setAttestationStatus] = useState<
-  //   VerificationStatus | undefined
-  // >(undefined);
-  // const [attestationResult, setAttestationResult] =
-  //   useState<AttestationResult>();
+  const loadedFiles = useLoadedFiles(files, sessionId, isLocked);
+
 
   useEffect(() => {
     const doVerify = async (key: string) => {
-      setVerificationResult({
-        status: VerificationStatus.Pending,
-        attestationResult: undefined,
-        publicKey: key,
-      });
+      // setVerificationResult({
+      //   status: VerificationStatus.Pending,
+      //   attestationResult: undefined,
+      //   publicKey: key,
+      // });
+      console.log("verifying attestation for publicKeyHex:", key);
       try {
-        const attestationResult = await verifyAttestation(key);
-        const verificationResult = await verifyContract(key, attestationResult);
-        setVerificationResult(verificationResult);
+        const attestationResult = await sdk.attestation.verifyAttestation(key);
+        const verificationResult = await sdk.attestation.verifyContract(key, attestationResult);
+        // setVerificationResult(verificationResult);
       } catch (error) {
         console.log("error verifying attestation for publicKeyHex:", key);
         console.log("error:", error);
-        setVerificationResult({
-          status: VerificationStatus.Failed,
-          attestationResult: undefined,
-          publicKey: key,
-        });
+        // setVerificationResult({
+        //   status: VerificationStatus.Failed,
+        //   attestationResult: undefined,
+        //   publicKey: key,
+        // });
       }
     };
 
+    console.log("challengeResponse:", challengeResponse);
     if (challengeResponse) {
       doVerify(challengeResponse.publicKey);
     }
-  }, [challengeResponse]);
+  }, [sdk, challengeResponse]);
 
   const handleResend = useCallback(
     () => onResend(messageId),
@@ -278,7 +300,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
             isChatLoading={isChatLoading}
             messageContent={content}
             reasoningText={reasoning}
-            verificationResult={verificationResult}
+            verificationResult={challengeResponse ? verificationResults[challengeResponse.publicKey] : undefined}
             challengeResponse={challengeResponse}
             onResend={handleResend}
           />

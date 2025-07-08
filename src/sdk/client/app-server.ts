@@ -14,22 +14,24 @@ import {
   SummaryCreateRequest,
   SummaryResponse,
   ApiError,
+  FileUploadResponseData,
   DeleteMessagesResponse,
   UploadFileResponse,
-  FileUploadResponseData,
-  CustomizedPromptsResponse,
   AttestationResponse,
-  InfoResponse
+  InfoResponse,
+  CustomizedPromptsResponse,
+  GetAccessTokenFn
 } from "./types";
 import { UUID } from "crypto";
 import { CustomizedPromptsData } from "@/types";
 
-export class ApiClient {
-  private baseUrl: string;
-  private getAuthToken: () => Promise<string | null>;
 
-  constructor(baseUrl: string, getAuthToken: () => Promise<string | null>) {
-    this.baseUrl = baseUrl.replace(/\/$/, ""); // Remove trailing slash if present
+export class AppServer {
+  private baseUrl: string;
+  private getAuthToken: GetAccessTokenFn;
+
+  constructor(baseUrl: string, getAuthToken: GetAccessTokenFn) {
+    this.baseUrl = baseUrl.replace(/\/$/, "");
     this.getAuthToken = getAuthToken;
   }
 
@@ -130,6 +132,13 @@ export class ApiClient {
     );
   }
 
+  async getConversation(conversationId: UUID): Promise<Conversation> {
+    return this.request<Conversation>(
+      "GET",
+      `/conversations/${conversationId}`,
+    );
+  }
+
   async createConversation(
     data: ConversationCreateRequest,
   ): Promise<Conversation> {
@@ -197,12 +206,6 @@ export class ApiClient {
     );
   }
 
-  // --- Models ---
-  // async getModels(): Promise<Model[]> {
-  //   return this.request<Model[]>('GET', '/models');
-  // }
-
-  // ---Encrypted ID---
   async getEncryptedId(): Promise<EncryptedIdResponse> {
     return this.request<EncryptedIdResponse>("GET", "/me/encrypted-id");
   }
@@ -293,7 +296,7 @@ export class ApiClient {
 
       this.getAuthToken()
         .then((token) => {
-          if (!token && this.requestRequiresAuth(true)) {
+          if (!token) {
             // Assuming a helper or direct check
             reject(
               new ApiError(
@@ -324,13 +327,6 @@ export class ApiClient {
       abort,
       xhr,
     }));
-  }
-
-  // Helper to check if auth is typically required.
-  // You might have a more sophisticated way to determine this.
-  private requestRequiresAuth(defaultValue: boolean = true): boolean {
-    // Simple check, adjust based on your app's logic
-    return defaultValue;
   }
 
   async deleteFile(conversationId: UUID, fileId: UUID): Promise<void> {

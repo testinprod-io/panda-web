@@ -4,20 +4,22 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import Locale from "@/locales";
-import { EncryptionService } from "@/services/encryption-service";
+// import { EncryptionService } from "@/services/encryption-service";
 import Image from "next/image";
+import { usePandaSDK } from "@/providers/sdk-provider";
 
 const TEXT_TO_ANIMATE = Locale.Onboarding.Encryption.PasswordCreatedDescription;
 
 export default function PasswordConfirmation() {
   const router = useRouter();
+  const { sdk } = usePandaSDK();
   const [displayedText, setDisplayedText] = useState("");
   const [isEncrypting, setIsEncrypting] = useState(false);
   const [encryptionProgress, setEncryptionProgress] = useState(0);
   const [isButtonHidden, setIsButtonHidden] = useState(true);
 
   const base64Text = useMemo(() => {
-    return EncryptionService.encrypt(TEXT_TO_ANIMATE);
+    return sdk.encryption.encrypt(TEXT_TO_ANIMATE);
   }, []);
 
   useEffect(() => {

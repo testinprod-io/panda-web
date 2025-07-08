@@ -18,9 +18,7 @@ import mermaid from "mermaid";
 import Locale from "@/locales";
 import React from "react";
 import { useDebouncedCallback } from "use-debounce";
-import { useChatStore } from "@/store";
 
-// import { useAppConfig } from "@/store/config";
 import clsx from "clsx";
 import { HTMLAttributes } from "react";
 

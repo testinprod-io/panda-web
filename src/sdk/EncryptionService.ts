@@ -1,30 +1,10 @@
 import CryptoJS from "crypto-js";
 
-let inMemoryKey: CryptoJS.lib.WordArray | null = null;
-let inMemoryIv: CryptoJS.lib.WordArray | null = null;
+export class EncryptionService {
+  private inMemoryKey: CryptoJS.lib.WordArray | null = null;
+  private inMemoryIv: CryptoJS.lib.WordArray | null = null;
 
-function isLikelyBase64(str: string): boolean {
-  if (!str) return false;
-
-  // Very basic regex: checks for Base64 characters and potential padding
-  const base64Regex =
-    /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
-  return base64Regex.test(str);
-}
-
-// Helper function to convert WordArray to Uint8Array
-function wordArrayToUint8Array(wordArray: CryptoJS.lib.WordArray): Uint8Array {
-  const len = wordArray.sigBytes;
-  const result = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    const byte = (wordArray.words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
-    result[i] = byte;
-  }
-  return result;
-}
-
-export const EncryptionService = {
-  generateKeyFromPassword(password: string): {
+  public generateKeyFromPassword(password: string): {
     key: CryptoJS.lib.WordArray;
     iv: CryptoJS.lib.WordArray;
   } {
@@ -53,13 +33,13 @@ export const EncryptionService = {
     const iv = CryptoJS.lib.WordArray.create(ivBytes);
 
     return { key, iv };
-  },
+  }
 
   /**
    * Derives and sets the encryption key and IV from a user password.
    * Stores them in memory.
    */
-  async setKeyFromPassword(password: string): Promise<void> {
+  public setKeyFromPassword(password: string) {
     if (!password) {
       console.error("[EncryptionService] Cannot set key from empty password.");
       this.clearKey();
@@ -69,48 +49,49 @@ export const EncryptionService = {
     try {
       const { key, iv } = this.generateKeyFromPassword(password);
 
-      inMemoryKey = key;
-      inMemoryIv = iv;
+      this.inMemoryKey = key;
+      this.inMemoryIv = iv;
 
       console.log("[EncryptionService] Key and IV derived and set in memory.");
     } catch (error) {
       console.error(
         "[EncryptionService] Failed to derive key from password:",
-        error,
+        error
       );
       this.clearKey();
     }
-  },
+  }
 
   /**
    * Clears the encryption key and IV from memory.
    */
-  clearKey(): void {
-    inMemoryKey = null;
-    inMemoryIv = null;
+  public clearKey() {
+    this.inMemoryKey = null;
+    this.inMemoryIv = null;
     console.log("[EncryptionService] Key and IV cleared from memory.");
-  },
+  }
 
   /**
    * Checks if the encryption key and IV are currently set in memory.
    */
-  isKeySet(): boolean {
-    return !!inMemoryKey && !!inMemoryIv;
-  },
+  public isKeySet(): boolean {
+    return !!this.inMemoryKey && !!this.inMemoryIv;
+  }
 
   /**
    * Encrypt the verification token to test decryption later
    */
-  encryptVerificationToken(userId: string): string {
+  public encryptVerificationToken(userId: string): string {
     if (!this.isKeySet()) {
       console.error(
-        "[EncryptionService] encryptVerificationToken called without key set.",
+        "[EncryptionService] encryptVerificationToken called without key set."
       );
-      return "";
+      throw new Error("Key not set");
     }
+
     try {
-      const encrypted = CryptoJS.AES.encrypt(userId, inMemoryKey!, {
-        iv: inMemoryIv!,
+      const encrypted = CryptoJS.AES.encrypt(userId, this.inMemoryKey!, {
+        iv: this.inMemoryIv!,
         mode: CryptoJS.mode.CBC,
         padding: CryptoJS.pad.Pkcs7,
       });
@@ -118,21 +99,21 @@ export const EncryptionService = {
     } catch (error) {
       console.error(
         "[EncryptionService] Failed to encrypt verification token:",
-        error,
+        error
       );
-      return "";
+      throw new Error("Failed to encrypt verification token");
     }
-  },
+  }
 
   /**
    * Verify that the provided password can correctly decrypt the verification token
    * This confirms the password is correct
    */
-  async verifyKey(
+  public verifyKey = (
     verificationToken: string,
     userId: string,
-    password: string,
-  ): Promise<boolean> {
+    password: string
+  ): boolean => {
     if (typeof window === "undefined") {
       console.error("[EncryptionService] verifyKey called outside of browser.");
       return false; // Cannot verify outside of browser
@@ -153,20 +134,17 @@ export const EncryptionService = {
       console.error("[EncryptionService] Verification failed:", error);
       return false;
     }
-  },
+  };
 
-  encrypt(text: string): string {
+  public encrypt(text: string): string {
     if (!this.isKeySet()) {
-      console.warn(
-        "[EncryptionService] encrypt called but no key set. Returning plain text.",
-      );
       return text;
     }
     if (!text) return text;
 
     try {
-      const encrypted = CryptoJS.AES.encrypt(text, inMemoryKey!, {
-        iv: inMemoryIv!,
+      const encrypted = CryptoJS.AES.encrypt(text, this.inMemoryKey!, {
+        iv: this.inMemoryIv!,
         mode: CryptoJS.mode.CBC,
         padding: CryptoJS.pad.Pkcs7,
       });
@@ -175,13 +153,10 @@ export const EncryptionService = {
       console.error("[EncryptionService] Encryption failed:", error);
       throw new Error("Encryption failed");
     }
-  },
+  }
 
-  decrypt(encryptedText: string): string {
+  public decrypt(encryptedText: string): string {
     if (!this.isKeySet()) {
-      console.info(
-        "[EncryptionService] decrypt called but no key set. Returning plain text.",
-      );
       return encryptedText;
     }
 
@@ -190,8 +165,8 @@ export const EncryptionService = {
     }
 
     try {
-      const decrypted = CryptoJS.AES.decrypt(encryptedText, inMemoryKey!, {
-        iv: inMemoryIv!,
+      const decrypted = CryptoJS.AES.decrypt(encryptedText, this.inMemoryKey!, {
+        iv: this.inMemoryIv!,
         mode: CryptoJS.mode.CBC,
         padding: CryptoJS.pad.Pkcs7,
       });
@@ -200,7 +175,7 @@ export const EncryptionService = {
 
       if (!decryptedText && encryptedText) {
         console.error(
-          "Decryption failed - incorrect password or corrupted data",
+          "Decryption failed - incorrect password or corrupted data"
         );
         return encryptedText;
       }
@@ -210,9 +185,9 @@ export const EncryptionService = {
       console.error("[EncryptionService] Decryption failed:", error);
       throw error;
     }
-  },
+  }
 
-  async encryptFile(file: File): Promise<File> {
+  public async encryptFile(file: File): Promise<File> {
     if (!this.isKeySet()) {
       throw new Error("Key not set");
     }
@@ -220,15 +195,15 @@ export const EncryptionService = {
     try {
       const data = await file.arrayBuffer();
 
-      const keyUint8Array = wordArrayToUint8Array(inMemoryKey!);
-      const ivUint8Array = wordArrayToUint8Array(inMemoryIv!);
+      const keyUint8Array = wordArrayToUint8Array(this.inMemoryKey!);
+      const ivUint8Array = wordArrayToUint8Array(this.inMemoryIv!);
 
       const cryptoKey = await crypto.subtle.importKey(
         "raw",
         keyUint8Array,
-        { name: "AES-GCM", length: inMemoryKey!.sigBytes * 8 },
+        { name: "AES-GCM", length: this.inMemoryKey!.sigBytes * 8 },
         false,
-        ["encrypt", "decrypt"],
+        ["encrypt", "decrypt"]
       );
 
       const encryptedData = await crypto.subtle.encrypt(
@@ -237,7 +212,7 @@ export const EncryptionService = {
           iv: ivUint8Array,
         },
         cryptoKey,
-        data,
+        data
       );
 
       const encryptedFile = new File([encryptedData], file.name, {
@@ -248,7 +223,7 @@ export const EncryptionService = {
       console.error("[EncryptionService] File encryption failed:", error);
       throw new Error("File encryption failed");
     }
-  },
+  }
 
   async decryptFile(file: File): Promise<File> {
     if (!this.isKeySet()) {
@@ -257,23 +232,43 @@ export const EncryptionService = {
 
     const data = new Uint8Array(await file.arrayBuffer());
 
-    const keyUint8Array = wordArrayToUint8Array(inMemoryKey!);
-    const ivUint8Array = wordArrayToUint8Array(inMemoryIv!);
+    const keyUint8Array = wordArrayToUint8Array(this.inMemoryKey!);
+    const ivUint8Array = wordArrayToUint8Array(this.inMemoryIv!);
 
     const cryptoKey = await crypto.subtle.importKey(
       "raw",
       keyUint8Array,
-      { name: "AES-GCM", length: inMemoryKey!.sigBytes * 8 },
+      { name: "AES-GCM", length: this.inMemoryKey!.sigBytes * 8 },
       false,
-      ["encrypt", "decrypt"],
+      ["encrypt", "decrypt"]
     );
 
     const decryptedBuffer = await crypto.subtle.decrypt(
       { name: "AES-GCM", iv: ivUint8Array },
       cryptoKey,
-      data,
+      data
     );
 
     return new File([decryptedBuffer], file.name, { type: file.type });
-  },
-};
+  }
+}
+
+function isLikelyBase64(str: string): boolean {
+  if (!str) return false;
+
+  // Very basic regex: checks for Base64 characters and potential padding
+  const base64Regex =
+    /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+  return base64Regex.test(str);
+}
+
+// Helper function to convert WordArray to Uint8Array
+function wordArrayToUint8Array(wordArray: CryptoJS.lib.WordArray): Uint8Array {
+  const len = wordArray.sigBytes;
+  const result = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    const byte = (wordArray.words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
+    result[i] = byte;
+  }
+  return result;
+}

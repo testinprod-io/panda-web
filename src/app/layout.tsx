@@ -19,10 +19,10 @@ const montserrat = Montserrat({
 export const metadata = {
   title: "Panda",
   description: "Your private AI assistant",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },
-    { media: "(prefers-color-scheme: dark)", color: "#292929" },
-  ],
+  // themeColor: [
+  //   { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },
+  //   { media: "(prefers-color-scheme: dark)", color: "#292929" },
+  // ],
 };
 
 export default function RootLayout({

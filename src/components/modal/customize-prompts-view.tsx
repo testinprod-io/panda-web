@@ -14,10 +14,11 @@ import {
 } from "@mui/material";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import styles from "./customize-prompts-view.module.scss";
-import { CustomizedPromptsResponse } from "@/client/types";
-import { useApiClient } from "@/providers/api-client-provider";
+import { CustomizedPromptsResponse } from "@/sdk/client/types";
+// import { useApiClient } from "@/providers/api-client-provider";
 import { CustomizedPromptsData, decryptSystemPrompt, encryptSystemPrompt } from "@/types";
-import { useAppConfig } from "@/store/config";
+import { usePandaSDK } from "@/providers/sdk-provider";
+import { useUser } from "@/sdk/hooks";
 import Locale from "@/locales";
 import PlusIcon from "@/public/icons/plus.svg";
 
@@ -62,7 +63,8 @@ export default function CustomizePromptsView({
   const [traits, setTraits] = useState<Trait[]>(
     initialTraits.map((t) => ({ ...t, selected: false })),
   );
-  const apiClient = useApiClient();
+  const { sdk } = usePandaSDK();
+  // const apiClient = useApiClient();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,14 +72,14 @@ export default function CustomizePromptsView({
   const [initialData, setInitialData] =
     useState<CustomizedPromptsData | null>(null);
   const [enableForNewChats, setEnableForNewChats] = useState(true);
-  const { customizedPrompts, setCustomizedPrompts } = useAppConfig();
+  const { updateCustomizedPrompts } = useUser();
 
   useEffect(() => {
     const fetchPrompts = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const data = decryptSystemPrompt(await apiClient.app.getCustomizedPrompts());
+        const data = decryptSystemPrompt(await sdk.storage.getCustomizedPrompts(), sdk.encryption.decrypt.bind(sdk.encryption));
         setName(data.personal_info?.name || "");
         setJob(data.personal_info?.job || "");
         const currentTraitsText = data.prompts?.traits || "";
@@ -122,13 +124,13 @@ export default function CustomizePromptsView({
     };
 
     fetchPrompts();
-  }, [apiClient]);
+  }, [sdk.storage]);
 
-  useEffect(() => {
-    if (initialData) {
-      setCustomizedPrompts(initialData);
-    }
-  }, [initialData]);
+  // useEffect(() => {
+  //   if (initialData) {
+  //     updateCustomizedPrompts(initialData);
+  //   }
+  // }, [initialData]);
 
   const handleTraitToggle = (traitId: string) => {
     const traitToToggle = traits.find((t) => t.id === traitId);
@@ -160,7 +162,6 @@ export default function CustomizePromptsView({
   };
 
   const isFormDirty = () => {
-    console.log("isFormDirty", name, job, traitsText, extraParams);
     if (!initialData)
       return (
         name.trim() !== "" ||
@@ -205,13 +206,14 @@ export default function CustomizePromptsView({
     payload.prompts!.extra_params = extraParams.trim();
     
     try {
-      const encryptedPayload = encryptSystemPrompt(payload);
+      const encryptedPayload = encryptSystemPrompt(payload, sdk.encryption.encrypt.bind(sdk.encryption));
       let responseData: CustomizedPromptsData;
       if (isUpdateMode) {
-        responseData = decryptSystemPrompt(await apiClient.app.updateCustomizedPrompts(encryptedPayload));
+        responseData = decryptSystemPrompt(await sdk.storage.updateCustomizedPrompts(encryptedPayload), sdk.encryption.decrypt.bind(sdk.encryption));
       } else {
-        responseData = decryptSystemPrompt(await apiClient.app.createCustomizedPrompts(encryptedPayload));
+        responseData = decryptSystemPrompt(await sdk.storage.createCustomizedPrompts(encryptedPayload), sdk.encryption.decrypt.bind(sdk.encryption));
       }
+      updateCustomizedPrompts(responseData);
       setName(responseData.personal_info?.name || "");
       setJob(responseData.personal_info?.job || "");
       const newTraitsText = responseData.prompts?.traits || "";

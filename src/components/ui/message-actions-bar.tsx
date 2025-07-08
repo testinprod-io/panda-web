@@ -2,12 +2,11 @@ import React from "react";
 import { Box, CircularProgress, Tooltip, Typography } from "@mui/material";
 import { copyToClipboard } from "@/utils/utils";
 import styles from "@/components/chat/chat.module.scss"; // Reusing chat styles
-import { AttestationResult } from "@/types/attestation";
-import {
+import { 
   VerificationResult,
   VerificationStatus,
-} from "@/hooks/use-attestation-manager";
-import { ChallengeResponse } from "@/client/platforms/panda-challenge";
+ } from "@/types/attestation";
+import { ChallengeResponse } from "@/sdk/client/panda-challenge";
 
 interface MessageActionsBarProps {
   isUser: boolean;

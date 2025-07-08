@@ -1,6 +1,5 @@
 import { UUID } from "crypto";
-import { useAppConfig } from "@/store/config";
-import { ModelConfig } from "@/types/constant";
+import { ServerModelInfo } from "@/sdk/client/types";
 
 export enum SessionSyncState {
   SYNCED = "synced",
@@ -41,7 +40,7 @@ export interface ChatSession {
   lastSummarizeIndex: number;
   clearContextIndex?: number;
 
-  modelConfig: ModelConfig;
+  modelConfig: ServerModelInfo;
   customizedPrompts?: string;
 
   syncState: SessionSyncState;
@@ -60,32 +59,14 @@ export interface SubmittedFile {
   size: number;
 }
 
+export type FileWithProgress = {
+  file: File;
+  progress: number;
+  id: string;
+};
+
 export interface SessionState {
   userInput: string;
   persistedAttachedFiles: SubmittedFile[];
   enableSearch: boolean;
-}
-
-/**
- * Creates an empty chat session with default values
- * @returns A new empty chat session
- */
-export function createNewSession(id: UUID): ChatSession {
-  const now = Date.now();
-  return {
-    id: id,
-    topic: "",
-    visibleTopic: "",
-    memoryPrompt: "",
-    stat: { tokenCount: 0, wordCount: 0, charCount: 0 },
-    lastUpdate: now,
-    lastSummarizeIndex: 0,
-    clearContextIndex: 0,
-    modelConfig: { ...useAppConfig.getState().modelConfig },
-    syncState: SessionSyncState.LOCAL,
-    messagesLoadState: MessagesLoadState.FULL,
-    serverMessagesCursor: undefined,
-    lastSummarizedMessageId: null,
-    isSummarizing: false,
-  };
 }

@@ -19,30 +19,28 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { getAccessToken, usePrivy } from "@privy-io/react-auth";
-import { useAuthStatus } from "@/hooks/use-auth-status";
-import { useAppConfig, useChatStore } from "@/store";
-import { DEFAULT_MODELS, ModelType, ApiPath } from "@/types/constant";
 import styles from "./chat-header.module.scss";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
-import { useAttestationManager, VerificationResult, VerificationStatus } from "@/hooks/use-attestation-manager";
-import { AttestationResult } from "@/types/attestation";
-import { AuthService } from "@/services/auth-service";
+import {   VerificationResult,
+  VerificationStatus, } from "@/types/attestation";
+import { useAttestation } from "@/sdk/hooks";
 import { useEncryption } from "@/providers/encryption-provider";
-import { useApiClient } from "@/providers/api-client-provider";
+import { usePandaSDK } from "@/providers/sdk-provider";
+import { UUID } from "crypto";
+import { ServerModelInfo } from "@/sdk/client/types";
+import { useConfig } from "@/sdk/hooks";
 import Locale from "@/locales";
 import HelpIcon from "@/public/icons/help.svg";
 import SettingsIcon from "@/public/icons/settings.svg";
 import LogoutIcon from "@/public/icons/logout.svg";
-
+import { useAuth } from "@/sdk/hooks";
 interface ChatHeaderProps {
-  currentChatId?: string; 
+  currentChatId?: string;
   isSidebarCollapsed: boolean;
   onToggleSidebar: () => void;
   isMobile?: boolean;
 }
-
-type EncryptionStatus = "SUCCESSFUL" | "FAILED" | "IN_PROGRESS";
 
 export default function ChatHeader({
   currentChatId,
@@ -50,33 +48,15 @@ export default function ChatHeader({
   onToggleSidebar,
   isMobile,
 }: ChatHeaderProps) {
-  const { login, logout, user, getAccessToken } = usePrivy();
-  const { isReady, isAuthenticated } = useAuthStatus();
-  const {
-    models: availableModels,
-    setApiProvider,
-    setModels,
-  } = useAppConfig();
-  const { verificationResults } = useAttestationManager();
-  const { lockApp } = useEncryption();
-  const apiClient = useApiClient();
-  const activeSessionModelName = useChatStore(
-    (state) => state.currentSession()?.modelConfig?.name,
-  );
-  const activeSessionModelDisplayName = useChatStore(
-    (state) => state.currentSession()?.modelConfig?.displayName,
-  );
-
-  const globalModelIdentifier = useAppConfig(
-    (state) => state.modelConfig.model,
-  );
-  const globalModelName = useAppConfig((state) => state.modelConfig.name);
-  const globalModelDisplayName = useAppConfig(
-    (state) => state.modelConfig.displayName,
-  );
+  const { login, user, getAccessToken } = usePrivy();
+  const pandaConfig = useConfig();
+  const { attestationResults, verificationResults } = useAttestation();
+  const { logout, lockApp, isAuthenticated } = useAuth();
+  const { sdk, isReady } = usePandaSDK();
+  const [currentChatModel, setCurrentChatModel] = useState<ServerModelInfo | undefined>();
 
   const [profileAnchorEl, setProfileAnchorEl] = useState<null | HTMLElement>(
-    null,
+    null
   );
   const profileMenuOpen = Boolean(profileAnchorEl);
 
@@ -84,28 +64,21 @@ export default function ChatHeader({
   const modelMenuOpen = Boolean(modelAnchorEl);
 
   const [isLoginPopupOpen, setIsLoginPopupOpen] = useState(false);
-  const [modelsFetched, setModelsFetched] = useState(false);
 
   useEffect(() => {
-    const fetchModels = async () => {
-    if (isAuthenticated && !modelsFetched) {
-      try {
-        const info = await apiClient.app.getInfo();
-        setModels(info.models);
-        setModelsFetched(true);
-        if (!currentChatId && info.models.length > 0) {
-          setApiProvider(info.models[0].name);
+    if (currentChatId) {
+      sdk.chat.getChat(currentChatId as UUID).then(chat => {
+        if (chat?.defaultModelName) {
+            const model = pandaConfig.models.find(m => m.model_name === chat.defaultModelName);
+            setCurrentChatModel(model);
+        } else {
+          setCurrentChatModel(pandaConfig.defaultModel);
         }
-      } catch (error) {
-        console.error("Failed to fetch models:", error);
-      }
+      });
+    } else {
+      setCurrentChatModel(pandaConfig.defaultModel);
     }
-  };
-  fetchModels();
-  }, [isAuthenticated, modelsFetched, setModels]);
-
-  // const [encryptionStatus, setEncryptionStatus] =
-  //   useState<EncryptionStatus>("SUCCESSFUL");
+  }, [currentChatId, sdk.chat, pandaConfig.defaultModel, pandaConfig.models]);
 
   const handleProfileClick = (event: React.MouseEvent<HTMLElement>) => {
     setProfileAnchorEl(event.currentTarget);
@@ -123,15 +96,23 @@ export default function ChatHeader({
   };
 
   const handleLogout = () => {
-    AuthService.handleLogout(logout, lockApp);
+    logout();
   };
 
-  const handleModelSelect = (modelName: ModelType) => {
-    const selectedModelDetails = availableModels.find(
-      (m) => m.name === modelName,
+  const handleModelSelect = (modelName: string) => {
+    const selectedModelDetails = pandaConfig.models.find(
+      (m) => m.model_name === modelName
     );
+
     if (selectedModelDetails) {
-      setApiProvider(modelName);
+      if (currentChatId) {
+        sdk.chat.getChat(currentChatId as UUID).then((chat) => {
+          chat?.setDefaultModelForChat(selectedModelDetails.model_name);
+          setCurrentChatModel(selectedModelDetails);
+        });
+      } else {
+        sdk.config.setDefaultModel(modelName);
+      }
     }
     handleModelClose();
   };
@@ -157,32 +138,18 @@ export default function ChatHeader({
   };
 
   const router = useRouter();
-  const store = useChatStore();
 
   const handleNewChat = () => {
-    store.setCurrentSessionIndex(-1);
+    sdk.chat.clearActiveChat();
     router.push(`/`);
   };
 
-  const displayModelName =
-    activeSessionModelDisplayName ||
-    activeSessionModelName ||
-    globalModelDisplayName ||
-    globalModelName ||
-    (availableModels.length > 0 && availableModels[0].config.displayName);
+  const displayModelName = currentChatModel?.name ?? pandaConfig.defaultModel?.name ?? "Select Model";
 
   const currentModelNameForSelectionLogic =
-    activeSessionModelName || globalModelIdentifier;
+    currentChatModel?.model_name ?? pandaConfig.defaultModel?.model_name;
 
-  const modelsToDisplay = availableModels;
-
-  // const cycleEncryptionStatus = () => {
-  //   setEncryptionStatus((prevStatus) => {
-  //     if (prevStatus === "SUCCESSFUL") return "IN_PROGRESS";
-  //     if (prevStatus === "IN_PROGRESS") return "FAILED";
-  //     return "SUCCESSFUL";
-  //   });
-  // };
+  const modelsToDisplay = pandaConfig.models;
 
   const getEncryptionStatusInfo = useCallback(() => {
     const firstStatus = Object.values(verificationResults)[0];
@@ -222,21 +189,20 @@ export default function ChatHeader({
   const currentStatusInfo = getEncryptionStatusInfo();
 
   const handleOpenSettings = () => {
-    // Attempt to blur the currently focused element (likely the clicked menu item)
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
-    handleProfileClose(); // Close the profile menu first
+    handleProfileClose();
 
     requestAnimationFrame(() => {
-      window.location.hash = "settings"; // Directly set the hash
+      window.location.hash = "settings";
     });
   };
 
   return (
     <Box className={styles.chatHeader}>
       <Box className={styles.headerLeft}>
-        {isReady && isAuthenticated && isSidebarCollapsed && isMobile && (
+        {isAuthenticated && isSidebarCollapsed && isMobile && (
           <>
             <Tooltip title="Reveal Sidebar">
               <IconButton
@@ -265,7 +231,7 @@ export default function ChatHeader({
           </>
         )}
 
-        {isReady && isAuthenticated && (
+        {isAuthenticated && (
           <Box className={styles.modelSelectorContainer}>
             <Button
               id="model-selector-button"
@@ -274,7 +240,18 @@ export default function ChatHeader({
               aria-expanded={modelMenuOpen ? "true" : undefined}
               onClick={handleModelClick}
               variant="text"
-              endIcon={<img src="/icons/chevron-down.svg" alt="Expand Sidebar" style={{width: "12px", height: "7px", filter: "invert(52%) sepia(0%) saturate(23%) hue-rotate(153deg) brightness(88%) contrast(85%)"}}/>}
+              endIcon={
+                <img
+                  src="/icons/chevron-down.svg"
+                  alt="Expand Sidebar"
+                  style={{
+                    width: "12px",
+                    height: "7px",
+                    filter:
+                      "invert(52%) sepia(0%) saturate(23%) hue-rotate(153deg) brightness(88%) contrast(85%)",
+                  }}
+                />
+              }
               className={styles.modelSelectorButton}
             >
               {displayModelName}
@@ -299,33 +276,33 @@ export default function ChatHeader({
             >
               {modelsToDisplay.map((model) => {
                 const isSelected =
-                  model.name === currentModelNameForSelectionLogic;
+                  model.model_name === currentModelNameForSelectionLogic;
                 return (
                   <MenuItem
-                    key={`${model.name}`}
+                    key={`${model.model_name}`}
                     onClick={() => {
-                      handleModelSelect(model.name as ModelType);
+                      handleModelSelect(model.model_name);
                     }}
                     className={clsx(
                       styles.modelMenuItem,
-                      isSelected && styles.selected,
+                      isSelected && styles.selected
                     )}
                   >
                     <ListItemText
-                      primary={model.displayName || model.name}
+                      primary={model.name}
                       secondary={model.description}
                       className={styles.modelMenuItemText}
                       classes={{ secondary: styles.modelMenuItemDescription }}
                     />
                     <Box className={styles.iconContainer}>
-                      {isSelected &&  (
+                      {isSelected && (
                         <img src="/icons/check.svg" alt="Selected" />
                       )}
                     </Box>
                   </MenuItem>
                 );
               })}
-              {availableModels.length === 0 && (
+              {pandaConfig.models.length === 0 && (
                 <MenuItem disabled>
                   <ListItemText primary="Loading models..." />
                 </MenuItem>
@@ -337,48 +314,53 @@ export default function ChatHeader({
 
       <Box className={styles.headerRight}>
         {isAuthenticated && currentChatId && (
-              <Tooltip title={<CertificateInfoPopup publicKey={currentStatusInfo.publicKey} verificationResult={currentStatusInfo} />} componentsProps={{
-                tooltip: {
-                  sx: {
-                    backgroundColor: "white", 
-                    borderRadius: "8px",
-                    border: "1px solid #e0e0e0",
-                    maxWidth: "600px",
-                  }
-                }
-              }}>
-                <Box  
-                  // onClick={cycleEncryptionStatus}
-                  className={clsx(
-                    styles.encryptionStatus,
-                    currentStatusInfo.statusClass,
-                  )}
-                  sx={{ cursor: "pointer" }}
-                >
-                  <Box
-                    sx={{
-                      width: 20,
-                      height: 20,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <img
-                      src={currentStatusInfo.icon}
-                      alt="status icon"
-                      className={styles.encryptionStatusIconImg}
-                    />
-                  </Box>
-                  <Typography className={styles.encryptionStatusText}>
-                    {currentStatusInfo.text}
-                  </Typography>
-                </Box>
-              </Tooltip>
-            )}
-        {!isReady ? (
-          <Box className={styles.loadingPlaceholder} />
-        ) : isAuthenticated ? (
+          <Tooltip
+            title={
+              <CertificateInfoPopup
+                publicKey={currentStatusInfo.publicKey}
+                verificationResult={currentStatusInfo}
+              />
+            }
+            componentsProps={{
+              tooltip: {
+                sx: {
+                  backgroundColor: "white",
+                  borderRadius: "8px",
+                  border: "1px solid #e0e0e0",
+                  maxWidth: "600px",
+                },
+              },
+            }}
+          >
+            <Box
+              className={clsx(
+                styles.encryptionStatus,
+                currentStatusInfo.statusClass
+              )}
+              sx={{ cursor: "pointer" }}
+            >
+              <Box
+                sx={{
+                  width: 20,
+                  height: 20,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <img
+                  src={currentStatusInfo.icon}
+                  alt="status icon"
+                  className={styles.encryptionStatusIconImg}
+                />
+              </Box>
+              <Typography className={styles.encryptionStatusText}>
+                {currentStatusInfo.text}
+              </Typography>
+            </Box>
+          </Tooltip>
+        )}
+        {isAuthenticated ? (
           <>
             <Tooltip title={user?.email?.address || "Profile"}>
               <Avatar
@@ -435,7 +417,10 @@ export default function ChatHeader({
               <MenuItem
                 onClick={() => {
                   handleProfileClose();
-                  window.open("https://testinprod.notion.site/Help-FAQs-2098fc57f546805382f0da77fcdf07d5", "_blank");
+                  window.open(
+                    "https://testinprod.notion.site/Help-FAQs-2098fc57f546805382f0da77fcdf07d5",
+                    "_blank"
+                  );
                 }}
                 className={styles.profileMenuItem}
               >
@@ -496,12 +481,6 @@ export default function ChatHeader({
           </>
         )}
       </Box>
-      {/* <LoginSignupPopup
-        open={isLoginPopupOpen}
-        onClose={handleCloseLoginPopup}
-        onLogin={handlePopupLogin}
-        onSignup={handlePopupSignup}
-      /> */}
     </Box>
   );
 }
@@ -516,25 +495,18 @@ const CertificateInfoPopup: React.FC<{
         <strong>Panda's privacy at a glance</strong>
       </Typography>
       <Typography variant="body2" gutterBottom sx={{ color: "black" }}>
-        - <strong>End-to-end encrypted</strong>: Your message is encrypted in-browser and decrypted only inside Panda's TEE — visible to no one, including us.
+        - <strong>End-to-end encrypted</strong>: Your message is encrypted
+        in-browser and decrypted only inside Panda's TEE — visible to no one,
+        including us.
       </Typography>
       <Typography variant="body2" gutterBottom sx={{ color: "black" }}>
-        - <strong>Verifiable</strong>: TEE attestation prove the running code matches the build we published on-chain.
+        - <strong>Verifiable</strong>: TEE attestation prove the running code
+        matches the build we published on-chain.
       </Typography>
       <Typography variant="body2" gutterBottom sx={{ color: "black" }}>
-        - <strong>Opt-in cloud backups</strong>: Backups are re-encrypted with your password before they ever reach the cloud.
+        - <strong>Opt-in cloud backups</strong>: Backups are re-encrypted with
+        your password before they ever reach the cloud.
       </Typography>
-      {/* <Typography variant="subtitle2" gutterBottom sx={{ color: "black" }}>
-        🔒 Verified secure execution <a href="https://testinprod.notion.site/Panda-Technical-FAQ-2018fc57f5468023bac3c5380179a272" target="_blank" rel="noopener noreferrer" style={{ color: "black" }}>Learn more</a>
-      </Typography>
-      <Typography
-        variant="body2"
-        key={"AppID"}
-        sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
-      >
-        <strong>Currently connected certificate:</strong> <a href={`https://etherscan.io/`} target="_blank" rel="noopener noreferrer" style={{ color: "black" }}>{publicKey}</a>
-      </Typography> */}
     </Box>
   );
 };
-

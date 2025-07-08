@@ -6,7 +6,6 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
 import { useEncryption } from "@/providers/encryption-provider";
 import { useSnackbar } from "@/providers/snackbar-provider";
-import { AuthService } from "@/services/auth-service";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import Locale from "@/locales";
 import Image from "next/image";

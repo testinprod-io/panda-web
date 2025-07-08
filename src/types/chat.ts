@@ -1,10 +1,8 @@
-import { ServiceProvider, ModelType } from "./constant";
-import { nanoid } from "nanoid";
-import { MultimodalContent, RequestMessage } from "@/client/api";
+import { ServiceProvider } from "./constant";
+import { MultimodalContent, RequestMessage } from "@/sdk/client/";
 import { UUID } from "crypto";
-import { FileInfo } from "@/client/types";
-import { EncryptionService } from "../services/encryption-service";
-import { ChallengeResponse } from "@/client/platforms/panda-challenge";
+import { FileInfo } from "@/sdk/client/types";
+import { ChallengeResponse } from "@/sdk/client/panda-challenge";
 
 export enum Role {
   USER = "user",
@@ -72,12 +70,13 @@ export function generateSystemPrompt(data: CustomizedPromptsData): string {
 
 export function encryptSystemPrompt(
   prompt: CustomizedPromptsData,
+  encryptFunction: (text: string) => string,
 ): CustomizedPromptsData {
   const encryptedPersonalInfo: { [key: string]: string } = {};
   if (prompt.personal_info) {
     for (const key in prompt.personal_info) {
       if (Object.prototype.hasOwnProperty.call(prompt.personal_info, key)) {
-        encryptedPersonalInfo[key] = EncryptionService.encrypt(
+        encryptedPersonalInfo[key] = encryptFunction(
           prompt.personal_info[key],
         );
       }
@@ -88,7 +87,7 @@ export function encryptSystemPrompt(
   if (prompt.prompts) {
     for (const key in prompt.prompts) {
       if (Object.prototype.hasOwnProperty.call(prompt.prompts, key)) {
-        encryptedPrompts[key] = EncryptionService.encrypt(prompt.prompts[key]);
+        encryptedPrompts[key] = encryptFunction(prompt.prompts[key]);
       }
     }
   }
@@ -106,12 +105,13 @@ export function encryptSystemPrompt(
 
 export function decryptSystemPrompt(
   prompt: CustomizedPromptsData,
+  decryptFunction: (text: string) => string,
 ): CustomizedPromptsData {
   const decryptedPersonalInfo: { [key: string]: string } = {};
   if (prompt.personal_info) {
     for (const key in prompt.personal_info) {
       if (Object.prototype.hasOwnProperty.call(prompt.personal_info, key)) {
-        decryptedPersonalInfo[key] = EncryptionService.decrypt(
+        decryptedPersonalInfo[key] = decryptFunction(
           prompt.personal_info[key],
         );
       }
@@ -122,7 +122,7 @@ export function decryptSystemPrompt(
   if (prompt.prompts) {
     for (const key in prompt.prompts) {
       if (Object.prototype.hasOwnProperty.call(prompt.prompts, key)) {
-        decryptedPrompts[key] = EncryptionService.decrypt(prompt.prompts[key]);
+        decryptedPrompts[key] = decryptFunction(prompt.prompts[key]);
       }
     }
   }
@@ -154,7 +154,7 @@ export type ChatMessage = Omit<RequestMessage, "content"> & {
   isError: boolean;
   errorMessage?: string;
   id: UUID;
-  model?: ModelType;
+  model?: string;
   syncState: MessageSyncState;
   reasoning?: string; // Add reasoning field
   visibleReasoning?: string;
@@ -163,46 +163,6 @@ export type ChatMessage = Omit<RequestMessage, "content"> & {
   useSearch: boolean; // To track if the message is using search
   challengeResponse?: ChallengeResponse;
 };
-
-/**
- * Represents the structure stored in IndexedDB.
- * Content is always stored encrypted.
- */
-export type EncryptedMessage = {
-  id: string;
-  role: Role;
-  /** Encrypted representation of string | MultimodalContent[] */
-  content: string;
-  date: Date;
-  model?: ModelType;
-  syncState?: MessageSyncState;
-  // Fields needed for UI rendering/state, but not encrypted
-  streaming?: boolean; // Transient state, not persisted encrypted
-  isError?: boolean; // Transient state, not persisted encrypted
-};
-
-/**
- * Creates a new chat message in its ENCRYPTED form suitable for storing.
- * Requires the caller to provide already encrypted content.
- * @param override - Partial message properties including encryptedContent
- * @returns A new EncryptedMessage
- */
-export function createEncryptedMessage(
-  override: Partial<EncryptedMessage> & { content: string },
-): EncryptedMessage {
-  const date = override.date instanceof Date ? override.date : new Date();
-
-  return {
-    id: override.id ?? nanoid(),
-    role: override.role ?? Role.USER,
-    date: date,
-    syncState: override.syncState ?? MessageSyncState.PENDING_CREATE,
-    content: override.content,
-    model: override.model,
-    streaming: override.streaming ?? false,
-    isError: override.isError ?? false,
-  };
-}
 
 /**
  * Creates a new chat message with the given overrides
@@ -220,6 +180,7 @@ export function createMessage(override: Partial<ChatMessage>): ChatMessage {
     isError: false,
     syncState: MessageSyncState.PENDING_CREATE,
     isReasoning: false,
+    model: override.model ?? "",
     content: override.content ?? "",
     visibleContent: override.content ?? "",
     reasoning: override.reasoning ?? "",

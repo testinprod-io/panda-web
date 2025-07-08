@@ -12,7 +12,6 @@ import {
 import { useState } from "react";
 import { ChatList } from "@/components/chat-list/chat-list";
 import SidebarHeader from "@/components/sidebar/sidebar-header";
-import { useAuthStatus } from "@/hooks/use-auth-status";
 import styles from "./sidebar.module.scss";
 import clsx from "clsx";
 import { SxProps, Theme } from "@mui/material/styles";
@@ -22,15 +21,12 @@ import { useRouter } from "next/navigation";
 import { useEncryption } from "@/providers/encryption-provider";
 import { usePrivy } from "@privy-io/react-auth";
 import { Tooltip } from "@mui/material";
-import { useChatStore } from "@/store/chat";
-import { useAppConfig } from "@/store/config";
-import { AuthService } from "@/services/auth-service";
 import Locale from "@/locales";
 import MenuIcon from "@/public/icons/menu.svg";
 import NewChatIcon from "@/public/icons/new-chat.svg";
 import SettingsIcon from "@/public/icons/settings.svg";
 import LogoutIcon from "@/public/icons/logout.svg";
-
+import { useAuth } from "@/sdk/hooks";
 interface SidebarProps {
   isSidebarCollapsed: boolean;
   onToggleSidebar: () => void;
@@ -42,16 +38,13 @@ export default function Sidebar({
   onToggleSidebar,
   sx,
 }: SidebarProps) {
-  const { isReady, isAuthenticated } = useAuthStatus();
   const router = useRouter();
   const { lockApp } = useEncryption();
-  const { logout } = usePrivy();
+  const { logout, isAuthenticated } = useAuth();
   const { authenticated } = usePrivy();
   const [showConfirm, setShowConfirm] = useState(false);
-  const { sessions, currentSessionIndex, removeSession } = useChatStore();
-  const { models, setApiProvider } = useAppConfig();
 
-  if (!isReady || !isAuthenticated) {
+  if (!isAuthenticated) {
     return null;
   }
 
@@ -68,7 +61,7 @@ export default function Sidebar({
   };
 
   const handleLogout = () => {
-    AuthService.handleLogout(logout, lockApp);
+    logout();
   };
 
   const handleLockServiceClick = () => {

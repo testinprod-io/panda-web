@@ -16,18 +16,19 @@ import Sidebar from "@/components/sidebar/sidebar";
 import ChatHeader from "@/components/chat/chat-header";
 
 import { ChatInputPanel } from "@/components/chat/chat-input-panel";
-import { useChatStore, useAppConfig } from "@/store";
 import { UNFINISHED_INPUT } from "@/types/constant";
 import { SessionState } from "@/types/session";
 import { safeLocalStorage } from "@/utils/utils";
-import { useChatActions } from "@/hooks/use-chat-actions";
+// import { useChatActions } from "@/hooks/use-chat-actions";
 import type { UUID } from "crypto"; // Keep as type import
 import Locale from "@/locales";
 import { useSnackbar } from "@/providers/snackbar-provider";
 import styles from "@/components/chat/chat.module.scss";
 import sidebarStyles from "@/components/sidebar/sidebar.module.scss";
 import { usePrivy } from "@privy-io/react-auth";
-
+import { usePandaSDK } from "@/providers/sdk-provider";
+import { Chat } from "@/sdk/Chat";
+import { useConfig } from "@/sdk/hooks";
 const localStorage = safeLocalStorage();
 
 function usePrevious<T>(value: T): T | undefined {
@@ -50,30 +51,21 @@ export default function ChatLayoutContent({
   );
   const params = useParams();
   const router = useRouter();
-  const appConfig = useAppConfig();
+  const pandaConfig = useConfig();
   const prevIsMobile = usePrevious(isMobile);
-
+  const { sdk } = usePandaSDK();
   const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
+  const [isSDKReady, setIsSDKReady] = useState(sdk.ready);
 
-  const { newSession } = useChatActions();
+  useEffect(() => {
+    const unsubscribe = sdk.bus.on('sdk.ready', (isReady) => {
+      setIsSDKReady(isReady);
+    });
+    return unsubscribe;
+  }, [sdk.bus]);
+
+  // const { newSession } = useChatActions();
   const { showSnackbar } = useSnackbar();
-
-  const onSendMessageHandlerFromStore = useChatStore(
-    (state) => state.onSendMessageHandler,
-  );
-  const hitBottomFromStore = useChatStore((state) => state.hitBottom);
-  const scrollToBottomHandlerFromStore = useChatStore(
-    (state) => state.scrollToBottomHandler,
-  );
-  const showPromptModalHandlerFromStore = useChatStore(
-    (state) => state.showPromptModalHandler,
-  );
-  const showShortcutKeyModalHandlerFromStore = useChatStore(
-    (state) => state.showShortcutKeyModalHandler,
-  );
-  const isChatComponentBusyFromStore = useChatStore(
-    (state) => state.isChatComponentBusy,
-  );
 
   const [internalIsSubmitting, setInternalIsSubmitting] = useState(false);
   const [contentOpacity, setContentOpacity] = useState(1);
@@ -95,14 +87,8 @@ export default function ChatLayoutContent({
   }, [isMobile]);
 
   const modelConfig = React.useMemo(() => {
-    if (currentChatId) {
-      const session = useChatStore
-        .getState()
-        .sessions.find((s) => s.id === currentChatId);
-      return session?.modelConfig || appConfig.modelConfig;
-    }
-    return appConfig.modelConfig;
-  }, [currentChatId, appConfig.modelConfig, useChatStore]);
+    return pandaConfig.defaultModel;
+  }, [pandaConfig.defaultModel]);
 
   const handleLayoutSubmit = useCallback(
     async (sessionId: UUID | undefined, sessionState: SessionState) => {
@@ -112,23 +98,15 @@ export default function ChatLayoutContent({
       )
         return;
       setInternalIsSubmitting(true);
-      console.log(
-        `[handleLayoutSubmit] sessionId: ${sessionId} currentChatId: ${currentChatId} onSendMessageHandlerFromStore: ${onSendMessageHandlerFromStore}`,
-      );
       try {
-        if (currentChatId && onSendMessageHandlerFromStore) {
-          console.log(`[handleLayoutSubmit] currentChatId: ${currentChatId}`);
-          await onSendMessageHandlerFromStore(sessionState);
+        let chat: Chat | undefined;
+        if (currentChatId && sdk.chat.activeChat?.id === currentChatId) {
+          chat = await sdk.chat.getChat(currentChatId);
           localStorage.removeItem(UNFINISHED_INPUT(currentChatId));
         } else if (sessionId) {
-          const session = useChatStore
-            .getState()
-            .sessions.find((s) => s.id === sessionId);
-          if (session) {
-            console.log(`[handleLayoutSubmit] sessionId: ${sessionId}`);
-            const newUserMessage = { sessionState };
-            localStorage.setItem(session.id, JSON.stringify(newUserMessage));
-            localStorage.removeItem(UNFINISHED_INPUT(session.id));
+          chat = await sdk.chat.getChat(sessionId);
+          if (chat?.id) {
+            localStorage.removeItem(UNFINISHED_INPUT(sessionId));
             setContentOpacity(0);
             setTimeout(() => {
               if (typeof window !== "undefined") {
@@ -137,33 +115,45 @@ export default function ChatLayoutContent({
                   "true",
                 );
               }
-              router.replace(`/chat/${session.id}`);
+              router.replace(`/chat/${chat!.id}`);
             }, 400);
-          } else {
-            showSnackbar("Failed to start new chat", "error");
           }
         } else {
-          const createdSession = await newSession(
+          if (!modelConfig) {
+            showSnackbar("Models are not loaded yet.", "error");
+            setInternalIsSubmitting(false);
+            return;
+          }
+          chat = await sdk.chat.createNewChat(
+            Locale.Store.DefaultTopic,
             modelConfig,
-            appConfig.customizedPrompts,
+            pandaConfig.customizedPrompts,
           );
-          if (createdSession) {
-            const newUserMessage = { sessionState };
-            localStorage.setItem(
-              createdSession.id,
-              JSON.stringify(newUserMessage),
-            );
-            localStorage.removeItem(UNFINISHED_INPUT(createdSession.id));
+          
+          if (chat) {
+            localStorage.removeItem(UNFINISHED_INPUT(chat.id));
 
             setIsNavigatingAway(true);
             setContentOpacity(0);
 
             setTimeout(() => {
-              router.replace(`/chat/${createdSession.id}`);
+              router.replace(`/chat/${chat!.id}`);
             }, 400);
           } else {
             showSnackbar("Failed to start new chat", "error");
           }
+        }
+        if (chat) {
+          chat.sendMessage(sessionState.userInput, sessionState.persistedAttachedFiles, {
+            enableSearch: sessionState.enableSearch,
+            onSuccess: () => {
+              console.log(`[handleLayoutSubmit] onSuccess: ${chat}`);
+            },
+            onFailure: (error: Error) => {
+              console.error("[ChatComponent] Failed user input", error);
+              showSnackbar(Locale.Store.Error, "error");
+            },
+          });
         }
       } catch (error) {
         showSnackbar(Locale.Store.Error, "error");
@@ -173,9 +163,8 @@ export default function ChatLayoutContent({
     },
     [
       currentChatId,
-      onSendMessageHandlerFromStore,
-      newSession,
       router,
+      pandaConfig,
       showSnackbar,
     ],
   );
@@ -192,7 +181,7 @@ export default function ChatLayoutContent({
     effectiveIsSidebarCollapsed = true;
   }
 
-  if (!privyReady) {
+  if (!privyReady || !sdk.initialized || (privyAuthenticated && !isSDKReady)) {
     return (
       <Box
         sx={{
@@ -387,22 +376,9 @@ export default function ChatLayoutContent({
           <ChatInputPanel
             sessionId={currentChatId}
             modelConfig={modelConfig}
-            customizedPrompts={appConfig.customizedPrompts}
+            customizedPrompts={pandaConfig.customizedPrompts}
             isLoading={internalIsSubmitting}
             onSubmit={handleLayoutSubmit}
-            scrollToBottom={
-              scrollToBottomHandlerFromStore ||
-              (() => console.warn("ScrollToBottom handler not set in store"))
-            }
-            setShowPromptModal={
-              showPromptModalHandlerFromStore ||
-              (() => console.warn("ShowPromptModal handler not set in store"))
-            }
-            setShowShortcutKeyModal={
-              showShortcutKeyModalHandlerFromStore ||
-              (() =>
-                console.warn("ShowShortcutKeyModal handler not set in store"))
-            }
           />
         <Typography
           hidden={isMobile}

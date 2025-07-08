@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useApiClient } from "@/providers/api-client-provider";
-import { useAppConfig } from "@/store/config";
+// import { useApiClient } from "@/providers/api-client-provider";
 import {
   CustomizedPromptsData,
   encryptSystemPrompt,
@@ -14,8 +13,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import TextInputStep from "@/components/onboarding/TextInputStep";
 import TraitsStepView from "@/components/onboarding/TraitsStepView";
 import StreamingText from "@/components/onboarding/StreamingText";
+import { usePandaSDK } from "@/providers/sdk-provider";
 import Locale from "@/locales";
 import Image from "next/image";
+import { useUser } from "@/sdk/hooks";
 
 const STEPS = ["intro", "name", "role", "traits", "knowledge"];
 
@@ -55,8 +56,9 @@ export default function OnboardingView() {
     extra_params: "",
   });
   const [isSaving, setIsSaving] = useState(false);
-  const apiClient = useApiClient();
-  const { setCustomizedPrompts } = useAppConfig();
+  const { sdk } = usePandaSDK();
+  // const apiClient = useApiClient();
+  const { updateCustomizedPrompts } = useUser();
   const router = useRouter();
 
   const handleNext = (value: string) => {
@@ -98,11 +100,15 @@ export default function OnboardingView() {
     if (Object.keys(payload.prompts!).length === 0) delete payload.prompts;
 
     try {
-      const encryptedPayload = encryptSystemPrompt(payload);
-      const responseData = decryptSystemPrompt(
-        await apiClient.app.createCustomizedPrompts(encryptedPayload)
+      const encryptedPayload = encryptSystemPrompt(
+        payload,
+        sdk.encryption.encrypt.bind(sdk.encryption),
       );
-      setCustomizedPrompts(responseData);
+      const responseData = decryptSystemPrompt(
+        await sdk.storage.createCustomizedPrompts(encryptedPayload),
+        sdk.encryption.decrypt.bind(sdk.encryption),
+      );
+      updateCustomizedPrompts(responseData);
       router.push("/");
     } catch (error) {
       console.error("Failed to save onboarding data:", error);
@@ -110,7 +116,7 @@ export default function OnboardingView() {
       // Optional: Show an error message to the user
       router.push("/"); // For now, just navigate away
     }
-  }, [apiClient.app, data, router, setCustomizedPrompts]);
+  }, [sdk.storage, data, router, updateCustomizedPrompts, sdk.encryption]);
 
   useEffect(() => {
     if (step === STEPS.length && !isSaving) {

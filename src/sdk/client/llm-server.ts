@@ -1,19 +1,17 @@
 import { PandaPath, DEFAULT_PANDA_MODEL_NAME } from "@/types/constant";
 import {
   ChatOptions,
-  LLMApi,
   MultimodalContent,
   LLMConfig,
   RequestMessage,
-} from "@/client/api";
+  GetAccessTokenFn,
+} from "@/sdk/client/types";
 import { Role } from "@/types";
 import {
   generateChallengeHeaders,
   verifyChallenge,
   ChallengeResponse,
-} from "./panda-challenge";
-
-export type GetAccessTokenFn = () => Promise<string | null>;
+} from "@/sdk/client/panda-challenge";
 
 export interface RequestPayload {
   messages: {
@@ -33,7 +31,7 @@ export interface SummaryResponse {
   challengeResponse: ChallengeResponse;
 }
 
-export class PandaApi implements LLMApi {
+export class LLMServer {
   private baseUrl: string;
   private getAccessToken: GetAccessTokenFn;
 
