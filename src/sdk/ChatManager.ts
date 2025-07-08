@@ -53,8 +53,6 @@ export class ChatManager {
     this.storage = storage;
     this.config = config;
     this.state = this.buildState();
-    console.log('ChatManager initialized');
-
     this.bus.on('app.unlocked', () => {
       this.conversations = this.conversations.map(c => {
         c.title = this.encryptionService.decrypt(c.encryptedTitle);
@@ -253,9 +251,10 @@ export class ChatManager {
           this.insertChat(chat);
           return chat;
         }
+        console.log(`[SDK-ChatManager] No chat found for ${conversationId}`);
         return undefined;
       } catch (error) {
-        console.error(
+        console.log(
           `[SDK-ChatManager] Failed to get chat ${conversationId}:`,
           error,
         );

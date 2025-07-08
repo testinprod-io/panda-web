@@ -19,7 +19,6 @@ export class ApiService {
     this.app = new AppServer(appBaseUrl, getAccessToken);
     // Assuming pandaBaseUrl is the same for the LLM server
     this.llm = new LLMServer(appBaseUrl, getAccessToken);
-    console.log("ApiService with real clients initialized");
   }
 }
 

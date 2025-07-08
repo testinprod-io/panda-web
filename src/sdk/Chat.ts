@@ -144,7 +144,6 @@ export class Chat {
 
   private updateState() {
     this.state = this.buildState();
-    console.log(`[SDK-Chat] Emitting update for ${this.id}`);
     this.bus.emit(`chat.updated:${this.id}`, undefined);
   }
   /**

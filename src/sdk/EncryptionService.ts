@@ -138,9 +138,6 @@ export class EncryptionService {
 
   public encrypt(text: string): string {
     if (!this.isKeySet()) {
-      console.warn(
-        "[EncryptionService] encrypt called but no key set. Returning plain text."
-      );
       return text;
     }
     if (!text) return text;
@@ -160,9 +157,6 @@ export class EncryptionService {
 
   public decrypt(encryptedText: string): string {
     if (!this.isKeySet()) {
-      console.info(
-        "[EncryptionService] decrypt called but no key set. Returning plain text."
-      );
       return encryptedText;
     }
 

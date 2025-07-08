@@ -52,7 +52,6 @@ function messagePropsAreEqual(
 
   const prevMsg = prevProps.message;
   const nextMsg = nextProps.message;
-  console.log(`[ChatMessageCell] Comparing messages: ${prevMsg.id} ${nextMsg.id} ${prevMsg.visibleContent} ${nextMsg.visibleContent} ${prevMsg.streaming} ${nextMsg.streaming} ${prevMsg.isError} ${nextMsg.isError} ${prevMsg.isReasoning} ${nextMsg.isReasoning} ${prevMsg.visibleReasoning} ${nextMsg.visibleReasoning} ${prevMsg.syncState} ${nextMsg.syncState} ${prevMsg.files?.length} ${nextMsg.files?.length} ${prevMsg.processEvents?.length} ${nextMsg.processEvents?.length}`);
   console.log(`[ChatMessageCell] Next message: ${nextMsg.visibleContent}`);
   if (
     prevMsg.id !== nextMsg.id ||

@@ -35,7 +35,6 @@ export class PandaSDK {
   public ready: boolean = false;
   private isReadying: boolean = false;
   constructor(getAccessToken: GetAccessTokenFn, authProvider: AuthProvider) {
-    console.log('[PandaSDK] Constructor called from:', new Error().stack);
     this.api = new ApiService(getAccessToken);
     
     this.encryption = new EncryptionService();
@@ -68,8 +67,6 @@ export class PandaSDK {
     if (this.ready || this.isReadying) {
       return;
     }
-    console.log("handleAuthenticated");
-    console.log("[PandaSDK] handleAuthenticated called from:", new Error().stack);
     this.isReadying = true;
     
     const [info, authState] = await Promise.all([

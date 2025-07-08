@@ -37,7 +37,6 @@ export class AttestationManager {
       attestationResults: this.attestationResults,
       verificationResults: this.verificationResults,
     };
-    console.log("AttestationManager initialized");
   }
 
   private updateState(payload: SDKEventMap["attestation.status.updated"]) {
