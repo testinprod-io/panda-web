@@ -238,7 +238,7 @@ export class ChatManager {
     this.updateState();
   }
 
-  public async getChat(conversationId: UUID): Promise<Chat | null> {
+  public async getChat(conversationId: UUID): Promise<Chat | undefined> {
     const existingChat = this.conversations.find(
       (c) => c.id === conversationId,
     );
@@ -253,13 +253,13 @@ export class ChatManager {
           return chat;
         }
         console.log(`[SDK-ChatManager] No chat found for ${conversationId}`);
-        return null;
+        return undefined;
       } catch (error) {
         console.log(
           `[SDK-ChatManager] Failed to get chat ${conversationId}:`,
           error,
         );
-        return null;
+        return undefined;
       }
     }
   }
