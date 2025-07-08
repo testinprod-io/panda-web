@@ -62,7 +62,7 @@ export class ServerStorage implements IStorage {
     try {
       return await this.api.app.getConversation(id as UUID);
     } catch (error) {
-      console.error(`[ServerStorage] Failed to get chat ${id}:`, error);
+      console.log(`[ServerStorage] Failed to get chat ${id}:`, error);
       return undefined;
     }
   }

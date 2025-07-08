@@ -31,13 +31,11 @@ export class ConfigManager {
     this.bus = bus;
 
     this.bus.on("app.unlocked", () => {
-      console.log("app.unlocked", this.config.customizedPrompts);
       this.config.customizedPrompts = decryptSystemPrompt(
         this.config.customizedPrompts,
         this.encryptionService.decrypt.bind(this.encryptionService),
       );
       this.bus.emit("config.updated", { config: this.getConfig() });
-      console.log("app.unlocked", this.config.customizedPrompts);
     });
 
     this.bus.on("app.locked", () => {

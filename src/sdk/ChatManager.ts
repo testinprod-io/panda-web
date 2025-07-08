@@ -53,8 +53,6 @@ export class ChatManager {
     this.storage = storage;
     this.config = config;
     this.state = this.buildState();
-    console.log('ChatManager initialized');
-
     this.bus.on('app.unlocked', () => {
       this.conversations = this.conversations.map(c => {
         c.title = this.encryptionService.decrypt(c.encryptedTitle);
@@ -235,11 +233,12 @@ export class ChatManager {
   }
 
   public setActiveChatId(chatId: UUID) {
+    console.log(`[ChatManager] Setting active chat ID to: ${chatId}`);
     this.activeChatId = chatId;
     this.updateState();
   }
 
-  public async getChat(conversationId: UUID): Promise<Chat | undefined> {
+  public async getChat(conversationId: UUID): Promise<Chat | null> {
     const existingChat = this.conversations.find(
       (c) => c.id === conversationId,
     );
@@ -253,13 +252,14 @@ export class ChatManager {
           this.insertChat(chat);
           return chat;
         }
-        return undefined;
+        console.log(`[SDK-ChatManager] No chat found for ${conversationId}`);
+        return null;
       } catch (error) {
-        console.error(
+        console.log(
           `[SDK-ChatManager] Failed to get chat ${conversationId}:`,
           error,
         );
-        return undefined;
+        return null;
       }
     }
   }

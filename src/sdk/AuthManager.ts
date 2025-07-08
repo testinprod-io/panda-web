@@ -36,8 +36,6 @@ export class AuthManager {
       user: null,
     };
 
-    console.log("AuthManager initialized");
-
     this.authProvider.addAuthStateListener(this.handleAuthStateChange);
     // this.initializeAuthState();
   }
@@ -75,8 +73,6 @@ export class AuthManager {
     isAuthenticated: boolean;
     user: User | null;
   }) => {
-    console.log("handleAuthStateChange", payload);
-
     if (this.state.isAuthenticated !== payload.isAuthenticated) {
       const newState: Partial<typeof this.state> = {
         isAuthenticated: payload.isAuthenticated,
