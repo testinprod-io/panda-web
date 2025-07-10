@@ -72,10 +72,10 @@ export function ChatItem({
     //   setVisibleTopic(topic);
     // } else {
     //   sdk.encryption.decrypt(topic).then((decryptedTopic) => {
-        setVisibleTopic(title);
+        setVisibleTopic(session.title);
     //   });
     // }
-  }, [isLocked, title, visibleTopic]);
+  }, [isLocked, session.title, visibleTopic]);
 
   useEffect(() => {
     if (!isEditing) {

@@ -86,9 +86,9 @@ export default function ChatLayoutContent({
     setIsSidebarCollapsed(isMobile ? true : false);
   }, [isMobile]);
 
-  const modelConfig = React.useMemo(() => {
-    return pandaConfig.defaultModel;
-  }, [pandaConfig.defaultModel]);
+  // const modelConfig = React.useMemo(() => {
+  //   return pandaConfig.defaultModel;
+  // }, [pandaConfig.defaultModel]);
 
   const handleLayoutSubmit = useCallback(
     async (sessionId: UUID | undefined, sessionState: SessionState) => {
@@ -119,14 +119,14 @@ export default function ChatLayoutContent({
             }, 400);
           }
         } else {
-          if (!modelConfig) {
+          if (!pandaConfig.defaultModel) {
             showSnackbar("Models are not loaded yet.", "error");
             setInternalIsSubmitting(false);
             return;
           }
           chat = await sdk.chat.createNewChat(
             Locale.Store.DefaultTopic,
-            modelConfig,
+            pandaConfig.defaultModel,
             pandaConfig.customizedPrompts,
           );
           
@@ -375,7 +375,7 @@ export default function ChatLayoutContent({
         >
           <ChatInputPanel
             sessionId={currentChatId}
-            modelConfig={modelConfig}
+            modelConfig={pandaConfig.defaultModel}
             customizedPrompts={pandaConfig.customizedPrompts}
             isLoading={internalIsSubmitting}
             onSubmit={handleLayoutSubmit}
