@@ -1,0 +1,31 @@
+{
+  "name": "panda-vault",
+  "version": "1.0.0",
+  "description": "Panda cryptographic vault - sandboxed iframe for secure key operations",
+  "main": "vault.js",
+  "type": "module",
+  "scripts": {
+    "build": "npm run clean && tsc && npm run concat && cp index.html dist/",
+    "concat": "cat dist/crypto.js dist/password.js dist/vault.js > dist/vault-bundle.js && rm dist/crypto.js dist/password.js dist/vault.js dist/types.js 2>/dev/null || true",
+    "dev": "npm install && npm run build && node server.js",
+    "start": "node server.js",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.0.0",
+    "express": "^5.1.0"
+  },
+  "keywords": [
+    "cryptography",
+    "security",
+    "sandbox",
+    "iframe"
+  ],
+  "author": "Panda Team",
+  "license": "PROPRIETARY"
+}

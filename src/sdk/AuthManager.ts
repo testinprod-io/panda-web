@@ -46,7 +46,10 @@ export class AuthManager {
   }
 
   private updateState(newState: Partial<typeof this.state>) {
-    if (newState.isAuthenticated !== undefined && newState.isAuthenticated !== this.state.isAuthenticated) {
+    if (
+      newState.isAuthenticated !== undefined &&
+      newState.isAuthenticated !== this.state.isAuthenticated
+    ) {
       this.bus.emit("auth.status.updated", newState.isAuthenticated);
     }
 
@@ -65,8 +68,8 @@ export class AuthManager {
       const encryptedId = (await this.api.app.getEncryptedId()).encrypted_id;
       this.updateState({
         encryptedId,
-        }); 
-    } catch { }
+      });
+    } catch (error) {}
   }
 
   private handleAuthStateChange = async (payload: {
@@ -87,50 +90,22 @@ export class AuthManager {
     }
   };
 
-  public async createPassword(password: string): Promise<void> {
-    if (!this.state.user?.id) {
-      throw new Error("User ID not found");
+  public async unlock(): Promise<boolean> {
+    if (!this.state.isAuthenticated) {
+      return false;
     }
 
-    this.encryptionService.setKeyFromPassword(password);
-    
-    const encryptedVerificationToken = this.encryptionService.encryptVerificationToken(this.state.user.id);
-    await this.api.app.createEncryptedId(encryptedVerificationToken);
+    if (!this.state.user?.id) {
+      return false;
+    }
 
     this.updateState({ isLocked: false });
     this.bus.emit("app.unlocked", undefined);
-  }
-
-  public async unlock(password: string): Promise<boolean> {
-    console.log("Unlocking with password...");
-    if (!this.state.isAuthenticated) {
-      throw new Error("User is not authenticated");
-    }
-
-    if (!this.state.user?.id) {
-      throw new Error("User ID not found");
-    }
-
-    if (
-      this.state.encryptedId &&
-      (await this.encryptionService.verifyKey(
-        this.state.encryptedId,
-        this.state.user.id,
-        password
-      ))
-    ) {
-      this.updateState({ isLocked: false });
-      this.encryptionService.setKeyFromPassword(password); // Sets the key for active use
-      this.bus.emit("app.unlocked", undefined);
-      return true;
-    } else {
-      return false;
-    }
+    return true;
   }
 
   public async lock(): Promise<void> {
     this.updateState({ isLocked: true });
-    this.encryptionService.clearKey();
     this.bus.emit("app.locked", undefined);
   }
 

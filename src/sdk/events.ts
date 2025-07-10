@@ -3,14 +3,11 @@ import { PandaConfig } from "./ConfigManager";
 import { VerificationStatus } from "@/types/attestation";
 import { ServerModelInfo } from "./client/types";
 import { AttestationResult } from "@/types/attestation";
-import { Chat } from './Chat';
-import { EventBus as EventBusImplementation } from './events';
-// import { Chat, ChatMessage, FileWithProgress } from "./Chat";
 
 /* event-bus.ts */
 export interface SDKEventMap {
   "sdk.ready": boolean;
-  "app.locked": void;                          // no payload
+  "app.locked": void;
   "app.unlocked": void;
   "chat.list.updated": void;
   "user.updated": void;

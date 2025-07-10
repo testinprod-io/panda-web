@@ -48,7 +48,6 @@ export default function ChatPage() {
         return;
       }
   
-      try {
       const currentSession = await sdk.chat.getChat(chatId);
       sdk.chat.setActiveChatId(chatId);
       if (currentSession) {
@@ -61,11 +60,6 @@ export default function ChatPage() {
         setIsValidSession(false);
         setSessionDataForValidation(null);
       }
-    } catch (error) {
-      console.error(`[ChatPage] Error getting chat: ${error}`);
-      setIsValidSession(false);
-      setSessionDataForValidation(null);
-    }
       setIsLoadingState(false);
     }
     validateSession();

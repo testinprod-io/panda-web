@@ -11,6 +11,7 @@ import { lightTheme, darkTheme } from "@/theme";
 import { SnackbarProvider } from "@/providers/snackbar-provider";
 import { EncryptionProvider } from "@/providers/encryption-provider";
 import { PandaSDKProvider } from "@/providers/sdk-provider";
+import { VaultIntegrationProvider } from "@/sdk/vault/VaultIntegration";
 import { useAppConfig } from "@/store/config";
 import { Theme } from "@/store/config";
 
@@ -37,21 +38,6 @@ function ThemeWrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
-function AuthenticatedContentWrapper({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <>
-        <EncryptionProvider>
-          {/* <AuthChatListener /> */}
-          <SnackbarProvider>{children}</SnackbarProvider>
-        </EncryptionProvider>
-    </>
-  );
-}
-
 function SDKWrapper({ children }: { children: React.ReactNode }) {
   const { getAccessToken } = usePrivy();
   // if (!getAccessToken) {
@@ -63,6 +49,25 @@ function SDKWrapper({ children }: { children: React.ReactNode }) {
     <PandaSDKProvider getAccessToken={getAccessToken}>
       {children}
     </PandaSDKProvider>
+  );
+}
+
+function AuthenticatedContentWrapper({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <VaultIntegrationProvider>
+        <SDKWrapper>
+          <EncryptionProvider>
+            {/* <AuthChatListener /> */}
+            <SnackbarProvider>{children}</SnackbarProvider>
+          </EncryptionProvider>
+        </SDKWrapper>
+      </VaultIntegrationProvider>
+    </>
   );
 }
 
@@ -97,11 +102,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 embeddedWallets: { ethereum: { createOnLogin: "all-users" } },
               }}
             >
-              <SDKWrapper>
-                <AuthenticatedContentWrapper>
-                  {children}
-                </AuthenticatedContentWrapper>
-              </SDKWrapper>
+              <AuthenticatedContentWrapper>
+                {children}
+              </AuthenticatedContentWrapper>
             </PrivyProvider>
           ) : (
             <SnackbarProvider>{children}</SnackbarProvider>

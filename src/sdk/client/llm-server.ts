@@ -63,7 +63,7 @@ export class LLMServer {
         : v.content,
     }));
 
-    if (options.config.customizedPrompts) {
+    if (options.config.customizedPrompts && options.config.customizedPrompts !== "") {
       messages = [
         {
           role: Role.SYSTEM,

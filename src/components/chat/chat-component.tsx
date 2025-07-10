@@ -35,8 +35,6 @@ export function ChatComponent({ sessionId }: { sessionId: UUID }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [internalHitBottom, setInternalHitBottom] = useState(true);
 
-  console.log(`[ChatComponent] Rendering for session ${sessionId}. Active chat ID: ${activeChat?.id}. Displayed messages: ${displayedMessages.length}`);
-  
   // When the component mounts or sessionId changes, ensure the correct chat is active.
   // useEffect(() => {
   //   // If there is no active chat or the active chat is not the one for this page, set it.

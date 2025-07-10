@@ -100,11 +100,11 @@ export default function OnboardingView() {
     if (Object.keys(payload.prompts!).length === 0) delete payload.prompts;
 
     try {
-      const encryptedPayload = encryptSystemPrompt(
+      const encryptedPayload = await encryptSystemPrompt(
         payload,
         sdk.encryption.encrypt.bind(sdk.encryption),
       );
-      const responseData = decryptSystemPrompt(
+      const responseData = await decryptSystemPrompt(
         await sdk.storage.createCustomizedPrompts(encryptedPayload),
         sdk.encryption.decrypt.bind(sdk.encryption),
       );

@@ -68,15 +68,15 @@ export function generateSystemPrompt(data: CustomizedPromptsData): string {
   return `You are assisting ${name}, who is ${job}. When responding, adapt your tone and approach to suit someone who appreciates the following traits: ${traits}. ${extra.trim() ? `Also, ${extra}` : ""}`.trim();
 }
 
-export function encryptSystemPrompt(
+export async function encryptSystemPrompt(
   prompt: CustomizedPromptsData,
-  encryptFunction: (text: string) => string,
-): CustomizedPromptsData {
+  encryptFunction: (text: string) => Promise<string>,
+): Promise<CustomizedPromptsData> {
   const encryptedPersonalInfo: { [key: string]: string } = {};
   if (prompt.personal_info) {
     for (const key in prompt.personal_info) {
       if (Object.prototype.hasOwnProperty.call(prompt.personal_info, key)) {
-        encryptedPersonalInfo[key] = encryptFunction(
+        encryptedPersonalInfo[key] = await encryptFunction(
           prompt.personal_info[key],
         );
       }
@@ -87,7 +87,7 @@ export function encryptSystemPrompt(
   if (prompt.prompts) {
     for (const key in prompt.prompts) {
       if (Object.prototype.hasOwnProperty.call(prompt.prompts, key)) {
-        encryptedPrompts[key] = encryptFunction(prompt.prompts[key]);
+        encryptedPrompts[key] = await encryptFunction(prompt.prompts[key]);
       }
     }
   }
@@ -103,15 +103,15 @@ export function encryptSystemPrompt(
   };
 }
 
-export function decryptSystemPrompt(
+export async function decryptSystemPrompt(
   prompt: CustomizedPromptsData,
-  decryptFunction: (text: string) => string,
-): CustomizedPromptsData {
+  decryptFunction: (text: string) => Promise<string>,
+): Promise<CustomizedPromptsData> {
   const decryptedPersonalInfo: { [key: string]: string } = {};
   if (prompt.personal_info) {
     for (const key in prompt.personal_info) {
       if (Object.prototype.hasOwnProperty.call(prompt.personal_info, key)) {
-        decryptedPersonalInfo[key] = decryptFunction(
+        decryptedPersonalInfo[key] = await decryptFunction(
           prompt.personal_info[key],
         );
       }
@@ -122,7 +122,7 @@ export function decryptSystemPrompt(
   if (prompt.prompts) {
     for (const key in prompt.prompts) {
       if (Object.prototype.hasOwnProperty.call(prompt.prompts, key)) {
-        decryptedPrompts[key] = decryptFunction(prompt.prompts[key]);
+        decryptedPrompts[key] = await decryptFunction(prompt.prompts[key]);
       }
     }
   }

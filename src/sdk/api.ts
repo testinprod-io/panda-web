@@ -16,8 +16,8 @@ export class ApiService {
       throw new Error("ApiService requires a getAccessToken function to be provided during construction.");
     }
     const appBaseUrl = process.env.NEXT_PUBLIC_APP_SERVER_ENDPOINT || "";
+    
     this.app = new AppServer(appBaseUrl, getAccessToken);
-    // Assuming pandaBaseUrl is the same for the LLM server
     this.llm = new LLMServer(appBaseUrl, getAccessToken);
   }
 }

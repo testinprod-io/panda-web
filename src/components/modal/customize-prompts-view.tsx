@@ -79,7 +79,7 @@ export default function CustomizePromptsView({
       setIsLoading(true);
       setError(null);
       try {
-        const data = decryptSystemPrompt(await sdk.storage.getCustomizedPrompts(), sdk.encryption.decrypt.bind(sdk.encryption));
+        const data = await decryptSystemPrompt(await sdk.storage.getCustomizedPrompts(), sdk.encryption.decrypt.bind(sdk.encryption));
         setName(data.personal_info?.name || "");
         setJob(data.personal_info?.job || "");
         const currentTraitsText = data.prompts?.traits || "";
@@ -125,12 +125,6 @@ export default function CustomizePromptsView({
 
     fetchPrompts();
   }, [sdk.storage]);
-
-  // useEffect(() => {
-  //   if (initialData) {
-  //     updateCustomizedPrompts(initialData);
-  //   }
-  // }, [initialData]);
 
   const handleTraitToggle = (traitId: string) => {
     const traitToToggle = traits.find((t) => t.id === traitId);
@@ -206,12 +200,12 @@ export default function CustomizePromptsView({
     payload.prompts!.extra_params = extraParams.trim();
     
     try {
-      const encryptedPayload = encryptSystemPrompt(payload, sdk.encryption.encrypt.bind(sdk.encryption));
+      const encryptedPayload = await encryptSystemPrompt(payload, sdk.encryption.encrypt.bind(sdk.encryption));
       let responseData: CustomizedPromptsData;
       if (isUpdateMode) {
-        responseData = decryptSystemPrompt(await sdk.storage.updateCustomizedPrompts(encryptedPayload), sdk.encryption.decrypt.bind(sdk.encryption));
+        responseData = await decryptSystemPrompt(await sdk.storage.updateCustomizedPrompts(encryptedPayload), sdk.encryption.decrypt.bind(sdk.encryption));
       } else {
-        responseData = decryptSystemPrompt(await sdk.storage.createCustomizedPrompts(encryptedPayload), sdk.encryption.decrypt.bind(sdk.encryption));
+        responseData = await decryptSystemPrompt(await sdk.storage.createCustomizedPrompts(encryptedPayload), sdk.encryption.decrypt.bind(sdk.encryption));
       }
       updateCustomizedPrompts(responseData);
       setName(responseData.personal_info?.name || "");

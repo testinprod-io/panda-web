@@ -84,7 +84,7 @@ export class MemoryStorage implements IStorage {
   ): Promise<Conversation> {
     const now = new Date().toISOString();
     const conversationId = crypto.randomUUID();
-    const encryptedTitle = this.encryptionService.encrypt(title.trim());
+    const encryptedTitle = await this.encryptionService.encrypt(title.trim());
 
     const conversation: Conversation = {
       conversation_id: conversationId as UUID,

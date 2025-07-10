@@ -5,6 +5,7 @@ import { PandaSDK } from '@/sdk/PandaSDK';
 import { GetAccessTokenFn } from '@/sdk/client/types';
 import { usePrivy } from '@privy-io/react-auth';
 import { PrivyAuthAdapter } from './privy-auth-adapter';
+import { useVaultIntegrationContext } from '@/sdk/vault/VaultIntegration';
 // import { Box, Box, CircularProgress } from '@mui/material';
 
 interface SDKProviderProps {
@@ -37,10 +38,14 @@ export function PandaSDKProvider({ children, getAccessToken }: SDKProviderProps)
   }, [authAdapter, authenticated, user]);
 
   
+  // Get vault integration from context
+  const vaultIntegration = useVaultIntegrationContext();
+
   const sdk = useMemo(() => {
     if (!authAdapter) return null;
-    return new PandaSDK(getAccessToken, authAdapter);
-  }, [getAccessToken, authAdapter]);
+    console.log('[PandaSDKProvider] Creating SDK with vault integration:', !!vaultIntegration);
+    return new PandaSDK(getAccessToken, authAdapter, vaultIntegration);
+  }, [getAccessToken, authAdapter, vaultIntegration]);
   
   useEffect(() => {
     if (sdk) {

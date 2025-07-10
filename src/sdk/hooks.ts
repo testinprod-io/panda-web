@@ -3,9 +3,6 @@
 import { useSyncExternalStore, useCallback } from 'react';
 import { usePandaSDK } from '@/providers/sdk-provider';
 import { Chat } from "./Chat";
-import { UserData } from './User';
-import { CustomizedPromptsData } from '@/types';
-import { PandaConfig } from './ConfigManager';
 /**
  * A modern hook to subscribe to the state of the ChatManager.
  * It uses useSyncExternalStore to efficiently update components
@@ -43,14 +40,11 @@ export function useChat(chat: Chat | null) {
       return () => {};
     }
     const eventName = `chat.updated:${chat.id}` as const;
-    console.log(`[useChat] Subscribing to ${eventName}`);
     const unsubscribe = sdk.bus.on(eventName, () => {
-      console.log(`[useChat] Received update for ${eventName}`);
       callback();
     });
 
     return () => {
-      console.log(`[useChat] Unsubscribing from ${eventName}`);
       unsubscribe();
     }
   }, [sdk.bus, chat]);
@@ -61,7 +55,7 @@ export function useChat(chat: Chat | null) {
     () => chat?.getState()
   );
 
-  return state || chat?.getState() || { messages: [], isLoading: true, hasMoreMessages: false };
+  return state || chat?.getState() || { title: "", encryptedTitle: "", messages: [], isLoading: true, hasMoreMessages: false };
 }
 
 export function useAuth() {
@@ -79,7 +73,6 @@ export function useAuth() {
     logout: authManager.logout.bind(authManager),
     lockApp: authManager.lock.bind(authManager),
     unlockApp: authManager.unlock.bind(authManager),
-    createPassword: authManager.createPassword.bind(authManager),
   }
 }
 

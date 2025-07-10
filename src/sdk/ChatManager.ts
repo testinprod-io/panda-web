@@ -53,11 +53,12 @@ export class ChatManager {
     this.storage = storage;
     this.config = config;
     this.state = this.buildState();
-    this.bus.on('app.unlocked', () => {
-      this.conversations = this.conversations.map(c => {
-        c.title = this.encryptionService.decrypt(c.encryptedTitle);
+
+    this.bus.on('app.unlocked', async () => {
+      this.conversations = await Promise.all(this.conversations.map(async (c) => {
+        c.title = await this.encryptionService.decrypt(c.encryptedTitle);
         return c;
-      });
+      }));
       this.updateState();
     });
 
@@ -118,7 +119,7 @@ export class ChatManager {
         limit,
       );
 
-      const newChats = conversations.map(c => this.fromConversation(c));
+      const newChats = await Promise.all(conversations.map(async (c) => await this.fromConversation(c)));
 
       this.conversations = this.nextCursor
         ? [...this.conversations, ...newChats]
@@ -144,18 +145,18 @@ export class ChatManager {
     modelConfig?: ServerModelInfo,
     customizedPrompts?: CustomizedPromptsData
   ): Promise<Chat> {
-    const customizedPrompt = customizedPrompts ? this.encryptionService.encrypt(generateSystemPrompt(customizedPrompts)) : null;
+    const customizedPrompt = (customizedPrompts && customizedPrompts.enabled) ? await this.encryptionService.encrypt(generateSystemPrompt(customizedPrompts)) : null;
     const newConversation = await this.storage.createChat(topic, {
       default_model_name: modelConfig?.model_name,
       customized_prompts: customizedPrompt,
     });
-    const chat = this.fromConversation(newConversation);
+    const chat = await this.fromConversation(newConversation);
     this.insertChat(chat);
     this.setActiveChat(chat);
     return chat;
   }
 
-  private fromConversation(conversation: Conversation): Chat {
+  private async fromConversation(conversation: Conversation): Promise<Chat> {
     const chat = new Chat(
       this.bus,
       this.api,
@@ -169,7 +170,7 @@ export class ChatManager {
       new Date(conversation.created_at).getTime(),
       conversation.custom_data,
     );
-    chat.title = this.encryptionService.decrypt(chat.encryptedTitle);
+    chat.title = await this.encryptionService.decrypt(chat.encryptedTitle);
     return chat;
   }
 
@@ -203,7 +204,7 @@ export class ChatManager {
     if (!trimmedName) return;
 
     try {
-      const encryptedTitle = this.encryptionService.encrypt(trimmedName);
+      const encryptedTitle = await this.encryptionService.encrypt(trimmedName);
       const conversation = this.conversations.find((c) => c.id === chatId);
       if (conversation) {
         conversation.title = trimmedName;
@@ -233,7 +234,6 @@ export class ChatManager {
   }
 
   public setActiveChatId(chatId: UUID) {
-    console.log(`[ChatManager] Setting active chat ID to: ${chatId}`);
     this.activeChatId = chatId;
     this.updateState();
   }
@@ -248,14 +248,13 @@ export class ChatManager {
       try {
         const conversation = await this.storage.getChat(conversationId as string);
         if (conversation) {
-          const chat = this.fromConversation(conversation);
+          const chat = await this.fromConversation(conversation);
           this.insertChat(chat);
           return chat;
         }
-        console.log(`[SDK-ChatManager] No chat found for ${conversationId}`);
         return undefined;
       } catch (error) {
-        console.log(
+        console.error(
           `[SDK-ChatManager] Failed to get chat ${conversationId}:`,
           error,
         );

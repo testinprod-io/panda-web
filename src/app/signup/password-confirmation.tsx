@@ -17,10 +17,21 @@ export default function PasswordConfirmation() {
   const [isEncrypting, setIsEncrypting] = useState(false);
   const [encryptionProgress, setEncryptionProgress] = useState(0);
   const [isButtonHidden, setIsButtonHidden] = useState(true);
+  const [base64Text, setBase64Text] = useState("");
 
-  const base64Text = useMemo(() => {
-    return sdk.encryption.encrypt(TEXT_TO_ANIMATE);
-  }, []);
+  useEffect(() => {
+    const encryptText = async () => {
+      try {
+        const encrypted = await sdk.encryption.encrypt(TEXT_TO_ANIMATE);
+        setBase64Text(encrypted);
+      } catch (error) {
+        console.error("Encryption failed:", error);
+        setBase64Text(TEXT_TO_ANIMATE); // Fallback to original text
+      }
+    };
+    
+    encryptText();
+  }, [sdk.encryption]);
 
   useEffect(() => {
     const words = TEXT_TO_ANIMATE;
@@ -41,7 +52,7 @@ export default function PasswordConfirmation() {
   }, []);
 
   useEffect(() => {
-    if (!isEncrypting) return;
+    if (!isEncrypting || !base64Text) return;
 
     const maxLen = Math.max(TEXT_TO_ANIMATE.length, base64Text.length);
     if (encryptionProgress < maxLen) {
@@ -55,7 +66,7 @@ export default function PasswordConfirmation() {
   }, [isEncrypting, encryptionProgress, router, base64Text, TEXT_TO_ANIMATE]);
 
   const animatedText = useMemo(() => {
-    if (!isEncrypting) {
+    if (!isEncrypting || !base64Text) {
       return displayedText;
     }
     return base64Text.substring(0, encryptionProgress) + TEXT_TO_ANIMATE.substring(encryptionProgress);

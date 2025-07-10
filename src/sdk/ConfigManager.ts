@@ -30,16 +30,16 @@ export class ConfigManager {
     this.encryptionService = encryptionService;
     this.bus = bus;
 
-    this.bus.on("app.unlocked", () => {
-      this.config.customizedPrompts = decryptSystemPrompt(
+    this.bus.on("app.unlocked", async () => {
+      this.config.customizedPrompts = await decryptSystemPrompt(
         this.config.customizedPrompts,
         this.encryptionService.decrypt.bind(this.encryptionService),
       );
       this.bus.emit("config.updated", { config: this.getConfig() });
     });
 
-    this.bus.on("app.locked", () => {
-      this.config.customizedPrompts = encryptSystemPrompt(
+    this.bus.on("app.locked", async () => {
+      this.config.customizedPrompts = await encryptSystemPrompt(
         this.config.customizedPrompts,
         this.encryptionService.encrypt.bind(this.encryptionService),
       );
@@ -48,10 +48,8 @@ export class ConfigManager {
   }
 
   public setModels(models: ServerModelInfo[]) {
-    console.log("setModels", models);
     this.config.models = models;
     if (models.length > 0 && (!this.config.defaultModel || !models.some(m => m.model_name === this.config.defaultModel?.model_name))) {
-      console.log("setDefaultModel", models[0]);
       this.config.defaultModel = models[0];
     }
     this.bus.emit("config.updated", { config: this.getConfig() });
@@ -64,6 +62,7 @@ export class ConfigManager {
 
   public setDefaultModel(model_name: string) {
     const model = this.config.models.find(m => m.model_name === model_name);
+    console.log("setDefaultModel", model);
     if (model) {
         this.config.defaultModel = model;
         this.bus.emit("config.updated", { config: this.getConfig() });
