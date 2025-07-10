@@ -123,6 +123,7 @@ export class Chat {
             ? await this.encryptionService.decrypt(m.reasoning)
             : undefined,
           visibleContent: await this.encryptionService.decrypt(m.content),
+          processEvents: m.rawProcessEvents ? JSON.parse(await this.encryptionService.decrypt(m.rawProcessEvents)) : [],
         };
         return newMessage;
       }));
@@ -135,6 +136,7 @@ export class Chat {
           ...m,
           visibleReasoning: m.reasoning,
           visibleContent: m.content,
+          processEvents: [],
         };
         return newMessage;
       });
@@ -463,9 +465,12 @@ export class Chat {
         if (messageIndex !== -1) {
           const updatedMessages = [...this.messages];
           const messageToUpdate = updatedMessages[messageIndex];
+          const events = [...(messageToUpdate.processEvents || []), event];
+
           updatedMessages[messageIndex] = {
             ...messageToUpdate,
-            processEvents: [...(messageToUpdate.processEvents || []), event],
+            isReasoning: true,
+            processEvents: events,
           };
           this.messages = updatedMessages;
           this.updateState();
@@ -630,6 +635,7 @@ export class Chat {
           updatedMsg.date = timestamp;
           updatedMsg.syncState = MessageSyncState.SYNCED;
           updatedMsg.challengeResponse = challengeResponse;
+          updatedMsg.rawProcessEvents = await this.encryptionService.encrypt(JSON.stringify(updatedMsg.processEvents));
         }
 
         messageToSave = updatedMsg;
