@@ -1,5 +1,5 @@
-// CryptoJS is loaded from CDN in index.html
-// @ts-ignore - CryptoJS will be available globally
+// CryptoJS is loaded from CDN in index.html and types are provided by @types/crypto-js
+/// <reference types="crypto-js" />
 
 /**
  * A stateless helper that derives a fresh key + IV **per encryption** using a

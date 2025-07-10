@@ -12,9 +12,11 @@
     "clean": "rm -rf dist"
   },
   "devDependencies": {
+    "@types/crypto-js": "^4.2.2",
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "cookie": "^0.6.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.0.0",
