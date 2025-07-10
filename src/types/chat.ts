@@ -176,6 +176,7 @@ export type ChatMessage = Omit<RequestMessage, "content"> & {
   reasoningTime?: number; // Add reasoning duration field
   isReasoning?: boolean; // To track if the message is currently in reasoning phase
   useSearch: boolean; // To track if the message is using search
+  rawProcessEvents?: string;
   processEvents?: ProcessEvent[]; // Add process events field
   challengeResponse?: ChallengeResponse;
 };
@@ -202,7 +203,8 @@ export function createMessage(override: Partial<ChatMessage>): ChatMessage {
     reasoning: override.reasoning ?? "",
     visibleReasoning: override.reasoning ?? "",
     useSearch: override.useSearch ?? false,
-    processEvents: [],
+    rawProcessEvents: override.rawProcessEvents ?? "",
+    processEvents: override.processEvents ?? [],
     ...override,
   };
 }

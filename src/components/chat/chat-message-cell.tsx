@@ -264,6 +264,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
               events={processEvents}
               fontSize={fontSize}
               fontFamily={fontFamily}
+              eventComplete={!isReasoning}
             />
           )}
           

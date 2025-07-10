@@ -119,6 +119,7 @@ export class Chat {
           ? this.encryptionService.decrypt(m.reasoning)
           : undefined;
         m.visibleContent = this.encryptionService.decrypt(m.content);
+        m.processEvents = m.rawProcessEvents ? JSON.parse(this.encryptionService.decrypt(m.rawProcessEvents)) : [];
       });
       this.updateState();
     });
@@ -127,6 +128,7 @@ export class Chat {
       this.messages.forEach((m) => {
         m.visibleReasoning = m.reasoning;
         m.visibleContent = m.content;
+        m.processEvents = [];
       });
       this.updateState();
     });
@@ -463,9 +465,13 @@ export class Chat {
         if (messageIndex !== -1) {
           const updatedMessages = [...this.messages];
           const messageToUpdate = updatedMessages[messageIndex];
+          const events = [...(messageToUpdate.processEvents || []), event];
+
           updatedMessages[messageIndex] = {
             ...messageToUpdate,
-            processEvents: [...(messageToUpdate.processEvents || []), event],
+            isReasoning: true,
+            rawProcessEvents: this.encryptionService.encrypt(JSON.stringify(events)),
+            processEvents: events,
           };
           this.messages = updatedMessages;
           this.updateState();
