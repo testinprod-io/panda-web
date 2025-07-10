@@ -62,6 +62,7 @@ export class ConfigManager {
 
   public setDefaultModel(model_name: string) {
     const model = this.config.models.find(m => m.model_name === model_name);
+    console.log("setDefaultModel", model);
     if (model) {
         this.config.defaultModel = model;
         this.bus.emit("config.updated", { config: this.getConfig() });

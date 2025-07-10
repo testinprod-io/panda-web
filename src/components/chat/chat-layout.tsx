@@ -29,6 +29,8 @@ import { usePrivy } from "@privy-io/react-auth";
 import { usePandaSDK } from "@/providers/sdk-provider";
 import { Chat } from "@/sdk/Chat";
 import { useConfig } from "@/sdk/hooks";
+import { ServerModelInfo } from "@/sdk/client";
+import { PandaConfig } from "@/sdk/ConfigManager";
 const localStorage = safeLocalStorage();
 
 function usePrevious<T>(value: T): T | undefined {
@@ -56,7 +58,8 @@ export default function ChatLayoutContent({
   const { sdk } = usePandaSDK();
   const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
   const [isSDKReady, setIsSDKReady] = useState(sdk.ready);
-
+  const [modelConfig, setModelConfig] = useState<ServerModelInfo | undefined>(pandaConfig.defaultModel);
+  
   useEffect(() => {
     const unsubscribe = sdk.bus.on('sdk.ready', (isReady) => {
       setIsSDKReady(isReady);
@@ -73,6 +76,58 @@ export default function ChatLayoutContent({
 
   const currentChatId = params?.chatId as UUID | undefined;
   const isNewChatPage = !currentChatId;
+
+  useEffect(() => {
+    const updateModelConfig = async () => {
+      if (currentChatId) {
+        // For existing chats, get the chat-specific model or fall back to global default
+        const chat = await sdk.chat.getChat(currentChatId);
+        if (chat?.defaultModelName) {
+          const chatModel = pandaConfig.models.find(m => m.model_name === chat.defaultModelName);
+          if (chatModel) {
+            setModelConfig(chatModel);
+            return;
+          }
+        }
+      }
+      // For new chats or when chat doesn't have a specific model, use global default
+      setModelConfig(pandaConfig.defaultModel);
+    };
+    
+    updateModelConfig();
+  }, [currentChatId, sdk.chat, pandaConfig.defaultModel, pandaConfig.models]);
+
+  // Listen for chat updates to handle model changes made in the header
+  useEffect(() => {
+    if (!currentChatId) return;
+
+    const chatUpdateEventName = `chat.updated:${currentChatId}` as const;
+    const unsubscribe = sdk.bus.on(chatUpdateEventName, async () => {
+      const chat = await sdk.chat.getChat(currentChatId);
+      if (chat?.defaultModelName) {
+        const chatModel = pandaConfig.models.find(m => m.model_name === chat.defaultModelName);
+        if (chatModel && chatModel.model_name !== modelConfig?.model_name) {
+          setModelConfig(chatModel);
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, [currentChatId, sdk.bus, sdk.chat, pandaConfig.models, modelConfig?.model_name]);
+
+  // Listen for global config updates when on new chat page (no currentChatId)
+  useEffect(() => {
+    if (currentChatId) return; // Only listen when on new chat page
+
+    const unsubscribe = sdk.bus.on('config.updated', (data: { config: PandaConfig }) => {
+      const newDefaultModel = data.config.defaultModel;
+      if (newDefaultModel && newDefaultModel.model_name !== modelConfig?.model_name) {
+        setModelConfig(newDefaultModel);
+      }
+    });
+
+    return unsubscribe;
+  }, [currentChatId, sdk.bus, modelConfig?.model_name]);
 
   useEffect(() => {
     setContentOpacity(1);
@@ -119,14 +174,14 @@ export default function ChatLayoutContent({
             }, 400);
           }
         } else {
-          if (!pandaConfig.defaultModel) {
+          if (!modelConfig) {
             showSnackbar("Models are not loaded yet.", "error");
             setInternalIsSubmitting(false);
             return;
           }
           chat = await sdk.chat.createNewChat(
             Locale.Store.DefaultTopic,
-            pandaConfig.defaultModel,
+            modelConfig,
             pandaConfig.customizedPrompts,
           );
           
@@ -166,6 +221,8 @@ export default function ChatLayoutContent({
       router,
       pandaConfig,
       showSnackbar,
+      modelConfig, // Add modelConfig to dependencies since it's used in the function
+      sdk.chat,
     ],
   );
 
@@ -375,7 +432,7 @@ export default function ChatLayoutContent({
         >
           <ChatInputPanel
             sessionId={currentChatId}
-            modelConfig={pandaConfig.defaultModel}
+            modelConfig={modelConfig}
             customizedPrompts={pandaConfig.customizedPrompts}
             isLoading={internalIsSubmitting}
             onSubmit={handleLayoutSubmit}

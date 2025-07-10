@@ -91,7 +91,6 @@ export class AuthManager {
   };
 
   public async unlock(): Promise<boolean> {
-    console.log("HUIH")
     if (!this.state.isAuthenticated) {
       return false;
     }

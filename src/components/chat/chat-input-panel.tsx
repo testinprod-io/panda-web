@@ -46,6 +46,7 @@ import {
 } from "./chat-input-panel.utils";
 import { CustomizedPromptsData, generateSystemPrompt } from "@/types";
 import { ServerModelInfo } from "@/sdk/client/types";
+import { useConfig } from "@/sdk/hooks";
 
 interface ChatInputPanelProps {
   sessionId: UUID | undefined;
@@ -62,10 +63,10 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
   (props, ref) => {
     const {
       sessionId: propSessionId,
-      modelConfig,
       customizedPrompts,
       isLoading,
       onSubmit,
+      modelConfig, // Use the modelConfig prop passed from parent
     } = props;
 
     // const chatActions = useChatActions();

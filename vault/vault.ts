@@ -163,7 +163,6 @@ class VaultService {
     this.passwordKey = null;
     this.encryptedId = null;
     this.expectedUserId = null;
-    this.accessToken = null;
     if (this.idleTimer !== null) {
       clearTimeout(this.idleTimer);
       this.idleTimer = null;
@@ -236,7 +235,7 @@ class VaultService {
       );
       
       // Encrypt the user ID with the password
-      const encryptedId = await this.encryptWithPasswordKey(request.userId, this.passwordKey);
+      const encryptedId = this.generateEncryptedId(request.password, request.userId);
       
       // Call server to create/update the encryptedId
       await this.createEncryptedIdOnServer(encryptedId);
@@ -467,7 +466,7 @@ class VaultService {
         encrypted
       };
     } catch (error) {
-      console.error('[Vault] Encryption failed:', error);
+      console.log('[Vault] Encryption failed:', error);
       return {
         id: request.id,
         error: error instanceof Error ? error.message : 'encryption failed'
@@ -489,7 +488,7 @@ class VaultService {
         plain
       };
     } catch (error) {
-      console.error('[Vault] Decryption failed:', error);
+      console.log('[Vault] Decryption failed:', error);
       return {
         id: request.id,
         error: error instanceof Error ? error.message : 'decryption failed'
@@ -522,7 +521,7 @@ class VaultService {
         encryptedData
       };
     } catch (error) {
-      console.error('[Vault] File encryption failed:', error);
+      console.log('[Vault] File encryption failed:', error);
       return {
         id: request.id,
         error: error instanceof Error ? error.message : 'file encryption failed'
@@ -588,6 +587,43 @@ class VaultService {
     return this.base64urlEncode(combined);
   }
 
+  private generateLegacyPassword(password: string): {
+    key: CryptoJS.lib.WordArray;
+    iv: CryptoJS.lib.WordArray;
+  } {
+    if (!password) {
+      throw new Error("Cannot generate key from empty password");
+    }
+
+    // Use a known string as a constant "pepper" instead of a random salt
+    // Note: this is less secure than using a random salt
+    const pepper = "PandaAI-Static-Pepper-2023";
+
+    // Use PBKDF2 to derive a key
+    const derivedKey = CryptoJS.PBKDF2(password, pepper, {
+      keySize: 256 / 32, // 256 bits
+      iterations: 1000,
+    });
+
+    // Use first half for key, second half for IV
+    const keyWords = derivedKey.words;
+    const keyHalfLength = keyWords.length / 2;
+
+    const keyBytes = keyWords.slice(0, keyHalfLength);
+    const ivBytes = keyWords.slice(keyHalfLength);
+
+    const key = CryptoJS.lib.WordArray.create(keyBytes);
+    const iv = CryptoJS.lib.WordArray.create(ivBytes);
+
+    return { key, iv };
+  }
+
+  private generateEncryptedId(password: string, userId: string): string {
+    const { key, iv } = this.generateLegacyPassword(password);
+    const encryptedId = CryptoJS.AES.encrypt(userId, key, { iv: iv }).toString();
+    return encryptedId;
+  }
+  
   private async decryptWithPasswordKey(encryptedData: string, passwordKey: CryptoKey): Promise<string> {
     // Decode the encrypted data
     const combined = this.base64urlDecode(encryptedData);
@@ -653,7 +689,7 @@ class VaultService {
     combined.set(iv, salt.length);
     combined.set(new Uint8Array(encrypted), salt.length + iv.length);
 
-    return combined;
+    return combined.buffer;
   }
 
   private async decryptFileWithPasswordKey(encryptedData: ArrayBuffer, passwordKey: CryptoKey): Promise<ArrayBuffer> {
@@ -796,7 +832,7 @@ class VaultService {
       while (str.length % 4) str += "=";
       return Uint8Array.from(atob(str), (c) => c.charCodeAt(0));
     } catch (error) {
-      console.error('[Vault] Failed to decode base64url string:', error);
+      console.log('[Vault] Failed to decode base64url string:', error);
       throw new Error('Invalid base64url encoded data');
     }
   }
@@ -807,57 +843,23 @@ class VaultService {
       return false;
     }
 
+    return this.validatePasswordAgainstEncryptedId(password, this.encryptedId, this.expectedUserId);
+  }
+
+  private async validatePasswordAgainstEncryptedId(password: string, encryptedId: string, expectedUserId: string): Promise<boolean> {
     try {
       console.log('[Vault] Validating password by decrypting encryptedId');
       
-      // Import password as CryptoKey for decryption
-      const passwordKey = await crypto.subtle.importKey(
-        "raw",
-        new TextEncoder().encode(password),
-        "PBKDF2",
-        false,
-        ["deriveKey", "deriveBits"]
-      );
-      
-      // Decrypt encryptedId using the password
-      const decryptedUserId = await this.decryptWithPasswordKey(this.encryptedId, passwordKey);
+      const expectedEncryptedId = this.generateEncryptedId(password, expectedUserId);
       
       // Compare with expected userId
-      const isValid = decryptedUserId === this.expectedUserId;
+      const isValid = expectedEncryptedId === encryptedId;
       
       console.log('[Vault] Password validation result:', isValid);
       return isValid;
       
     } catch (error) {
       console.error('[Vault] Password validation failed:', error);
-      return false;
-    }
-  }
-
-  private async validatePasswordAgainstEncryptedId(password: string, encryptedId: string, expectedUserId: string): Promise<boolean> {
-    try {
-      console.log('[Vault] Validating password against provided encryptedId');
-      
-      // Import password as CryptoKey for decryption
-      const passwordKey = await crypto.subtle.importKey(
-        "raw",
-        new TextEncoder().encode(password),
-        "PBKDF2",
-        false,
-        ["deriveKey", "deriveBits"]
-      );
-      
-      // Decrypt encryptedId using the password
-      const decryptedUserId = await this.decryptWithPasswordKey(encryptedId, passwordKey);
-      
-      // Compare with expected userId
-      const isValid = decryptedUserId === expectedUserId;
-      
-      console.log('[Vault] Password validation against encryptedId result:', isValid);
-      return isValid;
-      
-    } catch (error) {
-      console.error('[Vault] Password validation against encryptedId failed:', error);
       return false;
     }
   }
