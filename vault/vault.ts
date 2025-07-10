@@ -15,6 +15,7 @@ class VaultService {
   // Store for validation
   private encryptedId: string | null = null;
   private expectedUserId: string | null = null;
+  private accessToken: string | null = null;
 
   constructor() {
     this.setupMessageListener();
@@ -52,6 +53,9 @@ class VaultService {
     }
     if (initMsg.userId) {
       this.expectedUserId = initMsg.userId;
+    }
+    if (initMsg.accessToken) {
+      this.accessToken = initMsg.accessToken;
     }
 
     // Send acknowledgment
@@ -159,6 +163,7 @@ class VaultService {
     this.passwordKey = null;
     this.encryptedId = null;
     this.expectedUserId = null;
+    this.accessToken = null;
     if (this.idleTimer !== null) {
       clearTimeout(this.idleTimer);
       this.idleTimer = null;
@@ -691,8 +696,17 @@ class VaultService {
       
       console.log('[Vault] Fetching server keys from local BFF:', deriveKeyUrl);
       
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (this.accessToken) {
+        headers['Authorization'] = `Bearer ${this.accessToken}`;
+      }
+      
       const response = await fetch(deriveKeyUrl, {
         method: 'POST',
+        headers,
       });
 
       if (!response.ok) {
@@ -743,11 +757,17 @@ class VaultService {
       
       console.log('[Vault] Creating encrypted ID on server via BFF:', createEncryptedIdUrl);
       
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (this.accessToken) {
+        headers['Authorization'] = `Bearer ${this.accessToken}`;
+      }
+      
       const response = await fetch(createEncryptedIdUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ encrypted_id: encryptedId }),
       });
 
@@ -776,22 +796,9 @@ class VaultService {
       while (str.length % 4) str += "=";
       return Uint8Array.from(atob(str), (c) => c.charCodeAt(0));
     } catch (error) {
-      console.error('[Vault] Failed to decode base64url string:', str, error);
+      console.error('[Vault] Failed to decode base64url string:', error);
       throw new Error('Invalid base64url encoded data');
     }
-  }
-
-  private base64ToUint8Array(keyString: string): Uint8Array {
-    console.log('[Vault] Converting string to Uint8Array:', keyString);
-    
-    // First encode the string as base64, then decode it to Uint8Array
-    const base64Encoded = btoa(keyString);
-    const binary = atob(base64Encoded);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    return bytes;
   }
 
   private async validatePassword(password: string): Promise<boolean> {

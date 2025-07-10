@@ -5,6 +5,7 @@ export interface InitMsg {
   encryptedId?: string; // User's encrypted ID from server
   userId?: string; // Expected user ID for validation
   encryptedPassword?: string; // Previously saved encrypted password
+  accessToken?: string; // Access token for BFF API authentication
 }
 
 export interface AckMsg {

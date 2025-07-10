@@ -15,9 +15,12 @@ config({ path: path.join(__dirname, '..', '.env.local') });
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
+const allowedOrigins = process.env.VERCEL_ENV === 'production' 
+  ? ['https://panda.chat']
+  : true;
+
 app.use(cors({
-  origin: true, // Allow all origins for development
+  origin: allowedOrigins,
   credentials: true
 }));
 app.use(express.json());

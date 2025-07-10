@@ -169,72 +169,9 @@ function base64urlEncode(buf: Uint8Array): string {
     .replace(/\//g, "_")
     .replace(/=+$/, "");
 }
+
 function base64urlDecode(s: string): Uint8Array {
   s = s.replace(/-/g, "+").replace(/_/g, "/");
   while (s.length % 4) s += "=";
   return Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
-}
-
-/**
- * Calls the server for { oldKey, newKey }  (both base64url 32‑byte strings).
- */
-async function fetchRotationKeys(): Promise<{
-  oldKey: string;
-  newKey: string;
-}> {
-  // Make same-origin request to our local BFF API
-  const deriveKeyUrl = "/api/vault/deriveKey";
-
-  const response = await fetch(deriveKeyUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
-
-  const { oldKey, newKey } = (await response.json()) as {
-    oldKey: string;
-    newKey: string;
-  };
-  if (!oldKey || !newKey) throw new Error("Server response missing keys");
-  return { oldKey, newKey };
-}
-
-/**
- * Bootstrap the password CryptoKey from storage, rotating the envelope if the
- * backend supplied a new key.  Returns a **non‑extractable CryptoKey** suitable
- * for PBKDF2 derivations.
- */
-async function bootstrapPasswordKey(
-  encryptedPassword: string
-): Promise<{ pwKey: CryptoKey; encryptedPassword: string }> {
-  // 1. Fetch key pair from server (now returns strings directly)
-  const { oldKey, newKey } = await fetchRotationKeys();
-
-  // 2. Decrypt with oldKey → plaintext password
-  const passwordPlain = await decryptPassword(encryptedPassword, oldKey);
-
-  // 3. Import password as non‑extractable CryptoKey (PBKDF2 raw)
-  const pwKey = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(passwordPlain),
-    "PBKDF2",
-    false,
-    ["deriveKey", "deriveBits"]
-  );
-
-  // 4. Re‑encrypt with newKey and store back
-  const newEnvelope = await encryptPassword(passwordPlain, newKey);
-
-  // 5. Best‑effort wiping of plaintext
-  // (Strings are immutable, but we can at least lose the reference.)
-  // @ts-ignore – allow GC to reclaim it sooner
-  // eslint-disable-next-line no-self-assign
-  passwordPlain as unknown as string;
-
-  return { pwKey, encryptedPassword: newEnvelope };
 }

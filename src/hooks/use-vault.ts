@@ -148,7 +148,6 @@ export function useVault(): UseVaultResult {
         : 'https://vault.panda.chat';
       // Add necessary sandbox permissions for network requests
       iframe.sandbox.add('allow-scripts');
-      iframe.sandbox.add('allow-same-origin'); // Needed for proper origin and cookies
       iframe.sandbox.add('allow-forms'); // Needed for fetch requests
       iframe.style.display = 'none';
       iframe.style.position = 'absolute';
@@ -199,7 +198,8 @@ export function useVault(): UseVaultResult {
         cmd: 'init',
         encryptedId,
         userId,
-        encryptedPassword
+        encryptedPassword,
+        accessToken
       };
       iframe.contentWindow?.postMessage(initMsg, '*', [port2]);
 
