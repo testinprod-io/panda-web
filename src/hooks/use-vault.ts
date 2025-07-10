@@ -143,9 +143,11 @@ export function useVault(): UseVaultResult {
       // Create hidden iframe with sandbox restrictions
       const iframe = document.createElement('iframe');
       // Use localhost for development, production domain for production
-      iframe.src = process.env.NODE_ENV === 'development'
-        ? 'http://localhost:3001'
-        : 'https://vault.panda.chat';
+      iframe.src = process.env.VERCEL_ENV === 'production'
+        ? 'https://vault.panda.chat'
+        : process.env.VERCEL_ENV !== undefined
+          ? 'https://panda-web-vault.vercel.app'
+          : 'http://localhost:3001';
       // Add necessary sandbox permissions for network requests
       iframe.sandbox.add('allow-scripts');
       iframe.sandbox.add('allow-forms'); // Needed for fetch requests
