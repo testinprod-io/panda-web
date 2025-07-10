@@ -1,16 +1,13 @@
 import { ApiService } from "./api";
 import { optimism } from "viem/chains";
-import { createPublicClient, http, Hex, PublicClient } from "viem";
+import { createPublicClient, http, Hex } from "viem";
 import { ABI } from "@/services/kms-contract";
 import {
-  // TdxPayload,
   Jwks,
-  // EventLogEntry,
-  // AttestationResult,
   VerificationResult,
   VerificationStatus,
 } from "@/types/attestation";
-import { jwtVerify, JWTPayload, importJWK, JWK } from "jose";
+import { jwtVerify, JWTPayload, importJWK } from "jose";
 import { EventBus, SDKEventMap } from "@/sdk/events";
 import { AttestationResponse } from "@/sdk/client/types";
 
@@ -74,7 +71,7 @@ export class AttestationManager {
     const expectedQuoteHash = `0x${jwtPayload.tdx.tdx_collateral.quotehash}`;
     if (computedQuoteHash !== expectedQuoteHash) {
       throw new Error(
-        `quotehash mismatch:\n  expected ${expectedQuoteHash}\n  got      ${computedQuoteHash}`
+        `quotehash mismatch: expected ${expectedQuoteHash}, got ${computedQuoteHash}`
       );
     }
 
@@ -88,7 +85,7 @@ export class AttestationManager {
       const expected = `0x${jwtPayload.tdx[claimName]}`;
       if (rtmr[i] !== expected) {
         throw new Error(
-          `RTMR${i} mismatch:\n  expected ${expected}\n  got      ${rtmr[i]}`
+          `RTMR${i} mismatch: expected ${expected}, got ${rtmr[i]}`
         );
       }
     }
@@ -230,40 +227,10 @@ export class AttestationManager {
         publicKey: publicKeyHex,
       });
 
-      // if (!ready) {
-      //   console.log("Privy not ready, cannot verify contract");
-      // }
-      // if (wallets.length === 0) {
-      //   console.log("No wallets found, cannot verify contract");
-      //   const verificationResult: VerificationResult = {
-      //     status: VerificationStatus.Failed,
-      //     attestationResult,
-      //     publicKey: publicKeyHex,
-      //   };
-      //   setVerificationResult(attestationResult.appId, verificationResult);
-      //   return verificationResult;
-      // }
-
-      // const wallet = wallets[0];
-      // if (process.env.NEXT_PUBLIC_KMS_CONTRACT_NETWORK === "optimism") {
-      //   await wallet.switchChain(optimism.id);
-      // } else if (process.env.NEXT_PUBLIC_KMS_CONTRACT_NETWORK === "sepolia") {
-      //   await wallet.switchChain(sepolia.id);
-      // }
-
-      // const provider = await wallet.getEthereumProvider();
-      // const client = createPublicClient({
-      //   chain: process.env.NEXT_PUBLIC_KMS_CONTRACT_NETWORK === "optimism" ? optimism : sepolia,
-      //   transport: custom(provider),
-      // });
-
-      // console.log(`Reading contract isAppAllowed with wallet address: ${wallet.address} and contract address: ${ADDRESS}`);
-
       const toHex = (value: string) =>
         (value.startsWith("0x") ? value : `0x${value}`) as Hex;
 
       const [isAllowed, reason] = (await this.client.readContract({
-        // account: wallet.address as Hex,
         address:
           (process.env.NEXT_PUBLIC_KMS_CONTRACT_ADDRESS as `0x${string}`) ||
           "0x3366E906D7C2362cE4C336f43933Cccf76509B23",
@@ -292,7 +259,7 @@ export class AttestationManager {
         publicKey: publicKeyHex,
       };
       this.verificationResults[publicKeyHex] = verificationResult;
-      console.log("isAllowed:", isAllowed, "reason:", reason);
+      console.log("Successfully verified contract");
       this.updateState({
         status: verificationResult.status,
         attestationResult,
@@ -318,10 +285,8 @@ export class AttestationManager {
   public async verifyAttestation(
     publicKeyHex: string
   ): Promise<AttestationResult> {
-    console.log("verifying attestation for publicKeyHex:", publicKeyHex);
     try {
       if (this.attestationResults[publicKeyHex]) {
-        console.log("attestation already verified, returning true");
         this.verifyContract(
           publicKeyHex,
           this.attestationResults[publicKeyHex]

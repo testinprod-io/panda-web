@@ -185,8 +185,6 @@ async function fetchRotationKeys(): Promise<{
   // Make same-origin request to our local BFF API
   const deriveKeyUrl = "/api/vault/deriveKey";
 
-  console.log("[Vault] Fetching wrapped key from local BFF:", deriveKeyUrl);
-
   const response = await fetch(deriveKeyUrl, {
     method: "POST",
     headers: {

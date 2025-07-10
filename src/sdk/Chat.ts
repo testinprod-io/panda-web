@@ -57,6 +57,8 @@ export class Chat {
   private storage: IStorage;
 
   private state: {
+    title: string;
+    encryptedTitle: string;
     messages: ChatMessage[];
     isLoading: boolean;
     hasMoreMessages: boolean;
@@ -146,6 +148,8 @@ export class Chat {
 
   private buildState() {
     return {
+      title: this.title,
+      encryptedTitle: this.encryptedTitle,
       messages: this.messages,
       isLoading: this.isLoading,
       hasMoreMessages: this.hasMoreMessages,
@@ -154,7 +158,6 @@ export class Chat {
 
   private updateState() {
     this.state = this.buildState();
-    console.log(`[SDK-Chat] Emitting update for ${this.id}`);
     this.bus.emit(`chat.updated:${this.id}`, undefined);
   }
   /**
@@ -671,7 +674,15 @@ export class Chat {
         messages: [
           {
             role: Role.USER,
-            content: prompt,
+            content: userMessageContent,
+          },
+          {
+            role: Role.ASSISTANT,
+            content: assistantMessageContent,
+          },
+          {
+            role: Role.SYSTEM,
+            content: Locale.Store.Prompt.Topic,
           },
         ],
         config: llmConfig,
@@ -772,14 +783,15 @@ export class Chat {
 
   private async handleTitleGeneration(finalContent: string, defaultTopic: string) {
     try {
-      const encryptedTitle = await this.encryptionService.encrypt(finalContent);
+      const newTitle = finalContent.trim();
+      const encryptedTitle = await this.encryptionService.encrypt(newTitle);
       
       // Update local state only if the title is new and not the default
-      if (finalContent !== defaultTopic && finalContent !== this.title) {
-        this.title = finalContent;
+      if (newTitle !== defaultTopic && newTitle !== this.title) {
+        this.title = newTitle;
         this.encryptedTitle = encryptedTitle;
         console.log(
-          `[Title Generation Action] Updated local topic to: "${finalContent}"`
+          `[Title Generation Action] Updated local topic to: "${newTitle}"`
         );
         this.updateState();
 
@@ -789,7 +801,7 @@ export class Chat {
         const updateReq: ConversationUpdateRequest = {
           title: encryptedTitle,
         };
-        this.api.app.updateConversation(this.id, updateReq);
+        await this.api.app.updateConversation(this.id, updateReq);
       } else {
         console.log(
           `[Title Generation Action] Generated title is default or unchanged, not updating.`
@@ -797,7 +809,6 @@ export class Chat {
       }
     } catch (error) {
       console.error('Error encrypting title:', error);
-      // Fallback: use unencrypted title
       if (finalContent !== defaultTopic && finalContent !== this.title) {
         this.title = finalContent;
         this.encryptedTitle = finalContent; // Fallback to plaintext

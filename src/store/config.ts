@@ -1,15 +1,7 @@
-import { ServerModelInfo } from "@/sdk/client/types";
+
 import {
-  // DEFAULT_MODELS,
   DEFAULT_SIDEBAR_WIDTH,
   StoreKey,
-  ServiceProvider,
-  DEFAULT_PANDA_MODEL_NAME,
-  // AppModelDefinition,
-  // ModelType,
-  // BASE_MODEL_CONFIG,
-  KnowledgeCutOffDate,
-  // ModelConfig,
 } from "@/types/constant";
 import { createPersistStore } from "@/utils/store";
 import { indexedDBStorage } from "@/utils/indexedDB-storage";

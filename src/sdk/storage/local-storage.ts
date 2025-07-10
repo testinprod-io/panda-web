@@ -229,7 +229,7 @@ export class LocalStorage implements IStorage {
 
     const now = new Date().toISOString();
     const conversationId = crypto.randomUUID();
-    const encryptedTitle = this.encryptionService.encrypt(title.trim());
+    const encryptedTitle = await this.encryptionService.encrypt(title.trim());
 
     const conversation: Conversation = {
       conversation_id: conversationId as UUID,
@@ -403,12 +403,12 @@ export class LocalStorage implements IStorage {
       let shouldStart = !cursor;
       let foundStart = false;
 
-      request.onsuccess = () => {
+      request.onsuccess = async () => {
         const cursorResult = request.result;
 
         if (!cursorResult) {
           // End of data - reverse messages to get chronological order
-          const chatMessages = messages.reverse().map(msg => this.mapStoredMessageToChatMessage(msg));
+          const chatMessages = await Promise.all(messages.reverse().map(msg => this.mapStoredMessageToChatMessage(msg)));
           resolve({
             messages: chatMessages,
             hasMore,
@@ -441,7 +441,7 @@ export class LocalStorage implements IStorage {
         } else {
           hasMore = true;
           nextCursor = message.message_id;
-          const chatMessages = messages.reverse().map(msg => this.mapStoredMessageToChatMessage(msg));
+          const chatMessages = await Promise.all(messages.reverse().map(msg => this.mapStoredMessageToChatMessage(msg)));
           resolve({
             messages: chatMessages,
             hasMore,
@@ -808,16 +808,16 @@ export class LocalStorage implements IStorage {
   }
 
   // Helper method to convert local message to chat message
-  private mapStoredMessageToChatMessage(message: any): ChatMessage {
+  private async mapStoredMessageToChatMessage(message: any): Promise<ChatMessage> {
     return createMessage({
       id: message.message_id,
       role: message.sender_type,
       content: message.content,
-      visibleContent: this.encryptionService.decrypt(message.content),
+      visibleContent: await this.encryptionService.decrypt(message.content),
       files: message.files,
       date: new Date(message.timestamp),
       reasoning: message.reasoning_content,
-      visibleReasoning: message.reasoning_content ? this.encryptionService.decrypt(message.reasoning_content) : undefined,
+      visibleReasoning: message.reasoning_content ? await this.encryptionService.decrypt(message.reasoning_content) : undefined,
       reasoningTime: message.reasoning_time
         ? parseInt(message.reasoning_time)
         : undefined,

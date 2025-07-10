@@ -11,7 +11,6 @@ import { EventBus } from './events';
 import { IStorage } from './storage/i-storage';
 import { ServerStorage /*, LocalStorage, MemoryStorage */ } from './storage';
 import { ConfigManager } from './ConfigManager';
-import { ApiError } from './client/types';
 /**
  * The main entry point for the Panda SDK.
  * This class instantiates and manages all the different modules

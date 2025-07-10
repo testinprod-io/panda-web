@@ -3,9 +3,6 @@ import { PandaConfig } from "./ConfigManager";
 import { VerificationStatus } from "@/types/attestation";
 import { ServerModelInfo } from "./client/types";
 import { AttestationResult } from "@/types/attestation";
-import { Chat } from './Chat';
-import { EventBus as EventBusImplementation } from './events';
-// import { Chat, ChatMessage, FileWithProgress } from "./Chat";
 
 /* event-bus.ts */
 export interface SDKEventMap {

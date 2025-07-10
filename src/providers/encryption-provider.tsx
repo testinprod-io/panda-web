@@ -104,7 +104,6 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
 
   // Try to automatically unlock with stored encrypted password using bootstrap
   useEffect(() => {
-    console.log("useEffect triggered", vaultIntegration.isVaultReady(), encryptedId, authUser?.id, isLocked, isFirstTimeUser, "authenticated:", authenticated);
     if (vaultIntegration.isVaultReady() && encryptedId && authUser?.id && isLocked && isFirstTimeUser === false && authenticated) {
       console.log('[EncryptionProvider] Attempting bootstrap with stored password');
       tryBootstrap();
@@ -225,22 +224,6 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
       );
   }, []);
 
-  const resetInactivityTimer = useCallback(() => {
-    if (inactivityTimerRef.current) {
-      clearTimeout(inactivityTimerRef.current);
-    }
-    // Only set a new timer if the app is *not* locked and expiration is not "Never"
-    if (!isLocked && passwordExpirationMinutes > 0) {
-      const timeoutMs = passwordExpirationMinutes * 60 * 1000;
-      console.log("[EncryptionProvider] Inactivity timer set for", timeoutMs, "ms");
-      inactivityTimerRef.current = setTimeout(() => {
-        console.log(
-          "[EncryptionProvider] Inactivity timeout reached. Locking app.",
-        );
-        lockApp();
-      }, timeoutMs);
-    }
-  }, [isLocked, passwordExpirationMinutes]); // Rerun when lock state or expiration changes
 
   const lockApp = useCallback(async () => {
     setIsLocked(true);
@@ -258,14 +241,30 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     console.log("[EncryptionProvider] App locked.");
   }, [lockAppHook]);
 
+
+  const resetInactivityTimer = useCallback(() => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+    // Only set a new timer if the app is *not* locked and expiration is not "Never"
+    if (!isLocked && passwordExpirationMinutes > 0) {
+      const timeoutMs = passwordExpirationMinutes * 60 * 1000;
+      inactivityTimerRef.current = setTimeout(() => {
+        console.log(
+          "[EncryptionProvider] Inactivity timeout reached. Locking app.",
+        );
+        lockApp();
+      }, timeoutMs);
+    }
+  }, [isLocked, passwordExpirationMinutes]); // Rerun when lock state or expiration changes
+
   // Handle successful unlock
   const handleUnlockSuccess = useCallback(async () => {
-    console.log("💚 HANDLE UNLOCK SUCCESS - About to call unlockAppHook", new Date().toISOString());
     setIsLocked(false);
     setHasError(false); // Clear errors on successful unlock
+    console.log("HELLO2");
     resetInactivityTimer(); // Start timer on successful unlock
     await unlockAppHook();
-    console.log("💚 HANDLE UNLOCK SUCCESS - unlockAppHook completed", new Date().toISOString());
   }, [resetInactivityTimer, unlockAppHook]);
 
   // Handle encryption errors by showing error

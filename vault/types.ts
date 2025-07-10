@@ -1,6 +1,3 @@
-// Shared protocol types for vault communication
-// Copied locally to avoid TypeScript rootDir issues
-
 export interface InitMsg {
   cmd: "init";
   encryptedId?: string; // User's encrypted ID from server

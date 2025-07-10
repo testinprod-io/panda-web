@@ -95,12 +95,6 @@ app.post('/api/vault/deriveKey', async (req, res) => {
         console.error('[Vault-BFF] Invalid response format - missing new_key');
         return res.status(500).json({ error: 'Invalid session key response format' });
       }
-      
-      // if (!sessionKeyData.old_key) {
-      //   console.error('[Vault-BFF] Invalid response format - missing old_key');
-      //   return res.status(500).json({ error: 'Invalid session key response format' });
-      // }
-
 
       console.log('[Vault-BFF] Returning session encryption key to vault');
       res.json(sessionKeyData);

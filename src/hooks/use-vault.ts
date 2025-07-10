@@ -170,7 +170,6 @@ export function useVault(): UseVaultResult {
         }, 10000);
 
         iframe.onload = () => {
-          console.log('[useVault] iframe.onload event fired!');
           clearTimeout(timeout);
           resolve();
         };
@@ -182,8 +181,6 @@ export function useVault(): UseVaultResult {
         };
       });
 
-      // Establish MessageChannel communication
-      console.log('[useVault] iframe loaded. Establishing MessageChannel.');
       const channel = new MessageChannel();
       const port1 = channel.port1;
       const port2 = channel.port2;
@@ -204,10 +201,6 @@ export function useVault(): UseVaultResult {
         userId,
         encryptedPassword
       };
-      const vaultOrigin = process.env.NODE_ENV === 'development'
-      ? 'http://localhost:3001'
-      : 'https://vault.panda.chat';
-      console.log('[useVault] Sent init message to vault origin:', vaultOrigin);
       iframe.contentWindow?.postMessage(initMsg, '*', [port2]);
 
       // Wait for ACK from vault
@@ -219,10 +212,8 @@ export function useVault(): UseVaultResult {
 
         // Temporarily set onmessage to listen for the ACK
         port1.onmessage = (event: MessageEvent) => {
-          console.log('[useVault] Received message on port1 while waiting for ACK:', event.data);
           const data = event.data as AckMsg;
           if (data.ok) {
-            console.log(`[useVault] >>>>>>>> The vault's actual origin is: ${data.origin} <<<<<<<<`);
             clearTimeout(timeout);
             resolve();
           } else {

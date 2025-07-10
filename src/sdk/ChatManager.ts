@@ -147,7 +147,7 @@ export class ChatManager {
     modelConfig?: ServerModelInfo,
     customizedPrompts?: CustomizedPromptsData
   ): Promise<Chat> {
-    const customizedPrompt = customizedPrompts ? await this.encryptionService.encrypt(generateSystemPrompt(customizedPrompts)) : null;
+    const customizedPrompt = (customizedPrompts && customizedPrompts.enabled) ? await this.encryptionService.encrypt(generateSystemPrompt(customizedPrompts)) : null;
     const newConversation = await this.storage.createChat(topic, {
       default_model_name: modelConfig?.model_name,
       customized_prompts: customizedPrompt,

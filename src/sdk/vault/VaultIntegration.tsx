@@ -189,7 +189,6 @@ export function useVaultIntegration(): VaultIntegration {
   const [integration] = React.useState(() => new VaultIntegration());
   
   React.useEffect(() => {
-    console.log("useVaultIntegrationContext useEffect");
     integration.setVault(vault);
   }, [vault.state.isReady, integration]);
   
@@ -212,7 +211,6 @@ export function VaultIntegrationProvider({ children }: { children: React.ReactNo
 
 // Hook to use vault integration from context
 export function useVaultIntegrationContext(): VaultIntegration {
-  console.log("useVaultIntegrationContext");
   const context = React.useContext(VaultIntegrationContext);
   if (!context) {
     throw new Error('useVaultIntegrationContext must be used within VaultIntegrationProvider');

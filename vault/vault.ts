@@ -1,6 +1,3 @@
-// Types and dependencies are included in the concatenated bundle
-
-// Rate limiting
 interface RateLimitState {
   count: number;
   windowStart: number;
@@ -57,59 +54,11 @@ class VaultService {
       this.expectedUserId = initMsg.userId;
     }
 
-    // Try to bootstrap password if encryptedPassword is provided
-    if (initMsg.encryptedPassword) {
-      // this.tryBootstrapPassword(initMsg.encryptedPassword);
-    }
-
     // Send acknowledgment
     const ackMsg = { ok: true, origin: self.origin };
     this.port.postMessage(ackMsg);
 
     console.log('[Vault] Initialized and acknowledged');
-  }
-
-  private async tryBootstrapPassword(encryptedPassword: string): Promise<void> {
-    try {
-      console.log('[Vault] Attempting to bootstrap password from stored encrypted password');
-      
-      // Get server keys as strings
-      const { oldKey, newKey } = await this.fetchServerKeys();
-      
-      if (!oldKey) {
-        console.log('[Vault] Server indicates password rotation needed - oldKey is null');
-        return; // Need fresh password input
-      }
-      
-      // Decrypt password and get CryptoKey
-      const passwordPlain = await decryptPassword(encryptedPassword, oldKey);
-      
-      // Import password as CryptoKey for encryption operations
-      this.passwordKey = await crypto.subtle.importKey(
-        "raw",
-        new TextEncoder().encode(passwordPlain),
-        "PBKDF2",
-        false,
-        ["deriveKey", "deriveBits"]
-      );
-      
-      // Re-encrypt with new key
-      const newEncryptedPassword = await encryptPassword(passwordPlain, newKey);
-      
-      // Notify main app about the new encrypted password (key rotation)
-      if (this.port && newEncryptedPassword !== encryptedPassword) {
-        this.port.postMessage({
-          cmd: 'passwordUpdated',
-          encryptedPassword: newEncryptedPassword
-        });
-      }
-      
-      console.log('[Vault] Password bootstrapped successfully');
-      this.resetIdleTimer();
-    } catch (error) {
-      console.log('[Vault] Failed to bootstrap password, user will need to input password:', error);
-      // Not an error - just means we need fresh password input
-    }
   }
 
   private async handlePortMessage(event: MessageEvent): Promise<void> {
@@ -214,7 +163,7 @@ class VaultService {
       clearTimeout(this.idleTimer);
       this.idleTimer = null;
     }
-    console.log('[Vault] Password and validation data cleared from memory');
+    console.log('[Vault] Password and validation data cleared from memory');  
   }
 
   private async handleSetPassword(request: any): Promise<any> {
