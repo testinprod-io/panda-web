@@ -207,7 +207,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         console.error("[EncryptionProvider] Caught encryption error:", error);
 
         // Lock the app and show error
-        setIsLocked(true);
+        // setIsLocked(true);
         setHasError(true);
         setErrorMessage(error.message);
 
@@ -250,9 +250,6 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     if (!isLocked && passwordExpirationMinutes > 0) {
       const timeoutMs = passwordExpirationMinutes * 60 * 1000;
       inactivityTimerRef.current = setTimeout(() => {
-        console.log(
-          "[EncryptionProvider] Inactivity timeout reached. Locking app.",
-        );
         lockApp();
       }, timeoutMs);
     }
@@ -262,7 +259,6 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   const handleUnlockSuccess = useCallback(async () => {
     setIsLocked(false);
     setHasError(false); // Clear errors on successful unlock
-    console.log("HELLO2");
     resetInactivityTimer(); // Start timer on successful unlock
     await unlockAppHook();
   }, [resetInactivityTimer, unlockAppHook]);
@@ -271,7 +267,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   const handleEncryptionError = useCallback((error: Error) => {
     setErrorMessage(error.message);
     setHasError(true);
-    setIsLocked(true);
+    // setIsLocked(true);
   }, []);
 
   // Unlock function for existing users

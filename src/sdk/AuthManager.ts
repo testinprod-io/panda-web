@@ -36,11 +36,11 @@ export class AuthManager {
       user: null,
     };
 
-    console.log("AuthManager initialized");
-
     this.authProvider.addAuthStateListener(this.handleAuthStateChange);
+    // this.initializeAuthState();
   }
 
+  // This is required by the EventEmitter base class
   getState() {
     return this.state;
   }
@@ -60,12 +60,10 @@ export class AuthManager {
   public async initializeAuthState() {
     const isAuthenticated = await this.authProvider.getIsAuthenticated();
     const user = await this.authProvider.getUser();
-
     this.updateState({
       isAuthenticated,
       user,
     });
-
     try {
       const encryptedId = (await this.api.app.getEncryptedId()).encrypted_id;
       this.updateState({
@@ -78,8 +76,6 @@ export class AuthManager {
     isAuthenticated: boolean;
     user: User | null;
   }) => {
-    console.log("handleAuthStateChange", payload);
-
     if (this.state.isAuthenticated !== payload.isAuthenticated) {
       const newState: Partial<typeof this.state> = {
         isAuthenticated: payload.isAuthenticated,
@@ -95,6 +91,7 @@ export class AuthManager {
   };
 
   public async unlock(): Promise<boolean> {
+    console.log("HUIH")
     if (!this.state.isAuthenticated) {
       return false;
     }

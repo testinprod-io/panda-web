@@ -116,7 +116,6 @@ export class Chat {
     this.createdAt = createdAt;
 
     this.bus.on("app.unlocked", async () => {
-      console.log("app.unlocked");
       this.messages = await Promise.all(this.messages.map(async (m) => {
         const newMessage = {
           ...m,
@@ -131,7 +130,6 @@ export class Chat {
     });
 
     this.bus.on("app.locked", () => {
-      console.log("app.locked");
       this.messages = this.messages.map((m) => {
         const newMessage = {
           ...m,
@@ -621,7 +619,7 @@ export class Chat {
       }
       return msg;
     }));
-    console.log("messageToSave", messageToSave);
+
     if (messageToSave) {
       this.storage.saveMessage(this.id as string, messageToSave);
     } else {
@@ -666,8 +664,6 @@ export class Chat {
       reasoning: false,
       targetEndpoint: modelConfig.url,
     };
-
-    const prompt = `**Prompt**\n\nYou are a chat‑title generator.\n\nInput\nUser: ${userMessageContent}\nAssistant: ${assistantMessageContent}\n\nTask\n1. If the messages revolve around a specific topic, produce a short, informative title (3–6 words, Title Case, no trailing punctuation).\n2. If they are too vague or empty to summarize meaningfully, output exactly:\n   ${defaultTopic}\n\nRules\n- Output **only** the title text (or "${defaultTopic}")—no extra words or quotation marks.\n- Keep the title neutral and descriptive; do not include the words "user" or "assistant".\n`;
 
     try {
       await this.api.llm.chat({

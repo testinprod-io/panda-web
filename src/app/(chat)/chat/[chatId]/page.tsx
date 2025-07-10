@@ -9,11 +9,13 @@ import { useAuth } from "@/sdk/hooks";
 import toast from "react-hot-toast";
 import { Chat } from "@/sdk/Chat";
 import { UUID } from "crypto";
+import { usePrivy } from "@privy-io/react-auth";
 
 export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
   const { sdk, isReady } = usePandaSDK();
+  const { ready: privyReady } = usePrivy();
   const chatId = params?.chatId as UUID | undefined;
   const { isAuthenticated } = useAuth();
 
@@ -24,7 +26,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     const validateSession = async () => {
-      if (!isReady) {
+      if (!privyReady) {
         console.log(`[ChatPage] Not ready`);
         setIsLoadingState(true);
         return;

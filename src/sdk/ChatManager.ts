@@ -53,10 +53,8 @@ export class ChatManager {
     this.storage = storage;
     this.config = config;
     this.state = this.buildState();
-    console.log('ChatManager initialized');
 
     this.bus.on('app.unlocked', async () => {
-      console.log('app.unlockedaaa');
       this.conversations = await Promise.all(this.conversations.map(async (c) => {
         c.title = await this.encryptionService.decrypt(c.encryptedTitle);
         return c;

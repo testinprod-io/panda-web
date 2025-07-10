@@ -89,8 +89,6 @@ export class PandaSDK {
     if (this.ready || this.isReadying) {
       return;
     }
-    console.log("handleAuthenticated");
-    console.log("[PandaSDK] handleAuthenticated called from:", new Error().stack);
     this.isReadying = true;
     
     const [info, authState] = await Promise.all([

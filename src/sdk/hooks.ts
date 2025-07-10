@@ -3,7 +3,6 @@
 import { useSyncExternalStore, useCallback } from 'react';
 import { usePandaSDK } from '@/providers/sdk-provider';
 import { Chat } from "./Chat";
-
 /**
  * A modern hook to subscribe to the state of the ChatManager.
  * It uses useSyncExternalStore to efficiently update components
