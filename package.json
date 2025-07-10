@@ -4,8 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "(cd vault && npm run dev) & next dev --turbopack",
-    "build": "npm run build:vault && next build",
-    "build:vault": "cd vault && npm install && npm run build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },

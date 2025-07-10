@@ -135,7 +135,14 @@ export function useVault(): UseVaultResult {
     }
     initStartedRef.current = true;
     
-    console.log(`[useVault] Initializing... (isReady: ${state.isReady}, isLoading: ${state.isLoading})`);
+const vaultOrigin = process.env.VERCEL_ENV === 'production'
+? 'https://vault.panda.chat'
+: process.env.VERCEL_ENV !== undefined
+  ? 'https://panda-web-vault.vercel.app'
+  : 'http://localhost:3001';
+
+    console.log(`[useVault] Initializing... (isReady: ${state.isReady}, isLoading: ${state.isLoading}) ${vaultOrigin}`);
+
 
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
@@ -143,11 +150,7 @@ export function useVault(): UseVaultResult {
       // Create hidden iframe with sandbox restrictions
       const iframe = document.createElement('iframe');
       // Use localhost for development, production domain for production
-      iframe.src = process.env.VERCEL_ENV === 'production'
-        ? 'https://vault.panda.chat'
-        : process.env.VERCEL_ENV !== undefined
-          ? 'https://panda-web-vault.vercel.app'
-          : 'http://localhost:3001';
+      iframe.src = vaultOrigin;
       // Add necessary sandbox permissions for network requests
       iframe.sandbox.add('allow-scripts');
       iframe.sandbox.add('allow-forms'); // Needed for fetch requests
