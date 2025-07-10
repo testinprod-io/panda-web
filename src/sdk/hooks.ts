@@ -79,7 +79,6 @@ export function useAuth() {
     logout: authManager.logout.bind(authManager),
     lockApp: authManager.lock.bind(authManager),
     unlockApp: authManager.unlock.bind(authManager),
-    createPassword: authManager.createPassword.bind(authManager),
   }
 }
 

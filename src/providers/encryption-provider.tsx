@@ -50,12 +50,13 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   const [hasError, setHasError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [encryptedPassword, setEncryptedPassword] = useState<string | null>(null);
+  const [bootstrapAttempted, setBootstrapAttempted] = useState<boolean>(false);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { user, authenticated, ready } = usePrivy();
   const pathname = usePathname();
   const router = useRouter();
   const { sdk } = usePandaSDK();
-  const { encryptedId, user: authUser, lockApp: lockAppHook, unlockApp: unlockAppHook, createPassword: createPasswordHook } = useAuth();
+  const { encryptedId, user: authUser, lockApp: lockAppHook, unlockApp: unlockAppHook } = useAuth();
   const isFirstTimeUser = sdk.ready ? encryptedId === null : null;
   
   const vaultIntegration = useVaultIntegrationContext();
@@ -103,16 +104,31 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
 
   // Try to automatically unlock with stored encrypted password using bootstrap
   useEffect(() => {
-    console.log("useEffect triggered", vaultIntegration.isVaultReady(), encryptedId, authUser?.id, isLocked, isFirstTimeUser);
-    if (vaultIntegration.isVaultReady() && encryptedId && authUser?.id && isLocked && isFirstTimeUser === false) {
+    console.log("useEffect triggered", vaultIntegration.isVaultReady(), encryptedId, authUser?.id, isLocked, isFirstTimeUser, "authenticated:", authenticated);
+    if (vaultIntegration.isVaultReady() && encryptedId && authUser?.id && isLocked && isFirstTimeUser === false && authenticated) {
       console.log('[EncryptionProvider] Attempting bootstrap with stored password');
       tryBootstrap();
     }
-  }, [vaultIntegration.isVaultReady(), encryptedId, authUser?.id, encryptedPassword, isLocked, isFirstTimeUser]);
+  }, [vaultIntegration.isVaultReady(), encryptedId, authUser?.id, encryptedPassword, isLocked, isFirstTimeUser, authenticated]);
+
+  // // Reset bootstrap attempt status when key dependencies change
+  // useEffect(() => {
+  //   if (isLocked) {
+  //     setBootstrapAttempted(false);
+  //   }
+  // }, [isLocked]);
+
+  // For first-time users, mark bootstrap as attempted since they don't have a stored password
+  useEffect(() => {
+    if (isFirstTimeUser === true) {
+      setBootstrapAttempted(true);
+    }
+  }, [isFirstTimeUser]);
 
   const tryBootstrap = async () => {
     if (!encryptedId || !authUser?.id || !encryptedPassword) {
       console.log('[EncryptionProvider] Missing required data for auto-unlock');
+      setBootstrapAttempted(true);
       return;
     }
 
@@ -121,11 +137,13 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
       const response = await vaultIntegration.bootstrap(encryptedId, authUser.id, encryptedPassword ?? undefined);
       
       if (!response.ok) {
-        throw new Error('Bootstrap failed');
+        console.log('Bootstrap failed');
+        setBootstrapAttempted(true);
       }
 
       if (response.needsPassword) {
         console.log('[EncryptionProvider] Bootstrap indicates password input needed');
+        setBootstrapAttempted(true);
         return; // Modal will show automatically
       }
 
@@ -133,6 +151,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         console.log('[EncryptionProvider] Bootstrap validation failed');
         setHasError(true);
         setErrorMessage('Invalid password');
+        setBootstrapAttempted(true);
         return;
       }
 
@@ -143,16 +162,31 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         localStorage.setItem(ENCRYPTED_PASSWORD_KEY, response.encryptedPassword);
       }
 
-      // Unlock the app
-      setIsLocked(false);
-      setHasError(false);
-      resetInactivityTimer();
+      // Check if user is actually authenticated before unlocking
+      console.log('[EncryptionProvider] Bootstrap successful, checking authentication before unlock:', {
+        privyAuthenticated: authenticated,
+        privyReady: ready,
+        authUser: !!authUser,
+        timestamp: new Date().toISOString()
+      });
+
+      if (!authenticated) {
+        console.log('[EncryptionProvider] Bootstrap successful but user not authenticated - skipping unlock');
+        setBootstrapAttempted(true);
+        return;
+      }
+
+      // User is authenticated and bootstrap succeeded - safe to unlock
+      console.log('[EncryptionProvider] User authenticated and bootstrap successful - unlocking app');
+      handleUnlockSuccess();
+      setBootstrapAttempted(true);
       console.log('[EncryptionProvider] Bootstrap successful, app unlocked');
       
     } catch (error) {
       console.log('[EncryptionProvider] Auto-unlock failed, user needs to input password:', error);
       // Don't set error state, just require password input
       // The modal will show automatically since isLocked=true and isFirstTimeUser=false
+      setBootstrapAttempted(true);
     }
   };
   
@@ -206,25 +240,33 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         lockApp();
       }, timeoutMs);
     }
-  }, [isLocked, passwordExpirationMinutes, inactivityTimerRef]); // Rerun when lock state or expiration changes
+  }, [isLocked, passwordExpirationMinutes]); // Rerun when lock state or expiration changes
 
-  const lockApp = useCallback(() => {
+  const lockApp = useCallback(async () => {
     setIsLocked(true);
     setHasError(false); // Clear any errors when manually locking
+    localStorage.removeItem(ENCRYPTED_PASSWORD_KEY);
+    setEncryptedPassword(null);
+    await vaultIntegration.clearKeys();
+    setBootstrapAttempted(true); // Reset bootstrap attempt status
+    console.log('[EncryptionProvider] App locked. Bootstrap attempted:', bootstrapAttempted, isLocked, isFirstTimeUser, vaultIntegration.isVaultReady());
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
       inactivityTimerRef.current = null;
     }
+    await lockAppHook();
     console.log("[EncryptionProvider] App locked.");
-  }, []);
+  }, [lockAppHook]);
 
   // Handle successful unlock
-  const handleUnlockSuccess = useCallback(() => {
+  const handleUnlockSuccess = useCallback(async () => {
+    console.log("💚 HANDLE UNLOCK SUCCESS - About to call unlockAppHook", new Date().toISOString());
     setIsLocked(false);
     setHasError(false); // Clear errors on successful unlock
     resetInactivityTimer(); // Start timer on successful unlock
-    console.log("[EncryptionProvider] App unlocked.");
-  }, [resetInactivityTimer]);
+    await unlockAppHook();
+    console.log("💚 HANDLE UNLOCK SUCCESS - unlockAppHook completed", new Date().toISOString());
+  }, [resetInactivityTimer, unlockAppHook]);
 
   // Handle encryption errors by showing error
   const handleEncryptionError = useCallback((error: Error) => {
@@ -237,12 +279,26 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   const contextUnlockApp = useCallback(
     async (password: string): Promise<boolean> => {
       try {
+        console.log('[EncryptionProvider] contextUnlockApp called - checking authentication:', {
+          privyAuthenticated: authenticated,
+          privyReady: ready,
+          hasAuthUser: !!authUser,
+          timestamp: new Date().toISOString()
+        });
+
+        if (!authenticated) {
+          console.log('[EncryptionProvider] User not authenticated - cannot unlock');
+          return false;
+        }
+
         if (!vaultIntegration.isVaultReady()) {
-          throw new Error('Vault not ready');
+          console.log('Vault not ready');
+          return false;
         }
 
         if (!encryptedId || !authUser?.id) {
-          throw new Error('Missing encryptedId or user ID for validation');
+          console.log('Missing encryptedId or user ID for validation');
+          return false;
         }
  
         // Use setPassword with validation to verify the password and get encrypted version
@@ -262,7 +318,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         return false;
       }
     },
-    [vaultIntegration, encryptedId, authUser?.id, handleUnlockSuccess, handleEncryptionError],
+    [vaultIntegration, encryptedId, authUser?.id, handleUnlockSuccess, handleEncryptionError, authenticated],
   );
 
   // Handler for password creation (first-time users)
@@ -270,6 +326,17 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     async (newPassword: string) => {
       try {
         console.log("[EncryptionProvider] Creating new password for first-time user.");
+
+        console.log('[EncryptionProvider] handleCreatePassword called - checking authentication:', {
+          privyAuthenticated: authenticated,
+          privyReady: ready,
+          hasAuthUser: !!authUser,
+          timestamp: new Date().toISOString()
+        });
+
+        if (!authenticated) {
+          throw new Error('User not authenticated - cannot create password');
+        }
 
         if (!vaultIntegration.isVaultReady()) {
           throw new Error('Vault not ready');
@@ -310,7 +377,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         throw error;
       }
     },
-    [vaultIntegration, authUser?.id, sdk.auth, handleUnlockSuccess, handleEncryptionError],
+    [vaultIntegration, authUser?.id, sdk.auth, handleUnlockSuccess, handleEncryptionError, authenticated],
   );
 
   // Set up global event listeners to reset the timer on user activity
@@ -376,7 +443,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
 
   const isSignupPage = pathname.startsWith("/signup");
   const isOnboardingPage = pathname.startsWith("/onboarding");
-  const showUnlockModal = isLocked && !isSignupPage && isFirstTimeUser === false && vaultIntegration.isVaultReady();
+  const showUnlockModal = isLocked && !isSignupPage && isFirstTimeUser === false && vaultIntegration.isVaultReady() && bootstrapAttempted;
 
   return (
     <EncryptionContext.Provider value={contextValue}>

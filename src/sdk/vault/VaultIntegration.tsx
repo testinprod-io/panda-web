@@ -129,12 +129,12 @@ export class VaultIntegration {
   /**
    * Clear keys from memory (equivalent to EncryptionService.clearKey)
    */
-  public clearKeys(): void {
-    this.encryptionService.clearKey();
-    // The vault automatically clears keys on idle timeout
-    // For immediate clearing, we could reset the vault
-    if (this.vault) {
-      this.vault.reset();
+  public async clearKeys(): Promise<void> {
+    // Use the vault's clearKeys method to clear sensitive data from memory
+    if (this.vault && this.vault.state.isReady) {
+      await this.vault.clearKeys().catch((error) => {
+        console.error('[VaultIntegration] Failed to clear keys from vault:', error);
+      });
     }
   }
 
@@ -142,21 +142,44 @@ export class VaultIntegration {
    * Check if keys are currently available
    */
   public isKeySet(): boolean {
-    return this.encryptionService.isKeySet();
+    // Keys are available if the vault is ready (has password loaded)
+    return this.isVaultReady();
   }
 
   /**
    * Encrypt file (fallback to legacy implementation)
    */
   public async encryptFile(file: File): Promise<File> {
-    return await this.encryptionService.encryptFile(file);
+    if (!this.vault || !this.vault.state.isReady) {
+      throw new Error('Vault not ready');
+    }
+
+    try {
+      const fileData = await file.arrayBuffer();
+      const encryptedData = await this.vault.encryptFile(fileData, file.name, file.type);
+      return new File([encryptedData], file.name, { type: file.type });
+    } catch (error) {
+      console.error('[VaultIntegration] File encryption failed:', error);
+      throw error;
+    }
   }
 
   /**
    * Decrypt file (fallback to legacy implementation)
    */
   public async decryptFile(file: File): Promise<File> {
-    return await this.encryptionService.decryptFile(file);
+    if (!this.vault || !this.vault.state.isReady) {
+      throw new Error('Vault not ready');
+    }
+
+    try {
+      const encryptedData = await file.arrayBuffer();
+      const decryptedData = await this.vault.decryptFile(encryptedData, file.name, file.type);
+      return new File([decryptedData], file.name, { type: file.type });
+    } catch (error) {
+      console.error('[VaultIntegration] File decryption failed:', error);
+      throw error;
+    }
   }
 }
 

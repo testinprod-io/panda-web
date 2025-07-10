@@ -207,13 +207,13 @@ export class AppServer {
   }
 
   async getEncryptedId(): Promise<EncryptedIdResponse> {
-    return {
-      user_id: "123",
-      encrypted_id: "-XyycDVbXkNIJUi-iH6WKm8Q1V3NmIyImuMeOhMr8Ibfc-_ChjddIg4iQMbXfoiF3RuHR0zM7c1QUcFmmnIyf0AqXGdjLZFYde8ocbcWsw",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    // return this.request<EncryptedIdResponse>("GET", "/me/encrypted-id");
+    // return {
+    //   user_id: "123",
+    //   encrypted_id: "-XyycDVbXkNIJUi-iH6WKm8Q1V3NmIyImuMeOhMr8Ibfc-_ChjddIg4iQMbXfoiF3RuHR0zM7c1QUcFmmnIyf0AqXGdjLZFYde8ocbcWsw",
+    //   created_at: new Date().toISOString(),
+    //   updated_at: new Date().toISOString(),
+    // };
+    return this.request<EncryptedIdResponse>("GET", "/me/encrypted-id");
   }
 
   async createEncryptedId(encryptedId: string): Promise<EncryptedIdResponse> {

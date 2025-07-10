@@ -56,6 +56,7 @@ export class ChatManager {
     console.log('ChatManager initialized');
 
     this.bus.on('app.unlocked', async () => {
+      console.log('app.unlockedaaa');
       this.conversations = await Promise.all(this.conversations.map(async (c) => {
         c.title = await this.encryptionService.decrypt(c.encryptedTitle);
         return c;
@@ -120,7 +121,7 @@ export class ChatManager {
         limit,
       );
 
-      const newChats = await Promise.all(conversations.map(c => this.fromConversation(c)));
+      const newChats = await Promise.all(conversations.map(async (c) => await this.fromConversation(c)));
 
       this.conversations = this.nextCursor
         ? [...this.conversations, ...newChats]

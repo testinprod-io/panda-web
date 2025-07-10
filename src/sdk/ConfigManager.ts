@@ -30,23 +30,23 @@ export class ConfigManager {
     this.encryptionService = encryptionService;
     this.bus = bus;
 
-    this.bus.on("app.unlocked", () => {
-      console.log("app.unlocked", this.config.customizedPrompts);
-      this.config.customizedPrompts = decryptSystemPrompt(
-        this.config.customizedPrompts,
-        this.encryptionService.decrypt.bind(this.encryptionService),
-      );
-      this.bus.emit("config.updated", { config: this.getConfig() });
-      console.log("app.unlocked", this.config.customizedPrompts);
-    });
+    // this.bus.on("app.unlocked", async () => {
+    //   console.log("app.unlocked", this.config.customizedPrompts);
+    //   this.config.customizedPrompts = await decryptSystemPrompt(
+    //     this.config.customizedPrompts,
+    //     this.encryptionService.decrypt.bind(this.encryptionService),
+    //   );
+    //   this.bus.emit("config.updated", { config: this.getConfig() });
+    //   console.log("app.unlocked", this.config.customizedPrompts);
+    // });
 
-    this.bus.on("app.locked", () => {
-      this.config.customizedPrompts = encryptSystemPrompt(
-        this.config.customizedPrompts,
-        this.encryptionService.encrypt.bind(this.encryptionService),
-      );
-      this.bus.emit("config.updated", { config: this.getConfig() });
-    });
+    // this.bus.on("app.locked", async () => {
+    //   this.config.customizedPrompts = await encryptSystemPrompt(
+    //     this.config.customizedPrompts,
+    //     this.encryptionService.encrypt.bind(this.encryptionService),
+    //   );
+    //   this.bus.emit("config.updated", { config: this.getConfig() });
+    // });
   }
 
   public setModels(models: ServerModelInfo[]) {

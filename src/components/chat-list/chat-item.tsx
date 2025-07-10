@@ -66,15 +66,15 @@ export function ChatItem({
   const { sdk } = usePandaSDK();
 
   useEffect(() => {
-    const topic = session.title || Locale.Store.DefaultTopic;
-    if (isLocked) {
-      setVisibleTopic(topic);
-    } else {
-      sdk.encryption.decrypt(topic).then((decryptedTopic) => {
-        setVisibleTopic(decryptedTopic);
-      });
-    }
-  }, [isLocked, session.title]);
+    // const topic = session.title || Locale.Store.DefaultTopic;
+    // if (isLocked) {
+    //   setVisibleTopic(topic);
+    // } else {
+    //   sdk.encryption.decrypt(topic).then((decryptedTopic) => {
+        setVisibleTopic(session.title);
+    //   });
+    // }
+  }, [isLocked, session.title, visibleTopic]);
 
   useEffect(() => {
     if (!isEditing) {

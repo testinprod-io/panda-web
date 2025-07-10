@@ -101,13 +101,49 @@ export interface DecryptRes {
   plain: string;
 }
 
+export interface ClearKeysReq {
+  id: string;
+  cmd: "clearKeys";
+}
+
+export interface ClearKeysRes {
+  id: string;
+  ok: true;
+}
+
+export interface EncryptFileReq {
+  id: string;
+  cmd: "encryptFile";
+  fileData: ArrayBuffer;
+  fileName: string;
+  fileType: string;
+}
+
+export interface EncryptFileRes {
+  id: string;
+  encryptedData: ArrayBuffer;
+}
+
+export interface DecryptFileReq {
+  id: string;
+  cmd: "decryptFile";
+  encryptedData: ArrayBuffer;
+  fileName: string;
+  fileType: string;
+}
+
+export interface DecryptFileRes {
+  id: string;
+  decryptedData: ArrayBuffer;
+}
+
 export interface ErrorRes {
   id: string;
   error: string;
 }
 
-export type VaultRequest = DeriveReq | EncryptReq | DecryptReq | UpdateKeyEvent | SetPasswordReq | CreateUserPasswordReq | BootstrapReq;
-export type VaultResponse = DeriveRes | EncryptRes | DecryptRes | UpdateKeyRes | SetPasswordRes | CreateUserPasswordRes | BootstrapRes | ErrorRes;
+export type VaultRequest = DeriveReq | EncryptReq | DecryptReq | UpdateKeyEvent | SetPasswordReq | CreateUserPasswordReq | BootstrapReq | ClearKeysReq | EncryptFileReq | DecryptFileReq;
+export type VaultResponse = DeriveRes | EncryptRes | DecryptRes | UpdateKeyRes | SetPasswordRes | CreateUserPasswordRes | BootstrapRes | ClearKeysRes | EncryptFileRes | DecryptFileRes | ErrorRes;
 
 // API types for /deriveKey endpoint
 export interface DeriveKeyResponse {

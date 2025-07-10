@@ -21,6 +21,12 @@ import type {
   UpdateKeyRes,
   BootstrapReq,
   BootstrapRes,
+  ClearKeysReq,
+  ClearKeysRes,
+  EncryptFileReq,
+  EncryptFileRes,
+  DecryptFileReq,
+  DecryptFileRes,
   ErrorRes,
 } from '@/types/vault';
 
@@ -46,6 +52,9 @@ interface UseVaultResult {
   derive: () => Promise<void>;
   encrypt: (plain: string) => Promise<string>;
   decrypt: (encrypted: string) => Promise<string>;
+  encryptFile: (fileData: ArrayBuffer, fileName: string, fileType: string) => Promise<ArrayBuffer>;
+  decryptFile: (encryptedData: ArrayBuffer, fileName: string, fileType: string) => Promise<ArrayBuffer>;
+  clearKeys: () => Promise<void>; // Clears sensitive data from memory
   reset: () => void;
   onPasswordUpdated?: (encryptedPassword: string) => void; // Callback for key rotation
 }
@@ -319,6 +328,23 @@ export function useVault(): UseVaultResult {
     return response.plain;
   }, [sendRequest]);
 
+  const encryptFile = useCallback(async (fileData: ArrayBuffer, fileName: string, fileType: string): Promise<ArrayBuffer> => {
+    const request: Omit<EncryptFileReq, 'id'> = { cmd: 'encryptFile', fileData, fileName, fileType };
+    const response = await sendRequest<EncryptFileRes>(request);
+    return response.encryptedData;
+  }, [sendRequest]);
+
+  const decryptFile = useCallback(async (encryptedData: ArrayBuffer, fileName: string, fileType: string): Promise<ArrayBuffer> => {
+    const request: Omit<DecryptFileReq, 'id'> = { cmd: 'decryptFile', encryptedData, fileName, fileType };
+    const response = await sendRequest<DecryptFileRes>(request);
+    return response.decryptedData;
+  }, [sendRequest]);
+
+  const clearKeys = useCallback(async (): Promise<void> => {
+    const request: Omit<ClearKeysReq, 'id'> = { cmd: 'clearKeys' };
+    await sendRequest<ClearKeysRes>(request);
+  }, [sendRequest]);
+
   const reset = useCallback(() => {
     cleanup();
     setState({
@@ -368,6 +394,9 @@ export function useVault(): UseVaultResult {
     derive,
     encrypt,
     decrypt,
+    encryptFile,
+    decryptFile,
+    clearKeys,
     reset,
     onPasswordUpdated: onPasswordUpdatedRef.current,
   };

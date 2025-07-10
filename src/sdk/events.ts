@@ -10,7 +10,7 @@ import { EventBus as EventBusImplementation } from './events';
 /* event-bus.ts */
 export interface SDKEventMap {
   "sdk.ready": boolean;
-  "app.locked": void;                          // no payload
+  "app.locked": void;
   "app.unlocked": void;
   "chat.list.updated": void;
   "user.updated": void;

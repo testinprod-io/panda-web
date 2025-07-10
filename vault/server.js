@@ -96,10 +96,10 @@ app.post('/api/vault/deriveKey', async (req, res) => {
         return res.status(500).json({ error: 'Invalid session key response format' });
       }
       
-      if (!sessionKeyData.old_key) {
-        console.error('[Vault-BFF] Invalid response format - missing old_key');
-        return res.status(500).json({ error: 'Invalid session key response format' });
-      }
+      // if (!sessionKeyData.old_key) {
+      //   console.error('[Vault-BFF] Invalid response format - missing old_key');
+      //   return res.status(500).json({ error: 'Invalid session key response format' });
+      // }
 
 
       console.log('[Vault-BFF] Returning session encryption key to vault');
@@ -149,10 +149,11 @@ app.post('/api/vault/createEncryptedId', async (req, res) => {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
-        body: req.body,
+        body: JSON.stringify({ encrypted_id: req.body.encrypted_id }),
       });
 
       if (!apiResponse.ok) {
+        console.log(await apiResponse.json());
         console.error('[Vault-BFF] API request failed:', apiResponse.status, apiResponse.statusText);
         return res.status(apiResponse.status).json({ 
           error: `Failed to get session encryption key: ${apiResponse.statusText}` 

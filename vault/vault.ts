@@ -154,6 +154,15 @@ class VaultService {
         case 'decrypt':
           response = await this.handleDecrypt(request);
           break;
+        case 'clearKeys':
+          response = await this.handleClearKeys(request);
+          break;
+        case 'encryptFile':
+          response = await this.handleEncryptFile(request);
+          break;
+        case 'decryptFile':
+          response = await this.handleDecryptFile(request);
+          break;
         default:
           response = { id: request.id, error: 'unknown command' };
       }
@@ -199,7 +208,13 @@ class VaultService {
 
   private clearPassword(): void {
     this.passwordKey = null;
-    console.log('[Vault] Password cleared from memory');
+    this.encryptedId = null;
+    this.expectedUserId = null;
+    if (this.idleTimer !== null) {
+      clearTimeout(this.idleTimer);
+      this.idleTimer = null;
+    }
+    console.log('[Vault] Password and validation data cleared from memory');
   }
 
   private async handleSetPassword(request: any): Promise<any> {
@@ -528,6 +543,61 @@ class VaultService {
     }
   }
 
+  private async handleClearKeys(request: any): Promise<any> {
+    try {
+      console.log('[Vault] Clearing keys from memory...');
+      this.clearPassword();
+      return { id: request.id, ok: true };
+    } catch (error) {
+      console.error('[Vault] Failed to clear keys:', error);
+      return { id: request.id, error: error instanceof Error ? error.message : 'clearKeys failed' };
+    }
+  }
+
+  private async handleEncryptFile(request: any): Promise<any> {
+    if (!this.passwordKey) {
+      return { id: request.id, error: 'password not set' };
+    }
+
+    try {
+      // Encrypt file data using the password key
+      const encryptedData = await this.encryptFileWithPasswordKey(request.fileData, this.passwordKey);
+      
+      return {
+        id: request.id,
+        encryptedData
+      };
+    } catch (error) {
+      console.error('[Vault] File encryption failed:', error);
+      return {
+        id: request.id,
+        error: error instanceof Error ? error.message : 'file encryption failed'
+      };
+    }
+  }
+
+  private async handleDecryptFile(request: any): Promise<any> {
+    if (!this.passwordKey) {
+      return { id: request.id, error: 'password not set' };
+    }
+
+    try {
+      // Decrypt file data using the password key
+      const decryptedData = await this.decryptFileWithPasswordKey(request.encryptedData, this.passwordKey);
+      
+      return {
+        id: request.id,
+        decryptedData
+      };
+    } catch (error) {
+      console.error('[Vault] File decryption failed:', error);
+      return {
+        id: request.id,
+        error: error instanceof Error ? error.message : 'file decryption failed'
+      };
+    }
+  }
+
   private async encryptWithPasswordKey(plaintext: string, passwordKey: CryptoKey): Promise<string> {
     // Generate random salt and IV
     const salt = crypto.getRandomValues(new Uint8Array(16));
@@ -597,6 +667,74 @@ class VaultService {
     return new TextDecoder().decode(plaintext);
   }
 
+  private async encryptFileWithPasswordKey(fileData: ArrayBuffer, passwordKey: CryptoKey): Promise<ArrayBuffer> {
+    // Generate random salt and IV
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+
+    // Derive AES key from password using PBKDF2
+    const aesKey = await crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt: salt,
+        iterations: 100000,
+        hash: "SHA-256"
+      },
+      passwordKey,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt", "decrypt"]
+    );
+
+    // Encrypt the file data
+    const encrypted = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv: iv },
+      aesKey,
+      fileData
+    );
+
+    // Combine salt + iv + ciphertext
+    const combined = new Uint8Array(salt.length + iv.length + encrypted.byteLength);
+    combined.set(salt, 0);
+    combined.set(iv, salt.length);
+    combined.set(new Uint8Array(encrypted), salt.length + iv.length);
+
+    return combined;
+  }
+
+  private async decryptFileWithPasswordKey(encryptedData: ArrayBuffer, passwordKey: CryptoKey): Promise<ArrayBuffer> {
+    // Decode the encrypted data
+    const combined = new Uint8Array(encryptedData);
+
+    // Extract salt, iv, and ciphertext
+    const salt = combined.slice(0, 16);
+    const iv = combined.slice(16, 28);
+    const ciphertext = combined.slice(28);
+
+    // Derive AES key from password using PBKDF2
+    const aesKey = await crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt: salt,
+        iterations: 100000,
+        hash: "SHA-256"
+      },
+      passwordKey,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt", "decrypt"]
+    );
+
+    // Decrypt the ciphertext
+    const decrypted = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: iv },
+      aesKey,
+      ciphertext
+    );
+
+    return decrypted;
+  }
+
   private async fetchServerKeys(): Promise<{ oldKey: string | null; newKey: string }> {
     try {
       // Make same-origin request to our local BFF API
@@ -661,9 +799,7 @@ class VaultService {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          encrypted_id: encryptedId
-        }),
+        body: JSON.stringify({ encrypted_id: encryptedId }),
       });
 
       if (!response.ok) {

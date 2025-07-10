@@ -113,20 +113,30 @@ export class Chat {
     this.updatedAt = updatedAt;
     this.createdAt = createdAt;
 
-    this.bus.on("app.unlocked", () => {
-      this.messages.forEach(async (m) => {
-        m.visibleReasoning = m.reasoning
-          ? await this.encryptionService.decrypt(m.reasoning)
-          : undefined;
-        m.visibleContent = await this.encryptionService.decrypt(m.content);
-      });
+    this.bus.on("app.unlocked", async () => {
+      console.log("app.unlocked");
+      this.messages = await Promise.all(this.messages.map(async (m) => {
+        const newMessage = {
+          ...m,
+          visibleReasoning: m.reasoning
+            ? await this.encryptionService.decrypt(m.reasoning)
+            : undefined,
+          visibleContent: await this.encryptionService.decrypt(m.content),
+        };
+        return newMessage;
+      }));
       this.updateState();
     });
 
     this.bus.on("app.locked", () => {
-      this.messages.forEach((m) => {
-        m.visibleReasoning = m.reasoning;
-        m.visibleContent = m.content;
+      console.log("app.locked");
+      this.messages = this.messages.map((m) => {
+        const newMessage = {
+          ...m,
+          visibleReasoning: m.reasoning,
+          visibleContent: m.content,
+        };
+        return newMessage;
       });
       this.updateState();
     });
