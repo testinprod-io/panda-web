@@ -135,11 +135,7 @@ export function useVault(): UseVaultResult {
     }
     initStartedRef.current = true;
     
-const vaultOrigin = process.env.VERCEL_ENV === 'production'
-? 'https://vault.panda.chat'
-: process.env.VERCEL_ENV !== undefined
-  ? 'https://panda-web-vault.vercel.app'
-  : 'http://localhost:3001';
+    const vaultOrigin = process.env.NEXT_PUBLIC_VAULT_ENDPOINT ? process.env.NEXT_PUBLIC_VAULT_ENDPOINT : 'http://localhost:3001';
 
     console.log(`[useVault] Initializing... (isReady: ${state.isReady}, isLoading: ${state.isLoading}) ${vaultOrigin}`);
 
