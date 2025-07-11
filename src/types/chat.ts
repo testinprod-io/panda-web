@@ -139,6 +139,21 @@ export async function decryptSystemPrompt(
 }
 
 /**
+ * Process events from LLM server for search and PDF processing
+ */
+export interface ProcessEvent {
+  object: "process.event";
+  type: "search" | "pdf";
+  id: string;
+  message: string;
+  data: {
+    query?: string;
+    urls?: string[];
+    [key: string]: any;
+  };
+}
+
+/**
  * Represents a chat message with additional metadata
  * Content is assumed to be decrypted for temporary in-memory use (e.g., LLM calls)
  * but is NOT stored this way.
@@ -161,6 +176,8 @@ export type ChatMessage = Omit<RequestMessage, "content"> & {
   reasoningTime?: number; // Add reasoning duration field
   isReasoning?: boolean; // To track if the message is currently in reasoning phase
   useSearch: boolean; // To track if the message is using search
+  rawProcessEvents?: string;
+  processEvents?: ProcessEvent[]; // Add process events field
   challengeResponse?: ChallengeResponse;
 };
 
@@ -186,6 +203,8 @@ export function createMessage(override: Partial<ChatMessage>): ChatMessage {
     reasoning: override.reasoning ?? "",
     visibleReasoning: override.reasoning ?? "",
     useSearch: override.useSearch ?? false,
+    rawProcessEvents: override.rawProcessEvents ?? "",
+    processEvents: override.processEvents ?? [],
     ...override,
   };
 }

@@ -166,8 +166,20 @@ export class LLMServer {
               }
               break;
             }
+            if (data === "[RAG_DONE]") {
+              // RAG processing completed, continue to LLM response
+              continue;
+            }
             try {
               const json = JSON.parse(data);
+              
+              // Handle process events
+              if (json.object === "process.event") {
+                options.onProcessEvent?.(undefined, json);
+                continue;
+              }
+              
+              // Handle regular streaming response
               const delta = json.choices[0]?.delta;
               timestamp = json.created
                 ? new Date(json.created * 1000)

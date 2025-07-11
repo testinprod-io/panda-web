@@ -123,6 +123,7 @@ export class Chat {
             ? await this.encryptionService.decrypt(m.reasoning)
             : undefined,
           visibleContent: await this.encryptionService.decrypt(m.content),
+          processEvents: m.rawProcessEvents ? JSON.parse(await this.encryptionService.decrypt(m.rawProcessEvents)) : [],
         };
         return newMessage;
       }));
@@ -135,6 +136,7 @@ export class Chat {
           ...m,
           visibleReasoning: m.reasoning,
           visibleContent: m.content,
+          processEvents: [],
         };
         return newMessage;
       });
@@ -288,6 +290,7 @@ export class Chat {
       onReasoningChunk?: (messageId: UUID, reasoningChunk: string) => void;
       onReasoningEnd?: (messageId: UUID) => void;
       onContentChunk?: (messageId: UUID, contentChunk: string) => void;
+      onProcessEvent?: (messageId: UUID, event: any) => void;
       onSuccess?: (
         messageId: UUID,
         finalMessage: string,
@@ -356,6 +359,7 @@ export class Chat {
       onReasoningChunk?: (messageId: UUID, reasoningChunk: string) => void;
       onReasoningEnd?: (messageId: UUID) => void;
       onContentChunk?: (messageId: UUID, contentChunk: string) => void;
+      onProcessEvent?: (messageId: UUID, event: any) => void;
       onSuccess?: (
         messageId: UUID,
         finalMessage: string,
@@ -453,6 +457,25 @@ export class Chat {
         }
         this.handleReasoningEnd(localBotMessageId, duration);
         options.onReasoningEnd?.(localBotMessageId);
+      },
+      onProcessEvent: (_id, event) => {
+        const messageIndex = this.messages.findIndex(
+          (m) => m.id === localBotMessageId
+        );
+        if (messageIndex !== -1) {
+          const updatedMessages = [...this.messages];
+          const messageToUpdate = updatedMessages[messageIndex];
+          const events = [...(messageToUpdate.processEvents || []), event];
+
+          updatedMessages[messageIndex] = {
+            ...messageToUpdate,
+            isReasoning: true,
+            processEvents: events,
+          };
+          this.messages = updatedMessages;
+          this.updateState();
+        }
+        options.onProcessEvent?.(localBotMessageId, event);
       },
       onContentChunk: (_id, chunk) => {
         const messageIndex = this.messages.findIndex(
@@ -612,6 +635,7 @@ export class Chat {
           updatedMsg.date = timestamp;
           updatedMsg.syncState = MessageSyncState.SYNCED;
           updatedMsg.challengeResponse = challengeResponse;
+          updatedMsg.rawProcessEvents = await this.encryptionService.encrypt(JSON.stringify(updatedMsg.processEvents));
         }
 
         messageToSave = updatedMsg;
@@ -705,6 +729,7 @@ export class Chat {
         onReasoningChunk: (_id, _chunk) => {},
         onReasoningEnd: () => {},
         onContentChunk: (_id, _chunk) => {},
+        onProcessEvent: (_id, _event) => {},
         onSuccess: () => {},
         onFailure: () => {},
       });

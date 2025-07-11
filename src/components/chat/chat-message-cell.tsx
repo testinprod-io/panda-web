@@ -12,6 +12,7 @@ import { useLoadedFiles, LoadedFile } from "@/hooks/use-loaded-files";
 import { FilePreviewItem } from "../ui/file-preview-item";
 import { MessageActionsBar } from "../ui/message-actions-bar";
 import { ReasoningDisplay } from "../ui/reasoning-display";
+import { ProcessEventsDisplay } from "../ui/process-events-display";
 import { EditMessageForm } from "../ui/edit-message-form";
 import { useAttestation } from "@/sdk/hooks";
 import { usePandaSDK } from "@/providers/sdk-provider";
@@ -35,38 +36,6 @@ interface ChatMessageCellProps {
   renderMessagesLength: number;
   onResend: (messageId: UUID) => void;
   onEditSubmit: (messageId: UUID, newText: string) => void;
-}
-
-function messagePropsAreEqual(
-  prevProps: Readonly<ChatMessageCellProps>,
-  nextProps: Readonly<ChatMessageCellProps>,
-) {
-  if (
-    prevProps.isLoading !== nextProps.isLoading ||
-    prevProps.renderMessagesLength !== nextProps.renderMessagesLength
-  ) {
-    console.log(`[ChatMessageCell] Comparing messages: ${prevProps.isLoading} ${nextProps.isLoading} ${prevProps.renderMessagesLength} ${nextProps.renderMessagesLength}`);
-    return false;
-  }
-
-  const prevMsg = prevProps.message;
-  const nextMsg = nextProps.message;
-  console.log(`[ChatMessageCell] Comparing messages: ${prevMsg.id} ${nextMsg.id} ${prevMsg.visibleContent} ${nextMsg.visibleContent} ${prevMsg.streaming} ${nextMsg.streaming} ${prevMsg.isError} ${nextMsg.isError} ${prevMsg.isReasoning} ${nextMsg.isReasoning} ${prevMsg.visibleReasoning} ${nextMsg.visibleReasoning} ${prevMsg.syncState} ${nextMsg.syncState} ${prevMsg.files?.length} ${nextMsg.files?.length}`);
-  console.log(`[ChatMessageCell] Next message: ${nextMsg.visibleContent}`);
-  if (
-    prevMsg.id !== nextMsg.id ||
-    prevMsg.visibleContent !== nextMsg.visibleContent ||
-    prevMsg.streaming !== nextMsg.streaming ||
-    prevMsg.isError !== nextMsg.isError ||
-    prevMsg.isReasoning !== nextMsg.isReasoning ||
-    prevMsg.visibleReasoning !== nextMsg.visibleReasoning ||
-    prevMsg.syncState !== nextMsg.syncState ||
-    prevMsg.files?.length !== nextMsg.files?.length
-  ) {
-    return false;
-  }
-
-  return true;
 }
 
 export const ChatMessageCell = React.memo(function ChatMessageCell(
@@ -96,6 +65,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     visibleContent: content,
     visibleReasoning: reasoning,
     reasoningTime,
+    processEvents,
     challengeResponse,
   } = message;
   const { isLocked } = useEncryption();
@@ -257,6 +227,15 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
         )}
 
         <Box className={styles["chat-message-item"]}>
+          {!isUser && processEvents && processEvents.length > 0 && (
+            <ProcessEventsDisplay
+              events={processEvents}
+              fontSize={fontSize}
+              fontFamily={fontFamily}
+              eventComplete={!isReasoning}
+            />
+          )}
+          
           {shouldShowReasoning && (
             <ReasoningDisplay
               reasoning={reasoning}
