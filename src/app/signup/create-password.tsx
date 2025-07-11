@@ -9,7 +9,8 @@ import { useSnackbar } from "@/providers/snackbar-provider";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import Locale from "@/locales";
 import Image from "next/image";
-// import { useForm } from "react-hook-form";
+import { useAuth } from "@/sdk/hooks";
+import { usePandaSDK } from "@/providers/sdk-provider";
 
 const MIN_PASSWORD_LENGTH = 10;
 const MAX_PASSWORD_LENGTH = 100;
@@ -23,18 +24,21 @@ export default function CreatePassword() {
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const router = useRouter();
   const { user, logout, ready, authenticated } = usePrivy();
-  const { isFirstTimeUser, createPassword, unlockApp } = useEncryption();
+  const { createPassword, unlockApp } = useEncryption();
   const { showSnackbar } = useSnackbar();
+  const { sdk } = usePandaSDK();
+  const { encryptedId } = useAuth();
+  const isFirstTimeUser = sdk.ready ? encryptedId === null : null;
   
   useEffect(() => {
     if (ready && !authenticated) {
       router.replace('/signup');
     }
 
-    if (isFirstTimeUser === false && confirmPassword.length === 0) {
-      router.replace('/');
-    }
-  }, [ready, authenticated, router, isFirstTimeUser]);
+    // if (sdk.ready && isFirstTimeUser === false && confirmPassword.length === 0) {
+    //   router.replace('/');
+    // }
+  }, [ready, authenticated, router, isFirstTimeUser, sdk.ready]);
 
   const handlePasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newPassword = event.target.value;

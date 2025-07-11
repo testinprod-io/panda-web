@@ -26,6 +26,8 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useEncryption } from "@/providers/encryption-provider";
 import Locale from "@/locales";
+import { useAuth } from "@/sdk/hooks";
+import { usePandaSDK } from "@/providers/sdk-provider";
 
 interface LoginSignupFormProps {
   mode: "login" | "signup";
@@ -44,7 +46,11 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const { ready, authenticated } = usePrivy();
-  const { isFirstTimeUser } = useEncryption();
+  // const { isFirstTimeUser } = useEncryption();
+  const { sdk } = usePandaSDK();
+  const { encryptedId, user: authUser, lockApp: lockAppHook, unlockApp: unlockAppHook } = useAuth();
+  const isFirstTimeUser = sdk.ready ? encryptedId === null : null;
+
 
   useEffect(() => {
     // Reset state on unmount
@@ -95,18 +101,18 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
   const { login } = useLogin({ onComplete, onError });
 
   useEffect(() => {
-    if (ready && authenticated) {
+    if (sdk.ready && authenticated) {
       if (isFirstTimeUser === undefined) { 
         return;
       }
       
       if (window.location.pathname.includes("signup") && isFirstTimeUser === true) {
-        router.push("/signup?step=create-password");
+        router.replace("/signup?step=create-password");
       } else {
         router.replace("/");
       }
     }
-  }, [ready, authenticated, router, isFirstTimeUser]);
+  }, [ready, authenticated, router, isFirstTimeUser, encryptedId, sdk.ready]);
 
   const isCodeEntryVisible =
     emailState.status === "awaiting-code-input" &&
