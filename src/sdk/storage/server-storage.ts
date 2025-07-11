@@ -252,7 +252,7 @@ async mapApiMessageToChatMessage(message: ApiMessage): Promise<ChatMessage> {
       : undefined,
     useSearch: message.custom_data?.useSearch ?? false,
     rawProcessEvents: message.custom_data?.processEvents ?? "",
-    processEvents: message.custom_data?.processEvents ? JSON.parse(this.encryptionService.decrypt(message.custom_data.processEvents)) : [],
+    processEvents: message.custom_data?.processEvents ? JSON.parse(await this.encryptionService.decrypt(message.custom_data.processEvents)) : [],
     syncState: MessageSyncState.SYNCED,
     isError: message.is_error,
     errorMessage: message.error_message,

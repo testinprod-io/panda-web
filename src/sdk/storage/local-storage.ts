@@ -825,7 +825,8 @@ export class LocalStorage implements IStorage {
         ? parseInt(message.reasoning_time)
         : undefined,
       useSearch: message.custom_data?.useSearch ?? false,
-      processEvents: message.custom_data?.processEvents ?? [],
+      rawProcessEvents: message.custom_data?.processEvents ?? "",
+      processEvents: message.custom_data?.processEvents ? JSON.parse(await this.encryptionService.decrypt(message.custom_data.processEvents)) : [],
       syncState: MessageSyncState.SYNCED,
       isError: message.is_error,
       errorMessage: message.error_message,

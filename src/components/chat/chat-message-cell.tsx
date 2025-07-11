@@ -38,39 +38,6 @@ interface ChatMessageCellProps {
   onEditSubmit: (messageId: UUID, newText: string) => void;
 }
 
-function messagePropsAreEqual(
-  prevProps: Readonly<ChatMessageCellProps>,
-  nextProps: Readonly<ChatMessageCellProps>,
-) {
-  if (
-    prevProps.isLoading !== nextProps.isLoading ||
-    prevProps.renderMessagesLength !== nextProps.renderMessagesLength
-  ) {
-    console.log(`[ChatMessageCell] Comparing messages: ${prevProps.isLoading} ${nextProps.isLoading} ${prevProps.renderMessagesLength} ${nextProps.renderMessagesLength}`);
-    return false;
-  }
-
-  const prevMsg = prevProps.message;
-  const nextMsg = nextProps.message;
-  console.log(`[ChatMessageCell] Comparing messages: ${prevMsg.id} ${nextMsg.id} ${prevMsg.visibleContent} ${nextMsg.visibleContent} ${prevMsg.streaming} ${nextMsg.streaming} ${prevMsg.isError} ${nextMsg.isError} ${prevMsg.isReasoning} ${nextMsg.isReasoning} ${prevMsg.visibleReasoning} ${nextMsg.visibleReasoning} ${prevMsg.syncState} ${nextMsg.syncState} ${prevMsg.files?.length} ${nextMsg.files?.length} ${prevMsg.processEvents?.length} ${nextMsg.processEvents?.length}`);
-  console.log(`[ChatMessageCell] Next message: ${nextMsg.visibleContent}`);
-  if (
-    prevMsg.id !== nextMsg.id ||
-    prevMsg.visibleContent !== nextMsg.visibleContent ||
-    prevMsg.streaming !== nextMsg.streaming ||
-    prevMsg.isError !== nextMsg.isError ||
-    prevMsg.isReasoning !== nextMsg.isReasoning ||
-    prevMsg.visibleReasoning !== nextMsg.visibleReasoning ||
-    prevMsg.syncState !== nextMsg.syncState ||
-    prevMsg.files?.length !== nextMsg.files?.length ||
-    prevMsg.processEvents?.length !== nextMsg.processEvents?.length
-  ) {
-    return false;
-  }
-
-  return true;
-}
-
 export const ChatMessageCell = React.memo(function ChatMessageCell(
   props: ChatMessageCellProps,
 ) {
