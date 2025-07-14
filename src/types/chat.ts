@@ -62,10 +62,10 @@ export interface CustomizedPromptsData {
 export function generateSystemPrompt(data: CustomizedPromptsData): string {
   let prompt = "";
   if (data.personal_info?.name) {
-    prompt += `You are assisting ${data.personal_info.name}`;
+    prompt += `You are assisting ${data.personal_info.name}.`;
   }
   if (data.personal_info?.job) {
-    prompt += `who is ${data.personal_info.job || "individual"}. `;
+    prompt += `Who is ${data.personal_info.job || "individual"}.`;
   }
   if (data.prompts?.traits) {
     prompt += `When responding, adapt your tone and approach to suit someone who appreciates the following traits: ${data.prompts.traits}. `;

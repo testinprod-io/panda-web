@@ -832,7 +832,7 @@ class VaultService {
       while (str.length % 4) str += "=";
       return Uint8Array.from(atob(str), (c) => c.charCodeAt(0));
     } catch (error) {
-      console.log('[Vault] Failed to decode base64url string:', error, str);
+      console.log('[Vault] Failed to decode base64url string:', error);
       throw new Error('Invalid base64url encoded data');
     }
   }
