@@ -119,7 +119,7 @@ app.post('/api/vault/deriveKey', async (req, res) => {
 
 app.post('/api/vault/createEncryptedId', async (req, res) => {
   try {
-    console.log('[Vault-BFF] Received createEncryptedId request');
+    console.log('[Vault-BFF2] Received createEncryptedId request');
     
     // Extract access token from Authorization header or cookies
     const accessToken = getAccessToken(req);

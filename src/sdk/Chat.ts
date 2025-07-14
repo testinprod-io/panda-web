@@ -29,6 +29,7 @@ import { ChallengeResponse } from "@/sdk/client/panda-challenge";
 import { AttestationManager } from "./AttestationManager";
 import { ConfigManager } from "./ConfigManager";
 import Locale from "@/locales";
+import { ChatControllerPool } from "./client/controller";
 export class Chat {
   private bus: EventBus;
   private encryptionService: EncryptionService;
@@ -402,6 +403,7 @@ export class Chat {
       syncState: MessageSyncState.PENDING_CREATE,
     });
     this.messages.push(botMessage);
+    this.updateState(); 
     const localBotMessageId = botMessage.id;
 
     const llmChatConfig: LLMConfig = {
@@ -505,6 +507,7 @@ export class Chat {
           challengeResponse
         );
         options.onSuccess?.(localBotMessageId, finalContent, timestamp);
+        ChatControllerPool.stop(this.id, localBotMessageId);
       },
       onError: (error) => {
         this._finalizeMessage(
@@ -515,7 +518,11 @@ export class Chat {
           error.message
         );
         options.onFailure?.(error);
+        ChatControllerPool.stop(this.id, localBotMessageId);
       },
+      onController: (controller) => {
+        ChatControllerPool.addController(this.id, localBotMessageId, controller);
+      }
     });
   }
 

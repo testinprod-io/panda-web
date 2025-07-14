@@ -191,7 +191,12 @@ const ko: PartialLocaleType = {
     },
     Continue: "계속",
     Skip: "건너뛰기",
+    StartChat: "채팅 시작",
+    CustomizePanda: "Panda 맞춤 설정",
+    IUnderstand: "알겠습니다",
     Welcome: "Panda AI에 오신 것을 환영합니다! 설정을 시작해 볼까요?",
+    CustomizationTitle: "간단한 몇 가지 질문",
+    CustomizationDescription: "대화를 더욱 유익하게 돕고 맞춤형 경험을 제공하기 위해 몇 가지 질문을 드리겠습니다.",
     NameTitle: "먼저, Panda AI가 어떻게 불러야 할까요?",
     NamePlaceholder: "예: Alex",
     RoleTitle1: "좋아요, ",
@@ -203,6 +208,19 @@ const ko: PartialLocaleType = {
       "마지막으로, Panda AI가 알아야 할 다른 정보가 있을까요?",
     ExtraInformationPlaceholder:
       "예: 정확하고 데이터 기반의 답변을 선호합니다.",
+    Intro: {
+      Title:
+        "저는 프라이버시를 위해 만들어진 AI 어시스턴트입니다. 함께 아이디어를 내고, 창작하고, 배워봅시다.",
+      Intro1Title: "당신의 데이터는 당신의 것.",
+      Intro1Content:
+        "모든 대화는 암호화되어 저장됩니다. 클라우드에는 아무 것도 저장되지 않아 완전한 프라이버시가 보장됩니다.",
+      Intro2Title: "추적 불가능한 대화.",
+      Intro2Content:
+        "어떤 정보도 역추적될 수 없으므로 대화는 안전하고 비밀스럽습니다. 저는 당신의 채팅으로 학습하지 않습니다.",
+      Intro3Title: "모든 것은 당신의 선택.",
+      Intro3Content:
+        "언제든지 채팅과 데이터를 삭제할 수 있습니다. 최종 결정권은 당신에게 있습니다.",
+    },
   },
   ChatList: {
     Today: "오늘",

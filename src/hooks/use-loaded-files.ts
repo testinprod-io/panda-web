@@ -159,7 +159,7 @@ export function useLoadedFiles(
         if (!sdk.auth.getState().isLocked) {
           try {
             fileToProcess = await sdk.encryption.decryptFile(fileToProcess);
-            decryptedFileName = await sdk.encryption.decrypt(fileInfo.file_name);
+            decryptedFileName = fileInfo.file_name;
           } catch (decryptionError) {
             // console.error("Error decrypting file:", fileInfo.file_id, decryptionError); // Keep console for debug if needed
             return {

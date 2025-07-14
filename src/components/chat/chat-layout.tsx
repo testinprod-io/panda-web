@@ -49,7 +49,7 @@ export default function ChatLayoutContent({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
-    isMobile ? true : false,
+    isMobile ? true : false
   );
   const params = useParams();
   const router = useRouter();
@@ -58,10 +58,12 @@ export default function ChatLayoutContent({
   const { sdk } = usePandaSDK();
   const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
   const [isSDKReady, setIsSDKReady] = useState(sdk.ready);
-  const [modelConfig, setModelConfig] = useState<ServerModelInfo | undefined>(pandaConfig.defaultModel);
-  
+  const [modelConfig, setModelConfig] = useState<ServerModelInfo | undefined>(
+    pandaConfig.defaultModel
+  );
+
   useEffect(() => {
-    const unsubscribe = sdk.bus.on('sdk.ready', (isReady) => {
+    const unsubscribe = sdk.bus.on("sdk.ready", (isReady) => {
       setIsSDKReady(isReady);
     });
     return unsubscribe;
@@ -83,7 +85,9 @@ export default function ChatLayoutContent({
         // For existing chats, get the chat-specific model or fall back to global default
         const chat = await sdk.chat.getChat(currentChatId);
         if (chat?.defaultModelName) {
-          const chatModel = pandaConfig.models.find(m => m.model_name === chat.defaultModelName);
+          const chatModel = pandaConfig.models.find(
+            (m) => m.model_name === chat.defaultModelName
+          );
           if (chatModel) {
             setModelConfig(chatModel);
             return;
@@ -93,7 +97,7 @@ export default function ChatLayoutContent({
       // For new chats or when chat doesn't have a specific model, use global default
       setModelConfig(pandaConfig.defaultModel);
     };
-    
+
     updateModelConfig();
   }, [currentChatId, sdk.chat, pandaConfig.defaultModel, pandaConfig.models]);
 
@@ -105,7 +109,9 @@ export default function ChatLayoutContent({
     const unsubscribe = sdk.bus.on(chatUpdateEventName, async () => {
       const chat = await sdk.chat.getChat(currentChatId);
       if (chat?.defaultModelName) {
-        const chatModel = pandaConfig.models.find(m => m.model_name === chat.defaultModelName);
+        const chatModel = pandaConfig.models.find(
+          (m) => m.model_name === chat.defaultModelName
+        );
         if (chatModel && chatModel.model_name !== modelConfig?.model_name) {
           setModelConfig(chatModel);
         }
@@ -113,18 +119,30 @@ export default function ChatLayoutContent({
     });
 
     return unsubscribe;
-  }, [currentChatId, sdk.bus, sdk.chat, pandaConfig.models, modelConfig?.model_name]);
+  }, [
+    currentChatId,
+    sdk.bus,
+    sdk.chat,
+    pandaConfig.models,
+    modelConfig?.model_name,
+  ]);
 
   // Listen for global config updates when on new chat page (no currentChatId)
   useEffect(() => {
     if (currentChatId) return; // Only listen when on new chat page
 
-    const unsubscribe = sdk.bus.on('config.updated', (data: { config: PandaConfig }) => {
-      const newDefaultModel = data.config.defaultModel;
-      if (newDefaultModel && newDefaultModel.model_name !== modelConfig?.model_name) {
-        setModelConfig(newDefaultModel);
+    const unsubscribe = sdk.bus.on(
+      "config.updated",
+      (data: { config: PandaConfig }) => {
+        const newDefaultModel = data.config.defaultModel;
+        if (
+          newDefaultModel &&
+          newDefaultModel.model_name !== modelConfig?.model_name
+        ) {
+          setModelConfig(newDefaultModel);
+        }
       }
-    });
+    );
 
     return unsubscribe;
   }, [currentChatId, sdk.bus, modelConfig?.model_name]);
@@ -167,7 +185,7 @@ export default function ChatLayoutContent({
               if (typeof window !== "undefined") {
                 window.sessionStorage.setItem(
                   "is_navigating_from_new_chat",
-                  "true",
+                  "true"
                 );
               }
               router.replace(`/chat/${chat!.id}`);
@@ -182,9 +200,9 @@ export default function ChatLayoutContent({
           chat = await sdk.chat.createNewChat(
             Locale.Store.DefaultTopic,
             modelConfig,
-            pandaConfig.customizedPrompts,
+            pandaConfig.customizedPrompts
           );
-          
+
           if (chat) {
             localStorage.removeItem(UNFINISHED_INPUT(chat.id));
 
@@ -199,20 +217,27 @@ export default function ChatLayoutContent({
           }
         }
         if (chat) {
-          chat.sendMessage(sessionState.userInput, sessionState.persistedAttachedFiles, {
-            enableSearch: sessionState.enableSearch,
-            onSuccess: () => {
-              console.log(`[handleLayoutSubmit] onSuccess: ${chat}`);
-            },
-            onFailure: (error: Error) => {
-              console.error("[ChatComponent] Failed user input", error);
-              showSnackbar(Locale.Store.Error, "error");
-            },
-          });
+          chat.sendMessage(
+            sessionState.userInput,
+            sessionState.persistedAttachedFiles,
+            {
+              enableSearch: sessionState.enableSearch,
+              onSuccess: () => {
+                console.log(`[handleLayoutSubmit] onSuccess: ${chat}`);
+                setInternalIsSubmitting(false);
+              },
+              onFailure: (error: Error) => {
+                console.error("[ChatComponent] Failed user input", error);
+                showSnackbar(Locale.Store.Error, "error");
+                setInternalIsSubmitting(false);
+              },
+            }
+          );
+        } else {
+          setInternalIsSubmitting(false);
         }
       } catch (error) {
         showSnackbar(Locale.Store.Error, "error");
-      } finally {
         setInternalIsSubmitting(false);
       }
     },
@@ -223,7 +248,7 @@ export default function ChatLayoutContent({
       showSnackbar,
       modelConfig, // Add modelConfig to dependencies since it's used in the function
       sdk.chat,
-    ],
+    ]
   );
 
   const handleToggleSidebar = () => setIsSidebarCollapsed((prev) => !prev);
@@ -265,33 +290,43 @@ export default function ChatLayoutContent({
       {privyAuthenticated && (
         <>
           {!isMobile && (
-              <IconButton
-                onClick={handleToggleSidebar}
-                className={sidebarStyles.sidebarToggleButton}
-                aria-label={
-                  isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"
-                }
-                style={{
-                  left: isSidebarCollapsed
-                    ? `${sidebarCollapsedWidth - 16}px`
-                    : `${sidebarExpandedWidth - 16}px`,
-                  // transition: `left ${sidebarTransitionDuration} ${sidebarTransitionTiming}`,
-                }}
-              >
-                {isSidebarCollapsed ? (
-                  <img
-                    src="/icons/chevron-right.svg"
-                    style={{ width: "8.75px", height: "17.5px", filter: "invert(88%) sepia(27%) saturate(0%) hue-rotate(150deg) brightness(92%) contrast(83%)"}}
-                    alt="Expand Sidebar"
-                  />
-                ) : (
-                  <img
-                    src="/icons/chevron-left.svg"
-                    style={{ width: "8.75px", height: "17.5px", filter: "invert(88%) sepia(27%) saturate(0%) hue-rotate(150deg) brightness(92%) contrast(83%)" }}
-                    alt="Collapse Sidebar"
-                  />
-                )}
-              </IconButton>
+            <IconButton
+              onClick={handleToggleSidebar}
+              className={sidebarStyles.sidebarToggleButton}
+              aria-label={
+                isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"
+              }
+              style={{
+                left: isSidebarCollapsed
+                  ? `${sidebarCollapsedWidth - 16}px`
+                  : `${sidebarExpandedWidth - 16}px`,
+                // transition: `left ${sidebarTransitionDuration} ${sidebarTransitionTiming}`,
+              }}
+            >
+              {isSidebarCollapsed ? (
+                <img
+                  src="/icons/chevron-right.svg"
+                  style={{
+                    width: "8.75px",
+                    height: "17.5px",
+                    filter:
+                      "invert(88%) sepia(27%) saturate(0%) hue-rotate(150deg) brightness(92%) contrast(83%)",
+                  }}
+                  alt="Expand Sidebar"
+                />
+              ) : (
+                <img
+                  src="/icons/chevron-left.svg"
+                  style={{
+                    width: "8.75px",
+                    height: "17.5px",
+                    filter:
+                      "invert(88%) sepia(27%) saturate(0%) hue-rotate(150deg) brightness(92%) contrast(83%)",
+                  }}
+                  alt="Collapse Sidebar"
+                />
+              )}
+            </IconButton>
           )}
 
           <>
@@ -312,7 +347,7 @@ export default function ChatLayoutContent({
                     {
                       easing: theme.transitions.easing.sharp,
                       duration: theme.transitions.duration.standard,
-                    },
+                    }
                   ),
                   zIndex: theme.zIndex.drawer,
                 }}
@@ -362,7 +397,7 @@ export default function ChatLayoutContent({
             right: 0,
             bottom: 0,
             // background:
-              // "linear-gradient(177deg, white 0%, #FEFEFE 27%, #F6FFFC 75%, #DAF7EF 100%)",
+            // "linear-gradient(177deg, white 0%, #FEFEFE 27%, #F6FFFC 75%, #DAF7EF 100%)",
             opacity: isNewChatPage && !isNavigatingAway ? 1 : 0,
             transition: isNavigatingAway ? "opacity 0.4s ease-in" : "none",
             zIndex: -1,
@@ -379,107 +414,114 @@ export default function ChatLayoutContent({
           sx={{
             height: { xs: "calc(100% - 80px)", md: "calc(100% - 112px)" },
             width: "100%",
-            paddingLeft: { xs: "5%", md: "max(calc((100% - 1200px) / 2), 15%)" },
-            paddingRight: { xs: "5%", md: "max(calc((100% - 1200px) / 2), 15%)" },
+            paddingLeft: {
+              xs: "5%",
+              md: "max(calc((100% - 1200px) / 2), 15%)",
+            },
+            paddingRight: {
+              xs: "5%",
+              md: "max(calc((100% - 1200px) / 2), 15%)",
+            },
             display: "flex",
             flexDirection: "column",
             gap: "1rem",
           }}
         >
-        <Box
-          className={
-            !isNewChatPage ? styles["chat-layout-main-content"] : undefined
-          }
-          sx={{
-            transition: isNavigatingAway ? "all 0.4s ease-in" : "none",
-            opacity: contentOpacity,
-            width: "100%",
-            ...((isNewChatPage && !isNavigatingAway) && {
+          <Box
+            className={
+              !isNewChatPage ? styles["chat-layout-main-content"] : undefined
+            }
+            sx={{
+              transition: isNavigatingAway ? "all 0.4s ease-in" : "none",
+              opacity: contentOpacity,
+              width: "100%",
+              ...(isNewChatPage &&
+                !isNavigatingAway && {
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  height: "20vh",
+                  minHeight: "0px",
+                  // height: "35vh",
+                  marginBottom: { xs: "24px", md: "48px" },
+                  marginTop: "15vh",
+                }),
+              ...((!isNewChatPage || isNavigatingAway) && {
+                height: "100%",
+                marginTop: "0px",
+              }),
+            }}
+          >
+            {children}
+          </Box>
+          <Box
+            className={styles["chat-layout-input-panel-wrapper"]}
+            sx={{
+              flexShrink: 0,
+              width: "100%",
               display: "flex",
               flexDirection: "column",
-              alignItems: "center",
-              height: "20vh",
-              minHeight: "0px",
-              // height: "35vh",
-              marginBottom: { xs: "24px", md: "48px" },
-              marginTop: "15vh",
-            }),
-            ...((!isNewChatPage || isNavigatingAway) && {
-              height: "100%",
-              marginTop: "0px",
-            }),
-          }}
-        >
-          {children}
-        </Box>
-        <Box
-          className={styles["chat-layout-input-panel-wrapper"]}
-          sx={{
-            flexShrink: 0,
-            width: "100%",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            ...(isNewChatPage && {
-              marginTop: { xs: "auto", sm: "0px" },
-            }),
-            ...(!isNewChatPage && {
-              marginBottom: "0px",
-              flexShrink: 0,
-            }),
-            marginBottom: "8px",
-          }}
-        >
-          <ChatInputPanel
-            sessionId={currentChatId}
-            modelConfig={modelConfig}
-            customizedPrompts={pandaConfig.customizedPrompts}
-            isLoading={internalIsSubmitting}
-            onSubmit={handleLayoutSubmit}
-          />
-        <Typography
-          hidden={isMobile}
-          sx={{
-            minWidth: { xs: "auto", md: "460px" },
-            textAlign: "center",
-            color: "var(--text-secondary)",
-            fontSize: "14px",
-            fontFamily: "Inter",
-            fontWeight: "400",
-            lineHeight: "32px",
-            wordWrap: "break-word",
-            marginBottom: "16px",
-            paddingLeft: "16px",
-            paddingRight: "16px",
-            boxSizing: "border-box",
-            backgroundColor: "var(--bg-primary)",
-          }}
-        >
-          {Locale.ChatLayout.Terms1}
-          <a
-            href="https://testinprod.notion.site/Panda-Alpha-Terms-of-Service-Privacy-Notice-2078fc57f54680349183dde6f0224da8"
-            style={{
-              color: "var(--text-primary)",
-              textDecoration: "none",
-              fontWeight: "500",
+              justifyContent: "center",
+              ...(isNewChatPage && {
+                marginTop: { xs: "auto", sm: "0px" },
+              }),
+              ...(!isNewChatPage && {
+                marginBottom: "0px",
+                flexShrink: 0,
+              }),
+              marginBottom: "8px",
             }}
           >
-            {Locale.ChatLayout.Terms2}
-          </a>
-          {Locale.ChatLayout.Terms3}
-          <a
-            href="https://testinprod.notion.site/Panda-Alpha-Terms-of-Service-Privacy-Notice-2078fc57f54680349183dde6f0224da8"
-            style={{
-              color: "var(--text-primary)",
-              textDecoration: "none",
-              fontWeight: "500",
-            }}
-          >
-            {Locale.ChatLayout.Terms4}
-          </a>
-        </Typography>
+            <ChatInputPanel
+              sessionId={currentChatId}
+              modelConfig={modelConfig}
+              customizedPrompts={pandaConfig.customizedPrompts}
+              isLoading={internalIsSubmitting}
+              onSubmit={handleLayoutSubmit}
+            />
+            <Typography
+              hidden={isMobile}
+              sx={{
+                minWidth: { xs: "auto", md: "460px" },
+                textAlign: "center",
+                color: "var(--text-secondary)",
+                fontSize: "14px",
+                fontFamily: "Inter",
+                fontWeight: "400",
+                lineHeight: "32px",
+                wordWrap: "break-word",
+                marginBottom: "16px",
+                paddingLeft: "16px",
+                paddingRight: "16px",
+                boxSizing: "border-box",
+                backgroundColor: "var(--bg-primary)",
+              }}
+            >
+              {Locale.ChatLayout.Terms1}
+              <a
+                href="https://testinprod.notion.site/Panda-Alpha-Terms-of-Service-Privacy-Notice-2078fc57f54680349183dde6f0224da8"
+                style={{
+                  color: "var(--text-primary)",
+                  textDecoration: "none",
+                  fontWeight: "500",
+                }}
+              >
+                {Locale.ChatLayout.Terms2}
+              </a>
+              {Locale.ChatLayout.Terms3}
+              <a
+                href="https://testinprod.notion.site/Panda-Alpha-Terms-of-Service-Privacy-Notice-2078fc57f54680349183dde6f0224da8"
+                style={{
+                  color: "var(--text-primary)",
+                  textDecoration: "none",
+                  fontWeight: "500",
+                }}
+              >
+                {Locale.ChatLayout.Terms4}
+              </a>
+            </Typography>
+          </Box>
         </Box>
-      </Box>
       </Box>
     </Box>
   );
