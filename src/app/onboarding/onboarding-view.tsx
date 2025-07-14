@@ -216,7 +216,7 @@ export default function OnboardingView() {
               case "customization":
                 return (
                   <InfoStepView
-                    text="To make our conversations more helpful, I'm going to ask a few questions to get to know you better and customize your experience."
+                    text={Locale.Onboarding.CustomizationDescription}
                     onNext={() => handleNext("")}
                   />
                 );

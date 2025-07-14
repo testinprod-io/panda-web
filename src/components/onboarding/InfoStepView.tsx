@@ -2,6 +2,7 @@
 
 import { Box, Button, Typography } from "@mui/material";
 import { motion } from "framer-motion";
+import Locale from "@/locales";
 
 interface InfoStepViewProps {
   text: string;
@@ -45,7 +46,7 @@ export default function InfoStepView({ text, onNext }: InfoStepViewProps) {
             px: "20px",
           }}
         >
-          Continue
+          {Locale.Onboarding.Continue}
         </Button>
       </Box>
     </motion.div>

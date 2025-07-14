@@ -60,12 +60,20 @@ export interface CustomizedPromptsData {
 }
 
 export function generateSystemPrompt(data: CustomizedPromptsData): string {
-  const name = data.personal_info?.name || "User";
-  const job = data.personal_info?.job || "individual";
-  const traits = data.prompts?.traits || "Neutral";
-  const extra = data.prompts?.extra_params || "";
-
-  return `You are assisting ${name}, who is ${job}. When responding, adapt your tone and approach to suit someone who appreciates the following traits: ${traits}. ${extra.trim() ? `Also, ${extra}` : ""}`.trim();
+  let prompt = "";
+  if (data.personal_info?.name) {
+    prompt += `You are assisting ${data.personal_info.name}`;
+  }
+  if (data.personal_info?.job) {
+    prompt += `who is ${data.personal_info.job || "individual"}. `;
+  }
+  if (data.prompts?.traits) {
+    prompt += `When responding, adapt your tone and approach to suit someone who appreciates the following traits: ${data.prompts.traits}. `;
+  }
+  if (data.prompts?.extra_params) {
+    prompt += `Also, ${data.prompts.extra_params}`;
+  }
+  return prompt.trim();
 }
 
 export async function encryptSystemPrompt(

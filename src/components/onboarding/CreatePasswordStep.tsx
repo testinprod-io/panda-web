@@ -10,8 +10,11 @@ import {
   IconButton,
 } from "@mui/material";
 import { usePrivy } from "@privy-io/react-auth";
-import { useEncryption } from "@/providers/encryption-provider";
+import { useAuth } from "@/sdk/hooks";
+import { usePandaSDK } from "@/providers/sdk-provider";
+import Locale from "@/locales";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { useEncryption } from "@/providers/encryption-provider";
 
 const MIN_PASSWORD_LENGTH = 10;
 const MAX_PASSWORD_LENGTH = 20;
@@ -27,8 +30,12 @@ export default function CreatePasswordStep({ onNext }: CreatePasswordStepProps) 
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
-  const { ready, authenticated } = usePrivy();
-  const { isFirstTimeUser, createPassword, unlockApp } = useEncryption();
+  const { sdk } = usePandaSDK();
+  const { encryptedId } = useAuth();
+  const isFirstTimeUser = sdk.ready ? encryptedId === null : null;
+  const { user, logout, ready, authenticated } = usePrivy();
+  const { createPassword, unlockApp } = useEncryption();
+
 
   useEffect(() => {
     // This logic might be handled in the parent `OnboardingView` in the future.
@@ -43,33 +50,25 @@ export default function CreatePasswordStep({ onNext }: CreatePasswordStepProps) 
     const newPassword = event.target.value;
     setPassword(newPassword);
 
-    if (
-      newPassword &&
-      (newPassword.length < MIN_PASSWORD_LENGTH ||
-        newPassword.length > MAX_PASSWORD_LENGTH)
-    ) {
-      setPasswordError(
-        `Password must be ${MIN_PASSWORD_LENGTH}–${MAX_PASSWORD_LENGTH} characters.`
-      );
+    if (newPassword && (newPassword.length < MIN_PASSWORD_LENGTH || newPassword.length > MAX_PASSWORD_LENGTH)) {
+      setPasswordError(Locale.Onboarding.Encryption.PasswordLengthMismatch(MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH));
     } else {
       setPasswordError("");
     }
-
+    
     if (confirmPassword && newPassword !== confirmPassword) {
-      setConfirmPasswordError("Passwords do not match.");
+      setConfirmPasswordError(Locale.Onboarding.Encryption.PasswordMismatch);
     } else {
       setConfirmPasswordError("");
     }
   };
 
-  const handleConfirmPasswordChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleConfirmPasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newConfirmPassword = event.target.value;
     setConfirmPassword(newConfirmPassword);
 
     if (password !== newConfirmPassword) {
-      setConfirmPasswordError("Passwords do not match.");
+      setConfirmPasswordError(Locale.Onboarding.Encryption.PasswordMismatch);
     } else {
       setConfirmPasswordError("");
     }
@@ -84,32 +83,20 @@ export default function CreatePasswordStep({ onNext }: CreatePasswordStepProps) 
   ) => {
     event.preventDefault();
   };
-
   const handleSubmitForm = useCallback(
     async (event: React.FormEvent) => {
       event.preventDefault();
 
       let hasError = false;
-      if (!password) {
-        setPasswordError("Password cannot be empty.");
-        hasError = true;
-      } else if (
-        password.length < MIN_PASSWORD_LENGTH ||
-        password.length > MAX_PASSWORD_LENGTH
-      ) {
-        setPasswordError(
-          `Password must be ${MIN_PASSWORD_LENGTH}–${MAX_PASSWORD_LENGTH} characters.`
-        );
+      if (password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
+        setPasswordError(Locale.Onboarding.Encryption.PasswordLengthMismatch(MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH));
         hasError = true;
       } else {
         setPasswordError("");
       }
 
-      if (!confirmPassword) {
-        setConfirmPasswordError("Password cannot be empty.");
-        hasError = true;
-      } else if (password !== confirmPassword) {
-        setConfirmPasswordError("Passwords do not match.");
+      if (password !== confirmPassword) {
+        setConfirmPasswordError(Locale.Onboarding.Encryption.PasswordMismatch);
         hasError = true;
       } else {
         setConfirmPasswordError("");
@@ -120,14 +107,14 @@ export default function CreatePasswordStep({ onNext }: CreatePasswordStepProps) 
       }
 
       try {
-        // await createPassword(password);
-        // await unlockApp(password);
+        await createPassword(password);
+        await unlockApp(password);
         onNext();
       } catch (err: any) {
         setPasswordError(err.message || "Failed to process password");
       }
     },
-    [password, confirmPassword, createPassword, unlockApp, onNext]
+    [password, confirmPassword, createPassword, unlockApp, onNext],
   );
 
   const isButtonDisabled =
@@ -162,8 +149,7 @@ export default function CreatePasswordStep({ onNext }: CreatePasswordStepProps) 
           width: "100%",
         }}
       >
-        To protect your chat data, set a password. If you forget it, you'll need
-        to reset the service, which will permanently delete all data.
+        {Locale.Onboarding.Encryption.Description}
       </Typography>
 
       <Box
@@ -187,7 +173,7 @@ export default function CreatePasswordStep({ onNext }: CreatePasswordStepProps) 
           value={password}
           onChange={handlePasswordChange}
           error={!!passwordError}
-          placeholder={`Enter ${MIN_PASSWORD_LENGTH}–${MAX_PASSWORD_LENGTH} characters.`}
+          placeholder={Locale.Onboarding.Encryption.Placeholder(MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH)}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
@@ -255,7 +241,7 @@ export default function CreatePasswordStep({ onNext }: CreatePasswordStepProps) 
           value={confirmPassword}
           onChange={handleConfirmPasswordChange}
           error={!!confirmPasswordError}
-          placeholder="Confirm password"
+          placeholder={Locale.Onboarding.Encryption.ConfirmPlaceholder}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
@@ -340,7 +326,7 @@ export default function CreatePasswordStep({ onNext }: CreatePasswordStepProps) 
             },
           }}
         >
-          Confirm
+          {Locale.Onboarding.Encryption.Confirm}
         </Button>
       </Box>
     </Box>

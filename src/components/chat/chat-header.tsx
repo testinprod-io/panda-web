@@ -468,7 +468,7 @@ export default function ChatHeader({
               size="small"
               className={styles.loginButton}
             >
-              Log in
+              {Locale.SignIn.Submit}
             </Button>
             <Button
               variant="contained"
@@ -476,7 +476,7 @@ export default function ChatHeader({
               size="small"
               className={styles.signUpButton}
             >
-              Sign up
+              {Locale.Signup.Submit}
             </Button>
           </>
         )}

@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { Box, Button, Typography } from "@mui/material";
+import Locale from "@/locales";
+import { usePandaSDK } from "@/providers/sdk-provider";
 
-const TEXT_TO_ANIMATE =
-  "Awesome, from now on, every data you submit will be encrypted using your password.";
+const TEXT_TO_ANIMATE = Locale.Onboarding.Encryption.PasswordCreatedDescription;
 
 interface PasswordConfirmationStepProps {
   onStartChat: () => void;
@@ -15,17 +16,26 @@ export default function PasswordConfirmationStep({
   onStartChat,
   onCustomize,
 }: PasswordConfirmationStepProps) {
+  const { sdk } = usePandaSDK();
   const [displayedText, setDisplayedText] = useState("");
   const [isEncrypting, setIsEncrypting] = useState(false);
   const [encryptionProgress, setEncryptionProgress] = useState(0);
   const [isButtonHidden, setIsButtonHidden] = useState(true);
+  const [base64Text, setBase64Text] = useState("");
 
-  const base64Text = useMemo(() => {
-    if (typeof window === "undefined") {
-      return "";
-    }
-    return window.btoa(TEXT_TO_ANIMATE);
-  }, []);
+  useEffect(() => {
+    const encryptText = async () => {
+      try {
+        const encrypted = await sdk.encryption.encrypt(TEXT_TO_ANIMATE);
+        setBase64Text(encrypted);
+      } catch (error) {
+        console.error("Encryption failed:", error);
+        setBase64Text(TEXT_TO_ANIMATE); // Fallback to original text
+      }
+    };
+    
+    encryptText();
+  }, [sdk.encryption]);
 
   useEffect(() => {
     const words = TEXT_TO_ANIMATE;
@@ -46,7 +56,7 @@ export default function PasswordConfirmationStep({
   }, []);
 
   useEffect(() => {
-    if (!isEncrypting) return;
+    if (!isEncrypting || !base64Text) return;
 
     const maxLen = Math.max(TEXT_TO_ANIMATE.length, base64Text.length);
     if (encryptionProgress < maxLen) {
@@ -55,25 +65,16 @@ export default function PasswordConfirmationStep({
       }, 20); // Speed of encryption effect
       return () => clearTimeout(timer);
     } else {
-      setIsButtonHidden(false);
+        setIsButtonHidden(false);
     }
   }, [isEncrypting, encryptionProgress, base64Text, TEXT_TO_ANIMATE]);
 
   const animatedText = useMemo(() => {
-    if (!isEncrypting) {
+    if (!isEncrypting || !base64Text) {
       return displayedText;
     }
-    return (
-      base64Text.substring(0, encryptionProgress) +
-      TEXT_TO_ANIMATE.substring(encryptionProgress)
-    );
-  }, [
-    isEncrypting,
-    encryptionProgress,
-    displayedText,
-    base64Text,
-    TEXT_TO_ANIMATE,
-  ]);
+    return base64Text.substring(0, encryptionProgress) + TEXT_TO_ANIMATE.substring(encryptionProgress);
+  }, [isEncrypting, encryptionProgress, displayedText, base64Text, TEXT_TO_ANIMATE]);
 
   return (
     <Box
@@ -133,7 +134,7 @@ export default function PasswordConfirmationStep({
             },
           }}
         >
-          Start chat
+          {Locale.Onboarding.StartChat}
         </Button>
         <Button
           type="button"
@@ -156,7 +157,7 @@ export default function PasswordConfirmationStep({
             },
           }}
         >
-          Customize Panda
+          {Locale.Onboarding.CustomizePanda}
         </Button>
       </Box>
     </Box>

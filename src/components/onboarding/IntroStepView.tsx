@@ -115,7 +115,7 @@ export default function IntroStepView({ onNext }: IntroStepViewProps) {
               px: "20px",
             }}
           >
-            I understand
+            {Locale.Onboarding.IUnderstand}
           </Button>
         </Box>
       </Box>
