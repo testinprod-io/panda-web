@@ -7,20 +7,16 @@ import {
   Typography,
   useMediaQuery,
   IconButton,
-  Tooltip,
   CircularProgress,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-
 import Sidebar from "@/components/sidebar/sidebar";
 import ChatHeader from "@/components/chat/chat-header";
-
 import { ChatInputPanel } from "@/components/chat/chat-input-panel";
 import { UNFINISHED_INPUT } from "@/types/constant";
 import { SessionState } from "@/types/session";
 import { safeLocalStorage } from "@/utils/utils";
-// import { useChatActions } from "@/hooks/use-chat-actions";
-import type { UUID } from "crypto"; // Keep as type import
+import type { UUID } from "crypto";
 import Locale from "@/locales";
 import { useSnackbar } from "@/providers/snackbar-provider";
 import styles from "@/components/chat/chat.module.scss";
@@ -31,6 +27,7 @@ import { Chat } from "@/sdk/Chat";
 import { useConfig } from "@/sdk/hooks";
 import { ServerModelInfo } from "@/sdk/client";
 import { PandaConfig } from "@/sdk/ConfigManager";
+
 const localStorage = safeLocalStorage();
 
 function usePrevious<T>(value: T): T | undefined {
@@ -69,7 +66,6 @@ export default function ChatLayoutContent({
     return unsubscribe;
   }, [sdk.bus]);
 
-  // const { newSession } = useChatActions();
   const { showSnackbar } = useSnackbar();
 
   const [internalIsSubmitting, setInternalIsSubmitting] = useState(false);
@@ -159,10 +155,6 @@ export default function ChatLayoutContent({
     setIsSidebarCollapsed(isMobile ? true : false);
   }, [isMobile]);
 
-  // const modelConfig = React.useMemo(() => {
-  //   return pandaConfig.defaultModel;
-  // }, [pandaConfig.defaultModel]);
-
   const handleLayoutSubmit = useCallback(
     async (sessionId: UUID | undefined, sessionState: SessionState) => {
       if (
@@ -246,7 +238,7 @@ export default function ChatLayoutContent({
       router,
       pandaConfig,
       showSnackbar,
-      modelConfig, // Add modelConfig to dependencies since it's used in the function
+      modelConfig,
       sdk.chat,
     ]
   );
@@ -300,7 +292,6 @@ export default function ChatLayoutContent({
                 left: isSidebarCollapsed
                   ? `${sidebarCollapsedWidth - 16}px`
                   : `${sidebarExpandedWidth - 16}px`,
-                // transition: `left ${sidebarTransitionDuration} ${sidebarTransitionTiming}`,
               }}
             >
               {isSidebarCollapsed ? (
@@ -396,8 +387,6 @@ export default function ChatLayoutContent({
             left: 0,
             right: 0,
             bottom: 0,
-            // background:
-            // "linear-gradient(177deg, white 0%, #FEFEFE 27%, #F6FFFC 75%, #DAF7EF 100%)",
             opacity: isNewChatPage && !isNavigatingAway ? 1 : 0,
             transition: isNavigatingAway ? "opacity 0.4s ease-in" : "none",
             zIndex: -1,
@@ -442,7 +431,6 @@ export default function ChatLayoutContent({
                   alignItems: "center",
                   height: "20vh",
                   minHeight: "0px",
-                  // height: "35vh",
                   marginBottom: { xs: "24px", md: "48px" },
                   marginTop: "15vh",
                 }),

@@ -11,38 +11,25 @@ import {
   RefObject,
   useEffect,
   useMemo,
-  useCallback,
 } from "react";
 import { copyToClipboard } from "@/utils/utils";
 import mermaid from "mermaid";
 import Locale from "@/locales";
 import React from "react";
-import { useDebouncedCallback } from "use-debounce";
-
 import clsx from "clsx";
-import { HTMLAttributes } from "react";
 
-// MUI Imports for Image Dialog
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
-import MuiIconButton from "@mui/material/IconButton"; // Renamed to avoid conflict
+import MuiIconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-
-// MUI Imports for Fullscreen Button
-// import FullscreenIcon from '@mui/icons-material/Fullscreen';
-// import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
-// import ReloadIcon from '@mui/icons-material/Replay'; // Keep if Mermaid reload is different
-
-// MUI Imports for LoopIcon
-// import LoopIcon from '@mui/icons-material/Loop';
 import { LoadingAnimation } from "./loading-animation";
 
 export function Mermaid(props: { code: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [hasError, setHasError] = useState(false);
-  // State for image dialog
+  
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 

@@ -1,12 +1,7 @@
-
-import {
-  DEFAULT_SIDEBAR_WIDTH,
-  StoreKey,
-} from "@/types/constant";
+import { DEFAULT_SIDEBAR_WIDTH, StoreKey } from "@/types/constant";
 import { createPersistStore } from "@/utils/store";
 import { indexedDBStorage } from "@/utils/indexedDB-storage";
 import { createJSONStorage } from "zustand/middleware";
-import { CustomizedPromptsData } from "@/types";
 
 export enum SubmitKey {
   Enter = "Enter",
@@ -55,7 +50,7 @@ export function limitNumber(
   x: number,
   min: number,
   max: number,
-  defaultValue: number,
+  defaultValue: number
 ) {
   if (isNaN(x)) {
     return defaultValue;
@@ -78,7 +73,7 @@ export const useAppConfig = createPersistStore(
         passwordExpirationMinutes: minutes,
       }));
     },
-    
+
     setTheme(theme: Theme) {
       set(() => ({
         theme: theme,
@@ -94,7 +89,7 @@ export const useAppConfig = createPersistStore(
 
       if (version < 1.4) {
         console.log(
-          `[AppConfigStore] Migrating config from version ${version} to 1.4`,
+          `[AppConfigStore] Migrating config from version ${version} to 1.4`
         );
         return {
           ...DEFAULT_CONFIG,
@@ -106,7 +101,7 @@ export const useAppConfig = createPersistStore(
 
       if (version < 1.3) {
         console.log(
-          `[AppConfigStore] Migrating config from version ${version} to 1.3`,
+          `[AppConfigStore] Migrating config from version ${version} to 1.3`
         );
         return {
           ...DEFAULT_CONFIG,
@@ -117,5 +112,5 @@ export const useAppConfig = createPersistStore(
 
       return { ...DEFAULT_CONFIG, ...oldState } as AppConfig;
     },
-  },
+  }
 );

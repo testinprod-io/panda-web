@@ -20,7 +20,7 @@ const Markdown = dynamic(
   async () => (await import("../ui/markdown")).Markdown,
   {
     loading: () => <LoadingAnimation />,
-  },
+  }
 );
 
 interface ChatMessageCellProps {
@@ -39,7 +39,7 @@ interface ChatMessageCellProps {
 }
 
 export const ChatMessageCell = React.memo(function ChatMessageCell(
-  props: ChatMessageCellProps,
+  props: ChatMessageCellProps
 ) {
   const {
     sessionId,
@@ -69,36 +69,25 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
     challengeResponse,
   } = message;
   const { isLocked } = useEncryption();
-  const { attestationResults, verificationResults } = useAttestation();
+  const { verificationResults } = useAttestation();
   const { sdk } = usePandaSDK();
 
   const loadedFiles = useLoadedFiles(files, sessionId, isLocked);
 
-
   useEffect(() => {
     const doVerify = async (key: string) => {
-      // setVerificationResult({
-      //   status: VerificationStatus.Pending,
-      //   attestationResult: undefined,
-      //   publicKey: key,
-      // });
-      console.log("verifying attestation for publicKeyHex:", key);
+      console.log("Verifying attestation for public key:", key);
       try {
         const attestationResult = await sdk.attestation.verifyAttestation(key);
-        const verificationResult = await sdk.attestation.verifyContract(key, attestationResult);
-        // setVerificationResult(verificationResult);
+        await sdk.attestation.verifyContract(
+          key,
+          attestationResult
+        );
       } catch (error) {
-        console.log("error verifying attestation for publicKeyHex:", key);
-        console.log("error:", error);
-        // setVerificationResult({
-        //   status: VerificationStatus.Failed,
-        //   attestationResult: undefined,
-        //   publicKey: key,
-        // });
+        console.log("Error verifying attestation for public key:", key, error);
       }
     };
 
-    console.log("challengeResponse:", challengeResponse);
     if (challengeResponse) {
       doVerify(challengeResponse.publicKey);
     }
@@ -106,7 +95,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
 
   const handleResend = useCallback(
     () => onResend(messageId),
-    [onResend, messageId],
+    [onResend, messageId]
   );
 
   const [isEditing, setIsEditing] = useState(false);
@@ -130,7 +119,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
       onEditSubmit(messageId, newText);
       setIsEditing(false);
     },
-    [messageId, content, onEditSubmit],
+    [messageId, content, onEditSubmit]
   );
 
   if (isError) {
@@ -140,7 +129,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
           <div
             className={clsx(
               styles["chat-message-item"],
-              styles["chat-message-error-bubble"],
+              styles["chat-message-error-bubble"]
             )}
           >
             <div className={styles["chat-message-error-content-inner"]}>
@@ -177,20 +166,37 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
         styles["chat-message"],
         isUser && styles["chat-message-user"],
         !isUser && styles["chat-message-system"],
-        (streaming || isReasoning) && styles["chat-message-streaming"],
+        (streaming || isReasoning) && styles["chat-message-streaming"]
       )}
     >
       <div className={styles["chat-message-header"]}>
-          {!isUser && (streaming ? (
+        {!isUser &&
+          (streaming ? (
             <div className={styles["chat-message-avatar"]}>
-              <CircularProgress size={32} sx={{ color: "var(--icon-primary)" }} />
+              <CircularProgress
+                size={32}
+                sx={{ color: "var(--icon-primary)" }}
+              />
             </div>
           ) : (
-            <div className={styles["chat-message-avatar"]} style={{ backgroundColor: "#020202", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "16px" }}>
-              <img src="/icons/rounded-logo.svg" alt="Panda" style={{ width: "24px", height: "24px" }}/>
+            <div
+              className={styles["chat-message-avatar"]}
+              style={{
+                backgroundColor: "#020202",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "16px",
+              }}
+            >
+              <img
+                src="/icons/rounded-logo.svg"
+                alt="Panda"
+                style={{ width: "24px", height: "24px" }}
+              />
             </div>
           ))}
-        </div>
+      </div>
       <Box
         className={styles["chat-message-container"]}
         sx={
@@ -235,7 +241,7 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
               eventComplete={!isReasoning}
             />
           )}
-          
+
           {shouldShowReasoning && (
             <ReasoningDisplay
               reasoning={reasoning}
@@ -279,7 +285,11 @@ export const ChatMessageCell = React.memo(function ChatMessageCell(
             isChatLoading={isChatLoading}
             messageContent={content}
             reasoningText={reasoning}
-            verificationResult={challengeResponse ? verificationResults[challengeResponse.publicKey] : undefined}
+            verificationResult={
+              challengeResponse
+                ? verificationResults[challengeResponse.publicKey]
+                : undefined
+            }
             challengeResponse={challengeResponse}
             onResend={handleResend}
           />

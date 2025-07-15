@@ -8,25 +8,20 @@ import {
   MessageSyncState,
   CustomizedPromptsData,
   SubmittedFile,
-  FileWithProgress,
 } from "@/types";
 import {
   FileInfo,
-  GetConversationMessagesParams,
   Summary,
-  MessageCreateRequest,
   ServerModelInfo,
   ConversationUpdateRequest,
   SummaryCreateRequest,
   MultimodalContent,
   LLMConfig,
 } from "@/sdk/client/types";
-// import { mapApiMessagesToChatMessages } from "@/services/api-service";
 import { EventBus } from "./events";
 import { IStorage } from "./storage/i-storage";
 import { EncryptionService } from "./EncryptionService";
 import { ChallengeResponse } from "@/sdk/client/panda-challenge";
-import { AttestationManager } from "./AttestationManager";
 import { ConfigManager } from "./ConfigManager";
 import Locale from "@/locales";
 import { ChatControllerPool } from "./client/controller";
@@ -82,13 +77,6 @@ export class Chat {
     return this.customData?.customized_prompts as string | undefined;
   }
 
-  // set customizedPromptsData (data: string | undefined) {
-  //   this.customData = {
-  //     ...this.customData,
-  //     customized_prompts: data,
-  //   };
-  // }
-
   constructor(
     bus: EventBus,
     api: ApiService,
@@ -117,17 +105,23 @@ export class Chat {
     this.createdAt = createdAt;
 
     this.bus.on("app.unlocked", async () => {
-      this.messages = await Promise.all(this.messages.map(async (m) => {
-        const newMessage = {
-          ...m,
-          visibleReasoning: m.reasoning
-            ? await this.encryptionService.decrypt(m.reasoning)
-            : undefined,
-          visibleContent: await this.encryptionService.decrypt(m.content),
-          processEvents: m.rawProcessEvents ? JSON.parse(await this.encryptionService.decrypt(m.rawProcessEvents)) : [],
-        };
-        return newMessage;
-      }));
+      this.messages = await Promise.all(
+        this.messages.map(async (m) => {
+          const newMessage = {
+            ...m,
+            visibleReasoning: m.reasoning
+              ? await this.encryptionService.decrypt(m.reasoning)
+              : undefined,
+            visibleContent: await this.encryptionService.decrypt(m.content),
+            processEvents: m.rawProcessEvents
+              ? JSON.parse(
+                  await this.encryptionService.decrypt(m.rawProcessEvents)
+                )
+              : [],
+          };
+          return newMessage;
+        })
+      );
       this.updateState();
     });
 
@@ -163,7 +157,6 @@ export class Chat {
   }
   /**
    * Performs the initial load of messages and summaries for this chat.
-   * Adapted from the initial useEffect in useChatSessionManager.
    */
   public async loadInitial() {
     if (this.isLoading) return;
@@ -180,13 +173,15 @@ export class Chat {
       ]);
 
       // Process messages
-      this.messages = await Promise.all(messagesResult.messages.map(async (m) => {
-        m.visibleReasoning = m.reasoning
-          ? await this.encryptionService.decrypt(m.reasoning)
-          : undefined;
-        m.visibleContent = await this.encryptionService.decrypt(m.content);
-        return m;
-      }));
+      this.messages = await Promise.all(
+        messagesResult.messages.map(async (m) => {
+          m.visibleReasoning = m.reasoning
+            ? await this.encryptionService.decrypt(m.reasoning)
+            : undefined;
+          m.visibleContent = await this.encryptionService.decrypt(m.content);
+          return m;
+        })
+      );
       this.hasMoreMessages = messagesResult.hasMore;
       this.nextMessageCursor = messagesResult.nextCursor;
 
@@ -222,7 +217,6 @@ export class Chat {
 
   /**
    * Fetches the next page of messages.
-   * Adapted from loadMoreMessages in useChatSessionManager.
    */
   public async loadMoreMessages() {
     if (this.isLoading || !this.hasMoreMessages) return;
@@ -241,13 +235,15 @@ export class Chat {
         20
       );
 
-      const olderMessages = await Promise.all(result.messages.map(async (m) => {
-        m.visibleReasoning = m.reasoning
-          ? await this.encryptionService.decrypt(m.reasoning)
-          : undefined;
-        m.visibleContent = await this.encryptionService.decrypt(m.content);
-        return m;
-      }));
+      const olderMessages = await Promise.all(
+        result.messages.map(async (m) => {
+          m.visibleReasoning = m.reasoning
+            ? await this.encryptionService.decrypt(m.reasoning)
+            : undefined;
+          m.visibleContent = await this.encryptionService.decrypt(m.content);
+          return m;
+        })
+      );
 
       this.messages = [...olderMessages, ...this.messages];
 
@@ -403,7 +399,7 @@ export class Chat {
       syncState: MessageSyncState.PENDING_CREATE,
     });
     this.messages.push(botMessage);
-    this.updateState(); 
+    this.updateState();
     const localBotMessageId = botMessage.id;
 
     const llmChatConfig: LLMConfig = {
@@ -414,7 +410,7 @@ export class Chat {
       reasoning: true,
       targetEndpoint: modelConfig.url,
       useSearch: options.enableSearch ?? false,
-      customizedPrompts: this.customizedPromptsData 
+      customizedPrompts: this.customizedPromptsData
         ? await this.encryptionService.decrypt(this.customizedPromptsData)
         : undefined,
     };
@@ -521,8 +517,12 @@ export class Chat {
         ChatControllerPool.stop(this.id, localBotMessageId);
       },
       onController: (controller) => {
-        ChatControllerPool.addController(this.id, localBotMessageId, controller);
-      }
+        ChatControllerPool.addController(
+          this.id,
+          localBotMessageId,
+          controller
+        );
+      },
     });
   }
 
@@ -595,13 +595,17 @@ export class Chat {
         const summaryCreateRequest: SummaryCreateRequest = {
           start_message_id: batchToSummarize[0].id,
           end_message_id: batchToSummarize[batchToSummarize.length - 1].id,
-          content: await this.encryptionService.encrypt(summaryResponse.summary),
+          content: await this.encryptionService.encrypt(
+            summaryResponse.summary
+          ),
         };
         const newSummary = await this.storage.saveSummary(
           this.id as string,
           summaryCreateRequest
         );
-        newSummary.content = await this.encryptionService.decrypt(newSummary.content);
+        newSummary.content = await this.encryptionService.decrypt(
+          newSummary.content
+        );
         if (newSummary) {
           this.summaries.push(newSummary);
           this.summaries.sort(
@@ -629,27 +633,32 @@ export class Chat {
   ) {
     let messageToSave: ChatMessage | undefined;
 
-    this.messages = await Promise.all(this.messages.map(async (msg) => {
-      if (msg.id === messageId) {
-        const updatedMsg = { ...msg, streaming: false };
+    this.messages = await Promise.all(
+      this.messages.map(async (msg) => {
+        if (msg.id === messageId) {
+          const updatedMsg = { ...msg, streaming: false };
 
-        if (isError) {
-          updatedMsg.isError = true;
-          updatedMsg.errorMessage = errorMessage;
-        } else {
-          updatedMsg.content = await this.encryptionService.encrypt(finalContent);
-          updatedMsg.visibleContent = finalContent;
-          updatedMsg.date = timestamp;
-          updatedMsg.syncState = MessageSyncState.SYNCED;
-          updatedMsg.challengeResponse = challengeResponse;
-          updatedMsg.rawProcessEvents = await this.encryptionService.encrypt(JSON.stringify(updatedMsg.processEvents));
+          if (isError) {
+            updatedMsg.isError = true;
+            updatedMsg.errorMessage = errorMessage;
+          } else {
+            updatedMsg.content =
+              await this.encryptionService.encrypt(finalContent);
+            updatedMsg.visibleContent = finalContent;
+            updatedMsg.date = timestamp;
+            updatedMsg.syncState = MessageSyncState.SYNCED;
+            updatedMsg.challengeResponse = challengeResponse;
+            updatedMsg.rawProcessEvents = await this.encryptionService.encrypt(
+              JSON.stringify(updatedMsg.processEvents)
+            );
+          }
+
+          messageToSave = updatedMsg;
+          return updatedMsg;
         }
-
-        messageToSave = updatedMsg;
-        return updatedMsg;
-      }
-      return msg;
-    }));
+        return msg;
+      })
+    );
 
     if (messageToSave) {
       this.storage.saveMessage(this.id as string, messageToSave);
@@ -677,7 +686,7 @@ export class Chat {
     userMessageContent: string,
     assistantMessageContent: string
   ) {
-    const defaultTopic = Locale.Store.DefaultTopic
+    const defaultTopic = Locale.Store.DefaultTopic;
     if (this.title !== defaultTopic) {
       console.log(
         `[Title Generation Action] Session already has a title, skipping.`
@@ -773,14 +782,15 @@ export class Chat {
   }
 
   private async handleReasoningEnd(messageId: UUID, duration: number) {
-    const messageIndex = this.messages.findIndex(m => m.id === messageId);
+    const messageIndex = this.messages.findIndex((m) => m.id === messageId);
     if (messageIndex !== -1) {
       const messageToUpdate = this.messages[messageIndex];
       const visibleReasoning = messageToUpdate.visibleReasoning ?? "";
-      
+
       try {
-        const encryptedReasoning = await this.encryptionService.encrypt(visibleReasoning);
-        this.messages = this.messages.map(msg => {
+        const encryptedReasoning =
+          await this.encryptionService.encrypt(visibleReasoning);
+        this.messages = this.messages.map((msg) => {
           return msg.id === messageId
             ? {
                 ...msg,
@@ -792,9 +802,9 @@ export class Chat {
         });
         this.updateState();
       } catch (error) {
-        console.error('Error encrypting reasoning:', error);
+        console.error("Error encrypting reasoning:", error);
         // Fallback: update without encryption
-        this.messages = this.messages.map(msg => {
+        this.messages = this.messages.map((msg) => {
           return msg.id === messageId
             ? {
                 ...msg,
@@ -809,11 +819,14 @@ export class Chat {
     }
   }
 
-  private async handleTitleGeneration(finalContent: string, defaultTopic: string) {
+  private async handleTitleGeneration(
+    finalContent: string,
+    defaultTopic: string
+  ) {
     try {
       const newTitle = finalContent.trim();
       const encryptedTitle = await this.encryptionService.encrypt(newTitle);
-      
+
       // Update local state only if the title is new and not the default
       if (newTitle !== defaultTopic && newTitle !== this.title) {
         this.title = newTitle;
@@ -836,7 +849,7 @@ export class Chat {
         );
       }
     } catch (error) {
-      console.error('Error encrypting title:', error);
+      console.error("Error encrypting title:", error);
       if (finalContent !== defaultTopic && finalContent !== this.title) {
         this.title = finalContent;
         this.encryptedTitle = finalContent; // Fallback to plaintext

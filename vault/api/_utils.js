@@ -57,13 +57,24 @@ export function getAccessToken(req) {
  */
 export function setCorsHeaders(res, req, methods = ['GET', 'POST', 'OPTIONS']) {
   const allowedOrigins = process.env.VERCEL_ENV === 'production' 
-    ? ['https://panda.chat']
+    ? ['https://panda.chat', 'null'] // Allow null origins for sandboxed iframes
     : true;
   
   const origin = req.headers.origin;
-  if (allowedOrigins === true || (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin))) {
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  
+  // Handle CORS headers
+  if (allowedOrigins === true) {
+    // In development, allow any origin including null
+    // Note: When credentials are true, we cannot use '*', so we must echo the origin
+    res.setHeader('Access-Control-Allow-Origin', origin || 'null');
+  } else if (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin)) {
+    // In production, only allow specific origins
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (process.env.VERCEL_ENV !== 'production') {
+    // In development, allow null origins from sandboxed iframes
+    res.setHeader('Access-Control-Allow-Origin', origin || 'null');
   }
+  
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', methods.join(', '));
   res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, Cookie');

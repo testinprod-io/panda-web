@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-// import { useApiClient } from "@/providers/api-client-provider";
 import {
   CustomizedPromptsData,
   encryptSystemPrompt,

@@ -13,7 +13,7 @@ export interface AckMsg {
   origin?: string;
 }
 
-export interface UpdateKeyEvent { 
+export interface UpdateKeyEvent {
   id: string;
   cmd: "updateKey";
   encryptedPassword: string;
@@ -143,8 +143,29 @@ export interface ErrorRes {
   error: string;
 }
 
-export type VaultRequest = DeriveReq | EncryptReq | DecryptReq | UpdateKeyEvent | SetPasswordReq | CreateUserPasswordReq | BootstrapReq | ClearKeysReq | EncryptFileReq | DecryptFileReq;
-export type VaultResponse = DeriveRes | EncryptRes | DecryptRes | UpdateKeyRes | SetPasswordRes | CreateUserPasswordRes | BootstrapRes | ClearKeysRes | EncryptFileRes | DecryptFileRes | ErrorRes;
+export type VaultRequest =
+  | DeriveReq
+  | EncryptReq
+  | DecryptReq
+  | UpdateKeyEvent
+  | SetPasswordReq
+  | CreateUserPasswordReq
+  | BootstrapReq
+  | ClearKeysReq
+  | EncryptFileReq
+  | DecryptFileReq;
+export type VaultResponse =
+  | DeriveRes
+  | EncryptRes
+  | DecryptRes
+  | UpdateKeyRes
+  | SetPasswordRes
+  | CreateUserPasswordRes
+  | BootstrapRes
+  | ClearKeysRes
+  | EncryptFileRes
+  | DecryptFileRes
+  | ErrorRes;
 
 // API types for /deriveKey endpoint
 export interface DeriveKeyResponse {

@@ -2,7 +2,6 @@ import React, {
   forwardRef,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -13,10 +12,7 @@ import { usePrivy } from "@privy-io/react-auth";
 import TextareaAutosize from "react-textarea-autosize";
 
 import { UNFINISHED_INPUT } from "@/types/constant";
-import {
-  autoGrowTextArea,
-  useMobileScreen,
-} from "@/utils/utils";
+import { useMobileScreen } from "@/utils/utils";
 import Locale from "@/locales";
 import { useSubmitHandler } from "@/hooks/use-submit-handler";
 import { useSnackbar } from "@/providers/snackbar-provider";
@@ -29,10 +25,7 @@ import Button from "@mui/material/Button";
 import styles from "@/components/chat/chat.module.scss";
 import { UUID } from "crypto";
 import CloseIcon from "@mui/icons-material/Close";
-// import { useApiClient } from "@/providers/api-client-provider";
-// import { useChatActions } from "@/hooks/use-chat-actions";
 import { SessionState, SubmittedFile } from "@/types/session";
-// import { EncryptionService } from "@/services/encryption-service";
 import { FileCircularProgress } from "../ui/file-circular-progress";
 import { supportsImages, supportsPdf, supportsSearch } from "@/utils/model";
 import { usePandaSDK } from "@/providers/sdk-provider";
@@ -44,9 +37,8 @@ import {
   ALLOWED_FILE_TYPES,
   AttachedClientFile,
 } from "./chat-input-panel.utils";
-import { CustomizedPromptsData, generateSystemPrompt } from "@/types";
+import { CustomizedPromptsData } from "@/types";
 import { ServerModelInfo } from "@/sdk/client/types";
-import { useConfig } from "@/sdk/hooks";
 
 interface ChatInputPanelProps {
   sessionId: UUID | undefined;
@@ -55,7 +47,7 @@ interface ChatInputPanelProps {
   isLoading: boolean;
   onSubmit: (
     sessionId: UUID | undefined,
-    SessionState: SessionState,
+    SessionState: SessionState
   ) => Promise<void>;
 }
 
@@ -69,24 +61,21 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
       modelConfig, // Use the modelConfig prop passed from parent
     } = props;
 
-    // const chatActions = useChatActions();
     const { sdk } = usePandaSDK();
     const [activeSessionId, setActiveSessionId] = useState<UUID | undefined>(
-      propSessionId,
+      propSessionId
     );
     const provisionalSessionIdRef = useRef<UUID | null>(null);
     const isProvisionalSessionCommittedRef = useRef<boolean>(false);
 
     const { authenticated, getAccessToken } = usePrivy();
-    // const apiClient = useApiClient();
-    // const { newSession } = useChatActions();
     const isMobileScreen = useMobileScreen();
     const { submitKey, shouldSubmit } = useSubmitHandler();
     const { showSnackbar } = useSnackbar();
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const [userInput, setUserInput] = useState<string>("");
     const [attachedFiles, setAttachedFiles] = useState<AttachedClientFile[]>(
-      [],
+      []
     );
     const [isUploadingFiles, setIsUploadingFiles] = useState(false);
     const [enableSearch, setEnableSearch] = useState(false);
@@ -96,7 +85,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
 
     useEffect(() => {
       const currentlyUploading = attachedFiles.some(
-        (file) => file.uploadStatus === "uploading",
+        (file) => file.uploadStatus === "uploading"
       );
       setIsUploadingFiles(currentlyUploading);
     }, [attachedFiles]);
@@ -145,7 +134,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
               fileId: persistedFile.fileId as UUID,
               uploadProgress: 100,
               abortUpload: undefined,
-            }),
+            })
           );
         setAttachedFiles(restoredAttachedFiles);
       } else {
@@ -168,7 +157,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
         currentActiveSessionId?: UUID,
         currentInput?: string,
         currentAttachedFiles?: AttachedClientFile[],
-        currentEnableSearch?: boolean,
+        currentEnableSearch?: boolean
       ) => {
         if (currentActiveSessionId) {
           const key = UNFINISHED_INPUT(currentActiveSessionId.toString());
@@ -188,16 +177,15 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
           }
         }
       },
-      500,
+      500
     );
 
     useEffect(() => {
-      // Debounce saving the entire session state
       debouncedSaveInput(
         activeSessionId,
         userInput,
         attachedFiles,
-        enableSearch,
+        enableSearch
       );
     }, [
       userInput,
@@ -216,51 +204,41 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
         let currentSessionIdToUse = activeSessionId;
 
         if (!currentSessionIdToUse) {
-          console.log(
-            "DEBUG [executeFileUploads] No current session ID, creating a new session",
-          );
           if (
             provisionalSessionIdRef.current &&
             !isProvisionalSessionCommittedRef.current
           ) {
             await sdk.chat.deleteChat(provisionalSessionIdRef.current);
             provisionalSessionIdRef.current = null;
-            console.log(
-              "DEBUG [executeFileUploads] Deleted provisional session",
-            );
           }
 
           const session = await sdk.chat.createNewChat(
             Locale.Store.DefaultTopic,
             modelConfig,
-            customizedPrompts,
+            customizedPrompts
           );
           if (session) {
-            console.log(
-              "DEBUG [executeFileUploads] Created new session",
-              session.id,
-            );
             currentSessionIdToUse = session.id;
             provisionalSessionIdRef.current = session.id;
             isProvisionalSessionCommittedRef.current = false;
             setActiveSessionId(session.id);
-            console.log(
-              "DEBUG [executeFileUploads] Set active session ID to",
-              currentSessionIdToUse,
-            );
           } else {
             showSnackbar(
               "Failed to create a session for file upload.",
-              "error",
+              "error"
             );
             return;
           }
         }
 
-        if (!modelConfig || (!supportsImages(modelConfig.supported_features) && !supportsPdf(modelConfig.supported_features))) {
+        if (
+          !modelConfig ||
+          (!supportsImages(modelConfig.supported_features) &&
+            !supportsPdf(modelConfig.supported_features))
+        ) {
           showSnackbar(
             "Cannot upload files with the current model.",
-            "warning",
+            "warning"
           );
           return;
         }
@@ -327,12 +305,8 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
             prev.map((f) =>
               f.clientId === clientFile.clientId
                 ? { ...f, uploadStatus: "uploading" as const }
-                : f,
-            ),
-          );
-          console.log(
-            "DEBUG [executeFileUploads] Uploading file with session ID",
-            currentSessionIdToUse,
+                : f
+            )
           );
           const uploadPromise = sdk.storage.uploadFile(
             currentSessionIdToUse,
@@ -342,58 +316,59 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
                 prev.map((f) =>
                   f.clientId === clientFile.clientId
                     ? { ...f, uploadProgress: progress }
-                    : f,
-                ),
+                    : f
+                )
               );
-            },
+            }
           );
 
-          uploadPromise.then(({ fileId }) => {
-            activeUploadsRef.current.set(
-              clientFile.clientId,
-              () => {
+          uploadPromise
+            .then(({ fileId }) => {
+              activeUploadsRef.current.set(clientFile.clientId, () => {
                 if (activeSessionId && fileId) {
                   sdk.storage.deleteFile(activeSessionId, fileId);
                 }
-              },
-            );
+              });
 
-            setAttachedFiles((prev) =>
-              prev.map((f) =>
-                f.clientId === clientFile.clientId
-                  ? {
-                      ...f,
-                      uploadStatus: "success" as const,
-                      fileId: fileId as UUID,
-                      fileType: clientFile.type,
-                      uploadProgress: 100,
-                      abortUpload: activeUploadsRef.current.get(clientFile.clientId),
-                    }
-                  : f,
-              ),
-            );
-          }).catch((error) => {
-            activeUploadsRef.current.delete(clientFile.clientId);
-            let errorMessage = `Upload failed for ${clientFile.name}`;
-            if (error && error.message) {
-              errorMessage += `: ${error.message}`;
-            } else if (error && error.statusText) {
-              errorMessage += `: ${error.statusText}`;
-            } else if (typeof error === "string") {
-              errorMessage += `: ${error}`;
-            } else {
-              errorMessage += ": Unknown error";
-            }
+              setAttachedFiles((prev) =>
+                prev.map((f) =>
+                  f.clientId === clientFile.clientId
+                    ? {
+                        ...f,
+                        uploadStatus: "success" as const,
+                        fileId: fileId as UUID,
+                        fileType: clientFile.type,
+                        uploadProgress: 100,
+                        abortUpload: activeUploadsRef.current.get(
+                          clientFile.clientId
+                        ),
+                      }
+                    : f
+                )
+              );
+            })
+            .catch((error) => {
+              activeUploadsRef.current.delete(clientFile.clientId);
+              let errorMessage = `Upload failed for ${clientFile.name}`;
+              if (error && error.message) {
+                errorMessage += `: ${error.message}`;
+              } else if (error && error.statusText) {
+                errorMessage += `: ${error.statusText}`;
+              } else if (typeof error === "string") {
+                errorMessage += `: ${error}`;
+              } else {
+                errorMessage += ": Unknown error";
+              }
 
-            setAttachedFiles((prev) =>
-              prev.map((f) =>
-                f.clientId === clientFile.clientId
-                  ? { ...f, uploadStatus: "error" as const }
-                  : f,
-              ),
-            );
-            showSnackbar(errorMessage, "error");
-          });
+              setAttachedFiles((prev) =>
+                prev.map((f) =>
+                  f.clientId === clientFile.clientId
+                    ? { ...f, uploadStatus: "error" as const }
+                    : f
+                )
+              );
+              showSnackbar(errorMessage, "error");
+            });
         }
       },
       [
@@ -402,55 +377,13 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
         showSnackbar,
         activeSessionId,
         getAccessToken,
-        // chatActions,
         setAttachedFiles,
-        // newSession,
-      ],
+      ]
     );
 
     const doSubmit = () => {
-      console.log(
-        "[doSubmit] Called. isLoading:",
-        isLoading,
-        "isUploadingFiles:",
-        isUploadingFiles,
-        "activeSessionId:",
-        activeSessionId,
-      );
-      console.log("[doSubmit] userInput:", `"${userInput}"`);
-      console.log(
-        "[doSubmit] attachedFiles at start of doSubmit:",
-        JSON.stringify(
-          attachedFiles.map((f) => ({
-            clientId: f.clientId,
-            name: f.name,
-            status: f.uploadStatus,
-            fileId: f.fileId,
-            type: f.type,
-            size: f.size,
-          })),
-          null,
-          2,
-        ),
-      );
-
       const successfullyUploadedFiles = attachedFiles.filter(
-        (f) => f.uploadStatus === "success" && f.fileId,
-      );
-      console.log(
-        "[doSubmit] successfullyUploadedFiles (after filter):",
-        JSON.stringify(
-          successfullyUploadedFiles.map((f) => ({
-            clientId: f.clientId,
-            name: f.name,
-            status: f.uploadStatus,
-            fileId: f.fileId,
-            type: f.type,
-            size: f.size,
-          })),
-          null,
-          2,
-        ),
+        (f) => f.uploadStatus === "success" && f.fileId
       );
 
       if (
@@ -484,7 +417,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
           type,
           name,
           size,
-        }),
+        })
       );
 
       onSubmit(activeSessionId, {
@@ -500,7 +433,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
       if (currentSessionIdForClear) {
         debouncedSaveInput.cancel();
         localStorage.removeItem(
-          UNFINISHED_INPUT(currentSessionIdForClear.toString()),
+          UNFINISHED_INPUT(currentSessionIdForClear.toString())
         );
       }
 
@@ -529,13 +462,16 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
 
     const handleEnableSearch = useCallback((enabled: boolean) => {
       setEnableSearch(enabled);
-      
     }, []);
 
-    
     const handlePaste = useCallback(
       async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
-        if (!modelConfig || !supportsImages(modelConfig.supported_features) || !supportsPdf(modelConfig.supported_features)) return;
+        if (
+          !modelConfig ||
+          !supportsImages(modelConfig.supported_features) ||
+          !supportsPdf(modelConfig.supported_features)
+        )
+          return;
         if (!activeSessionId && !provisionalSessionIdRef.current) {
         } else if (!activeSessionId && provisionalSessionIdRef.current) {
         }
@@ -558,7 +494,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
           await executeFileUploads(candidateFiles);
         }
       },
-      [modelConfig, activeSessionId, executeFileUploads],
+      [modelConfig, activeSessionId, executeFileUploads]
     );
 
     const uploadImage = useCallback(async () => {
@@ -602,10 +538,10 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
         }
 
         setAttachedFiles((prev) =>
-          prev.filter((f) => f.clientId !== file.clientId),
+          prev.filter((f) => f.clientId !== file.clientId)
         );
       },
-      [activeSessionId],
+      [activeSessionId]
     );
 
     return (
@@ -624,7 +560,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
                     styles["attach-file-item"],
                     isImage
                       ? styles["attach-file-item-image"]
-                      : styles["attach-file-item-doc"],
+                      : styles["attach-file-item-doc"]
                   )}
                   style={
                     isImage
@@ -664,7 +600,11 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
                   ) : (
                     <>
                       <div className={styles["doc-file-icon-bg"]}>
-                        <img src="/icons/file.svg" alt="File" style={{ width: "21px", height: "26px" }} />
+                        <img
+                          src="/icons/file.svg"
+                          alt="File"
+                          style={{ width: "21px", height: "26px" }}
+                        />
                       </div>
                       <div className={styles["doc-file-info"]}>
                         <div className={styles["doc-file-name"]}>
@@ -695,11 +635,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
               id="chat-input"
               ref={inputRef}
               className={styles["chat-input"]}
-              placeholder={
-                authenticated
-                  ? placeholder
-                  : "Please login to chat"
-              }
+              placeholder={authenticated ? placeholder : "Please login to chat"}
               onInput={(e) => setUserInput(e.currentTarget.value)}
               value={userInput}
               onKeyDown={onInputKeyDown}
@@ -717,27 +653,37 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
           <div className={styles["chat-input-controls-left"]}>
             <button
               onClick={uploadFile}
-              disabled={!modelConfig || !supportsPdf(modelConfig.supported_features)}
+              disabled={
+                !modelConfig || !supportsPdf(modelConfig.supported_features)
+              }
               className={styles["chat-input-action-plus"]}
               aria-label={Locale.Chat.InputActions.UploadFile}
             >
               <img
                 src="/icons/plus.svg"
                 alt={Locale.Chat.InputActions.UploadFile}
-                style={{filter: "invert(51%) sepia(0%) saturate(0%) hue-rotate(189deg) brightness(90%) contrast(89%)" }}
+                style={{
+                  filter:
+                    "invert(51%) sepia(0%) saturate(0%) hue-rotate(189deg) brightness(90%) contrast(89%)",
+                }}
                 className={styles.inputActionIcon}
               />
             </button>
             <button
               onClick={uploadImage}
-              disabled={!modelConfig || !supportsImages(modelConfig.supported_features)}
+              disabled={
+                !modelConfig || !supportsImages(modelConfig.supported_features)
+              }
               className={styles["chat-input-action-plus"]}
               aria-label={Locale.Chat.InputActions.UploadImage}
             >
               <img
                 src="/icons/photo.svg"
                 alt={Locale.Chat.InputActions.UploadImage}
-                style={{filter: "invert(51%) sepia(0%) saturate(0%) hue-rotate(189deg) brightness(90%) contrast(89%)" }}
+                style={{
+                  filter:
+                    "invert(51%) sepia(0%) saturate(0%) hue-rotate(189deg) brightness(90%) contrast(89%)",
+                }}
                 className={styles.inputActionIcon}
               />
             </button>
@@ -746,7 +692,12 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
               className={clsx(styles["chat-input-action-search"], {
                 [styles.active]: enableSearch,
               })}
-              disabled={!authenticated || isUploadingFiles || !modelConfig || !supportsSearch(modelConfig.supported_features)}
+              disabled={
+                !authenticated ||
+                isUploadingFiles ||
+                !modelConfig ||
+                !supportsSearch(modelConfig.supported_features)
+              }
               aria-pressed={enableSearch}
               aria-label={
                 enableSearch ? "Disable web search" : "Enable web search"
@@ -756,11 +707,16 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
                 <img
                   src="/icons/search.svg"
                   alt="Search"
-                  style={{filter: "invert(51%) sepia(0%) saturate(0%) hue-rotate(189deg) brightness(90%) contrast(89%)" }}
+                  style={{
+                    filter:
+                      "invert(51%) sepia(0%) saturate(0%) hue-rotate(189deg) brightness(90%) contrast(89%)",
+                  }}
                   className={styles.inputActionIcon}
                 />
               </span>
-              <span className={styles["search-button-text"]}>{Locale.Chat.Search}</span>
+              <span className={styles["search-button-text"]}>
+                {Locale.Chat.Search}
+              </span>
             </button>
           </div>
           <div className={styles["chat-input-controls-right"]}>
@@ -779,7 +735,7 @@ export const ChatInputPanel = forwardRef<HTMLDivElement, ChatInputPanelProps>(
         </div>
       </div>
     );
-  },
+  }
 );
 
 ChatInputPanel.displayName = "ChatInputPanel";

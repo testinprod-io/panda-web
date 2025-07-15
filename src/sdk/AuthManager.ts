@@ -7,8 +7,6 @@ export class AuthManager {
   private bus: EventBus;
   private api: ApiService;
 
-  private encryptionService: EncryptionService;
-
   private authProvider: AuthProvider;
 
   private state: {
@@ -27,7 +25,6 @@ export class AuthManager {
     this.bus = bus;
     this.api = api;
     this.authProvider = authProvider;
-    this.encryptionService = encryptionService;
 
     this.state = {
       isAuthenticated: false,
@@ -37,10 +34,8 @@ export class AuthManager {
     };
 
     this.authProvider.addAuthStateListener(this.handleAuthStateChange);
-    // this.initializeAuthState();
   }
 
-  // This is required by the EventEmitter base class
   getState() {
     return this.state;
   }

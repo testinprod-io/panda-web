@@ -98,10 +98,9 @@ export default function TraitsStepView({
             borderRadius: "16px",
             padding: "8px 12px",
             width: "100%",
-            border: isFocused ? "1px solid var(--border-primary)" : "1px solid var(--border-secondary)",
-            // boxShadow: isFocused
-            //   ? "0 2px 5px rgba(0, 0, 0, 0.2), 0 0 0 2px #000000"
-            //   : "0 2px 5px rgba(0, 0, 0, 0.2)",
+            border: isFocused
+              ? "1px solid var(--border-primary)"
+              : "1px solid var(--border-secondary)",
             transition: "box-shadow 0.2s ease-in-out",
           }}
         >
@@ -173,13 +172,19 @@ export default function TraitsStepView({
               sx={{
                 borderRadius: "48px",
                 border: "1px solid var(--border-secondary)",
-                borderColor: selectedTraits.has(trait.label) ? "var(--border-primary)" : "var(--border-secondary)",
+                borderColor: selectedTraits.has(trait.label)
+                  ? "var(--border-primary)"
+                  : "var(--border-secondary)",
                 fontSize: "15px",
                 fontWeight: "500",
                 lineHeight: "32px",
                 padding: "4px 8px",
-                backgroundColor: selectedTraits.has(trait.label) ? "var(--bg-secondary)" : "var(--bg-primary)",
-                color: selectedTraits.has(trait.label) ? "var(--text-primary)" : "var(--text-secondary)",
+                backgroundColor: selectedTraits.has(trait.label)
+                  ? "var(--bg-secondary)"
+                  : "var(--bg-primary)",
+                color: selectedTraits.has(trait.label)
+                  ? "var(--text-primary)"
+                  : "var(--text-secondary)",
                 "&:hover": {
                   borderColor: "var(--border-primary)",
                   backgroundColor: "var(--bg-secondary)",

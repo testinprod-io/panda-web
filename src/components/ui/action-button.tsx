@@ -41,20 +41,6 @@ export function ActionButton(props: ActionButtonProps) {
         overflow: "hidden",
         position: "relative",
         transition: "background-color 0.2s ease, border-color 0.2s ease",
-
-      // "&[aria-disabled='true']": {
-      //   opacity: 0.5,
-      //   cursor: "not-allowed",
-      // },
-      // "&:hover:not([aria-disabled='true'])": {
-      // "&:focus-within:not([aria-disabled='true'])": {
-      //   ".text": {
-      //     opacity: 1,
-      //     transform: "translateX(0)",
-      //     pointerEvents: "auto",
-      //   },
-      // },
-
       }}
     >
       <div

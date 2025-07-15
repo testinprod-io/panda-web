@@ -44,7 +44,7 @@ export class UserManager {
 
   private async loadInitialData() {
     this.state = await this.store.get();
-    this.bus.emit('user.updated', undefined);
+    this.bus.emit("user.updated", undefined);
   }
 
   getState() {
@@ -55,24 +55,29 @@ export class UserManager {
     return this.state;
   }
 
-  async updateCustomizedPrompts(data: Partial<CustomizedPromptsData>): Promise<void> {
-    const newState = { ...this.state, customizedPromptsData: { ...this.state.customizedPromptsData, ...data } };
+  async updateCustomizedPrompts(
+    data: Partial<CustomizedPromptsData>
+  ): Promise<void> {
+    const newState = {
+      ...this.state,
+      customizedPromptsData: { ...this.state.customizedPromptsData, ...data },
+    };
     await this.store.set(newState);
     this.state = newState;
-    this.bus.emit('user.updated', undefined);
+    this.bus.emit("user.updated", undefined);
   }
 
   async updateData(data: Partial<UserData>): Promise<void> {
     const newState = { ...this.state, ...data };
     await this.store.set(newState);
     this.state = newState;
-    this.bus.emit('user.updated', undefined);
+    this.bus.emit("user.updated", undefined);
   }
 
   async clearData(): Promise<void> {
     await this.store.clear();
     this.state = {};
-    this.bus.emit('user.updated', undefined);
+    this.bus.emit("user.updated", undefined);
   }
 
   getEncryptedId(): string | undefined {

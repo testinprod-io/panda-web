@@ -14,7 +14,7 @@ export interface TdxPayload {
     tdx_rtmr2: string;
     tdx_rtmr3: string;
     tdx_mrtd: string;
-    
+
     tdx_mrowner: string;
     tdx_mrconfigid: string;
     tdx_mrownerconfig: string;
@@ -27,7 +27,6 @@ export interface EventLogEntry {
   event: string;
   event_payload: string; // hex string or ascii content, depending on event type
 }
-
 
 export interface AttestationResult {
   appId: string;

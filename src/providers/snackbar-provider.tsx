@@ -15,12 +15,12 @@ interface SnackbarContextProps {
   showSnackbar: (
     message: string,
     severity?: AlertColor,
-    duration?: number | null,
+    duration?: number | null
   ) => void;
 }
 
 const SnackbarContext = createContext<SnackbarContextProps | undefined>(
-  undefined,
+  undefined
 );
 
 // Define a global type for the snackbar function
@@ -29,7 +29,7 @@ declare global {
     showSnackbar?: (
       message: string,
       severity?: AlertColor,
-      duration?: number | null,
+      duration?: number | null
     ) => void;
   }
 }
@@ -50,14 +50,14 @@ export const SnackbarProvider: React.FC<SnackbarProviderProps> = ({
     (
       newMessage: string,
       newSeverity: AlertColor = "info",
-      duration: number | null = 2000,
+      duration: number | null = 2000
     ) => {
       setMessage(newMessage);
       setSeverity(newSeverity);
       setAutoHideDuration(duration);
       setOpen(true);
     },
-    [],
+    []
   );
 
   // Expose the showSnackbar function globally
@@ -74,7 +74,7 @@ export const SnackbarProvider: React.FC<SnackbarProviderProps> = ({
 
   const handleClose = (
     event?: React.SyntheticEvent | Event,
-    reason?: string,
+    reason?: string
   ) => {
     if (reason === "clickaway") {
       return;
@@ -91,7 +91,11 @@ export const SnackbarProvider: React.FC<SnackbarProviderProps> = ({
         onClose={handleClose}
         anchorOrigin={{ vertical: "top", horizontal: "center" }} // Position can be adjusted
       >
-        <Alert onClose={handleClose} severity={severity} sx={{ width: "100%", borderRadius: "12px" }}>
+        <Alert
+          onClose={handleClose}
+          severity={severity}
+          sx={{ width: "100%", borderRadius: "12px" }}
+        >
           {message}
         </Alert>
       </Snackbar>

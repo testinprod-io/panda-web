@@ -1,15 +1,8 @@
-// Integration layer for Vault with existing SDK architecture
-// This demonstrates how to migrate from CryptoJS-based EncryptionService to Vault
-
-import React from 'react';
+import React from "react";
 import { useVault } from "../../hooks/use-vault";
 import { EncryptionService } from "../EncryptionService";
-import { BootstrapRes, CreateUserPasswordRes } from '@/types';
+import { BootstrapRes, CreateUserPasswordRes } from "@/types";
 
-/**
- * VaultIntegration provides a bridge between the existing SDK and the new Vault system
- * This allows for gradual migration from CryptoJS to the secure iframe vault
- */
 export class VaultIntegration {
   private vault: ReturnType<typeof useVault> | null = null;
   private encryptionService: EncryptionService;
@@ -43,13 +36,17 @@ export class VaultIntegration {
     return !!this.vault?.state.isReady;
   }
 
-  public async bootstrap(encryptedId: string, userId: string, encryptedPassword?: string): Promise<BootstrapRes> {
+  public async bootstrap(
+    encryptedId: string,
+    userId: string,
+    encryptedPassword?: string
+  ): Promise<BootstrapRes> {
     if (!this.vault) {
-      throw new Error('Vault not initialized. Call setVault() first.');
+      throw new Error("Vault not initialized. Call setVault() first.");
     }
 
     if (!this.vault.state.isReady) {
-      throw new Error('Vault not ready');
+      throw new Error("Vault not ready");
     }
 
     return await this.vault.bootstrap(encryptedId, userId, encryptedPassword);
@@ -58,25 +55,32 @@ export class VaultIntegration {
   /**
    * Set password (for first-time users)
    */
-  public async setPassword(password: string, encryptedId: string, userId: string): Promise<string> {
+  public async setPassword(
+    password: string,
+    encryptedId: string,
+    userId: string
+  ): Promise<string> {
     if (!this.vault) {
-      throw new Error('Vault not initialized. Call setVault() first.');
+      throw new Error("Vault not initialized. Call setVault() first.");
     }
 
     if (!this.vault.state.isReady) {
-      throw new Error('Vault not ready');
+      throw new Error("Vault not ready");
     }
 
     return await this.vault.setPassword(password, encryptedId, userId);
   }
 
-  public async createUserPassword(password: string, userId: string): Promise<CreateUserPasswordRes> {
+  public async createUserPassword(
+    password: string,
+    userId: string
+  ): Promise<CreateUserPasswordRes> {
     if (!this.vault) {
-      throw new Error('Vault not initialized. Call setVault() first.');
+      throw new Error("Vault not initialized. Call setVault() first.");
     }
 
     if (!this.vault.state.isReady) {
-      throw new Error('Vault not ready');
+      throw new Error("Vault not ready");
     }
 
     return await this.vault.createUserPassword(password, userId);
@@ -87,11 +91,11 @@ export class VaultIntegration {
    */
   public async updatePassword(encryptedPassword: string): Promise<string> {
     if (!this.vault) {
-      throw new Error('Vault not initialized. Call setVault() first.');
+      throw new Error("Vault not initialized. Call setVault() first.");
     }
 
     if (!this.vault.state.isReady) {
-      throw new Error('Vault not ready');
+      throw new Error("Vault not ready");
     }
 
     return await this.vault.updateKey(encryptedPassword);
@@ -102,11 +106,11 @@ export class VaultIntegration {
    */
   public async deriveKeys(): Promise<void> {
     if (!this.vault) {
-      throw new Error('Vault not initialized. Call setVault() first.');
+      throw new Error("Vault not initialized. Call setVault() first.");
     }
 
     if (!this.vault.state.isReady) {
-      throw new Error('Vault not ready');
+      throw new Error("Vault not ready");
     }
 
     await this.vault.derive();
@@ -133,7 +137,10 @@ export class VaultIntegration {
     // Use the vault's clearKeys method to clear sensitive data from memory
     if (this.vault && this.vault.state.isReady) {
       await this.vault.clearKeys().catch((error) => {
-        console.error('[VaultIntegration] Failed to clear keys from vault:', error);
+        console.error(
+          "[VaultIntegration] Failed to clear keys from vault:",
+          error
+        );
       });
     }
   }
@@ -151,15 +158,19 @@ export class VaultIntegration {
    */
   public async encryptFile(file: File): Promise<File> {
     if (!this.vault || !this.vault.state.isReady) {
-      throw new Error('Vault not ready');
+      throw new Error("Vault not ready");
     }
 
     try {
       const fileData = await file.arrayBuffer();
-      const encryptedData = await this.vault.encryptFile(fileData, file.name, file.type);
+      const encryptedData = await this.vault.encryptFile(
+        fileData,
+        file.name,
+        file.type
+      );
       return new File([encryptedData], file.name, { type: file.type });
     } catch (error) {
-      console.error('[VaultIntegration] File encryption failed:', error);
+      console.error("[VaultIntegration] File encryption failed:", error);
       throw error;
     }
   }
@@ -169,15 +180,19 @@ export class VaultIntegration {
    */
   public async decryptFile(file: File): Promise<File> {
     if (!this.vault || !this.vault.state.isReady) {
-      throw new Error('Vault not ready');
+      throw new Error("Vault not ready");
     }
 
     try {
       const encryptedData = await file.arrayBuffer();
-      const decryptedData = await this.vault.decryptFile(encryptedData, file.name, file.type);
+      const decryptedData = await this.vault.decryptFile(
+        encryptedData,
+        file.name,
+        file.type
+      );
       return new File([decryptedData], file.name, { type: file.type });
     } catch (error) {
-      console.error('[VaultIntegration] File decryption failed:', error);
+      console.error("[VaultIntegration] File decryption failed:", error);
       throw error;
     }
   }
@@ -187,21 +202,27 @@ export class VaultIntegration {
 export function useVaultIntegration(): VaultIntegration {
   const vault = useVault();
   const [integration] = React.useState(() => new VaultIntegration());
-  
+
   React.useEffect(() => {
     integration.setVault(vault);
   }, [vault.state.isReady, integration]);
-  
+
   return integration;
 }
 
 // Context for vault integration
-const VaultIntegrationContext = React.createContext<VaultIntegration | null>(null);
+const VaultIntegrationContext = React.createContext<VaultIntegration | null>(
+  null
+);
 
 // Provider component for vault integration
-export function VaultIntegrationProvider({ children }: { children: React.ReactNode }) {
+export function VaultIntegrationProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const integration = useVaultIntegration();
-  
+
   return (
     <VaultIntegrationContext.Provider value={integration}>
       {children}
@@ -213,7 +234,9 @@ export function VaultIntegrationProvider({ children }: { children: React.ReactNo
 export function useVaultIntegrationContext(): VaultIntegration {
   const context = React.useContext(VaultIntegrationContext);
   if (!context) {
-    throw new Error('useVaultIntegrationContext must be used within VaultIntegrationProvider');
+    throw new Error(
+      "useVaultIntegrationContext must be used within VaultIntegrationProvider"
+    );
   }
   return context;
-} 
+}

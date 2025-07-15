@@ -35,10 +35,7 @@ export class LLMServer {
   private baseUrl: string;
   private getAccessToken: GetAccessTokenFn;
 
-  constructor(
-    baseUrl: string,
-    getAccessToken: GetAccessTokenFn,
-  ) {
+  constructor(baseUrl: string, getAccessToken: GetAccessTokenFn) {
     this.baseUrl = baseUrl;
     this.getAccessToken = getAccessToken;
   }
@@ -58,12 +55,16 @@ export class LLMServer {
   async chat(options: ChatOptions) {
     let messages = options.messages.map((v, i) => ({
       role: v.role,
-      content: (v.attachments && i === options.messages.length - 1)
-        ? [...v.attachments, { type: "text", text: v.content }]
-        : v.content,
+      content:
+        v.attachments && i === options.messages.length - 1
+          ? [...v.attachments, { type: "text", text: v.content }]
+          : v.content,
     }));
 
-    if (options.config.customizedPrompts && options.config.customizedPrompts !== "") {
+    if (
+      options.config.customizedPrompts &&
+      options.config.customizedPrompts !== ""
+    ) {
       messages = [
         {
           role: Role.SYSTEM,
@@ -81,13 +82,15 @@ export class LLMServer {
     let mainContentText = "";
     let timestamp = new Date();
     const lastMessage = messages[messages.length - 1];
-    const usePdf = Array.isArray(lastMessage.content) && lastMessage.content.some((c) => c.type === "pdf_url");
+    const usePdf =
+      Array.isArray(lastMessage.content) &&
+      lastMessage.content.some((c) => c.type === "pdf_url");
 
     try {
       const accessToken = await this.getAccessToken();
       if (!accessToken) {
         throw new Error(
-          "Panda API requires authentication. Access token not available.",
+          "Panda API requires authentication. Access token not available."
         );
       }
       const bearerToken = `Bearer ${accessToken}`;
@@ -95,7 +98,7 @@ export class LLMServer {
       // Use targetEndpoint from options.config if available, otherwise default to this.baseUrl via this.path
       const requestUrl = this.path(
         PandaPath.ChatPath,
-        options.config.targetEndpoint,
+        options.config.targetEndpoint
       );
 
       const requestBody = {
@@ -108,7 +111,8 @@ export class LLMServer {
         use_search: options.config.useSearch ?? false,
       };
 
-      const { challenge, headers: challengeHeaders } = generateChallengeHeaders();
+      const { challenge, headers: challengeHeaders } =
+        generateChallengeHeaders();
 
       const response = await fetch(requestUrl, {
         method: "POST",
@@ -127,11 +131,11 @@ export class LLMServer {
         console.error(
           "[Panda Error] Response not OK:",
           response.status,
-          response.statusText,
+          response.statusText
         );
         console.error("[Panda Error] Response body:", errorText);
         throw new Error(
-          `Panda API error: ${response.status} ${response.statusText} - ${errorText}`,
+          `Panda API error: ${response.status} ${response.statusText} - ${errorText}`
         );
       }
 
@@ -172,13 +176,13 @@ export class LLMServer {
             }
             try {
               const json = JSON.parse(data);
-              
+
               // Handle process events
               if (json.object === "process.event") {
                 options.onProcessEvent?.(undefined, json);
                 continue;
               }
-              
+
               // Handle regular streaming response
               const delta = json.choices[0]?.delta;
               timestamp = json.created
@@ -214,7 +218,12 @@ export class LLMServer {
           options.onReasoningEnd?.(undefined);
         }
         const challengeResponse = verifyChallenge(response, challenge);
-        options.onFinish(mainContentText, timestamp, response, challengeResponse);
+        options.onFinish(
+          mainContentText,
+          timestamp,
+          response,
+          challengeResponse
+        );
       } else {
         const jsonResponse = await response.json();
         timestamp = jsonResponse.created
@@ -236,7 +245,12 @@ export class LLMServer {
         const mainMessageToFinish = finalContent || "";
         options.onContentChunk?.(undefined, mainMessageToFinish);
         const challengeResponse = verifyChallenge(response, challenge);
-        options.onFinish(mainMessageToFinish, timestamp, response, challengeResponse);
+        options.onFinish(
+          mainMessageToFinish,
+          timestamp,
+          response,
+          challengeResponse
+        );
       }
     } catch (error: any) {
       if (error.name !== "AbortError") {
@@ -252,13 +266,13 @@ export class LLMServer {
   async summary(
     config: LLMConfig,
     messages: RequestMessage[],
-    maxTokens: number = 1000,
+    maxTokens: number = 1000
   ): Promise<SummaryResponse> {
     try {
       const accessToken = await this.getAccessToken();
       if (!accessToken) {
         throw new Error(
-          "Panda API requires authentication. Access token not available.",
+          "Panda API requires authentication. Access token not available."
         );
       }
       const bearerToken = `Bearer ${accessToken}`;
@@ -272,7 +286,7 @@ export class LLMServer {
 
       const requestUrl = this.path(
         PandaPath.SummaryPath,
-        config.targetEndpoint,
+        config.targetEndpoint
       );
 
       const requestBody = {
@@ -283,7 +297,8 @@ export class LLMServer {
         stream: false, // Summary endpoint doesn't support streaming
       };
 
-      const { challenge, headers: challengeHeaders } = generateChallengeHeaders();
+      const { challenge, headers: challengeHeaders } =
+        generateChallengeHeaders();
 
       const response = await fetch(requestUrl, {
         method: "POST",
@@ -303,11 +318,11 @@ export class LLMServer {
         console.error(
           "[Panda Error] Summary response not OK:",
           response.status,
-          response.statusText,
+          response.statusText
         );
         console.error("[Panda Error] Summary response body:", errorText);
         throw new Error(
-          `Panda API error: ${response.status} ${response.statusText} - ${errorText}`,
+          `Panda API error: ${response.status} ${response.statusText} - ${errorText}`
         );
       }
 

@@ -21,7 +21,7 @@ export class AttestationManager {
 
   private attestationResults: Record<string, AttestationResult> = {};
   private verificationResults: Record<string, VerificationResult> = {};
-  
+
   private state: {
     attestationResults: Record<string, AttestationResult>;
     verificationResults: Record<string, VerificationResult>;

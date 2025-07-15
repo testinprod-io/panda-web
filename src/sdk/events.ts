@@ -12,9 +12,23 @@ export interface SDKEventMap {
   "chat.list.updated": void;
   "user.updated": void;
   "auth.status.updated": boolean;
-  "auth.state.updated": { isAuthenticated: boolean, isLocked: boolean, user: User | null };
-  "attestation.status.updated": { status: VerificationStatus, attestationResult?: AttestationResult, publicKey: string };
-  "attestation.manager.status.updated": { [key: string]: { status: VerificationStatus, attestationResult?: AttestationResult, publicKey: string } };
+  "auth.state.updated": {
+    isAuthenticated: boolean;
+    isLocked: boolean;
+    user: User | null;
+  };
+  "attestation.status.updated": {
+    status: VerificationStatus;
+    attestationResult?: AttestationResult;
+    publicKey: string;
+  };
+  "attestation.manager.status.updated": {
+    [key: string]: {
+      status: VerificationStatus;
+      attestationResult?: AttestationResult;
+      publicKey: string;
+    };
+  };
   "config.updated": { config: PandaConfig };
   "config.models.updated": ServerModelInfo[];
   "config.customizedPrompts.updated": any[];
@@ -37,9 +51,9 @@ export class EventBus {
   }
 
   emit<K extends keyof SDKEventMap>(type: K, payload: SDKEventMap[K]): void {
-    this.listeners[type]?.forEach(cb => cb(payload));
+    this.listeners[type]?.forEach((cb) => cb(payload));
   }
-  
+
   off<K extends keyof SDKEventMap>(type: K, cb: Handler<K>): void {
     (this.listeners[type] as Set<Handler<K>>).delete(cb);
   }
@@ -58,7 +72,7 @@ export abstract class EventEmitter {
       this.listeners.set(event, new Set());
     }
     this.listeners.get(event)!.add(listener);
-    
+
     // Return an unsubscribe function
     return () => this.off(event, listener);
   }
@@ -71,7 +85,7 @@ export abstract class EventEmitter {
 
   emit(event: string, ...args: any[]): void {
     if (this.listeners.has(event)) {
-      this.listeners.get(event)!.forEach(listener => listener(...args));
+      this.listeners.get(event)!.forEach((listener) => listener(...args));
     }
   }
 }

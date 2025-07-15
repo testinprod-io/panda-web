@@ -78,14 +78,14 @@ export function generateSystemPrompt(data: CustomizedPromptsData): string {
 
 export async function encryptSystemPrompt(
   prompt: CustomizedPromptsData,
-  encryptFunction: (text: string) => Promise<string>,
+  encryptFunction: (text: string) => Promise<string>
 ): Promise<CustomizedPromptsData> {
   const encryptedPersonalInfo: { [key: string]: string } = {};
   if (prompt.personal_info) {
     for (const key in prompt.personal_info) {
       if (Object.prototype.hasOwnProperty.call(prompt.personal_info, key)) {
         encryptedPersonalInfo[key] = await encryptFunction(
-          prompt.personal_info[key],
+          prompt.personal_info[key]
         );
       }
     }
@@ -113,14 +113,14 @@ export async function encryptSystemPrompt(
 
 export async function decryptSystemPrompt(
   prompt: CustomizedPromptsData,
-  decryptFunction: (text: string) => Promise<string>,
+  decryptFunction: (text: string) => Promise<string>
 ): Promise<CustomizedPromptsData> {
   const decryptedPersonalInfo: { [key: string]: string } = {};
   if (prompt.personal_info) {
     for (const key in prompt.personal_info) {
       if (Object.prototype.hasOwnProperty.call(prompt.personal_info, key)) {
         decryptedPersonalInfo[key] = await decryptFunction(
-          prompt.personal_info[key],
+          prompt.personal_info[key]
         );
       }
     }

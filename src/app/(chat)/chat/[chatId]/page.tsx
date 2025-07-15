@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { Box, CircularProgress } from "@mui/material";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ChatComponent } from "@/components/chat/chat-component";
 import { usePandaSDK } from "@/providers/sdk-provider";
 import { useAuth } from "@/sdk/hooks";
@@ -78,7 +78,6 @@ export default function ChatPage() {
         toast.error(`Chat session not found: ${chatId || "Invalid ID"}`);
         router.replace("/");
       } else if (!isReady && !isAuthenticated) {
-        // toast.error("Please log in to access chat sessions.");
         router.replace("/");
       }
     }

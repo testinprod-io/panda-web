@@ -6,17 +6,17 @@ import { usePandaSDK } from "@/providers/sdk-provider";
 export interface LoadedFile {
   id: UUID;
   name: string;
-  type: "image" | "pdf" | "other"; // More specific than just string
+  type: "image" | "pdf" | "other";
   url: string;
   isLoading: boolean;
   error?: string;
-  originalType: string; // The original MIME type from the server
+  originalType: string;
 }
 
 export function useLoadedFiles(
-  messageFiles: FileInfo[], // Updated type
+  messageFiles: FileInfo[],
   sessionId: UUID,
-  isLocked: boolean,
+  isLocked: boolean
 ): LoadedFile[] {
   const { sdk } = usePandaSDK();
   const [loadedFiles, setLoadedFiles] = useState<LoadedFile[]>([]);
@@ -27,9 +27,9 @@ export function useLoadedFiles(
       JSON.stringify(
         (messageFiles || [])
           .map((f) => ({ id: f.file_id, name: f.file_name }))
-          .sort((a, b) => (a.id && b.id ? a.id.localeCompare(b.id) : 0)), // Sort by ID to ensure canonical string
+          .sort((a, b) => (a.id && b.id ? a.id.localeCompare(b.id) : 0)) // Sort by ID to ensure canonical string
       ),
-    [messageFiles],
+    [messageFiles]
   );
 
   // Extract the specific function to be used in the effect's dependency array
@@ -75,10 +75,7 @@ export function useLoadedFiles(
     let didCancel = false;
     const currentBlobUrls = new Set<string>();
 
-    // Parse back messageFiles from filesDep for use in this effect run,
-    // or better, rely on the messageFiles prop directly as it's what filesDep is derived from.
-    // The key is that the effect *runs* based on filesDep changing.
-    const currentMessageFiles = messageFiles || []; // Use the prop directly inside the effect
+    const currentMessageFiles = messageFiles || [];
 
     if (currentMessageFiles.length === 0) {
       setLoadedFiles([]);
@@ -109,51 +106,26 @@ export function useLoadedFiles(
             isLoading: false,
             error: "Cannot decrypt file: App is locked",
             originalType: file.file_type,
-          })),
+          }))
         );
       }
       return;
     }
 
     const fetchAndProcessSingleFile = async (
-      fileInfo: FileInfo,
+      fileInfo: FileInfo
     ): Promise<LoadedFile> => {
       try {
         // Use the extracted getFileFunction here
         const response = await sdk.storage.getFile(
           sessionId,
-          fileInfo.file_id as UUID,
+          fileInfo.file_id as UUID
         );
         if (!response) {
           throw new Error("File response is undefined");
         }
 
-        // const contentType =
-        //   response.headers.get("Content-Type") || "application/octet-stream";
-        // const contentDisposition = response.headers.get("Content-Disposition");
-        // let fileName = fileInfo.file_name;
-
-        // if (contentDisposition) {
-        //   const match = contentDisposition.match(/filename="?([^\"]+)"?/i);
-        //   if (match && match[1]) {
-        //     fileName = match[1];
-        //   }
-        // }
-        // const reader = response.getReader();
-        // if (!reader) {
-        //   throw new Error("ReadableStream not available");
-        // }
-
-        // const chunks: Uint8Array[] = [];
-        // while (true) {
-        //   const { done, value } = await reader.read();
-        //   if (done) break;
-        //   if (value) {
-        //     chunks.push(value);
-        //   }
-        // }
-        // const blob = new Blob(chunks, { type: contentType });
-        let fileToProcess = response; // new File([blob], fileName, { type: contentType });
+        let fileToProcess = response;
         let decryptedFileName = response.name;
 
         if (!sdk.auth.getState().isLocked) {
@@ -161,7 +133,6 @@ export function useLoadedFiles(
             fileToProcess = await sdk.encryption.decryptFile(fileToProcess);
             decryptedFileName = fileInfo.file_name;
           } catch (decryptionError) {
-            // console.error("Error decrypting file:", fileInfo.file_id, decryptionError); // Keep console for debug if needed
             return {
               id: fileInfo.file_id as UUID,
               name: decryptedFileName,
@@ -186,7 +157,6 @@ export function useLoadedFiles(
           originalType: fileInfo.file_type,
         };
       } catch (error) {
-        // console.error("Error fetching or processing file:", fileInfo.file_id, error); // Keep console for debug if needed
         return {
           id: fileInfo.file_id as UUID,
           name: fileInfo.file_name,
@@ -201,7 +171,7 @@ export function useLoadedFiles(
 
     const processAllFiles = async () => {
       const results = await Promise.all(
-        currentMessageFiles.map(fetchAndProcessSingleFile),
+        currentMessageFiles.map(fetchAndProcessSingleFile)
       );
       if (!didCancel) {
         setLoadedFiles(results);
@@ -209,7 +179,6 @@ export function useLoadedFiles(
     };
 
     if (!didCancel) {
-      // Check didCancel before starting async operation
       processAllFiles();
     }
 
@@ -217,7 +186,6 @@ export function useLoadedFiles(
       didCancel = true;
       currentBlobUrls.forEach((url) => URL.revokeObjectURL(url));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filesDep, sessionId, getFileFunction, isLocked]);
 
   return loadedFiles;

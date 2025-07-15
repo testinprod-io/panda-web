@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Box,
   IconButton,
@@ -15,17 +15,12 @@ import {
   Divider,
 } from "@mui/material";
 import Person2RoundedIcon from "@mui/icons-material/Person2Rounded";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import { getAccessToken, usePrivy } from "@privy-io/react-auth";
+import { usePrivy } from "@privy-io/react-auth";
 import styles from "./chat-header.module.scss";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
-import {   VerificationResult,
-  VerificationStatus, } from "@/types/attestation";
+import { VerificationResult, VerificationStatus } from "@/types/attestation";
 import { useAttestation } from "@/sdk/hooks";
-import { useEncryption } from "@/providers/encryption-provider";
 import { usePandaSDK } from "@/providers/sdk-provider";
 import { UUID } from "crypto";
 import { ServerModelInfo } from "@/sdk/client/types";
@@ -35,6 +30,7 @@ import HelpIcon from "@/public/icons/help.svg";
 import SettingsIcon from "@/public/icons/settings.svg";
 import LogoutIcon from "@/public/icons/logout.svg";
 import { useAuth } from "@/sdk/hooks";
+
 interface ChatHeaderProps {
   currentChatId?: string;
   isSidebarCollapsed: boolean;
@@ -48,12 +44,14 @@ export default function ChatHeader({
   onToggleSidebar,
   isMobile,
 }: ChatHeaderProps) {
-  const { login, user, getAccessToken } = usePrivy();
+  const { login, user } = usePrivy();
   const pandaConfig = useConfig();
-  const { attestationResults, verificationResults } = useAttestation();
+  const { verificationResults } = useAttestation();
   const { logout, lockApp, isAuthenticated } = useAuth();
-  const { sdk, isReady } = usePandaSDK();
-  const [currentChatModel, setCurrentChatModel] = useState<ServerModelInfo | undefined>();
+  const { sdk } = usePandaSDK();
+  const [currentChatModel, setCurrentChatModel] = useState<
+    ServerModelInfo | undefined
+  >();
 
   const [profileAnchorEl, setProfileAnchorEl] = useState<null | HTMLElement>(
     null
@@ -63,14 +61,14 @@ export default function ChatHeader({
   const [modelAnchorEl, setModelAnchorEl] = useState<null | HTMLElement>(null);
   const modelMenuOpen = Boolean(modelAnchorEl);
 
-  const [isLoginPopupOpen, setIsLoginPopupOpen] = useState(false);
-
   useEffect(() => {
     if (currentChatId) {
-      sdk.chat.getChat(currentChatId as UUID).then(chat => {
+      sdk.chat.getChat(currentChatId as UUID).then((chat) => {
         if (chat?.defaultModelName) {
-            const model = pandaConfig.models.find(m => m.model_name === chat.defaultModelName);
-            setCurrentChatModel(model);
+          const model = pandaConfig.models.find(
+            (m) => m.model_name === chat.defaultModelName
+          );
+          setCurrentChatModel(model);
         } else {
           setCurrentChatModel(pandaConfig.defaultModel);
         }
@@ -125,18 +123,6 @@ export default function ChatHeader({
     router.push("/signup");
   };
 
-  const handleCloseLoginPopup = () => {
-    setIsLoginPopupOpen(false);
-  };
-
-  const handlePopupLogin = () => {
-    login();
-  };
-
-  const handlePopupSignup = () => {
-    login();
-  };
-
   const router = useRouter();
 
   const handleNewChat = () => {
@@ -144,7 +130,8 @@ export default function ChatHeader({
     router.push(`/`);
   };
 
-  const displayModelName = currentChatModel?.name ?? pandaConfig.defaultModel?.name ?? "Select Model";
+  const displayModelName =
+    currentChatModel?.name ?? pandaConfig.defaultModel?.name ?? "Select Model";
 
   const currentModelNameForSelectionLogic =
     currentChatModel?.model_name ?? pandaConfig.defaultModel?.model_name;

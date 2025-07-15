@@ -115,8 +115,23 @@ export interface ErrorRes {
   error: string;
 }
 
-export type VaultRequest = DeriveReq | EncryptReq | DecryptReq | UpdateKeyReq | SetPasswordReq | CreateUserPasswordReq | BootstrapReq;
-export type VaultResponse = DeriveRes | EncryptRes | DecryptRes | UpdateKeyRes | SetPasswordRes | CreateUserPasswordRes | BootstrapRes | ErrorRes;
+export type VaultRequest =
+  | DeriveReq
+  | EncryptReq
+  | DecryptReq
+  | UpdateKeyReq
+  | SetPasswordReq
+  | CreateUserPasswordReq
+  | BootstrapReq;
+export type VaultResponse =
+  | DeriveRes
+  | EncryptRes
+  | DecryptRes
+  | UpdateKeyRes
+  | SetPasswordRes
+  | CreateUserPasswordRes
+  | BootstrapRes
+  | ErrorRes;
 
 // API types for /deriveKey endpoint
 export interface DeriveKeyResponse {

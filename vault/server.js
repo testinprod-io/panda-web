@@ -16,7 +16,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 const allowedOrigins = process.env.VERCEL_ENV === 'production' 
-  ? ['https://panda.chat']
+  ? ['https://panda.chat', 'null'] // Allow null origins for sandboxed iframes
   : true;
 
 app.use(cors({

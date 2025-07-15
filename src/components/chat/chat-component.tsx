@@ -4,13 +4,11 @@ import React, {
   Fragment,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
 } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { useAppConfig } from "@/store";
-import Locale from "@/locales";
 import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom";
 import { useSnackbar } from "@/providers/snackbar-provider";
 import { ChatMessageCell } from "@/components/chat/chat-message-cell";
@@ -19,91 +17,96 @@ import CircularProgress from "@mui/material/CircularProgress";
 import styles from "./chat.module.scss";
 import { ActionButton } from "@/components/ui/action-button";
 import { UUID } from "crypto";
-import { SessionState } from "@/types/session";
 import { usePandaSDK } from "@/providers/sdk-provider";
 import { useChatList, useChat } from "@/sdk/hooks";
 import { Chat } from "@/sdk/Chat";
 
 export function ChatComponent({ sessionId }: { sessionId: UUID }) {
   const config = useAppConfig();
-  const { showSnackbar } = useSnackbar();
   const { sdk } = usePandaSDK();
 
   const { activeChatId } = useChatList();
   const [activeChat, setActiveChat] = useState<Chat | null>(null);
-  const { messages: displayedMessages, isLoading: isLoadingMessages, hasMoreMessages } = useChat(activeChat);
+  const {
+    messages: displayedMessages,
+    isLoading: isLoadingMessages,
+    hasMoreMessages,
+  } = useChat(activeChat);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [internalHitBottom, setInternalHitBottom] = useState(true);
 
-  // When the component mounts or sessionId changes, ensure the correct chat is active.
-  // useEffect(() => {
-  //   // If there is no active chat or the active chat is not the one for this page, set it.
-  //   if (activeChat?.id !== sessionId) {
-  //       const session = chatStore.sessions.find(s => s.id === sessionId);
-  //       if(session) {
-  //           sdk.chat.setActiveChat(sessionId);
-  //       } else {
-  //           // This might happen if the session list hasn't loaded yet.
-  //           // The component will re-render once the session list is available.
-  //           console.log("Waiting for session info to set active chat...");
-  //       }
-  //   }
-  // }, [sessionId, activeChat, chatStore.sessions, sdk.chat]);
-  
-  // When the active chat changes and has no messages, load them.
   useEffect(() => {
     const loadChat = async () => {
       const chat = await sdk.chat.getChat(activeChatId as UUID);
       if (chat) {
         setActiveChat(chat);
       }
-    }
+    };
     loadChat();
   }, [activeChatId, sdk.chat]);
+  
   useEffect(() => {
-    if (activeChat && activeChat.id === sessionId && activeChat.messages.length === 0) {
-      console.log(`[ChatComponent] Loading initial messages for chat ${activeChat.id}`);
+    if (
+      activeChat &&
+      activeChat.id === sessionId &&
+      activeChat.messages.length === 0
+    ) {
+      console.log(
+        `[ChatComponent] Loading initial messages for chat ${activeChat.id}`
+      );
       activeChat.loadInitial();
     }
   }, [activeChat, sessionId]);
 
-  const { scrollDomToBottom, setAutoScroll } = useScrollToBottom(scrollRef, !internalHitBottom, displayedMessages);
+  const { scrollDomToBottom, setAutoScroll } = useScrollToBottom(
+    scrollRef,
+    !internalHitBottom,
+    displayedMessages
+  );
 
-  const onResend = useCallback(async (messageId: UUID) => {
-    if (!activeChat) return;
-    activeChat.resendMessage(messageId);
-  }, [activeChat]);
+  const onResend = useCallback(
+    async (messageId: UUID) => {
+      if (!activeChat) return;
+      activeChat.resendMessage(messageId);
+    },
+    [activeChat]
+  );
 
-  const onEditSubmit = useCallback(async (messageId: UUID, newText: string) => {
-    if (!activeChat) return;
-    // This logic needs to be moved into the Chat class as `editMessage(messageId, newText)`
-    console.log("Edit logic needs to be implemented in Chat.ts");
-  }, [activeChat]);
-  
+  const onEditSubmit = useCallback(
+    async (messageId: UUID, newText: string) => {
+      // TODO: Implement edit message
+    },
+    [activeChat]
+  );
+
   const loadMore = useCallback(() => {
     if (activeChat) {
       activeChat.loadMoreMessages();
     }
   }, [activeChat]);
 
-  // ... (scroll handling logic can remain mostly the same, but call `loadMore`)
   const onChatBodyScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
     const { scrollTop, scrollHeight, clientHeight } = target;
     const bottomHeight = scrollTop + clientHeight;
-    const newIsHitBottom = scrollHeight > 0 && bottomHeight >= scrollHeight - 10;
+    const newIsHitBottom =
+      scrollHeight > 0 && bottomHeight >= scrollHeight - 10;
     if (newIsHitBottom !== internalHitBottom) {
       setInternalHitBottom(newIsHitBottom);
     }
     debouncedCheckEdges(scrollTop);
   };
 
-  const debouncedCheckEdges = useDebouncedCallback((scrollTop: number) => {
-    const edgeThreshold = 50;
-    if (scrollTop <= edgeThreshold && !isLoadingMessages && hasMoreMessages) {
-      loadMore();
-    }
-  }, 200, { leading: false, trailing: true });
+  const debouncedCheckEdges = useDebouncedCallback(
+    (scrollTop: number) => {
+      const edgeThreshold = 50;
+      if (scrollTop <= edgeThreshold && !isLoadingMessages && hasMoreMessages) {
+        loadMore();
+      }
+    },
+    200,
+    { leading: false, trailing: true }
+  );
 
   return (
     <div className={styles["chat-body-container"]}>
@@ -114,7 +117,13 @@ export function ChatComponent({ sessionId }: { sessionId: UUID }) {
         onTouchStart={() => setAutoScroll(false)}
       >
         {isLoadingMessages && hasMoreMessages && (
-          <div style={{ display: "flex", justifyContent: "center", padding: "20px 0" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              padding: "20px 0",
+            }}
+          >
             <CircularProgress size={24} color="inherit" />
           </div>
         )}
@@ -138,8 +147,16 @@ export function ChatComponent({ sessionId }: { sessionId: UUID }) {
         ))}
       </div>
       {!internalHitBottom && (
-        <div className={styles["scroll-to-bottom-chatview-wrapper"]} style={{ bottom: "20px" }}>
-          <ActionButton onClick={scrollDomToBottom} text={null} icon={<ArrowDownwardRoundedIcon />} className={styles["scroll-to-bottom-chatview"]} />
+        <div
+          className={styles["scroll-to-bottom-chatview-wrapper"]}
+          style={{ bottom: "20px" }}
+        >
+          <ActionButton
+            onClick={scrollDomToBottom}
+            text={null}
+            icon={<ArrowDownwardRoundedIcon />}
+            className={styles["scroll-to-bottom-chatview"]}
+          />
         </div>
       )}
     </div>

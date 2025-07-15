@@ -1,4 +1,3 @@
-import { ChatSession } from "@/types/session";
 import { useAppConfig} from "@/store";
 import { StoreKey } from "@/types/constant";
 import { merge } from "./merge";

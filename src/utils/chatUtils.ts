@@ -4,7 +4,7 @@ import { getMessageTextContent } from "@/utils/utils";
 export function countMessages(msgs: ChatMessage[]): number {
   return msgs.reduce(
     (pre, cur) => pre + estimateTokenLength(getMessageTextContent(cur)),
-    0,
+    0
   );
 }
 export function estimateTokenLength(input: string): number {

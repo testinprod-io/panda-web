@@ -31,7 +31,7 @@ export function ChatListSkeleton({ targetHeight }: ChatListSkeletonProps) {
   while (accumulatedHeight < targetHeight) {
     const numItemsInGroup =
       Math.floor(
-        Math.random() * (MAX_ITEMS_PER_GROUP - MIN_ITEMS_PER_GROUP + 1),
+        Math.random() * (MAX_ITEMS_PER_GROUP - MIN_ITEMS_PER_GROUP + 1)
       ) + MIN_ITEMS_PER_GROUP;
 
     const headerWidth =
@@ -70,13 +70,13 @@ export function ChatListSkeleton({ targetHeight }: ChatListSkeletonProps) {
             key={j}
             className={styles.skeletonLine}
             style={{ width: `${lineWidthPercentage}%` }}
-          />,
+          />
         );
       }
       items.push(
         <div key={i} className={styles.skeletonItem}>
           {lines}
-        </div>,
+        </div>
       );
     }
 
@@ -87,7 +87,7 @@ export function ChatListSkeleton({ targetHeight }: ChatListSkeletonProps) {
           style={{ width: `${headerWidth}px` }}
         />
         {items}
-      </div>,
+      </div>
     );
     accumulatedHeight += currentGroupHeight;
 

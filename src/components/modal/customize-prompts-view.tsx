@@ -12,11 +12,13 @@ import {
   Alert,
   Switch,
 } from "@mui/material";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import styles from "./customize-prompts-view.module.scss";
 import { CustomizedPromptsResponse } from "@/sdk/client/types";
-// import { useApiClient } from "@/providers/api-client-provider";
-import { CustomizedPromptsData, decryptSystemPrompt, encryptSystemPrompt } from "@/types";
+import {
+  CustomizedPromptsData,
+  decryptSystemPrompt,
+  encryptSystemPrompt,
+} from "@/types";
 import { usePandaSDK } from "@/providers/sdk-provider";
 import { useUser } from "@/sdk/hooks";
 import Locale from "@/locales";
@@ -61,7 +63,7 @@ export default function CustomizePromptsView({
   const [traitsText, setTraitsText] = useState("");
   const [extraParams, setExtraParams] = useState("");
   const [traits, setTraits] = useState<Trait[]>(
-    initialTraits.map((t) => ({ ...t, selected: false })),
+    initialTraits.map((t) => ({ ...t, selected: false }))
   );
   const { sdk } = usePandaSDK();
   // const apiClient = useApiClient();
@@ -69,8 +71,9 @@ export default function CustomizePromptsView({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isUpdateMode, setIsUpdateMode] = useState(false);
-  const [initialData, setInitialData] =
-    useState<CustomizedPromptsData | null>(null);
+  const [initialData, setInitialData] = useState<CustomizedPromptsData | null>(
+    null
+  );
   const [enableForNewChats, setEnableForNewChats] = useState(true);
   const { updateCustomizedPrompts } = useUser();
 
@@ -79,7 +82,10 @@ export default function CustomizePromptsView({
       setIsLoading(true);
       setError(null);
       try {
-        const data = await decryptSystemPrompt(await sdk.storage.getCustomizedPrompts(), sdk.encryption.decrypt.bind(sdk.encryption));
+        const data = await decryptSystemPrompt(
+          await sdk.storage.getCustomizedPrompts(),
+          sdk.encryption.decrypt.bind(sdk.encryption)
+        );
         setName(data.personal_info?.name || "");
         setJob(data.personal_info?.job || "");
         const currentTraitsText = data.prompts?.traits || "";
@@ -95,7 +101,7 @@ export default function CustomizePromptsView({
           initialTraits.map((trait) => ({
             ...trait,
             selected: loadedTextTraits.includes(trait.label),
-          })),
+          }))
         );
 
         setInitialData(data);
@@ -139,7 +145,7 @@ export default function CustomizePromptsView({
 
     if (currentTextTraits.includes(traitToToggle.label)) {
       newTextTraitsArray = currentTextTraits.filter(
-        (t) => t !== traitToToggle.label,
+        (t) => t !== traitToToggle.label
       );
       newSelectedState = false;
     } else {
@@ -150,8 +156,8 @@ export default function CustomizePromptsView({
 
     setTraits((prevTraits) =>
       prevTraits.map((trait) =>
-        trait.id === traitId ? { ...trait, selected: newSelectedState } : trait,
-      ),
+        trait.id === traitId ? { ...trait, selected: newSelectedState } : trait
+      )
     );
   };
 
@@ -198,14 +204,23 @@ export default function CustomizePromptsView({
     payload.personal_info!.job = job.trim();
     payload.prompts!.traits = traitsText.trim();
     payload.prompts!.extra_params = extraParams.trim();
-    
+
     try {
-      const encryptedPayload = await encryptSystemPrompt(payload, sdk.encryption.encrypt.bind(sdk.encryption));
+      const encryptedPayload = await encryptSystemPrompt(
+        payload,
+        sdk.encryption.encrypt.bind(sdk.encryption)
+      );
       let responseData: CustomizedPromptsData;
       if (isUpdateMode) {
-        responseData = await decryptSystemPrompt(await sdk.storage.updateCustomizedPrompts(encryptedPayload), sdk.encryption.decrypt.bind(sdk.encryption));
+        responseData = await decryptSystemPrompt(
+          await sdk.storage.updateCustomizedPrompts(encryptedPayload),
+          sdk.encryption.decrypt.bind(sdk.encryption)
+        );
       } else {
-        responseData = await decryptSystemPrompt(await sdk.storage.createCustomizedPrompts(encryptedPayload), sdk.encryption.decrypt.bind(sdk.encryption));
+        responseData = await decryptSystemPrompt(
+          await sdk.storage.createCustomizedPrompts(encryptedPayload),
+          sdk.encryption.decrypt.bind(sdk.encryption)
+        );
       }
       updateCustomizedPrompts(responseData);
       setName(responseData.personal_info?.name || "");
@@ -223,7 +238,7 @@ export default function CustomizePromptsView({
         initialTraits.map((trait) => ({
           ...trait,
           selected: loadedTextTraits.includes(trait.label),
-        })),
+        }))
       );
 
       setInitialData(responseData);
@@ -293,7 +308,9 @@ export default function CustomizePromptsView({
         </Box>
 
         <Box className={styles.formSection}>
-          <Typography className={styles.label}>{Locale.CustomizedPrompts.JobDescription}</Typography>
+          <Typography className={styles.label}>
+            {Locale.CustomizedPrompts.JobDescription}
+          </Typography>
           <TextField
             fullWidth
             variant="outlined"
@@ -328,7 +345,7 @@ export default function CustomizePromptsView({
                 prevTraits.map((trait) => ({
                   ...trait,
                   selected: currentTextTraits.includes(trait.label),
-                })),
+                }))
               );
             }}
           />
@@ -341,7 +358,7 @@ export default function CustomizePromptsView({
                 onClick={() => !isSaving && handleTraitToggle(trait.id)}
                 className={clsx(
                   styles.traitChip,
-                  trait.selected && styles.selectedTrait,
+                  trait.selected && styles.selectedTrait
                 )}
                 variant={trait.selected ? "filled" : "outlined"}
                 clickable={!isSaving}
@@ -400,7 +417,11 @@ export default function CustomizePromptsView({
           className={styles.saveButton}
           disabled={!canSave || isSaving}
         >
-          {isSaving ? <CircularProgress size={24} color="inherit" /> : Locale.CustomizedPrompts.Save}
+          {isSaving ? (
+            <CircularProgress size={24} color="inherit" />
+          ) : (
+            Locale.CustomizedPrompts.Save
+          )}
         </Button>
       </Box>
     </Box>

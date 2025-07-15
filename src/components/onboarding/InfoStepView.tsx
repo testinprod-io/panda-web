@@ -51,4 +51,4 @@ export default function InfoStepView({ text, onNext }: InfoStepViewProps) {
       </Box>
     </motion.div>
   );
-} 
+}

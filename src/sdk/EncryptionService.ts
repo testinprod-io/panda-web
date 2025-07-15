@@ -7,7 +7,10 @@ export class EncryptionService {
   public setVault(vault: ReturnType<typeof useVault>): void {
     this.vault = vault;
     this.useVaultForOperations = vault.state.isReady;
-    console.log('[EncryptionService] Vault integration:', this.useVaultForOperations ? 'enabled' : 'disabled');
+    console.log(
+      "[EncryptionService] Vault integration:",
+      this.useVaultForOperations ? "enabled" : "disabled"
+    );
   }
 
   public isVaultReady(): boolean {
@@ -17,28 +20,28 @@ export class EncryptionService {
   public async encrypt(text: string): Promise<string> {
     if (!text) return text;
 
-    if (!this.isVaultReady()) { 
+    if (!this.isVaultReady()) {
       return text;
     }
-      try {
-        return await this.vault!.encrypt(text);
-      } catch (error) {
-        throw new Error("Encryption failed");
-      }
+    try {
+      return await this.vault!.encrypt(text);
+    } catch (error) {
+      throw new Error("Encryption failed");
+    }
   }
 
   public async decrypt(encryptedText: string): Promise<string> {
     if (!encryptedText || encryptedText === "") return encryptedText;
 
-    if (!this.isVaultReady()) { 
+    if (!this.isVaultReady()) {
       return encryptedText;
     }
 
-      try {
-        return await this.vault!.decrypt(encryptedText);
-      } catch (error) {
-        return encryptedText;
-      }
+    try {
+      return await this.vault!.decrypt(encryptedText);
+    } catch (error) {
+      return encryptedText;
+    }
   }
 
   public async encryptFile(file: File): Promise<File> {
@@ -50,7 +53,11 @@ export class EncryptionService {
 
     try {
       const data = await file.arrayBuffer();
-      const encryptedData = await this.vault!.encryptFile(data, file.name, file.type);
+      const encryptedData = await this.vault!.encryptFile(
+        data,
+        file.name,
+        file.type
+      );
 
       const encryptedFile = new File([encryptedData], file.name, {
         type: file.type,
@@ -70,7 +77,11 @@ export class EncryptionService {
     }
 
     const data = await file.arrayBuffer();
-    const decryptedBuffer = await this.vault!.decryptFile(data, file.name, file.type);
+    const decryptedBuffer = await this.vault!.decryptFile(
+      data,
+      file.name,
+      file.type
+    );
 
     return new File([decryptedBuffer], file.name, { type: file.type });
   }

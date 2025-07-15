@@ -1,12 +1,18 @@
 "use client";
 
-import React, { createContext, useContext, ReactNode, useMemo, useEffect, useState } from 'react';
-import { PandaSDK } from '@/sdk/PandaSDK';
-import { GetAccessTokenFn } from '@/sdk/client/types';
-import { usePrivy } from '@privy-io/react-auth';
-import { PrivyAuthAdapter } from './privy-auth-adapter';
-import { useVaultIntegrationContext } from '@/sdk/vault/VaultIntegration';
-// import { Box, Box, CircularProgress } from '@mui/material';
+import React, {
+  createContext,
+  useContext,
+  ReactNode,
+  useMemo,
+  useEffect,
+  useState,
+} from "react";
+import { PandaSDK } from "@/sdk/PandaSDK";
+import { GetAccessTokenFn } from "@/sdk/client/types";
+import { usePrivy } from "@privy-io/react-auth";
+import { PrivyAuthAdapter } from "./privy-auth-adapter";
+import { useVaultIntegrationContext } from "@/sdk/vault/VaultIntegration";
 
 interface SDKProviderProps {
   children: ReactNode;
@@ -20,8 +26,10 @@ interface PandaSDKContextValue {
 
 const SDKContext = createContext<PandaSDKContextValue | null>(null);
 
-// This is the provider component that will wrap your application
-export function PandaSDKProvider({ children, getAccessToken }: SDKProviderProps) {
+export function PandaSDKProvider({
+  children,
+  getAccessToken,
+}: SDKProviderProps) {
   const privy = usePrivy();
   const { ready, authenticated, user } = privy;
   const [isReady, setIsReady] = useState(false);
@@ -37,25 +45,27 @@ export function PandaSDKProvider({ children, getAccessToken }: SDKProviderProps)
     }
   }, [authAdapter, authenticated, user]);
 
-  
   // Get vault integration from context
   const vaultIntegration = useVaultIntegrationContext();
 
   const sdk = useMemo(() => {
     if (!authAdapter) return null;
-    console.log('[PandaSDKProvider] Creating SDK with vault integration:', !!vaultIntegration);
+    console.log(
+      "[PandaSDKProvider] Creating SDK with vault integration:",
+      !!vaultIntegration
+    );
     return new PandaSDK(getAccessToken, authAdapter, vaultIntegration);
   }, [getAccessToken, authAdapter, vaultIntegration]);
-  
+
   useEffect(() => {
     if (sdk) {
       const handleReady = (ready: boolean) => {
         setIsReady(ready);
       };
-      sdk.bus.on('sdk.ready', handleReady);
-      
+      sdk.bus.on("sdk.ready", handleReady);
+
       return () => {
-        sdk.bus.off('sdk.ready', handleReady);
+        sdk.bus.off("sdk.ready", handleReady);
       };
     }
   }, [sdk]);
@@ -66,34 +76,19 @@ export function PandaSDKProvider({ children, getAccessToken }: SDKProviderProps)
     }
   }, [sdk, ready, authenticated]);
 
-  // if (!sdk || !isReady) { 
-  //   return (
-  //     <Box
-  //       sx={{
-  //         display: "flex",
-  //         justifyContent: "center",
-  //         alignItems: "center",
-  //         height: "100%",
-  //         backgroundColor: "red",
-  //       }}
-  //     >
-  //       <CircularProgress color="primary" />
-  //     </Box>
-  //   );
-  // }
-  
-  if (sdk) { 
-    const contextValue = useMemo(() => ({
-      sdk,
-      isReady,
-  }), [sdk, isReady]);
+  if (sdk) {
+    const contextValue = useMemo(
+      () => ({
+        sdk,
+        isReady,
+      }),
+      [sdk, isReady]
+    );
 
-  return (
-    <SDKContext.Provider value={contextValue}>
-      {children}
-    </SDKContext.Provider>
-  );
-  } else { 
+    return (
+      <SDKContext.Provider value={contextValue}>{children}</SDKContext.Provider>
+    );
+  } else {
     return null;
   }
 }
@@ -102,7 +97,7 @@ export function PandaSDKProvider({ children, getAccessToken }: SDKProviderProps)
 export function usePandaSDK(): PandaSDKContextValue {
   const context = useContext(SDKContext);
   if (context === null) {
-    throw new Error('usePandaSDK must be used within a PandaSDKProvider');
+    throw new Error("usePandaSDK must be used within a PandaSDKProvider");
   }
   return context;
 }

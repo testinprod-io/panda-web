@@ -2,11 +2,6 @@ import { AppServer } from "./client/app-server";
 import { LLMServer } from "./client/llm-server";
 import { GetAccessTokenFn } from "./client/types";
 
-/**
- * This is the real, application-specific API client.
- * It combines the App and LLM APIs into a single service
- * that can be used by the SDK managers.
- */
 export class ApiService {
   public readonly app: AppServer;
   public readonly llm: LLMServer;

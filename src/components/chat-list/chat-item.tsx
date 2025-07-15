@@ -12,14 +12,11 @@ import {
 } from "@mui/material";
 
 import styles from "./chat-list.module.scss";
-import type { ChatSession } from "@/types/session";
 import Locale from "@/locales";
 import { useEncryption } from "@/providers/encryption-provider";
-// import { EncryptionService } from "@/services/encryption-service";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import { Chat } from "@/sdk/Chat";
-import { usePandaSDK } from "@/providers/sdk-provider";
 import { useChat } from "@/sdk/hooks";
 interface ChatItemProps {
   onClick?: () => void;
@@ -57,7 +54,7 @@ export function ChatItem({
   const editInputRef = useRef<HTMLInputElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   const listItemRef = useRef<HTMLDivElement | null>(null);
-  
+
   const { title, encryptedTitle } = useChat(session);
 
   const { isLocked } = useEncryption();
@@ -67,14 +64,7 @@ export function ChatItem({
   const [visibleTopic, setVisibleTopic] = useState(title);
 
   useEffect(() => {
-    // const topic = title || Locale.Store.DefaultTopic;
-    // if (isLocked) {
-    //   setVisibleTopic(topic);
-    // } else {
-    //   sdk.encryption.decrypt(topic).then((decryptedTopic) => {
-        setVisibleTopic(session.title);
-    //   });
-    // }
+    setVisibleTopic(session.title);
   }, [isLocked, session.title, visibleTopic]);
 
   useEffect(() => {
@@ -99,7 +89,7 @@ export function ChatItem({
         top: rect.bottom + window.scrollY,
         left: Math.min(
           rect.left + window.scrollX,
-          window.innerWidth - 150, // 150 = approximate dropdown width + padding
+          window.innerWidth - 150 // 150 = approximate dropdown width + padding
         ),
       });
     }
@@ -119,11 +109,7 @@ export function ChatItem({
   };
 
   const handleSaveEdit = () => {
-    if (
-      editValue.trim() !== "" &&
-      editValue !== title &&
-      onRename
-    ) {
+    if (editValue.trim() !== "" && editValue !== title && onRename) {
       onRename(editValue.trim());
     }
     setIsEditing(false);
@@ -153,7 +139,7 @@ export function ChatItem({
         }
       }
     },
-    [showMenu, isEditing, handleSaveEdit],
+    [showMenu, isEditing, handleSaveEdit]
   );
 
   useEffect(() => {
@@ -171,7 +157,7 @@ export function ChatItem({
 
   const handleMenuClose = (
     event?: React.MouseEvent<HTMLElement> | {},
-    reason?: "backdropClick" | "escapeKeyDown",
+    reason?: "backdropClick" | "escapeKeyDown"
   ) => {
     if (
       event &&
@@ -197,8 +183,7 @@ export function ChatItem({
 
   const handleEdit = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
-    // setEditValue(session.visibleTopic); // Start editing with the actual decrypted topic
-    setEditValue(visibleTopic); // Start editing with the actual decrypted topic
+    setEditValue(visibleTopic);
     setIsEditing(true);
     handleMenuClose();
   };
@@ -206,8 +191,7 @@ export function ChatItem({
   const handleCancelEdit = (event?: React.MouseEvent<HTMLElement>) => {
     event?.stopPropagation();
     setIsEditing(false);
-    // setEditValue(session.visibleTopic); // Revert to original decrypted topic
-    setEditValue(visibleTopic); // Revert to original decrypted topic
+    setEditValue(visibleTopic);
     handleMenuClose();
   };
 
@@ -233,21 +217,19 @@ export function ChatItem({
       return;
     }
 
-    // App is unlocked and it's not a default topic, proceed with animation
     setIsAnimating(true);
+
     // Start animation from the raw (potentially encrypted) topic
     const animationStartDisplay = rawTopic;
     setDisplayedTitle(animationStartDisplay);
 
     let revealedCount = 0;
-    // const targetLength = session.visibleTopic.length;
     const targetLength = visibleTopic.length;
     const startDisplayLength = animationStartDisplay.length;
 
     animationIntervalRef.current = setInterval(() => {
       revealedCount++;
       const newTitle =
-        // session.visibleTopic.substring(0, revealedCount) +
         visibleTopic.substring(0, revealedCount) +
         animationStartDisplay.substring(revealedCount);
 
@@ -261,8 +243,7 @@ export function ChatItem({
           clearInterval(animationIntervalRef.current);
           animationIntervalRef.current = null;
         }
-        // setDisplayedTitle(session.visibleTopic); // Ensure final state is perfect
-        setDisplayedTitle(visibleTopic); // Ensure final state is perfect
+        setDisplayedTitle(visibleTopic);
         setIsAnimating(false);
       }
     }, DECRYPTION_INTERVAL_MS);
@@ -273,8 +254,7 @@ export function ChatItem({
         animationIntervalRef.current = null;
       }
     };
-    // }, [session.topic, session.visibleTopic, isLocked]); // Rerun if underlying topic, its decrypted version, or lock state changes
-  }, [encryptedTitle, visibleTopic, isLocked]); // Rerun if underlying topic, its decrypted version, or lock state changes
+  }, [encryptedTitle, visibleTopic, isLocked]);
 
   const handleItemClick = () => {
     if (isAnimating) {
@@ -282,7 +262,6 @@ export function ChatItem({
         clearInterval(animationIntervalRef.current);
         animationIntervalRef.current = null;
       }
-      // setDisplayedTitle(session.visibleTopic);
       setDisplayedTitle(visibleTopic);
       setIsAnimating(false);
     }
@@ -331,7 +310,7 @@ export function ChatItem({
       <Box
         className={clsx(
           styles["chat-item-highlight"],
-          selected && styles["chat-item-selected-highlight"],
+          selected && styles["chat-item-selected-highlight"]
         )}
         sx={{
           display: "flex",
@@ -399,13 +378,13 @@ export function ChatItem({
                   onClick={handleDeleteClick}
                   className={clsx(
                     styles.chatActionMenuItem,
-                    styles.deleteAction,
+                    styles.deleteAction
                   )}
                 >
                   <ListItemIcon
                     className={clsx(
                       styles.chatActionMenuItemIcon,
-                      styles.deleteActionIcon,
+                      styles.deleteActionIcon
                     )}
                   >
                     <DeleteOutlineOutlinedIcon fontSize="small" />
@@ -414,7 +393,7 @@ export function ChatItem({
                     primary={Locale.ChatList.Delete}
                     className={clsx(
                       styles.chatActionMenuItemText,
-                      styles.deleteActionText,
+                      styles.deleteActionText
                     )}
                   />
                 </MenuItem>

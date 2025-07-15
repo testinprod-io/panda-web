@@ -3,7 +3,10 @@ export interface User {
   [key: string]: any;
 }
 
-export type AuthStateListener = (payload: { isAuthenticated: boolean, user: User | null }) => void;
+export type AuthStateListener = (payload: {
+  isAuthenticated: boolean;
+  user: User | null;
+}) => void;
 
 export interface AuthProvider {
   getIsAuthenticated(): Promise<boolean>;
@@ -11,4 +14,4 @@ export interface AuthProvider {
   addAuthStateListener(listener: AuthStateListener): void;
   removeAuthStateListener(listener: AuthStateListener): void;
   logout(): Promise<void>;
-} 
+}

@@ -33,7 +33,7 @@ export default function PasswordConfirmationStep({
         setBase64Text(TEXT_TO_ANIMATE); // Fallback to original text
       }
     };
-    
+
     encryptText();
   }, [sdk.encryption]);
 
@@ -65,7 +65,7 @@ export default function PasswordConfirmationStep({
       }, 20); // Speed of encryption effect
       return () => clearTimeout(timer);
     } else {
-        setIsButtonHidden(false);
+      setIsButtonHidden(false);
     }
   }, [isEncrypting, encryptionProgress, base64Text, TEXT_TO_ANIMATE]);
 
@@ -73,8 +73,17 @@ export default function PasswordConfirmationStep({
     if (!isEncrypting || !base64Text) {
       return displayedText;
     }
-    return base64Text.substring(0, encryptionProgress) + TEXT_TO_ANIMATE.substring(encryptionProgress);
-  }, [isEncrypting, encryptionProgress, displayedText, base64Text, TEXT_TO_ANIMATE]);
+    return (
+      base64Text.substring(0, encryptionProgress) +
+      TEXT_TO_ANIMATE.substring(encryptionProgress)
+    );
+  }, [
+    isEncrypting,
+    encryptionProgress,
+    displayedText,
+    base64Text,
+    TEXT_TO_ANIMATE,
+  ]);
 
   return (
     <Box
@@ -162,4 +171,4 @@ export default function PasswordConfirmationStep({
       </Box>
     </Box>
   );
-} 
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import {
   TextField,
   Button,
@@ -23,7 +23,9 @@ interface CreatePasswordStepProps {
   onNext: () => void;
 }
 
-export default function CreatePasswordStep({ onNext }: CreatePasswordStepProps) {
+export default function CreatePasswordStep({
+  onNext,
+}: CreatePasswordStepProps) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -33,29 +35,28 @@ export default function CreatePasswordStep({ onNext }: CreatePasswordStepProps) 
   const { sdk } = usePandaSDK();
   const { encryptedId } = useAuth();
   const isFirstTimeUser = sdk.ready ? encryptedId === null : null;
-  const { user, logout, ready, authenticated } = usePrivy();
+  const { ready } = usePrivy();
   const { createPassword, unlockApp } = useEncryption();
-
-
-  useEffect(() => {
-    // This logic might be handled in the parent `OnboardingView` in the future.
-    // For now, it mirrors the original page's behavior.
-    if (isFirstTimeUser === false && confirmPassword.length === 0) {
-      // In a real scenario, we might skip this step.
-      // For now, we proceed.
-    }
-  }, [ready, authenticated, isFirstTimeUser]);
 
   const handlePasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newPassword = event.target.value;
     setPassword(newPassword);
 
-    if (newPassword && (newPassword.length < MIN_PASSWORD_LENGTH || newPassword.length > MAX_PASSWORD_LENGTH)) {
-      setPasswordError(Locale.Onboarding.Encryption.PasswordLengthMismatch(MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH));
+    if (
+      newPassword &&
+      (newPassword.length < MIN_PASSWORD_LENGTH ||
+        newPassword.length > MAX_PASSWORD_LENGTH)
+    ) {
+      setPasswordError(
+        Locale.Onboarding.Encryption.PasswordLengthMismatch(
+          MIN_PASSWORD_LENGTH,
+          MAX_PASSWORD_LENGTH
+        )
+      );
     } else {
       setPasswordError("");
     }
-    
+
     if (confirmPassword && newPassword !== confirmPassword) {
       setConfirmPasswordError(Locale.Onboarding.Encryption.PasswordMismatch);
     } else {
@@ -63,7 +64,9 @@ export default function CreatePasswordStep({ onNext }: CreatePasswordStepProps) 
     }
   };
 
-  const handleConfirmPasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleConfirmPasswordChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const newConfirmPassword = event.target.value;
     setConfirmPassword(newConfirmPassword);
 
@@ -88,8 +91,16 @@ export default function CreatePasswordStep({ onNext }: CreatePasswordStepProps) 
       event.preventDefault();
 
       let hasError = false;
-      if (password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
-        setPasswordError(Locale.Onboarding.Encryption.PasswordLengthMismatch(MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH));
+      if (
+        password.length < MIN_PASSWORD_LENGTH ||
+        password.length > MAX_PASSWORD_LENGTH
+      ) {
+        setPasswordError(
+          Locale.Onboarding.Encryption.PasswordLengthMismatch(
+            MIN_PASSWORD_LENGTH,
+            MAX_PASSWORD_LENGTH
+          )
+        );
         hasError = true;
       } else {
         setPasswordError("");
@@ -114,7 +125,7 @@ export default function CreatePasswordStep({ onNext }: CreatePasswordStepProps) 
         setPasswordError(err.message || "Failed to process password");
       }
     },
-    [password, confirmPassword, createPassword, unlockApp, onNext],
+    [password, confirmPassword, createPassword, unlockApp, onNext]
   );
 
   const isButtonDisabled =
@@ -173,7 +184,10 @@ export default function CreatePasswordStep({ onNext }: CreatePasswordStepProps) 
           value={password}
           onChange={handlePasswordChange}
           error={!!passwordError}
-          placeholder={Locale.Onboarding.Encryption.Placeholder(MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH)}
+          placeholder={Locale.Onboarding.Encryption.Placeholder(
+            MIN_PASSWORD_LENGTH,
+            MAX_PASSWORD_LENGTH
+          )}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
@@ -331,4 +345,4 @@ export default function CreatePasswordStep({ onNext }: CreatePasswordStepProps) 
       </Box>
     </Box>
   );
-} 
+}

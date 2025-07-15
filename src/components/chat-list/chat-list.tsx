@@ -25,7 +25,8 @@ const getRelativeDateGroup = (dateInput: number): string => {
   if (now.toDateString() === then.toDateString()) return Locale.ChatList.Today;
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
-  if (yesterday.toDateString() === then.toDateString()) return Locale.ChatList.Yesterday;
+  if (yesterday.toDateString() === then.toDateString())
+    return Locale.ChatList.Yesterday;
 
   if (diffDays < 7) return Locale.ChatList.Previous7Days;
   if (diffDays < 30) return Locale.ChatList.Previous30Days;
@@ -46,7 +47,7 @@ const groupOrder = [
 
 const getMonthYearSortKey = (
   groupName: string,
-  currentYear: number,
+  currentYear: number
 ): string => {
   const months = [
     Locale.ChatList.January,
@@ -78,9 +79,8 @@ export function ChatList(props: ChatListProps) {
   const chatManager = sdk.chat;
 
   const { conversations, isLoading, hasMore, activeChat } = useChatList();
-  
+
   const observerRef = useRef<HTMLDivElement | null>(null);
-  // const isLoading 
   const chatId = params.chatId as string;
 
   useEffect(() => {
@@ -88,7 +88,7 @@ export function ChatList(props: ChatListProps) {
       chatManager.loadChats();
     }
   }, [conversations.length, hasMore, isLoading, chatManager]);
-  
+
   useEffect(() => {
     const currentObserverRef = observerRef.current;
     const observer = new IntersectionObserver(
@@ -97,7 +97,7 @@ export function ChatList(props: ChatListProps) {
           chatManager.loadChats();
         }
       },
-      { threshold: 1.0 },
+      { threshold: 1.0 }
     );
 
     if (currentObserverRef) observer.observe(currentObserverRef);
@@ -119,25 +119,29 @@ export function ChatList(props: ChatListProps) {
       }
     }
   };
-  
+
   const handleRenameItem = (conversation: Chat, newName: string) => {
     chatManager.renameChat(conversation.id, newName);
   };
 
-  const groupedSessions = conversations.reduce<{[groupName: string]: Chat[]}>((acc, session) => {
+  const groupedSessions = conversations.reduce<{ [groupName: string]: Chat[] }>(
+    (acc, session) => {
       const dateToGroup = new Date(session.updatedAt ?? 0).getTime();
       const groupName = getRelativeDateGroup(dateToGroup);
-      if (!acc[groupName]) acc[groupName] = []; 
+      if (!acc[groupName]) acc[groupName] = [];
       acc[groupName].push(session);
       return acc;
-    }, {});
+    },
+    {}
+  );
 
   const currentYear = new Date().getFullYear();
   const sortedGroupNames = Object.keys(groupedSessions).sort((a, b) => {
     const aIsPredefined = groupOrder.includes(a);
     const bIsPredefined = groupOrder.includes(b);
 
-    if (aIsPredefined && bIsPredefined) return groupOrder.indexOf(a) - groupOrder.indexOf(b);
+    if (aIsPredefined && bIsPredefined)
+      return groupOrder.indexOf(a) - groupOrder.indexOf(b);
     if (aIsPredefined) return -1;
     if (bIsPredefined) return 1;
 
@@ -160,19 +164,18 @@ export function ChatList(props: ChatListProps) {
       {sortedGroupNames.map((groupName) => (
         <div key={groupName} className={styles["chat-date-group"]}>
           <div className={styles["chat-date-header"]}>{groupName}</div>
-          {groupedSessions[groupName]
-            .map((item, i) => (
-              <ChatItem
-                session={item as any}
-                key={item.id}
-                index={i}
-                selected={item.id === chatId}
-                onClick={() => handleSelectItem(item)}
-                onDelete={() => handleDeleteItem(item)}
-                onRename={(newTitle) => handleRenameItem(item, newTitle)}
-                narrow={props.narrow}
-              />
-            ))}
+          {groupedSessions[groupName].map((item, i) => (
+            <ChatItem
+              session={item as any}
+              key={item.id}
+              index={i}
+              selected={item.id === chatId}
+              onClick={() => handleSelectItem(item)}
+              onDelete={() => handleDeleteItem(item)}
+              onRename={(newTitle) => handleRenameItem(item, newTitle)}
+              narrow={props.narrow}
+            />
+          ))}
         </div>
       ))}
       {hasMore && (
@@ -182,9 +185,9 @@ export function ChatList(props: ChatListProps) {
         <ChatListSkeleton targetHeight={250} />
       )}
       {!isLoading && conversations.length === 0 && !hasMore && (
-          <div className={styles["chat-date-header"]}>
-            {Locale.ChatList.NoConversations}
-          </div>
+        <div className={styles["chat-date-header"]}>
+          {Locale.ChatList.NoConversations}
+        </div>
       )}
     </div>
   );

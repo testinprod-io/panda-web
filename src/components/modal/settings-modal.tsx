@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   Modal,
   Box,
@@ -20,7 +20,6 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Theme,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -31,8 +30,6 @@ import styles from "./settings-modal.module.scss";
 import { SettingsPage } from "./settings-modal-handler";
 import CustomizePromptsView from "./customize-prompts-view";
 import { useRouter } from "next/navigation";
-// import { useApiClient } from "@/providers/api-client-provider";
-import { usePrivy } from "@privy-io/react-auth";
 import { useEncryption } from "@/providers/encryption-provider";
 import { useAuth } from "@/sdk/hooks";
 import { usePandaSDK } from "@/providers/sdk-provider";
@@ -41,7 +38,8 @@ import { safeLocalStorage } from "@/utils/utils";
 import Locale from "@/locales";
 import clsx from "clsx";
 import { useTheme } from "next-themes";
-import { useAppConfig, Theme as AppTheme } from "@/store/config";
+import { useAppConfig } from "@/store/config";
+
 interface SettingsModalProps {
   open: boolean;
   currentPage: SettingsPage | null;
@@ -82,10 +80,9 @@ export default function SettingsModal({
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const appConfig = useAppConfig();
-  const { lockApp } = useEncryption();
   const { sdk } = usePandaSDK();
   const { logout, isAuthenticated } = useAuth();
-  
+
   if (!isAuthenticated) {
     return <div></div>;
   }
@@ -301,7 +298,6 @@ export default function SettingsModal({
 
           <Divider className={styles.divider} />
 
-
           <Box className={styles.mainArea}>
             <Box className={styles.leftNav}>
               <List component="nav">
@@ -310,26 +306,32 @@ export default function SettingsModal({
                   onClick={() => setActiveNavSection("general")}
                   className={clsx(
                     styles.navItem,
-                    activeNavSection === "general" && styles.navItemActive,
+                    activeNavSection === "general" && styles.navItemActive
                   )}
                 >
                   <ListItemIcon className={styles.navItemIcon}>
                     <SettingsIcon fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText className={styles.navItemText} primary={Locale.SettingsModal.General} />
+                  <ListItemText
+                    className={styles.navItemText}
+                    primary={Locale.SettingsModal.General}
+                  />
                 </ListItemButton>
                 <ListItemButton
                   selected={activeNavSection === "faq"}
                   onClick={() => setActiveNavSection("faq")}
                   className={clsx(
                     styles.navItem,
-                    activeNavSection === "faq" && styles.navItemActive,
+                    activeNavSection === "faq" && styles.navItemActive
                   )}
                 >
                   <ListItemIcon className={styles.navItemIcon}>
                     <HelpOutlineIcon fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText className={styles.navItemText} primary={Locale.SettingsModal.Help} />
+                  <ListItemText
+                    className={styles.navItemText}
+                    primary={Locale.SettingsModal.Help}
+                  />
                 </ListItemButton>
               </List>
             </Box>
@@ -337,16 +339,37 @@ export default function SettingsModal({
               {activeNavSection === "general" && renderContent()}
               {activeNavSection === "faq" && (
                 <Box>
-                  <Typography fontSize={24} fontWeight={600} fontFamily={"Inter"}>{Locale.SettingsModal.Help}</Typography>
+                  <Typography
+                    fontSize={24}
+                    fontWeight={600}
+                    fontFamily={"Inter"}
+                  >
+                    {Locale.SettingsModal.Help}
+                  </Typography>
                   <br />
                   <Typography>
-                    <a href="https://testinprod.notion.site/Private-Alpha-One-Pager-1ff8fc57f54680d0aa08ce7b8013948a" className={styles.FAQText}>- Private Alpha One Pager</a>
+                    <a
+                      href="https://testinprod.notion.site/Private-Alpha-One-Pager-1ff8fc57f54680d0aa08ce7b8013948a"
+                      className={styles.FAQText}
+                    >
+                      - Private Alpha One Pager
+                    </a>
                   </Typography>
                   <Typography>
-                    <a href="https://testinprod.notion.site/Panda-Technical-FAQ-2018fc57f5468023bac3c5380179a272" className={styles.FAQText}>- Panda Technical FAQ</a>
+                    <a
+                      href="https://testinprod.notion.site/Panda-Technical-FAQ-2018fc57f5468023bac3c5380179a272"
+                      className={styles.FAQText}
+                    >
+                      - Panda Technical FAQ
+                    </a>
                   </Typography>
                   <Typography>
-                    <a href="https://testinprod.notion.site/Panda-Tips-Guides-2148fc57f54680f982b3d32973d20314" className={styles.FAQText}>- Panda Tips & Guides</a>
+                    <a
+                      href="https://testinprod.notion.site/Panda-Tips-Guides-2148fc57f54680f982b3d32973d20314"
+                      className={styles.FAQText}
+                    >
+                      - Panda Tips & Guides
+                    </a>
                   </Typography>
                 </Box>
               )}
@@ -396,9 +419,14 @@ export default function SettingsModal({
           id="alert-dialog-title"
           className={styles.confirmDialogTitleContainer}
         >
-          <div className={styles.confirmDialogTitle}>{Locale.SettingsModal.ClearChatData}</div>
+          <div className={styles.confirmDialogTitle}>
+            {Locale.SettingsModal.ClearChatData}
+          </div>
         </DialogTitle>
-        <DialogContent className={styles.confirmDialogContent} sx={{ padding: "0px 24px 16px 20px" }}>
+        <DialogContent
+          className={styles.confirmDialogContent}
+          sx={{ padding: "0px 24px 16px 20px" }}
+        >
           <DialogContentText
             id="alert-dialog-description-primary"
             className={styles.confirmDialogContentTextPrimary}
@@ -412,7 +440,10 @@ export default function SettingsModal({
             {Locale.SettingsModal.ClearChatDataDescription2}
           </DialogContentText>
         </DialogContent>
-        <DialogActions className={styles.confirmDialogActions} sx={{ padding: "0px 12px 16px 16px"}}>
+        <DialogActions
+          className={styles.confirmDialogActions}
+          sx={{ padding: "0px 12px 16px 16px" }}
+        >
           <Button
             onClick={() => setDeleteConfirmOpen(false)}
             className={styles.confirmDialogButton}

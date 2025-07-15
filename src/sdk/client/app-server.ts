@@ -20,11 +20,10 @@ import {
   AttestationResponse,
   InfoResponse,
   CustomizedPromptsResponse,
-  GetAccessTokenFn
+  GetAccessTokenFn,
 } from "./types";
 import { UUID } from "crypto";
 import { CustomizedPromptsData } from "@/types";
-
 
 export class AppServer {
   private baseUrl: string;
@@ -41,7 +40,7 @@ export class AppServer {
     queryParams?: Record<string, string | number | undefined | null>,
     body?: any,
     requiresAuth: boolean = true,
-    isBinaryResponse: boolean = false,
+    isBinaryResponse: boolean = false
   ): Promise<T> {
     const url = new URL(`${this.baseUrl}${path}`);
 
@@ -123,30 +122,30 @@ export class AppServer {
 
   // --- Conversations ---
   async getConversations(
-    params?: GetConversationsParams,
+    params?: GetConversationsParams
   ): Promise<PaginatedConversationsResponse> {
     return this.request<PaginatedConversationsResponse>(
       "GET",
       "/conversations",
-      params as Record<string, string | number | undefined | null>,
+      params as Record<string, string | number | undefined | null>
     );
   }
 
   async getConversation(conversationId: UUID): Promise<Conversation> {
     return this.request<Conversation>(
       "GET",
-      `/conversations/${conversationId}`,
+      `/conversations/${conversationId}`
     );
   }
 
   async createConversation(
-    data: ConversationCreateRequest,
+    data: ConversationCreateRequest
   ): Promise<Conversation> {
     return this.request<Conversation>(
       "POST",
       "/conversations",
       undefined,
-      data,
+      data
     );
   }
 
@@ -156,13 +155,13 @@ export class AppServer {
 
   async updateConversation(
     conversationId: UUID,
-    data: ConversationUpdateRequest,
+    data: ConversationUpdateRequest
   ): Promise<Conversation> {
     return this.request<Conversation>(
       "PUT",
       `/conversations/${conversationId}`,
       undefined,
-      data,
+      data
     );
   }
 
@@ -173,36 +172,36 @@ export class AppServer {
   // --- Messages ---
   async getConversationMessages(
     conversationId: UUID,
-    params?: GetConversationMessagesParams,
+    params?: GetConversationMessagesParams
   ): Promise<PaginatedMessagesResponse> {
     return this.request<PaginatedMessagesResponse>(
       "GET",
       `/conversations/${conversationId}/messages`,
-      params as Record<string, string | number | undefined | null>,
+      params as Record<string, string | number | undefined | null>
     );
   }
 
   async createMessage(
     conversationId: UUID,
-    data: MessageCreateRequest,
+    data: MessageCreateRequest
   ): Promise<Message> {
     return this.request<Message>(
       "POST",
       `/conversations/${conversationId}/messages`,
       undefined,
-      data,
+      data
     );
   }
 
   async deleteMessages(
     conversationId: UUID,
-    messageIds: UUID[],
+    messageIds: UUID[]
   ): Promise<DeleteMessagesResponse> {
     return this.request<DeleteMessagesResponse>(
       "DELETE",
       `/conversations/${conversationId}/messages`,
       undefined,
-      { message_ids: messageIds },
+      { message_ids: messageIds }
     );
   }
 
@@ -215,7 +214,7 @@ export class AppServer {
       "POST",
       "/me/encrypted-id",
       undefined,
-      { encrypted_id: encryptedId },
+      { encrypted_id: encryptedId }
     );
   }
 
@@ -227,7 +226,7 @@ export class AppServer {
       undefined,
       undefined,
       true,
-      true,
+      true
     );
   }
 
@@ -236,7 +235,7 @@ export class AppServer {
     file: File,
     fileName: string,
     fileSize: number,
-    onUploadProgress?: (progress: number) => void,
+    onUploadProgress?: (progress: number) => void
   ): Promise<UploadFileResponse> {
     const formData = new FormData();
     formData.append("file", file);
@@ -263,7 +262,7 @@ export class AppServer {
             resolve(responseJson);
           } catch (e) {
             reject(
-              new ApiError(xhr.status, "Failed to parse upload response", e),
+              new ApiError(xhr.status, "Failed to parse upload response", e)
             );
           }
         } else {
@@ -277,8 +276,8 @@ export class AppServer {
             new ApiError(
               xhr.status,
               xhr.statusText || "Upload failed",
-              errorBody,
-            ),
+              errorBody
+            )
           );
         }
       };
@@ -299,10 +298,7 @@ export class AppServer {
           if (!token) {
             // Assuming a helper or direct check
             reject(
-              new ApiError(
-                401,
-                "Authentication token not available for upload",
-              ),
+              new ApiError(401, "Authentication token not available for upload")
             );
             return;
           }
@@ -317,7 +313,7 @@ export class AppServer {
         })
         .catch((authError) => {
           reject(
-            new ApiError(0, "Failed to get auth token for upload", authError),
+            new ApiError(0, "Failed to get auth token for upload", authError)
           );
         });
     });
@@ -332,7 +328,7 @@ export class AppServer {
   async deleteFile(conversationId: UUID, fileId: UUID): Promise<void> {
     await this.request<void>(
       "DELETE",
-      `/conversations/${conversationId}/files/${fileId}`,
+      `/conversations/${conversationId}/files/${fileId}`
     );
   }
 
@@ -340,26 +336,26 @@ export class AppServer {
   async getSummaries(conversationId: UUID): Promise<Summary[]> {
     return this.request<Summary[]>(
       "GET",
-      `/conversations/${conversationId}/summaries`,
+      `/conversations/${conversationId}/summaries`
     );
   }
 
   async createSummary(
     conversationId: UUID,
-    data: SummaryCreateRequest,
+    data: SummaryCreateRequest
   ): Promise<SummaryResponse> {
     return this.request<SummaryResponse>(
       "POST",
       `/conversations/${conversationId}/summaries`,
       undefined,
-      data,
+      data
     );
   }
 
   async deleteSummary(conversationId: UUID, summaryId: UUID): Promise<void> {
     await this.request<void>(
       "DELETE",
-      `/conversations/${conversationId}/summaries/${summaryId}`,
+      `/conversations/${conversationId}/summaries/${summaryId}`
     );
   }
 
@@ -367,29 +363,29 @@ export class AppServer {
   async getCustomizedPrompts(): Promise<CustomizedPromptsResponse> {
     return this.request<CustomizedPromptsResponse>(
       "GET",
-      "/me/customized-prompts",
+      "/me/customized-prompts"
     );
   }
 
   async createCustomizedPrompts(
-    data: CustomizedPromptsData,
+    data: CustomizedPromptsData
   ): Promise<CustomizedPromptsResponse> {
     return this.request<CustomizedPromptsResponse>(
       "POST",
       "/me/customized-prompts",
       undefined,
-      data,
+      data
     );
   }
 
   async updateCustomizedPrompts(
-    data: CustomizedPromptsData,
+    data: CustomizedPromptsData
   ): Promise<CustomizedPromptsResponse> {
     return this.request<CustomizedPromptsResponse>(
       "PUT",
       "/me/customized-prompts",
       undefined,
-      data,
+      data
     );
   }
 
@@ -400,7 +396,7 @@ export class AppServer {
   async getAttestation(publicKey: string): Promise<AttestationResponse> {
     return this.request<AttestationResponse>(
       "GET",
-      `/attestationTokens/${publicKey}`,
+      `/attestationTokens/${publicKey}`
     );
   }
 

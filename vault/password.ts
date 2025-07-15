@@ -51,15 +51,17 @@ async function encryptPassword(
 ): Promise<string> {
   // Generate random IV for AES-GCM
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  
+
   // Convert server key string directly to AES key
   const serverKeyBytes = base64urlDecode(serverKeyString);
-  
+
   // Validate key length
   if (serverKeyBytes.length !== 32) {
-    throw new Error(`Server key must be 32 bytes, got ${serverKeyBytes.length} bytes`);
+    throw new Error(
+      `Server key must be 32 bytes, got ${serverKeyBytes.length} bytes`
+    );
   }
-  
+
   // Import as AES-GCM key directly (no HKDF needed since server key rotates)
   const aesKey = await crypto.subtle.importKey(
     "raw",
@@ -92,7 +94,7 @@ async function decryptPassword(
 
   // Check if this is the old format (starts with version byte)
   if (envelope.length > 2 && envelope[0] === VERSION) {
-    console.log('[Password] Detected old format, attempting legacy decryption');
+    console.log("[Password] Detected old format, attempting legacy decryption");
     return await decryptPasswordLegacy(envelopeB64, serverKeyString);
   }
 
@@ -106,12 +108,14 @@ async function decryptPassword(
 
   // Convert server key string directly to AES key
   const serverKeyBytes = base64urlDecode(serverKeyString);
-  
+
   // Validate key length
   if (serverKeyBytes.length !== 32) {
-    throw new Error(`Server key must be 32 bytes, got ${serverKeyBytes.length} bytes`);
+    throw new Error(
+      `Server key must be 32 bytes, got ${serverKeyBytes.length} bytes`
+    );
   }
-  
+
   // Import as AES-GCM key directly
   const aesKey = await crypto.subtle.importKey(
     "raw",

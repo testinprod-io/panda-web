@@ -4,7 +4,7 @@ export const ChatControllerPool = {
   addController(
     sessionId: string,
     messageId: string,
-    controller: AbortController,
+    controller: AbortController
   ) {
     const key = this.key(sessionId, messageId);
     this.controllers[key] = controller;
