@@ -264,7 +264,7 @@ export function useVault(): UseVaultResult {
       request: Omit<VaultRequest, "id">
     ): Promise<T> => {
       if (!state.isReady || !portRef.current) {
-        throw new Error("Vault not ready");
+        await initializeVault();
       }
 
       const id = `req_${++requestIdCounterRef.current}`;

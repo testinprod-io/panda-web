@@ -99,7 +99,7 @@ export default function PasswordConfirmationStep({
         variant="h5"
         component="div"
         sx={{
-          color: "#131A28",
+          color: "var(--text-primary)",
           fontSize: "16px",
           fontFamily: "Inter, sans-serif",
           fontWeight: "500",

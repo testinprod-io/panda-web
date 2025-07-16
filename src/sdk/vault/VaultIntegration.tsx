@@ -45,10 +45,6 @@ export class VaultIntegration {
       throw new Error("Vault not initialized. Call setVault() first.");
     }
 
-    if (!this.vault.state.isReady) {
-      throw new Error("Vault not ready");
-    }
-
     return await this.vault.bootstrap(encryptedId, userId, encryptedPassword);
   }
 
@@ -64,10 +60,6 @@ export class VaultIntegration {
       throw new Error("Vault not initialized. Call setVault() first.");
     }
 
-    if (!this.vault.state.isReady) {
-      throw new Error("Vault not ready");
-    }
-
     return await this.vault.setPassword(password, encryptedId, userId);
   }
 
@@ -77,10 +69,6 @@ export class VaultIntegration {
   ): Promise<CreateUserPasswordRes> {
     if (!this.vault) {
       throw new Error("Vault not initialized. Call setVault() first.");
-    }
-
-    if (!this.vault.state.isReady) {
-      throw new Error("Vault not ready");
     }
 
     return await this.vault.createUserPassword(password, userId);
@@ -94,10 +82,6 @@ export class VaultIntegration {
       throw new Error("Vault not initialized. Call setVault() first.");
     }
 
-    if (!this.vault.state.isReady) {
-      throw new Error("Vault not ready");
-    }
-
     return await this.vault.updateKey(encryptedPassword);
   }
 
@@ -107,10 +91,6 @@ export class VaultIntegration {
   public async deriveKeys(): Promise<void> {
     if (!this.vault) {
       throw new Error("Vault not initialized. Call setVault() first.");
-    }
-
-    if (!this.vault.state.isReady) {
-      throw new Error("Vault not ready");
     }
 
     await this.vault.derive();
@@ -157,7 +137,7 @@ export class VaultIntegration {
    * Encrypt file (fallback to legacy implementation)
    */
   public async encryptFile(file: File): Promise<File> {
-    if (!this.vault || !this.vault.state.isReady) {
+    if (!this.vault) {
       throw new Error("Vault not ready");
     }
 
@@ -179,7 +159,7 @@ export class VaultIntegration {
    * Decrypt file (fallback to legacy implementation)
    */
   public async decryptFile(file: File): Promise<File> {
-    if (!this.vault || !this.vault.state.isReady) {
+    if (!this.vault) {
       throw new Error("Vault not ready");
     }
 
