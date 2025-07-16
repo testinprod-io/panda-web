@@ -176,6 +176,10 @@ export class VaultIntegration {
       throw error;
     }
   }
+
+  public resetVault() {
+    this.vault?.reset();
+  }
 }
 
 // React hook for easy integration

@@ -49,7 +49,8 @@ export class PandaSDK {
       this.bus,
       this.api,
       authProvider,
-      this.encryption
+      this.encryption,
+      this.vaultIntegration
     );
 
     // this.storage = new LocalStorage(this.bus, this.encryption);
