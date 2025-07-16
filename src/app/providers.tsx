@@ -90,7 +90,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 appearance: {
                   theme: "light",
                   accentColor: "#676FFF",
-                  logo: "/logo.png",
+                  // logo: "/logo.png",
                 },
                 loginMethods: ["email", "google", "github", "wallet"],
                 embeddedWallets: { ethereum: { createOnLogin: "all-users" } },
