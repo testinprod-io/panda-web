@@ -2,13 +2,14 @@ import { ApiService } from "./api";
 import { AuthProvider, User } from "./auth/types";
 import { EncryptionService } from "./EncryptionService";
 import { EventBus } from "./events";
+import { VaultIntegration } from "./vault/VaultIntegration";
 
 export class AuthManager {
   private bus: EventBus;
   private api: ApiService;
 
   private authProvider: AuthProvider;
-
+  private vaultIntegration: VaultIntegration | null;
   private state: {
     isAuthenticated: boolean;
     isLocked: boolean;
@@ -20,12 +21,13 @@ export class AuthManager {
     bus: EventBus,
     api: ApiService,
     authProvider: AuthProvider,
-    encryptionService: EncryptionService
+    encryptionService: EncryptionService,
+    vaultIntegration: VaultIntegration | null
   ) {
     this.bus = bus;
     this.api = api;
     this.authProvider = authProvider;
-
+    this.vaultIntegration = vaultIntegration;
     this.state = {
       isAuthenticated: false,
       isLocked: true,
@@ -75,10 +77,12 @@ export class AuthManager {
       const newState: Partial<typeof this.state> = {
         isAuthenticated: payload.isAuthenticated,
         user: payload.isAuthenticated ? payload.user : null,
+        encryptedId: payload.isAuthenticated ? this.state.encryptedId : null,
       };
 
       if (!payload.isAuthenticated) {
-        this.lock();
+        this.vaultIntegration?.resetVault();
+        this.logout();
       }
 
       this.updateState(newState);
@@ -105,7 +109,8 @@ export class AuthManager {
   }
 
   public async logout(): Promise<void> {
-    this.updateState({ isAuthenticated: false });
+    this.vaultIntegration?.resetVault();
+    this.updateState({ isAuthenticated: false, encryptedId: null, user: null });
     await this.lock();
     await this.authProvider.logout();
   }

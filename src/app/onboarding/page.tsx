@@ -9,38 +9,36 @@ import { useAuth } from "@/sdk/hooks";
 
 export default function OnboardingPage() {
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
+  
   const router = useRouter();
-  const { sdk } = usePandaSDK();
+  const { isReady, sdk } = usePandaSDK();
   const { ready, authenticated } = usePrivy();
   const { encryptedId } = useAuth();
-  
-  const isFirstTimeUser = sdk.ready ? encryptedId === null : null;
 
   useEffect(() => {
     const checkOnboardingStatus = async () => {
-      try {
-        await sdk.storage.getCustomizedPrompts();
-        setNeedsOnboarding(true);
-      } catch (error: any) {
-        if (error && typeof error === "object" && "status" in error && error.status === 404) {
-          setNeedsOnboarding(true);
-        } else {
-          console.error("Failed to check onboarding status:", error);
-          setNeedsOnboarding(true);
-        }
-      }
+      setNeedsOnboarding(encryptedId === null);
+      return;
+
+      // try {
+      //   await sdk.storage.getCustomizedPrompts();
+      //   setNeedsOnboarding(true);
+      // } catch (error: any) {
+      //   if (error && typeof error === "object" && "status" in error && error.status === 404) {
+      //     setNeedsOnboarding(true);
+      //   } else {
+      //     console.error("Failed to check onboarding status:", error);
+      //     setNeedsOnboarding(true);
+      //   }
+      // }
     };
-    if (ready && authenticated) {
+    if (isReady && authenticated) {
       checkOnboardingStatus();
     }
   }, [sdk, authenticated]);
-
+    
   useEffect(() => {
     if (ready && !authenticated) {
-      router.push("/");
-    }
-    
-    if (isFirstTimeUser === false) {
       router.push("/");
     }
 
@@ -48,9 +46,9 @@ export default function OnboardingPage() {
       router.push("/");
     }
 
-  }, [ready, needsOnboarding, authenticated, router, isFirstTimeUser]);
+  }, [ready, needsOnboarding, authenticated, router]);
 
-  if (needsOnboarding === null || isFirstTimeUser === null) {
+  if (needsOnboarding === null) {
     return (
       <Box style={{
         display: "flex",

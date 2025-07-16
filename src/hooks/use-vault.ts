@@ -369,7 +369,6 @@ export function useVault(): UseVaultResult {
     async (plain: string): Promise<string> => {
       const request: Omit<EncryptReq, "id"> = { cmd: "encrypt", plain };
       const response = await sendRequest<EncryptRes>(request);
-      console.log("[useVault] Encrypted:", response.encrypted);
       return response.encrypted;
     },
     [sendRequest]
