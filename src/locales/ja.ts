@@ -194,7 +194,12 @@ const ja = {
     },
     Continue: "続行",
     Skip: "スキップ",
+    StartChat: "チャットを開始",
+    CustomizePanda: "Pandaをカスタマイズ",
+    IUnderstand: "理解しました",
     Welcome: "Panda AI へようこそ！セットアップを始めましょう。",
+    CustomizationTitle: "簡単な質問をいくつか",
+    CustomizationDescription: "会話をより役立つものにするため、いくつか質問させてください。あなたをより理解し、体験をカスタマイズするためです。",
     NameTitle: "まず、Panda AI はあなたを何と呼べば良いですか？",
     NamePlaceholder: "例: Alex",
     RoleTitle1: "了解です、",
@@ -206,6 +211,19 @@ const ja = {
       "最後に、Panda AI が知っておくべきその他の情報はありますか？",
     ExtraInformationPlaceholder:
       "例: 正確でデータ重視の回答を好みます。",
+    Intro: {
+      Title:
+        "私はプライバシーを最優先に設計された AI アシスタントです。一緒にブレインストーミングし、創造し、学びましょう。",
+      Intro1Title: "あなたのデータはあなたのもの。",
+      Intro1Content:
+        "すべての会話は暗号化され、あなたのデバイスにのみ保存されます。クラウドには一切保存されないため、完全なプライバシーが守られます。",
+      Intro2Title: "追跡できない会話。",
+      Intro2Content:
+        "あなたに結び付けられる情報がないため、議論は安全かつ秘密です。私はあなたのチャットを学習に使用しません。",
+      Intro3Title: "コントロールはあなたに。",
+      Intro3Content:
+        "チャットやデータはいつでも削除できます。最終的な決定権はあなたにあります。",
+    },
   },
 
   ChatList: {

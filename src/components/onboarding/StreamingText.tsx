@@ -1,45 +1,37 @@
 "use client";
 
-import { useState, useEffect, FC, CSSProperties } from "react";
-import { Typography } from "@mui/material";
+import React, { useState, useEffect } from "react";
 
 interface StreamingTextProps {
   text: string;
-  style?: CSSProperties;
+  style?: React.CSSProperties;
+  onComplete?: () => void;
   streamSpeed?: number;
 }
 
-const StreamingText: FC<StreamingTextProps> = ({
+export default function StreamingText({
   text,
   style,
+  onComplete,
   streamSpeed = 20,
-}) => {
+}: StreamingTextProps) {
   const [displayedText, setDisplayedText] = useState("");
 
   useEffect(() => {
     setDisplayedText("");
-    const words = text;
-    let currentText = "";
     let i = 0;
-
-    const intervalId = setInterval(() => {
-      if (i < words.length) {
-        currentText += words[i];
-        setDisplayedText(currentText);
+    const interval = setInterval(() => {
+      if (i < text.length) {
+        setDisplayedText(text.substring(0, i + 1));
         i++;
       } else {
-        clearInterval(intervalId);
+        clearInterval(interval);
+        onComplete?.();
       }
     }, streamSpeed);
 
-    return () => clearInterval(intervalId);
-  }, [text, streamSpeed]);
+    return () => clearInterval(interval);
+  }, [text, onComplete, streamSpeed]);
 
-  return (
-    <Typography variant="h6" align="left" style={style}>
-      {displayedText}
-    </Typography>
-  );
-};
-
-export default StreamingText; 
+  return <span style={style}>{displayedText}</span>;
+}

@@ -56,10 +56,9 @@ export default function TextInputStep({
             borderRadius: "16px",
             padding: "8px 12px",
             width: "100%",
-            border: isFocused ? "1px solid var(--border-primary)" : "1px solid var(--border-secondary)",
-            // boxShadow: isFocused
-            //   ? "0 2px 5px rgba(0, 0, 0, 0.2), 0 0 0 2px #000000"
-            //   : "0 2px 5px rgba(0, 0, 0, 0.2)",
+            border: isFocused
+              ? "1px solid var(--border-primary)"
+              : "1px solid var(--border-secondary)",
             transition: "box-shadow 0.2s ease-in-out",
           }}
         >
@@ -104,7 +103,6 @@ export default function TextInputStep({
                 "& fieldset": {
                   border: "none",
                 },
-                // backgroundColor: "var(--bg-primary)",
               },
               "& .MuiOutlinedInput-input::placeholder": {
                 color: "var(--text-secondary)",
@@ -113,7 +111,6 @@ export default function TextInputStep({
                 border: "none",
                 backgroundColor: "var(--bg-primary)",
               },
-              // backgroundColor: "var(--bg-primary)",
             }}
             multiline={multiline}
             rows={multiline ? 4 : 1}

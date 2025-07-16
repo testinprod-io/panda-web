@@ -1,10 +1,8 @@
-import { ServiceProvider, ModelType } from "./constant";
-import { nanoid } from "nanoid";
-import { MultimodalContent, RequestMessage } from "@/client/api";
+import { ServiceProvider } from "./constant";
+import { MultimodalContent, RequestMessage } from "@/sdk/client/";
 import { UUID } from "crypto";
-import { FileInfo } from "@/client/types";
-import { EncryptionService } from "../services/encryption-service";
-import { ChallengeResponse } from "@/client/platforms/panda-challenge";
+import { FileInfo } from "@/sdk/client/types";
+import { ChallengeResponse } from "@/sdk/client/panda-challenge";
 
 export enum Role {
   USER = "user",
@@ -62,23 +60,32 @@ export interface CustomizedPromptsData {
 }
 
 export function generateSystemPrompt(data: CustomizedPromptsData): string {
-  const name = data.personal_info?.name || "User";
-  const job = data.personal_info?.job || "individual";
-  const traits = data.prompts?.traits || "Neutral";
-  const extra = data.prompts?.extra_params || "";
-
-  return `You are assisting ${name}, who is ${job}. When responding, adapt your tone and approach to suit someone who appreciates the following traits: ${traits}. ${extra.trim() ? `Also, ${extra}` : ""}`.trim();
+  let prompt = "";
+  if (data.personal_info?.name) {
+    prompt += `You are assisting ${data.personal_info.name}.`;
+  }
+  if (data.personal_info?.job) {
+    prompt += `Who is ${data.personal_info.job || "individual"}.`;
+  }
+  if (data.prompts?.traits) {
+    prompt += `When responding, adapt your tone and approach to suit someone who appreciates the following traits: ${data.prompts.traits}. `;
+  }
+  if (data.prompts?.extra_params) {
+    prompt += `Also, ${data.prompts.extra_params}`;
+  }
+  return prompt.trim();
 }
 
-export function encryptSystemPrompt(
+export async function encryptSystemPrompt(
   prompt: CustomizedPromptsData,
-): CustomizedPromptsData {
+  encryptFunction: (text: string) => Promise<string>
+): Promise<CustomizedPromptsData> {
   const encryptedPersonalInfo: { [key: string]: string } = {};
   if (prompt.personal_info) {
     for (const key in prompt.personal_info) {
       if (Object.prototype.hasOwnProperty.call(prompt.personal_info, key)) {
-        encryptedPersonalInfo[key] = EncryptionService.encrypt(
-          prompt.personal_info[key],
+        encryptedPersonalInfo[key] = await encryptFunction(
+          prompt.personal_info[key]
         );
       }
     }
@@ -88,7 +95,7 @@ export function encryptSystemPrompt(
   if (prompt.prompts) {
     for (const key in prompt.prompts) {
       if (Object.prototype.hasOwnProperty.call(prompt.prompts, key)) {
-        encryptedPrompts[key] = EncryptionService.encrypt(prompt.prompts[key]);
+        encryptedPrompts[key] = await encryptFunction(prompt.prompts[key]);
       }
     }
   }
@@ -104,15 +111,16 @@ export function encryptSystemPrompt(
   };
 }
 
-export function decryptSystemPrompt(
+export async function decryptSystemPrompt(
   prompt: CustomizedPromptsData,
-): CustomizedPromptsData {
+  decryptFunction: (text: string) => Promise<string>
+): Promise<CustomizedPromptsData> {
   const decryptedPersonalInfo: { [key: string]: string } = {};
   if (prompt.personal_info) {
     for (const key in prompt.personal_info) {
       if (Object.prototype.hasOwnProperty.call(prompt.personal_info, key)) {
-        decryptedPersonalInfo[key] = EncryptionService.decrypt(
-          prompt.personal_info[key],
+        decryptedPersonalInfo[key] = await decryptFunction(
+          prompt.personal_info[key]
         );
       }
     }
@@ -122,7 +130,7 @@ export function decryptSystemPrompt(
   if (prompt.prompts) {
     for (const key in prompt.prompts) {
       if (Object.prototype.hasOwnProperty.call(prompt.prompts, key)) {
-        decryptedPrompts[key] = EncryptionService.decrypt(prompt.prompts[key]);
+        decryptedPrompts[key] = await decryptFunction(prompt.prompts[key]);
       }
     }
   }
@@ -135,6 +143,21 @@ export function decryptSystemPrompt(
     prompts:
       Object.keys(decryptedPrompts).length > 0 ? decryptedPrompts : undefined,
     enabled: prompt.enabled,
+  };
+}
+
+/**
+ * Process events from LLM server for search and PDF processing
+ */
+export interface ProcessEvent {
+  object: "process.event";
+  type: "search" | "pdf";
+  id: string;
+  message: string;
+  data: {
+    query?: string;
+    urls?: string[];
+    [key: string]: any;
   };
 }
 
@@ -154,55 +177,17 @@ export type ChatMessage = Omit<RequestMessage, "content"> & {
   isError: boolean;
   errorMessage?: string;
   id: UUID;
-  model?: ModelType;
+  model?: string;
   syncState: MessageSyncState;
   reasoning?: string; // Add reasoning field
   visibleReasoning?: string;
   reasoningTime?: number; // Add reasoning duration field
   isReasoning?: boolean; // To track if the message is currently in reasoning phase
   useSearch: boolean; // To track if the message is using search
+  rawProcessEvents?: string;
+  processEvents?: ProcessEvent[]; // Add process events field
   challengeResponse?: ChallengeResponse;
 };
-
-/**
- * Represents the structure stored in IndexedDB.
- * Content is always stored encrypted.
- */
-export type EncryptedMessage = {
-  id: string;
-  role: Role;
-  /** Encrypted representation of string | MultimodalContent[] */
-  content: string;
-  date: Date;
-  model?: ModelType;
-  syncState?: MessageSyncState;
-  // Fields needed for UI rendering/state, but not encrypted
-  streaming?: boolean; // Transient state, not persisted encrypted
-  isError?: boolean; // Transient state, not persisted encrypted
-};
-
-/**
- * Creates a new chat message in its ENCRYPTED form suitable for storing.
- * Requires the caller to provide already encrypted content.
- * @param override - Partial message properties including encryptedContent
- * @returns A new EncryptedMessage
- */
-export function createEncryptedMessage(
-  override: Partial<EncryptedMessage> & { content: string },
-): EncryptedMessage {
-  const date = override.date instanceof Date ? override.date : new Date();
-
-  return {
-    id: override.id ?? nanoid(),
-    role: override.role ?? Role.USER,
-    date: date,
-    syncState: override.syncState ?? MessageSyncState.PENDING_CREATE,
-    content: override.content,
-    model: override.model,
-    streaming: override.streaming ?? false,
-    isError: override.isError ?? false,
-  };
-}
 
 /**
  * Creates a new chat message with the given overrides
@@ -220,11 +205,14 @@ export function createMessage(override: Partial<ChatMessage>): ChatMessage {
     isError: false,
     syncState: MessageSyncState.PENDING_CREATE,
     isReasoning: false,
+    model: override.model ?? "",
     content: override.content ?? "",
     visibleContent: override.content ?? "",
     reasoning: override.reasoning ?? "",
     visibleReasoning: override.reasoning ?? "",
     useSearch: override.useSearch ?? false,
+    rawProcessEvents: override.rawProcessEvents ?? "",
+    processEvents: override.processEvents ?? [],
     ...override,
   };
 }

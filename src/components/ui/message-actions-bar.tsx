@@ -1,24 +1,18 @@
 import React from "react";
 import { Box, CircularProgress, Tooltip, Typography } from "@mui/material";
 import { copyToClipboard } from "@/utils/utils";
-import styles from "@/components/chat/chat.module.scss"; // Reusing chat styles
-import { AttestationResult } from "@/types/attestation";
-import {
-  VerificationResult,
-  VerificationStatus,
-} from "@/hooks/use-attestation-manager";
-import { ChallengeResponse } from "@/client/platforms/panda-challenge";
+import styles from "@/components/chat/chat.module.scss";
+import { VerificationResult, VerificationStatus } from "@/types/attestation";
+import { ChallengeResponse } from "@/sdk/client/panda-challenge";
 
 interface MessageActionsBarProps {
   isUser: boolean;
   isChatLoading: boolean;
-  // Removed isStreaming and isReasoning as parent ChatMessageCell already checks this for rendering this component
-  messageContent: string | null | undefined; // From visibleContent
+  messageContent: string | null | undefined;
   reasoningText: string | null | undefined;
   verificationResult: VerificationResult | undefined;
   challengeResponse: ChallengeResponse | undefined;
   onResend: () => void;
-  // onEdit?: () => void; // If edit functionality is added back
 }
 
 const AttestationInfoPopup: React.FC<{
@@ -36,23 +30,23 @@ const AttestationInfoPopup: React.FC<{
           key={"Verifying"}
           sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
         >
-          <strong>Panda's Challenge Verification Failed. Please try again.</strong>
+          <strong>
+            Panda's Challenge Verification Failed. Please try again.
+          </strong>
         </Typography>
         <Typography
-        variant="body2"
-        key={"ChallengeText"}
-        sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
-      >
-        <strong>Challenge Text:</strong>{" "}
-        {challengeResponse?.challenge}
-      </Typography>
+          variant="body2"
+          key={"ChallengeText"}
+          sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
+        >
+          <strong>Challenge Text:</strong> {challengeResponse?.challenge}
+        </Typography>
         <Typography
           variant="body2"
           key={"Failure Reason"}
           sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
         >
-          <strong>Failure Reason:</strong>{" "}
-          {challengeResponse.error}
+          <strong>Failure Reason:</strong> {challengeResponse.error}
         </Typography>
       </Box>
     );
@@ -72,34 +66,20 @@ const AttestationInfoPopup: React.FC<{
           <strong>Panda Server's identity is being verified...</strong>
         </Typography>
         <Typography
-        variant="body2"
-        key={"ChallengeText"}
-        sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
-      >
-        <strong>Challenge Text:</strong>{" "}
-        {/* <a
-          href={`https://etherscan.io/`}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: "black" }}
-        > */}
-        {challengeResponse?.challenge}
-        {/* </a> */}
-      </Typography>
+          variant="body2"
+          key={"ChallengeText"}
+          sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
+        >
+          <strong>Challenge Text:</strong>{" "}
+          {challengeResponse?.challenge}
+        </Typography>
         <Typography
           variant="body2"
           key={"Certificate Key"}
           sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
         >
           <strong>Certificate Key:</strong>{" "}
-          {/* <a
-            href={`https://etherscan.io/`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: "black" }}
-          > */}
-            {verificationResult.publicKey}
-          {/* </a> */}
+          {verificationResult.publicKey}
         </Typography>
       </Box>
     );
@@ -116,30 +96,24 @@ const AttestationInfoPopup: React.FC<{
           key={"Verifying"}
           sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
         >
-          <strong>Panda Server's identity verification failed. Please try again.</strong>
+          <strong>
+            Panda Server's identity verification failed. Please try again.
+          </strong>
         </Typography>
         <Typography
-        variant="body2"
-        key={"ChallengeText"}
-        sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
-      >
-        <strong>Challenge Text:</strong>{" "}
-        {challengeResponse?.challenge}
-      </Typography>
+          variant="body2"
+          key={"ChallengeText"}
+          sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
+        >
+          <strong>Challenge Text:</strong> {challengeResponse?.challenge}
+        </Typography>
         <Typography
           variant="body2"
           key={"Certificate Key"}
           sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
         >
           <strong>Certificate Key:</strong>{" "}
-          {/* <a
-            href={`https://etherscan.io/`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: "black" }}
-          > */}
-            {verificationResult.publicKey}
-          {/* </a> */}
+          {verificationResult.publicKey}
         </Typography>
       </Box>
     );
@@ -148,14 +122,14 @@ const AttestationInfoPopup: React.FC<{
   return (
     <Box sx={{ p: 1, maxWidth: 300 }}>
       <Typography variant="subtitle2" gutterBottom sx={{ color: "black" }}>
-        🔒 Verified secure execution  
+        🔒 Verified secure execution
         <a
           href="https://testinprod.notion.site/Panda-Technical-FAQ-2018fc57f5468023bac3c5380179a272"
           target="_blank"
           rel="noopener noreferrer"
           style={{ color: "black", textDecoration: "none" }}
         >
-        .  (Learn more)
+          . (Learn more)
         </a>
       </Typography>
       <Typography
@@ -165,7 +139,9 @@ const AttestationInfoPopup: React.FC<{
       >
         <strong>App ID:</strong>{" "}
         <a
-          href={"https://optimistic.etherscan.io/address/0x38C403D31722C3ff6F41d4575F26d6206BcD5176"}
+          href={
+            "https://optimistic.etherscan.io/address/0x38C403D31722C3ff6F41d4575F26d6206BcD5176"
+          }
           target="_blank"
           rel="noopener noreferrer"
           style={{ color: "black" }}
@@ -179,31 +155,26 @@ const AttestationInfoPopup: React.FC<{
         sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
       >
         <strong>App Hash:</strong>{" "}
-        {/* <a
-          href={`https://etherscan.io/`}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: "black" }}
-        > */}
-          {verificationResult.attestationResult?.composeHash}
-        {/* </a> */}
+        {verificationResult.attestationResult?.composeHash}
       </Typography>
       <Typography
         variant="body2"
         key={"ChallengeText"}
         sx={{ wordBreak: "break-all", p: "2px", color: "black" }}
       >
-        <strong>Challenge Text:</strong>{" "}
-        {challengeResponse?.challenge}
+        <strong>Challenge Text:</strong> {challengeResponse?.challenge}
       </Typography>
 
       <Typography
         variant="body2"
         key={"Help"}
-        sx={{ wordBreak: "break-all", p: "2px", color: "black", fontStyle: "italic" }}
-      >
-
-      </Typography>
+        sx={{
+          wordBreak: "break-all",
+          p: "2px",
+          color: "black",
+          fontStyle: "italic",
+        }}
+      ></Typography>
     </Box>
   );
 };
@@ -217,7 +188,7 @@ export const MessageActionsBar: React.FC<MessageActionsBarProps> = ({
   challengeResponse,
   onResend,
 }) => {
-  const contentToCopy = (messageContent || "").trim();
+  const contentToCopy = messageContent?.trim() || "";
 
   let attestationIcon: React.ReactNode = null;
   if (verificationResult && challengeResponse) {
@@ -266,11 +237,6 @@ export const MessageActionsBar: React.FC<MessageActionsBarProps> = ({
               borderRadius: "8px",
               border: "1px solid #e0e0e0",
               maxWidth: "600px",
-              // "& .MuiTooltip-popperInteractive": {
-              //   backgroundColor: "white",
-              //   borderRadius: "8px",
-              //   border: "1px solid #e0e0e0",
-              // },
             },
           },
         }}
@@ -302,19 +268,23 @@ export const MessageActionsBar: React.FC<MessageActionsBarProps> = ({
           aria-label="Copy message"
           title="Copy message"
         >
-          <img src="/icons/copy.svg" alt="Copy message" style={{filter: "invert(51%) sepia(0%) saturate(0%) hue-rotate(189deg) brightness(90%) contrast(89%)" }} />
+          <img
+            src="/icons/copy.svg"
+            alt="Copy message"
+            style={{
+              filter:
+                "invert(51%) sepia(0%) saturate(0%) hue-rotate(189deg) brightness(90%) contrast(89%)",
+            }}
+          />
         </button>
         {attestationIcon}
-        {/* Add Edit button here if re-enabled, calling onEdit */}
       </Box>
     );
   }
 
-  // Assistant/System messages
   return (
     <Box
       className={styles["chat-message-actions"]}
-      // No specific sx needed here if default chat-message-actions alignment is fine
     >
       <button
         onClick={() => copyToClipboard(contentToCopy)}
@@ -322,7 +292,14 @@ export const MessageActionsBar: React.FC<MessageActionsBarProps> = ({
         aria-label="Copy message and reasoning"
         title="Copy message and reasoning"
       >
-        <img src="/icons/copy.svg" alt="Copy message and reasoning" style={{filter: "invert(51%) sepia(0%) saturate(0%) hue-rotate(189deg) brightness(90%) contrast(89%)" }}/>
+        <img
+          src="/icons/copy.svg"
+          alt="Copy message and reasoning"
+          style={{
+            filter:
+              "invert(51%) sepia(0%) saturate(0%) hue-rotate(189deg) brightness(90%) contrast(89%)",
+          }}
+        />
       </button>
       <button
         onClick={onResend}
@@ -331,7 +308,14 @@ export const MessageActionsBar: React.FC<MessageActionsBarProps> = ({
         aria-label="Resend message"
         title="Resend message"
       >
-        <img src="/icons/refresh.svg" alt="Resend message" style={{filter: "invert(51%) sepia(0%) saturate(0%) hue-rotate(189deg) brightness(90%) contrast(89%)" }}/>
+        <img
+          src="/icons/refresh.svg"
+          alt="Resend message"
+          style={{
+            filter:
+              "invert(51%) sepia(0%) saturate(0%) hue-rotate(189deg) brightness(90%) contrast(89%)",
+          }}
+        />
       </button>
       {attestationIcon}
     </Box>

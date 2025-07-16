@@ -19,7 +19,5 @@ export function FormattedDate({ date, options }: FormattedDateProps) {
     // Only run this effect when the date object itself changes
   }, [date, options]);
 
-  // Render null initially (or a placeholder) to match server render
-  // Then render the formatted date once the effect runs on the client
   return <>{formattedDate}</>;
 }

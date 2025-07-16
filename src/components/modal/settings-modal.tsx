@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   Modal,
   Box,
@@ -30,19 +30,15 @@ import styles from "./settings-modal.module.scss";
 import { SettingsPage } from "./settings-modal-handler";
 import CustomizePromptsView from "./customize-prompts-view";
 import { useRouter } from "next/navigation";
-import { useApiClient } from "@/providers/api-client-provider";
-import { usePrivy } from "@privy-io/react-auth";
-import { useChatStore } from "@/store";
-import { useAppConfig, useAppConfig as useAppConfigStore } from "@/store/config";
-import { useUserStore } from "@/store/user";
-import { AuthService } from "@/services/auth-service";
 import { useEncryption } from "@/providers/encryption-provider";
-import { useAttestationStore } from "@/store/attestation";
+import { useAuth } from "@/sdk/hooks";
+import { usePandaSDK } from "@/providers/sdk-provider";
 import { AllLangs, ALL_LANG_OPTIONS, changeLang, Lang } from "@/locales";
 import { safeLocalStorage } from "@/utils/utils";
 import Locale from "@/locales";
 import clsx from "clsx";
 import { useTheme } from "next-themes";
+import { useAppConfig } from "@/store/config";
 
 interface SettingsModalProps {
   open: boolean;
@@ -76,21 +72,18 @@ export default function SettingsModal({
     }
   };
 
-  const passwordExpirationMinutes =
-    useUserStore((state) => state.get<number>("passwordExpirationMinutes")) ?? 0;
-
   const handlePasswordExpirationChange = (event: SelectChangeEvent<string>) => {
     const value = parseInt(event.target.value, 10);
-    useUserStore.getState().set("passwordExpirationMinutes", value);
+    appConfig.setPasswordExpirationMinutes(value);
   };
 
   const router = useRouter();
-  const { authenticated, logout } = usePrivy();
-  const { clearSessions } = useChatStore();
-  const apiClient = useApiClient();
   const { theme, setTheme } = useTheme();
-  const { lockApp } = useEncryption();
-  if (!authenticated) {
+  const appConfig = useAppConfig();
+  const { sdk } = usePandaSDK();
+  const { logout, isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
     return <div></div>;
   }
 
@@ -100,7 +93,7 @@ export default function SettingsModal({
   };
 
   const handleLogOut = async () => {
-    AuthService.handleLogout(logout, lockApp);
+    logout();
     setDeleteConfirmOpen(false);
     router.replace("/");
   };
@@ -110,10 +103,8 @@ export default function SettingsModal({
   };
 
   const confirmDeleteAllChats = () => {
-    apiClient.app.deleteConversations();
-    clearSessions();
+    sdk.storage.deleteAllChats();
     router.replace("/");
-    console.log("All chats deleted after confirmation");
     setDeleteConfirmOpen(false);
   };
 
@@ -200,7 +191,7 @@ export default function SettingsModal({
       label: Locale.SettingsModal.InactivityLockTimer,
       control: (
         <Select
-          value={passwordExpirationMinutes.toString()}
+          value={appConfig.passwordExpirationMinutes.toString()}
           onChange={handlePasswordExpirationChange}
           variant="outlined"
           size="small"
@@ -306,7 +297,6 @@ export default function SettingsModal({
 
           <Divider className={styles.divider} />
 
-
           <Box className={styles.mainArea}>
             <Box className={styles.leftNav}>
               <List component="nav">
@@ -315,26 +305,32 @@ export default function SettingsModal({
                   onClick={() => setActiveNavSection("general")}
                   className={clsx(
                     styles.navItem,
-                    activeNavSection === "general" && styles.navItemActive,
+                    activeNavSection === "general" && styles.navItemActive
                   )}
                 >
                   <ListItemIcon className={styles.navItemIcon}>
                     <SettingsIcon fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText className={styles.navItemText} primary={Locale.SettingsModal.General} />
+                  <ListItemText
+                    className={styles.navItemText}
+                    primary={Locale.SettingsModal.General}
+                  />
                 </ListItemButton>
                 <ListItemButton
                   selected={activeNavSection === "faq"}
                   onClick={() => setActiveNavSection("faq")}
                   className={clsx(
                     styles.navItem,
-                    activeNavSection === "faq" && styles.navItemActive,
+                    activeNavSection === "faq" && styles.navItemActive
                   )}
                 >
                   <ListItemIcon className={styles.navItemIcon}>
                     <HelpOutlineIcon fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText className={styles.navItemText} primary={Locale.SettingsModal.Help} />
+                  <ListItemText
+                    className={styles.navItemText}
+                    primary={Locale.SettingsModal.Help}
+                  />
                 </ListItemButton>
               </List>
             </Box>
@@ -342,16 +338,37 @@ export default function SettingsModal({
               {activeNavSection === "general" && renderContent()}
               {activeNavSection === "faq" && (
                 <Box>
-                  <Typography fontSize={24} fontWeight={600} fontFamily={"Inter"}>{Locale.SettingsModal.Help}</Typography>
+                  <Typography
+                    fontSize={24}
+                    fontWeight={600}
+                    fontFamily={"Inter"}
+                  >
+                    {Locale.SettingsModal.Help}
+                  </Typography>
                   <br />
                   <Typography>
-                    <a href="https://testinprod.notion.site/Private-Alpha-One-Pager-1ff8fc57f54680d0aa08ce7b8013948a" className={styles.FAQText}>- Private Alpha One Pager</a>
+                    <a
+                      href="https://testinprod.notion.site/Private-Alpha-One-Pager-1ff8fc57f54680d0aa08ce7b8013948a"
+                      className={styles.FAQText}
+                    >
+                      - Private Alpha One Pager
+                    </a>
                   </Typography>
                   <Typography>
-                    <a href="https://testinprod.notion.site/Panda-Technical-FAQ-2018fc57f5468023bac3c5380179a272" className={styles.FAQText}>- Panda Technical FAQ</a>
+                    <a
+                      href="https://testinprod.notion.site/Panda-Technical-FAQ-2018fc57f5468023bac3c5380179a272"
+                      className={styles.FAQText}
+                    >
+                      - Panda Technical FAQ
+                    </a>
                   </Typography>
                   <Typography>
-                    <a href="https://testinprod.notion.site/Panda-Tips-Guides-2148fc57f54680f982b3d32973d20314" className={styles.FAQText}>- Panda Tips & Guides</a>
+                    <a
+                      href="https://testinprod.notion.site/Panda-Tips-Guides-2148fc57f54680f982b3d32973d20314"
+                      className={styles.FAQText}
+                    >
+                      - Panda Tips & Guides
+                    </a>
                   </Typography>
                 </Box>
               )}
@@ -401,9 +418,14 @@ export default function SettingsModal({
           id="alert-dialog-title"
           className={styles.confirmDialogTitleContainer}
         >
-          <div className={styles.confirmDialogTitle}>{Locale.SettingsModal.ClearChatData}</div>
+          <div className={styles.confirmDialogTitle}>
+            {Locale.SettingsModal.ClearChatData}
+          </div>
         </DialogTitle>
-        <DialogContent className={styles.confirmDialogContent} sx={{ padding: "0px 24px 16px 20px" }}>
+        <DialogContent
+          className={styles.confirmDialogContent}
+          sx={{ padding: "0px 24px 16px 20px" }}
+        >
           <DialogContentText
             id="alert-dialog-description-primary"
             className={styles.confirmDialogContentTextPrimary}
@@ -417,7 +439,10 @@ export default function SettingsModal({
             {Locale.SettingsModal.ClearChatDataDescription2}
           </DialogContentText>
         </DialogContent>
-        <DialogActions className={styles.confirmDialogActions} sx={{ padding: "0px 12px 16px 16px"}}>
+        <DialogActions
+          className={styles.confirmDialogActions}
+          sx={{ padding: "0px 12px 16px 16px" }}
+        >
           <Button
             onClick={() => setDeleteConfirmOpen(false)}
             className={styles.confirmDialogButton}

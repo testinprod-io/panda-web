@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useApiClient } from "@/providers/api-client-provider";
-import { useAppConfig } from "@/store/config";
 import {
   CustomizedPromptsData,
   encryptSystemPrompt,
@@ -14,15 +12,36 @@ import { motion, AnimatePresence } from "framer-motion";
 import TextInputStep from "@/components/onboarding/TextInputStep";
 import TraitsStepView from "@/components/onboarding/TraitsStepView";
 import StreamingText from "@/components/onboarding/StreamingText";
+import { usePandaSDK } from "@/providers/sdk-provider";
 import Locale from "@/locales";
 import Image from "next/image";
+import { useUser } from "@/sdk/hooks";
+import IntroStepView from "@/components/onboarding/IntroStepView";
+import CreatePasswordStep from "@/components/onboarding/CreatePasswordStep";
+import PasswordConfirmationStep from "@/components/onboarding/PasswordConfirmationStep";
+import InfoStepView from "@/components/onboarding/InfoStepView";
 
-const STEPS = ["intro", "name", "role", "traits", "knowledge"];
+const STEPS = [
+  "intro",
+  "create-password",
+  "password-confirmation",
+  "customization",
+  "name",
+  "role",
+  "traits",
+  "knowledge",
+];
 
 const getQuestion = (step: string, name: string): string => {
   switch (step) {
     case "intro":
       return Locale.Onboarding.Welcome;
+    case "create-password":
+      return Locale.Onboarding.Encryption.Title;
+    case "password-confirmation":
+      return Locale.Onboarding.Encryption.PasswordCreatedTitle;
+    case "customization":
+      return Locale.Onboarding.CustomizationTitle;
     case "name":
       return Locale.Onboarding.NameTitle;
     case "role":
@@ -49,19 +68,26 @@ export default function OnboardingView() {
   const [step, setStep] = useState(0);
   const [data, setData] = useState({
     intro: "",
+    "create-password": "",
+    "password-confirmation": "",
+    customization: "",
     name: "",
     job: "",
     traits: "",
     extra_params: "",
   });
   const [isSaving, setIsSaving] = useState(false);
-  const apiClient = useApiClient();
-  const { setCustomizedPrompts } = useAppConfig();
+  const { sdk } = usePandaSDK();
+  // const apiClient = useApiClient();
+  const { updateCustomizedPrompts } = useUser();
   const router = useRouter();
 
   const handleNext = (value: string) => {
     const keys: (keyof typeof data)[] = [
       "intro",
+      "create-password",
+      "password-confirmation",
+      "customization",
       "name",
       "job",
       "traits",
@@ -98,11 +124,15 @@ export default function OnboardingView() {
     if (Object.keys(payload.prompts!).length === 0) delete payload.prompts;
 
     try {
-      const encryptedPayload = encryptSystemPrompt(payload);
-      const responseData = decryptSystemPrompt(
-        await apiClient.app.createCustomizedPrompts(encryptedPayload)
+      const encryptedPayload = await encryptSystemPrompt(
+        payload,
+        sdk.encryption.encrypt.bind(sdk.encryption),
       );
-      setCustomizedPrompts(responseData);
+      const responseData = await decryptSystemPrompt(
+        await sdk.storage.createCustomizedPrompts(encryptedPayload),
+        sdk.encryption.decrypt.bind(sdk.encryption),
+      );
+      updateCustomizedPrompts(responseData);
       router.push("/");
     } catch (error) {
       console.error("Failed to save onboarding data:", error);
@@ -110,7 +140,7 @@ export default function OnboardingView() {
       // Optional: Show an error message to the user
       router.push("/"); // For now, just navigate away
     }
-  }, [apiClient.app, data, router, setCustomizedPrompts]);
+  }, [sdk.storage, data, router, updateCustomizedPrompts, sdk.encryption]);
 
   useEffect(() => {
     if (step === STEPS.length && !isSaving) {
@@ -169,48 +199,25 @@ export default function OnboardingView() {
             switch (currentStepKey) {
               case "intro":
                 return (
-                  <Box
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      gap: "1rem",
-                      width: "80%",
-                      maxWidth: "min(500px, 80%)",                    
-                    }}
-                  >
-                    <Button
-                      type="submit"
-                      variant="contained"
-                      onClick={() => handleNext("")}
-                      sx={{
-                        alignSelf: "flex-start",
-                        height: "48px",
-                        backgroundColor: "#131A28",
-                        color: "#C1FF83",
-                        borderRadius: "8px",
-                        textTransform: "none",
-                        fontSize: "16px",
-                      }}
-                    >
-                      {Locale.Onboarding.Continue}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="text"
-                      onClick={handleSkip}
-                      sx={{
-                        alignSelf: "flex-start",
-                        height: "48px",
-                        color: "#8a8a8a",
-                        borderRadius: "8px",
-                        textTransform: "none",
-                        fontSize: "16px",
-                      }}
-                    >
-                      {Locale.Onboarding.Skip}
-                    </Button>
-                  </Box>
+                  <IntroStepView
+                    onNext={() => handleNext("")}
+                  />
+                );
+              case "create-password":
+                return <CreatePasswordStep onNext={() => handleNext("")} />;
+              case "password-confirmation":
+                return (
+                  <PasswordConfirmationStep
+                    onStartChat={() => router.push("/")}
+                    onCustomize={() => handleNext("")}
+                  />
+                );
+              case "customization":
+                return (
+                  <InfoStepView
+                    text={Locale.Onboarding.CustomizationDescription}
+                    onNext={() => handleNext("")}
+                  />
                 );
               case "name":
                 return (
@@ -222,7 +229,7 @@ export default function OnboardingView() {
                       data.name ? data.name.charAt(0).toUpperCase() : "🐼"
                     }
                     initialValue={data.name}
-                  />
+                  /> 
                 );
               case "role":
                 return (

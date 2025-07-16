@@ -1,9 +1,10 @@
+@use "@/styles/animation.scss";
+@use "@/styles/window.scss";
+@use "@/styles/theme.scss";
+
 /* Import KaTeX CSS */
 @import "katex/dist/katex.min.css";
 
-@import "@/styles/animation.scss";
-@import "@/styles/window.scss";
-@import "@/styles/theme.scss";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

@@ -1,23 +1,23 @@
 "use client";
 
 import * as React from "react";
-import { PrivyProvider } from "@privy-io/react-auth";
+import { PrivyProvider, usePrivy } from "@privy-io/react-auth";
 import { Toaster } from "react-hot-toast";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v14-appRouter";
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes";
 import CssBaseline from "@mui/material/CssBaseline";
 import { lightTheme, darkTheme } from "@/theme";
-import { useUserStore } from "@/store/user";
-import useMediaQuery from "@mui/material/useMediaQuery";
 import { SnackbarProvider } from "@/providers/snackbar-provider";
-import { AuthChatListener } from "@/providers/auth-chat-listener";
-import { ApiClientProvider } from "@/providers/api-client-provider";
 import { EncryptionProvider } from "@/providers/encryption-provider";
+import { PandaSDKProvider } from "@/providers/sdk-provider";
+import { VaultIntegrationProvider } from "@/sdk/vault/VaultIntegration";
+import { useAppConfig } from "@/store/config";
+import { Theme } from "@/store/config";
 
 function ThemeWrapper({ children }: { children: React.ReactNode }) {
   const { resolvedTheme, theme } = useTheme();
-  const setUserTheme = useUserStore((state) => state.set);
+  const appConfig = useAppConfig();
 
   const muiTheme = React.useMemo(
     () => (resolvedTheme === "dark" ? darkTheme : lightTheme),
@@ -26,15 +26,29 @@ function ThemeWrapper({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     if (theme) {
-      setUserTheme("theme", theme);
+      appConfig.setTheme(theme as Theme);
     }
-  }, [theme, setUserTheme]);
+  }, [theme]);
 
   return (
     <MuiThemeProvider theme={muiTheme}>
       <CssBaseline />
       {children}
     </MuiThemeProvider>
+  );
+}
+
+function SDKWrapper({ children }: { children: React.ReactNode }) {
+  const { getAccessToken } = usePrivy();
+  // if (!getAccessToken) {
+  //   // This can happen briefly while Privy is initializing.
+  //   // Return a loader or null.
+  //   return null; 
+  // }
+  return (
+    <PandaSDKProvider getAccessToken={getAccessToken}>
+      {children}
+    </PandaSDKProvider>
   );
 }
 
@@ -45,22 +59,20 @@ function AuthenticatedContentWrapper({
 }) {
   return (
     <>
-        <EncryptionProvider>
-          <AuthChatListener />
-          <SnackbarProvider>{children}</SnackbarProvider>
-        </EncryptionProvider>
+      <VaultIntegrationProvider>
+        <SDKWrapper>
+          <EncryptionProvider>
+            {/* <AuthChatListener /> */}
+            <SnackbarProvider>{children}</SnackbarProvider>
+          </EncryptionProvider>
+        </SDKWrapper>
+      </VaultIntegrationProvider>
     </>
   );
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
-
-  if (!privyAppId) {
-    console.error(
-      "Privy App ID is missing. Please set NEXT_PUBLIC_PRIVY_APP_ID in your environment variables.",
-    );
-  }
 
   return (
     <AppRouterCacheProvider>
@@ -78,16 +90,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 appearance: {
                   theme: "light",
                   accentColor: "#676FFF",
+                  logo: "/logo.png",
                 },
                 loginMethods: ["email", "google", "github", "wallet"],
                 embeddedWallets: { ethereum: { createOnLogin: "all-users" } },
               }}
             >
-              <ApiClientProvider>
-                <AuthenticatedContentWrapper>
-                  {children}
-                </AuthenticatedContentWrapper>
-              </ApiClientProvider>
+              <AuthenticatedContentWrapper>
+                {children}
+              </AuthenticatedContentWrapper>
             </PrivyProvider>
           ) : (
             <SnackbarProvider>{children}</SnackbarProvider>

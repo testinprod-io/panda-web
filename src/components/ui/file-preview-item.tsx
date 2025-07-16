@@ -1,6 +1,4 @@
 import React from "react";
-// import Image from "next/image"; // Unused
-// import { Box, Typography, CircularProgress } from "@mui/material"; // Box, CircularProgress unused
 import { Typography } from "@mui/material";
 import { LoadedFile } from "@/hooks/use-loaded-files";
 import styles from "@/components/chat/chat.module.scss";
@@ -22,7 +20,6 @@ export const FilePreviewItem: React.FC<FilePreviewItemProps> = ({
   const fileTypeDisplay =
     file.type.split("/")[1]?.toUpperCase() || "File";
 
-  // Loading State
   if (file.isLoading) {
     return (
       <div
@@ -40,15 +37,12 @@ export const FilePreviewItem: React.FC<FilePreviewItemProps> = ({
         }
       >
         <div className={styles["file-status-overlay"]}>
-          {/* Assuming LoadedFile might have progress in the future, or a default can be shown */}
-          {/* For now, if file.progress is not available, defaulting to 0 or a generic loading indicator */}
-          <FileCircularProgress progress={0} /> {/* Default to 0 or handle missing progress */}
+          <FileCircularProgress progress={0} />
         </div>
       </div>
     );
   }
 
-  // Error State
   if (file.error) {
     return (
       <div
@@ -85,7 +79,6 @@ export const FilePreviewItem: React.FC<FilePreviewItemProps> = ({
     );
   }
 
-  // Successfully loaded file
   const commonDivProps = {
     className: clsx(
       styles["attach-file-item"],
@@ -98,16 +91,6 @@ export const FilePreviewItem: React.FC<FilePreviewItemProps> = ({
 
   return (
     <div {...commonDivProps}>
-      {/* Progress overlay: Conditional rendering based on a progress property if it exists and is less than 100 */}
-      {/* This part needs LoadedFile to have a 'progress' property */}
-      {/* For now, this block will not render if file.progress is not available */}
-      {/* 'file.progress' might need to be added to LoadedFile type or handled differently */}
-      {/* {file.progress !== undefined && file.progress < 100 && !file.isLoading && ( */}
-      {/*  <div className={styles["file-status-overlay"]}> */}
-      {/*    <FileCircularProgress progress={file.progress} /> */}
-      {/*  </div> */}
-      {/* )} */}
-
       {isImage ? (
         <div className={styles["attach-file-mask-image"]}>
           {onRemove && (

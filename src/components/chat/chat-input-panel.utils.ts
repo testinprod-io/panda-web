@@ -66,7 +66,7 @@ export const ALLOWED_FILE_TYPES = [
 
 export const getFileHeader = (
   file: File,
-  bytesToRead: number = 8,
+  bytesToRead: number = 8
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -74,7 +74,7 @@ export const getFileHeader = (
       if (e.target?.readyState === FileReader.DONE) {
         const arr = new Uint8Array(e.target.result as ArrayBuffer).subarray(
           0,
-          bytesToRead,
+          bytesToRead
         );
         const header = Array.from(arr)
           .map((b) => b.toString(16).padStart(2, "0"))
@@ -109,13 +109,13 @@ export const verifyFileContent = async (file: File): Promise<boolean> => {
           if (e.target?.readyState === FileReader.DONE) {
             const arr = new Uint8Array(e.target.result as ArrayBuffer).subarray(
               8,
-              12,
+              12
             );
             resolve(
               Array.from(arr)
                 .map((b) => b.toString(16).padStart(2, "0"))
                 .join("")
-                .toUpperCase(),
+                .toUpperCase()
             );
           }
         };
@@ -135,12 +135,12 @@ export const verifyFileContent = async (file: File): Promise<boolean> => {
 
 export const filterValidFilesForUpload = async (
   incomingFiles: File[],
-  currentAttachedFiles: AttachedClientFile[], // Now uses locally defined AttachedClientFile
+  currentAttachedFiles: AttachedClientFile[] // Now uses locally defined AttachedClientFile
 ): Promise<{ filesToUpload: File[]; errors: FileError[] }> => {
   const filesToUpload: File[] = [];
   const errors: FileError[] = [];
   let currentImageCount = currentAttachedFiles.filter((f) =>
-    f.type.startsWith("image/"),
+    f.type.startsWith("image/")
   ).length;
   let currentPdfSize = currentAttachedFiles
     .filter((f) => f.type === "application/pdf")

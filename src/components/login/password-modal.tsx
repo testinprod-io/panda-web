@@ -9,31 +9,27 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import { usePrivy } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
-import { AuthService } from "@/services/auth-service";
-import { useEncryption } from "@/providers/encryption-provider";
+import { usePandaSDK } from "@/providers/sdk-provider";
+
 import Locale from "@/locales";
 
 const MODAL_CONFIG = {
-    iconSrc: "/icons/icon-white.svg",
-    iconAlt: "Lock Icon",
-    // iconBackgroundColor: "#F33D4F",
-    // iconFilter:
-    //   "invert(100%) sepia(0%) saturate(7500%) hue-rotate(137deg) brightness(118%) contrast(91%)",
-    title: Locale.PasswordModal.Title,
-    description: Locale.PasswordModal.Description,
-    submitButtonText: Locale.PasswordModal.Submit,
-    textFieldPlaceholder: Locale.PasswordModal.Placeholder,
-    getDynamicError: (_password: string) => "",
-    validateSubmit: (password: string) => {
-      if (!password) {
-        return "Password cannot be empty.";
-      }
-      return null;
-    },
-    isSubmitDisabled: (password: string, _error: string) => {
-      return !password;
+  iconSrc: "/icons/icon-white.svg",
+  iconAlt: "Lock Icon",
+  title: Locale.PasswordModal.Title,
+  description: Locale.PasswordModal.Description,
+  submitButtonText: Locale.PasswordModal.Submit,
+  textFieldPlaceholder: Locale.PasswordModal.Placeholder,
+  getDynamicError: (_password: string) => "",
+  validateSubmit: (password: string) => {
+    if (!password) {
+      return "Password cannot be empty.";
+    }
+    return null;
+  },
+  isSubmitDisabled: (password: string, _error: string) => {
+    return !password;
   },
 };
 
@@ -55,8 +51,7 @@ export function PasswordModal({
   const [password, setPassword] = useState(initialPassword);
   const [error, setError] = useState("");
   const router = useRouter();
-  const { logout } = usePrivy();
-  const { lockApp } = useEncryption();
+  const { sdk } = usePandaSDK();
   const currentConfig = MODAL_CONFIG;
 
   useEffect(() => {
@@ -85,30 +80,29 @@ export function PasswordModal({
       setError("");
 
       try {
-          if (!onUnlockSubmit) {
-            setError("Configuration error: Unlock callback missing.");
-            return;
-          }
-          const success = await onUnlockSubmit(password);
-          if (success) {
-            setPassword("");
-            setError("");
-          } else {
-            setError(`*${Locale.Error.IncorrectPassword}`);
-          }
-      
+        if (!onUnlockSubmit) {
+          setError("Configuration error: Unlock callback missing.");
+          return;
+        }
+        const success = await onUnlockSubmit(password);
+        if (success) {
+          setPassword("");
+          setError("");
+        } else {
+          setError(`*${Locale.Error.IncorrectPassword}`);
+        }
       } catch (err: any) {
         setError(`Error: ${err.message || "Failed to process password"}`);
       }
     },
-    [password, onUnlockSubmit, onCreateSubmit, currentConfig],
+    [password, onUnlockSubmit, onCreateSubmit, currentConfig]
   );
 
   const handleLogOut = useCallback(() => {
-    AuthService.handleLogout(logout, lockApp).then(() => {
+    sdk.auth.logout().then(() => {
       router.push("/");
     });
-  }, [logout, router]);
+  }, [sdk, router]);
 
   useEffect(() => {
     if (!open) {
@@ -119,7 +113,7 @@ export function PasswordModal({
 
   const isSubmitButtonDisabled = currentConfig.isSubmitDisabled(
     password,
-    error,
+    error
   );
   const displayedError = error;
 
@@ -130,7 +124,6 @@ export function PasswordModal({
       onClose={onClose}
       BackdropProps={{
         style: {
-          // backgroundColor: "rgba(0, 0, 0, 0.6)",
           backdropFilter: "blur(5px)",
           WebkitBackdropFilter: "blur(5px)",
         },
@@ -300,8 +293,12 @@ export function PasswordModal({
               fullWidth
               sx={{
                 height: "48px",
-                background: !isSubmitButtonDisabled ? "var(--icon-primary)" : "var(--bg-tertiary)",
-                color: !isSubmitButtonDisabled ? "var(--white)" : "var(--text-secondary)",
+                background: !isSubmitButtonDisabled
+                  ? "var(--icon-primary)"
+                  : "var(--bg-tertiary)",
+                color: !isSubmitButtonDisabled
+                  ? "var(--white)"
+                  : "var(--text-secondary)",
                 borderRadius: "24px",
                 padding: "0 10px",
                 textTransform: "none",
@@ -310,7 +307,9 @@ export function PasswordModal({
                 fontWeight: "600",
                 boxShadow: "none",
                 "&:hover": {
-                  background: !isSubmitButtonDisabled ? "var(--icon-primary)" : "var(--bg-tertiary)",
+                  background: !isSubmitButtonDisabled
+                    ? "var(--icon-primary)"
+                    : "var(--bg-tertiary)",
                   boxShadow: "none",
                 },
                 "&.Mui-disabled": {

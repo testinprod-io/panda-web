@@ -14,7 +14,7 @@ export interface TdxPayload {
     tdx_rtmr2: string;
     tdx_rtmr3: string;
     tdx_mrtd: string;
-    
+
     tdx_mrowner: string;
     tdx_mrconfigid: string;
     tdx_mrownerconfig: string;
@@ -28,7 +28,6 @@ export interface EventLogEntry {
   event_payload: string; // hex string or ascii content, depending on event type
 }
 
-
 export interface AttestationResult {
   appId: string;
   composeHash: string;
@@ -39,4 +38,16 @@ export interface AttestationResult {
   osImageHash: string;
   tcbStatus: string;
   advisoryIds: string[];
+}
+
+export enum VerificationStatus {
+  Failed = "Failed",
+  Pending = "Pending",
+  ContractVerified = "ContractVerified",
+  AttestationVerified = "AttestationVerified",
+}
+export interface VerificationResult {
+  status: VerificationStatus;
+  attestationResult?: AttestationResult;
+  publicKey: string;
 }

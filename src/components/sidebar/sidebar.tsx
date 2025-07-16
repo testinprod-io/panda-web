@@ -1,18 +1,8 @@
 "use client";
 
-import {
-  Box,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-} from "@mui/material";
-import { useState } from "react";
+import { Box } from "@mui/material";
 import { ChatList } from "@/components/chat-list/chat-list";
 import SidebarHeader from "@/components/sidebar/sidebar-header";
-import { useAuthStatus } from "@/hooks/use-auth-status";
 import styles from "./sidebar.module.scss";
 import clsx from "clsx";
 import { SxProps, Theme } from "@mui/material/styles";
@@ -20,16 +10,13 @@ import AccessPanel from "@/components/sidebar/access-panel";
 import ProjectPanel from "@/components/sidebar/project-panel";
 import { useRouter } from "next/navigation";
 import { useEncryption } from "@/providers/encryption-provider";
-import { usePrivy } from "@privy-io/react-auth";
 import { Tooltip } from "@mui/material";
-import { useChatStore } from "@/store/chat";
-import { useAppConfig } from "@/store/config";
-import { AuthService } from "@/services/auth-service";
 import Locale from "@/locales";
 import MenuIcon from "@/public/icons/menu.svg";
 import NewChatIcon from "@/public/icons/new-chat.svg";
 import SettingsIcon from "@/public/icons/settings.svg";
 import LogoutIcon from "@/public/icons/logout.svg";
+import { useAuth } from "@/sdk/hooks";
 
 interface SidebarProps {
   isSidebarCollapsed: boolean;
@@ -42,16 +29,11 @@ export default function Sidebar({
   onToggleSidebar,
   sx,
 }: SidebarProps) {
-  const { isReady, isAuthenticated } = useAuthStatus();
   const router = useRouter();
   const { lockApp } = useEncryption();
-  const { logout } = usePrivy();
-  const { authenticated } = usePrivy();
-  const [showConfirm, setShowConfirm] = useState(false);
-  const { sessions, currentSessionIndex, removeSession } = useChatStore();
-  const { models, setApiProvider } = useAppConfig();
+  const { logout, isAuthenticated } = useAuth();
 
-  if (!isReady || !isAuthenticated) {
+  if (!isAuthenticated) {
     return null;
   }
 
@@ -68,7 +50,7 @@ export default function Sidebar({
   };
 
   const handleLogout = () => {
-    AuthService.handleLogout(logout, lockApp);
+    logout();
   };
 
   const handleLockServiceClick = () => {
@@ -79,34 +61,26 @@ export default function Sidebar({
     // { id: "search", icon: <SearchIcon />, text: "Search", action: handleSearch },
     {
       id: "menu",
-      icon: (
-        <MenuIcon className={styles.navMenuIcon} />
-      ),
+      icon: <MenuIcon className={styles.navMenuIcon} />,
       text: Locale.Sidebar.Menu,
       action: onToggleSidebar,
     },
     {
       id: "newChat",
-      icon: (
-        <NewChatIcon className={styles.navMenuIcon} />
-      ),
+      icon: <NewChatIcon className={styles.navMenuIcon} />,
       text: Locale.Sidebar.NewChat,
       action: handleNewChat,
     },
     // { id: "archive", icon: <ArchiveIcon />, text: "Archive", action: handleArchive },
     {
       id: "settings",
-      icon: (
-        <SettingsIcon className={styles.navMenuIcon} />
-      ),
+      icon: <SettingsIcon className={styles.navMenuIcon} />,
       text: Locale.Sidebar.Settings,
       action: handleSettings,
     },
     {
       id: "logout",
-      icon: (
-        <LogoutIcon className={styles.navMenuIcon} />
-      ),
+      icon: <LogoutIcon className={styles.navMenuIcon} />,
       text: Locale.Sidebar.Logout,
       action: handleLogout,
     },
@@ -148,7 +122,10 @@ export default function Sidebar({
           className={styles.expandedPane}
           style={{ width: expandedPaneWidth }}
         >
-          <SidebarHeader isSidebarCollapsed={false} handleNewChat={handleNewChat} />
+          <SidebarHeader
+            isSidebarCollapsed={false}
+            handleNewChat={handleNewChat}
+          />
           <Box
             className={styles.expandedContentArea}
             sx={{ flexGrow: 1, minHeight: 0 }}
@@ -165,13 +142,15 @@ export default function Sidebar({
           className={styles.collapsedPane}
           style={{ width: collapsedPaneWidth }}
         >
-          <SidebarHeader isSidebarCollapsed={true} handleNewChat={handleNewChat} />
+          <SidebarHeader
+            isSidebarCollapsed={true}
+            handleNewChat={handleNewChat}
+          />
           <Box className={styles.collapsedNavMenu}>
             {navItems.map((item) => (
               <Tooltip
                 title={
                   <div className={styles.tooltip}>
-                    {/* <div className={styles.tooltipIcon}>{item.icon}</div> */}
                     <div className={styles.tooltipText}>{item.text}</div>
                   </div>
                 }

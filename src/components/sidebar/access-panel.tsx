@@ -24,7 +24,9 @@ const AccessPanel: React.FC<AccessPanelProps> = ({ onLockServiceClick }) => {
             <LockIcon className={styles.lockIcon} />
           </div>
         </div>
-        <div className={styles.lockServiceText}>{Locale.Sidebar.LockService}</div>
+        <div className={styles.lockServiceText}>
+          {Locale.Sidebar.LockService}
+        </div>
       </div>
     </div>
   );

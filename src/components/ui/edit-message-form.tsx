@@ -19,15 +19,12 @@ export const EditMessageForm: React.FC<EditMessageFormProps> = ({
 }) => {
   const [editedText, setEditedText] = useState(initialText);
 
-  // If the initialText prop changes (e.g., parent re-triggers edit on same message after an error),
-  // reset the internal state.
   useEffect(() => {
     setEditedText(initialText);
   }, [initialText]);
 
   const handleConfirmClick = () => {
     if (editedText.trim() === initialText.trim() || editedText.trim() === "") {
-      // If text is unchanged or empty, treat as cancel or do nothing, then cancel.
       onCancel();
       return;
     }
@@ -54,7 +51,7 @@ export const EditMessageForm: React.FC<EditMessageFormProps> = ({
         onChange={(e) => setEditedText(e.target.value)}
         onKeyDown={handleKeyDown}
         sx={{ marginBottom: 1 }}
-        autoFocus // Focus the text field when the form appears
+        autoFocus
       />
       <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
         <Button

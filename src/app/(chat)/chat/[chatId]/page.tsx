@@ -2,81 +2,77 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { Box, CircularProgress } from "@mui/material";
-import { useChatStore } from "@/store/chat";
 import { useEffect, useState } from "react";
-import { MemoizedChatComponent } from "@/components/chat/chat-component";
-
-import { useAuthStatus } from "@/hooks/use-auth-status";
+import { ChatComponent } from "@/components/chat/chat-component";
+import { usePandaSDK } from "@/providers/sdk-provider";
+import { useAuth } from "@/sdk/hooks";
 import toast from "react-hot-toast";
-import { ChatSession } from "@/types";
+import { Chat } from "@/sdk/Chat";
 import { UUID } from "crypto";
+import { usePrivy } from "@privy-io/react-auth";
 
 export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
-  const store = useChatStore();
-
+  const { sdk, isReady } = usePandaSDK();
+  const { ready: privyReady } = usePrivy();
   const chatId = params?.chatId as UUID | undefined;
-  const { isReady: isAuthReady, isAuthenticated } = useAuthStatus();
+  const { isAuthenticated } = useAuth();
 
   const [isLoadingState, setIsLoadingState] = useState(true);
   const [isValidSession, setIsValidSession] = useState<boolean>(false);
   const [sessionDataForValidation, setSessionDataForValidation] =
-    useState<ChatSession | null>(null);
+    useState<Chat | null>(null);
 
   useEffect(() => {
-    const isStoreHydrated = store._hasHydrated;
-    if (!isAuthReady || !isStoreHydrated) {
-      setIsLoadingState(true);
-      return;
-    }
-
-    if (isAuthReady && !isAuthenticated) {
-      setIsLoadingState(false);
-      setIsValidSession(false);
-      setSessionDataForValidation(null);
-      return;
-    }
-
-    if (!chatId) {
-      setIsValidSession(false);
-      setSessionDataForValidation(null);
-      setIsLoadingState(false);
-      return;
-    }
-
-    const currentSession = store.sessions.find((s) => s.id === chatId);
-    if (currentSession) {
-      if (store.currentSession()?.id !== chatId) {
-        const sessionIndex = store.sessions.findIndex((s) => s.id === chatId);
-        if (sessionIndex !== -1) {
-          store.setCurrentSessionIndex(sessionIndex);
-        }
+    const validateSession = async () => {
+      if (!privyReady) {
+        setIsLoadingState(true);
+        return;
       }
-      setIsValidSession(true);
-      setSessionDataForValidation(currentSession);
-    } else {
-      setIsValidSession(false);
-      setSessionDataForValidation(null);
+  
+      if (!isAuthenticated) {
+        setIsLoadingState(false);
+        setIsValidSession(false);
+        setSessionDataForValidation(null);
+        return;
+      }
+  
+      if (!chatId) {
+        setIsValidSession(false);
+        setSessionDataForValidation(null);
+        setIsLoadingState(false);
+        return;
+      }
+  
+      const currentSession = await sdk.chat.getChat(chatId);
+      sdk.chat.setActiveChatId(chatId);
+      if (currentSession) {
+        sdk.chat.setActiveChat(currentSession);
+        setIsValidSession(true);
+        setSessionDataForValidation(currentSession);
+      } else {
+        setIsValidSession(false);
+        setSessionDataForValidation(null);
+      }
+      setIsLoadingState(false);
     }
-    setIsLoadingState(false);
-  }, [
-    chatId,
-    isAuthReady,
-    isAuthenticated,
-    store._hasHydrated,
-    store.sessions,
-    store,
-    router,
-  ]);
+    validateSession();
+    }, [
+      chatId,
+      isReady,
+      isAuthenticated,
+      router,
+      sdk,
+    ]);
+
 
   useEffect(() => {
     if (!isLoadingState && !isValidSession) {
       if (isAuthenticated) {
         toast.error(`Chat session not found: ${chatId || "Invalid ID"}`);
         router.replace("/");
-      } else if (isAuthReady && !isAuthenticated) {
-        // toast.error("Please log in to access chat sessions.");
+      } else if (!isReady && !isAuthenticated) {
         router.replace("/");
       }
     }
@@ -86,7 +82,7 @@ export default function ChatPage() {
     chatId,
     router,
     isAuthenticated,
-    isAuthReady,
+    isReady,
   ]);
 
   if (isLoadingState) {
@@ -105,7 +101,7 @@ export default function ChatPage() {
     );
   }
 
-  if (isAuthReady && !isAuthenticated) {
+  if (!isReady && !isAuthenticated) {
     return (
       <Box
         sx={{
@@ -138,10 +134,10 @@ export default function ChatPage() {
   }
 
   return (
-    <MemoizedChatComponent
+    <ChatComponent
       key={sessionDataForValidation.id}
       sessionId={sessionDataForValidation.id}
-      session={sessionDataForValidation}
+      // session={sessionDataForValidation}
     />
   );
 }

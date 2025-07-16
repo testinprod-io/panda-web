@@ -1,20 +1,20 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useApiClient } from "@/providers/api-client-provider";
 import { useRouter } from "next/navigation";
 import OnboardingView from "./onboarding-view";
 import { Box, CircularProgress } from "@mui/material";
 import { usePrivy } from "@privy-io/react-auth";
+import { usePandaSDK } from "@/providers/sdk-provider";
 export default function OnboardingPage() {
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
-  const apiClient = useApiClient();
   const router = useRouter();
+  const { sdk } = usePandaSDK();
   const { ready, authenticated } = usePrivy();
 
   useEffect(() => {
     const checkOnboardingStatus = async () => {
       try {
-        await apiClient.app.getCustomizedPrompts();
+        await sdk.storage.getCustomizedPrompts();
         setNeedsOnboarding(true);
       } catch (error: any) {
         if (error && typeof error === "object" && "status" in error && error.status === 404) {
@@ -28,7 +28,7 @@ export default function OnboardingPage() {
     if (ready && authenticated) {
       checkOnboardingStatus();
     }
-  }, [apiClient, authenticated]);
+  }, [sdk, authenticated]);
 
   useEffect(() => {
     if (ready && !authenticated) {

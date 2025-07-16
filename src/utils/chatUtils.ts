@@ -1,17 +1,10 @@
-import {
-  DEFAULT_INPUT_TEMPLATE,
-  DEFAULT_MODELS,
-  KnowledgeCutOffDate,
-} from "@/types/constant";
-import { getLang } from "@/locales";
-import { ModelConfig } from "@/types/constant";
 import { ChatMessage } from "@/types/chat";
 import { getMessageTextContent } from "@/utils/utils";
 
 export function countMessages(msgs: ChatMessage[]): number {
   return msgs.reduce(
     (pre, cur) => pre + estimateTokenLength(getMessageTextContent(cur)),
-    0,
+    0
   );
 }
 export function estimateTokenLength(input: string): number {

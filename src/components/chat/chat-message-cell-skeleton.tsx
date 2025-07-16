@@ -7,10 +7,6 @@ interface ChatMessageCellSkeletonProps {
   role: Role;
 }
 
-/**
- * A skeleton placeholder component for a chat message cell.
- * Mimics the basic layout and alignment based on the role.
- */
 export const ChatMessageCellSkeleton: React.FC<
   ChatMessageCellSkeletonProps
 > = ({ role }) => {
@@ -21,7 +17,7 @@ export const ChatMessageCellSkeleton: React.FC<
       className={clsx(
         styles["chat-message"],
         isUser ? styles["chat-message-user"] : null,
-        styles["chat-message-skeleton"],
+        styles["chat-message-skeleton"]
       )}
     >
       <div className={styles["chat-message-container"]}>

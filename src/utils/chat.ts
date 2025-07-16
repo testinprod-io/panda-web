@@ -1,5 +1,5 @@
 import { CACHE_URL_PREFIX } from "@/types/constant";
-import { MultimodalContent, RequestMessage } from "@/client/api";
+import { MultimodalContent, RequestMessage } from "@/sdk/client";
 
 export function compressImage(file: Blob, maxSize: number): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -61,7 +61,7 @@ export function compressImage(file: Blob, maxSize: number): Promise<string> {
 
 export async function preProcessImageContentBase(
   message: RequestMessage,
-  transformImageUrl: (url: string) => Promise<{ [key: string]: any }>,
+  transformImageUrl: (url: string) => Promise<{ [key: string]: any }>
 ) {
   const result = [];
   for (const part of message.attachments ?? []) {
@@ -87,7 +87,7 @@ export async function preProcessImageContent(message: RequestMessage) {
 }
 
 export async function preProcessImageContentForAlibabaDashScope(
-  message: RequestMessage,
+  message: RequestMessage
 ) {
   return preProcessImageContentBase(message, async (url) => ({
     image: url,
@@ -107,7 +107,7 @@ export function cacheImageToBase64Image(imageUrl: string) {
         .then((res) => res.blob())
         .then(
           async (blob) =>
-            (imageCaches[imageUrl] = await compressImage(blob, 256 * 1024)),
+            (imageCaches[imageUrl] = await compressImage(blob, 256 * 1024))
         ); // compressImage
     }
     return Promise.resolve(imageCaches[imageUrl]);
@@ -140,13 +140,13 @@ export function uploadFile(file: File): Promise<string> {
       !file.type.startsWith("application/pdf") &&
       !file.type.startsWith("application/msword") &&
       !file.type.startsWith(
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
       )
     ) {
       reject(
         new Error(
-          "File is not an image. Only images can be processed for image_url payload.",
-        ),
+          "File is not an image. Only images can be processed for image_url payload."
+        )
       );
       return;
     }

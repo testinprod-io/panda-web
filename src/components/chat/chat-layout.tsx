@@ -7,26 +7,26 @@ import {
   Typography,
   useMediaQuery,
   IconButton,
-  Tooltip,
   CircularProgress,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-
 import Sidebar from "@/components/sidebar/sidebar";
 import ChatHeader from "@/components/chat/chat-header";
-
 import { ChatInputPanel } from "@/components/chat/chat-input-panel";
-import { useChatStore, useAppConfig } from "@/store";
 import { UNFINISHED_INPUT } from "@/types/constant";
 import { SessionState } from "@/types/session";
 import { safeLocalStorage } from "@/utils/utils";
-import { useChatActions } from "@/hooks/use-chat-actions";
-import type { UUID } from "crypto"; // Keep as type import
+import type { UUID } from "crypto";
 import Locale from "@/locales";
 import { useSnackbar } from "@/providers/snackbar-provider";
 import styles from "@/components/chat/chat.module.scss";
 import sidebarStyles from "@/components/sidebar/sidebar.module.scss";
 import { usePrivy } from "@privy-io/react-auth";
+import { usePandaSDK } from "@/providers/sdk-provider";
+import { Chat } from "@/sdk/Chat";
+import { useConfig } from "@/sdk/hooks";
+import { ServerModelInfo } from "@/sdk/client";
+import { PandaConfig } from "@/sdk/ConfigManager";
 
 const localStorage = safeLocalStorage();
 
@@ -46,34 +46,27 @@ export default function ChatLayoutContent({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
-    isMobile ? true : false,
+    isMobile ? true : false
   );
   const params = useParams();
   const router = useRouter();
-  const appConfig = useAppConfig();
+  const pandaConfig = useConfig();
   const prevIsMobile = usePrevious(isMobile);
-
+  const { sdk } = usePandaSDK();
   const { ready: privyReady, authenticated: privyAuthenticated } = usePrivy();
+  const [isSDKReady, setIsSDKReady] = useState(sdk.ready);
+  const [modelConfig, setModelConfig] = useState<ServerModelInfo | undefined>(
+    pandaConfig.defaultModel
+  );
 
-  const { newSession } = useChatActions();
+  useEffect(() => {
+    const unsubscribe = sdk.bus.on("sdk.ready", (isReady) => {
+      setIsSDKReady(isReady);
+    });
+    return unsubscribe;
+  }, [sdk.bus]);
+
   const { showSnackbar } = useSnackbar();
-
-  const onSendMessageHandlerFromStore = useChatStore(
-    (state) => state.onSendMessageHandler,
-  );
-  const hitBottomFromStore = useChatStore((state) => state.hitBottom);
-  const scrollToBottomHandlerFromStore = useChatStore(
-    (state) => state.scrollToBottomHandler,
-  );
-  const showPromptModalHandlerFromStore = useChatStore(
-    (state) => state.showPromptModalHandler,
-  );
-  const showShortcutKeyModalHandlerFromStore = useChatStore(
-    (state) => state.showShortcutKeyModalHandler,
-  );
-  const isChatComponentBusyFromStore = useChatStore(
-    (state) => state.isChatComponentBusy,
-  );
 
   const [internalIsSubmitting, setInternalIsSubmitting] = useState(false);
   const [contentOpacity, setContentOpacity] = useState(1);
@@ -81,6 +74,74 @@ export default function ChatLayoutContent({
 
   const currentChatId = params?.chatId as UUID | undefined;
   const isNewChatPage = !currentChatId;
+
+  useEffect(() => {
+    const updateModelConfig = async () => {
+      if (currentChatId) {
+        // For existing chats, get the chat-specific model or fall back to global default
+        const chat = await sdk.chat.getChat(currentChatId);
+        if (chat?.defaultModelName) {
+          const chatModel = pandaConfig.models.find(
+            (m) => m.model_name === chat.defaultModelName
+          );
+          if (chatModel) {
+            setModelConfig(chatModel);
+            return;
+          }
+        }
+      }
+      // For new chats or when chat doesn't have a specific model, use global default
+      setModelConfig(pandaConfig.defaultModel);
+    };
+
+    updateModelConfig();
+  }, [currentChatId, sdk.chat, pandaConfig.defaultModel, pandaConfig.models]);
+
+  // Listen for chat updates to handle model changes made in the header
+  useEffect(() => {
+    if (!currentChatId) return;
+
+    const chatUpdateEventName = `chat.updated:${currentChatId}` as const;
+    const unsubscribe = sdk.bus.on(chatUpdateEventName, async () => {
+      const chat = await sdk.chat.getChat(currentChatId);
+      if (chat?.defaultModelName) {
+        const chatModel = pandaConfig.models.find(
+          (m) => m.model_name === chat.defaultModelName
+        );
+        if (chatModel && chatModel.model_name !== modelConfig?.model_name) {
+          setModelConfig(chatModel);
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, [
+    currentChatId,
+    sdk.bus,
+    sdk.chat,
+    pandaConfig.models,
+    modelConfig?.model_name,
+  ]);
+
+  // Listen for global config updates when on new chat page (no currentChatId)
+  useEffect(() => {
+    if (currentChatId) return; // Only listen when on new chat page
+
+    const unsubscribe = sdk.bus.on(
+      "config.updated",
+      (data: { config: PandaConfig }) => {
+        const newDefaultModel = data.config.defaultModel;
+        if (
+          newDefaultModel &&
+          newDefaultModel.model_name !== modelConfig?.model_name
+        ) {
+          setModelConfig(newDefaultModel);
+        }
+      }
+    );
+
+    return unsubscribe;
+  }, [currentChatId, sdk.bus, modelConfig?.model_name]);
 
   useEffect(() => {
     setContentOpacity(1);
@@ -94,16 +155,6 @@ export default function ChatLayoutContent({
     setIsSidebarCollapsed(isMobile ? true : false);
   }, [isMobile]);
 
-  const modelConfig = React.useMemo(() => {
-    if (currentChatId) {
-      const session = useChatStore
-        .getState()
-        .sessions.find((s) => s.id === currentChatId);
-      return session?.modelConfig || appConfig.modelConfig;
-    }
-    return appConfig.modelConfig;
-  }, [currentChatId, appConfig.modelConfig, useChatStore]);
-
   const handleLayoutSubmit = useCallback(
     async (sessionId: UUID | undefined, sessionState: SessionState) => {
       if (
@@ -112,72 +163,82 @@ export default function ChatLayoutContent({
       )
         return;
       setInternalIsSubmitting(true);
-      console.log(
-        `[handleLayoutSubmit] sessionId: ${sessionId} currentChatId: ${currentChatId} onSendMessageHandlerFromStore: ${onSendMessageHandlerFromStore}`,
-      );
       try {
-        if (currentChatId && onSendMessageHandlerFromStore) {
-          console.log(`[handleLayoutSubmit] currentChatId: ${currentChatId}`);
-          await onSendMessageHandlerFromStore(sessionState);
+        let chat: Chat | undefined;
+        if (currentChatId && sdk.chat.activeChat?.id === currentChatId) {
+          chat = await sdk.chat.getChat(currentChatId);
           localStorage.removeItem(UNFINISHED_INPUT(currentChatId));
         } else if (sessionId) {
-          const session = useChatStore
-            .getState()
-            .sessions.find((s) => s.id === sessionId);
-          if (session) {
-            console.log(`[handleLayoutSubmit] sessionId: ${sessionId}`);
-            const newUserMessage = { sessionState };
-            localStorage.setItem(session.id, JSON.stringify(newUserMessage));
-            localStorage.removeItem(UNFINISHED_INPUT(session.id));
+          chat = await sdk.chat.getChat(sessionId);
+          if (chat?.id) {
+            localStorage.removeItem(UNFINISHED_INPUT(sessionId));
             setContentOpacity(0);
             setTimeout(() => {
               if (typeof window !== "undefined") {
                 window.sessionStorage.setItem(
                   "is_navigating_from_new_chat",
-                  "true",
+                  "true"
                 );
               }
-              router.replace(`/chat/${session.id}`);
+              router.replace(`/chat/${chat!.id}`);
             }, 400);
-          } else {
-            showSnackbar("Failed to start new chat", "error");
           }
         } else {
-          const createdSession = await newSession(
+          if (!modelConfig) {
+            showSnackbar("Models are not loaded yet.", "error");
+            setInternalIsSubmitting(false);
+            return;
+          }
+          chat = await sdk.chat.createNewChat(
+            Locale.Store.DefaultTopic,
             modelConfig,
-            appConfig.customizedPrompts,
+            pandaConfig.customizedPrompts
           );
-          if (createdSession) {
-            const newUserMessage = { sessionState };
-            localStorage.setItem(
-              createdSession.id,
-              JSON.stringify(newUserMessage),
-            );
-            localStorage.removeItem(UNFINISHED_INPUT(createdSession.id));
+
+          if (chat) {
+            localStorage.removeItem(UNFINISHED_INPUT(chat.id));
 
             setIsNavigatingAway(true);
             setContentOpacity(0);
 
             setTimeout(() => {
-              router.replace(`/chat/${createdSession.id}`);
+              router.replace(`/chat/${chat!.id}`);
             }, 400);
           } else {
             showSnackbar("Failed to start new chat", "error");
           }
         }
+        if (chat) {
+          chat.sendMessage(
+            sessionState.userInput,
+            sessionState.persistedAttachedFiles,
+            {
+              enableSearch: sessionState.enableSearch,
+              onSuccess: () => {
+                setInternalIsSubmitting(false);
+              },
+              onFailure: (error: Error) => {
+                showSnackbar(Locale.Store.Error, "error");
+                setInternalIsSubmitting(false);
+              },
+            }
+          );
+        } else {
+          setInternalIsSubmitting(false);
+        }
       } catch (error) {
         showSnackbar(Locale.Store.Error, "error");
-      } finally {
         setInternalIsSubmitting(false);
       }
     },
     [
       currentChatId,
-      onSendMessageHandlerFromStore,
-      newSession,
       router,
+      pandaConfig,
       showSnackbar,
-    ],
+      modelConfig,
+      sdk.chat,
+    ]
   );
 
   const handleToggleSidebar = () => setIsSidebarCollapsed((prev) => !prev);
@@ -192,7 +253,7 @@ export default function ChatLayoutContent({
     effectiveIsSidebarCollapsed = true;
   }
 
-  if (!privyReady) {
+  if (!privyReady || !sdk.initialized || (privyAuthenticated && !isSDKReady)) {
     return (
       <Box
         sx={{
@@ -219,33 +280,42 @@ export default function ChatLayoutContent({
       {privyAuthenticated && (
         <>
           {!isMobile && (
-              <IconButton
-                onClick={handleToggleSidebar}
-                className={sidebarStyles.sidebarToggleButton}
-                aria-label={
-                  isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"
-                }
-                style={{
-                  left: isSidebarCollapsed
-                    ? `${sidebarCollapsedWidth - 16}px`
-                    : `${sidebarExpandedWidth - 16}px`,
-                  // transition: `left ${sidebarTransitionDuration} ${sidebarTransitionTiming}`,
-                }}
-              >
-                {isSidebarCollapsed ? (
-                  <img
-                    src="/icons/chevron-right.svg"
-                    style={{ width: "8.75px", height: "17.5px", filter: "invert(88%) sepia(27%) saturate(0%) hue-rotate(150deg) brightness(92%) contrast(83%)"}}
-                    alt="Expand Sidebar"
-                  />
-                ) : (
-                  <img
-                    src="/icons/chevron-left.svg"
-                    style={{ width: "8.75px", height: "17.5px", filter: "invert(88%) sepia(27%) saturate(0%) hue-rotate(150deg) brightness(92%) contrast(83%)" }}
-                    alt="Collapse Sidebar"
-                  />
-                )}
-              </IconButton>
+            <IconButton
+              onClick={handleToggleSidebar}
+              className={sidebarStyles.sidebarToggleButton}
+              aria-label={
+                isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"
+              }
+              style={{
+                left: isSidebarCollapsed
+                  ? `${sidebarCollapsedWidth - 16}px`
+                  : `${sidebarExpandedWidth - 16}px`,
+              }}
+            >
+              {isSidebarCollapsed ? (
+                <img
+                  src="/icons/chevron-right.svg"
+                  style={{
+                    width: "8.75px",
+                    height: "17.5px",
+                    filter:
+                      "invert(88%) sepia(27%) saturate(0%) hue-rotate(150deg) brightness(92%) contrast(83%)",
+                  }}
+                  alt="Expand Sidebar"
+                />
+              ) : (
+                <img
+                  src="/icons/chevron-left.svg"
+                  style={{
+                    width: "8.75px",
+                    height: "17.5px",
+                    filter:
+                      "invert(88%) sepia(27%) saturate(0%) hue-rotate(150deg) brightness(92%) contrast(83%)",
+                  }}
+                  alt="Collapse Sidebar"
+                />
+              )}
+            </IconButton>
           )}
 
           <>
@@ -266,7 +336,7 @@ export default function ChatLayoutContent({
                     {
                       easing: theme.transitions.easing.sharp,
                       duration: theme.transitions.duration.standard,
-                    },
+                    }
                   ),
                   zIndex: theme.zIndex.drawer,
                 }}
@@ -315,8 +385,6 @@ export default function ChatLayoutContent({
             left: 0,
             right: 0,
             bottom: 0,
-            // background:
-              // "linear-gradient(177deg, white 0%, #FEFEFE 27%, #F6FFFC 75%, #DAF7EF 100%)",
             opacity: isNewChatPage && !isNavigatingAway ? 1 : 0,
             transition: isNavigatingAway ? "opacity 0.4s ease-in" : "none",
             zIndex: -1,
@@ -333,120 +401,113 @@ export default function ChatLayoutContent({
           sx={{
             height: { xs: "calc(100% - 80px)", md: "calc(100% - 112px)" },
             width: "100%",
-            paddingLeft: { xs: "5%", md: "max(calc((100% - 1200px) / 2), 15%)" },
-            paddingRight: { xs: "5%", md: "max(calc((100% - 1200px) / 2), 15%)" },
+            paddingLeft: {
+              xs: "5%",
+              md: "max(calc((100% - 1200px) / 2), 15%)",
+            },
+            paddingRight: {
+              xs: "5%",
+              md: "max(calc((100% - 1200px) / 2), 15%)",
+            },
             display: "flex",
             flexDirection: "column",
             gap: "1rem",
           }}
         >
-        <Box
-          className={
-            !isNewChatPage ? styles["chat-layout-main-content"] : undefined
-          }
-          sx={{
-            transition: isNavigatingAway ? "all 0.4s ease-in" : "none",
-            opacity: contentOpacity,
-            width: "100%",
-            ...((isNewChatPage && !isNavigatingAway) && {
+          <Box
+            className={
+              !isNewChatPage ? styles["chat-layout-main-content"] : undefined
+            }
+            sx={{
+              transition: isNavigatingAway ? "all 0.4s ease-in" : "none",
+              opacity: contentOpacity,
+              width: "100%",
+              ...(isNewChatPage &&
+                !isNavigatingAway && {
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  height: "20vh",
+                  minHeight: "0px",
+                  marginBottom: { xs: "24px", md: "48px" },
+                  marginTop: "15vh",
+                }),
+              ...((!isNewChatPage || isNavigatingAway) && {
+                height: "100%",
+                marginTop: "0px",
+              }),
+            }}
+          >
+            {children}
+          </Box>
+          <Box
+            className={styles["chat-layout-input-panel-wrapper"]}
+            sx={{
+              flexShrink: 0,
+              width: "100%",
               display: "flex",
               flexDirection: "column",
-              alignItems: "center",
-              height: "20vh",
-              minHeight: "0px",
-              // height: "35vh",
-              marginBottom: { xs: "24px", md: "48px" },
-              marginTop: "15vh",
-            }),
-            ...((!isNewChatPage || isNavigatingAway) && {
-              height: "100%",
-              marginTop: "0px",
-            }),
-          }}
-        >
-          {children}
-        </Box>
-        <Box
-          className={styles["chat-layout-input-panel-wrapper"]}
-          sx={{
-            flexShrink: 0,
-            width: "100%",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            ...(isNewChatPage && {
-              marginTop: { xs: "auto", sm: "0px" },
-            }),
-            ...(!isNewChatPage && {
-              marginBottom: "0px",
-              flexShrink: 0,
-            }),
-            marginBottom: "8px",
-          }}
-        >
-          <ChatInputPanel
-            sessionId={currentChatId}
-            modelConfig={modelConfig}
-            customizedPrompts={appConfig.customizedPrompts}
-            isLoading={internalIsSubmitting}
-            onSubmit={handleLayoutSubmit}
-            scrollToBottom={
-              scrollToBottomHandlerFromStore ||
-              (() => console.warn("ScrollToBottom handler not set in store"))
-            }
-            setShowPromptModal={
-              showPromptModalHandlerFromStore ||
-              (() => console.warn("ShowPromptModal handler not set in store"))
-            }
-            setShowShortcutKeyModal={
-              showShortcutKeyModalHandlerFromStore ||
-              (() =>
-                console.warn("ShowShortcutKeyModal handler not set in store"))
-            }
-          />
-        <Typography
-          hidden={isMobile}
-          sx={{
-            minWidth: { xs: "auto", md: "460px" },
-            textAlign: "center",
-            color: "var(--text-secondary)",
-            fontSize: "14px",
-            fontFamily: "Inter",
-            fontWeight: "400",
-            lineHeight: "32px",
-            wordWrap: "break-word",
-            marginBottom: "16px",
-            paddingLeft: "16px",
-            paddingRight: "16px",
-            boxSizing: "border-box",
-            backgroundColor: "var(--bg-primary)",
-          }}
-        >
-          {Locale.ChatLayout.Terms1}
-          <a
-            href="https://testinprod.notion.site/Panda-Alpha-Terms-of-Service-Privacy-Notice-2078fc57f54680349183dde6f0224da8"
-            style={{
-              color: "var(--text-primary)",
-              textDecoration: "none",
-              fontWeight: "500",
+              justifyContent: "center",
+              ...(isNewChatPage && {
+                marginTop: { xs: "auto", sm: "0px" },
+              }),
+              ...(!isNewChatPage && {
+                marginBottom: "0px",
+                flexShrink: 0,
+              }),
+              marginBottom: "8px",
             }}
           >
-            {Locale.ChatLayout.Terms2}
-          </a>
-          {Locale.ChatLayout.Terms3}
-          <a
-            href="https://testinprod.notion.site/Panda-Alpha-Terms-of-Service-Privacy-Notice-2078fc57f54680349183dde6f0224da8"
-            style={{
-              color: "var(--text-primary)",
-              textDecoration: "none",
-              fontWeight: "500",
-            }}
-          >
-            {Locale.ChatLayout.Terms4}
-          </a>
-        </Typography>
+            <ChatInputPanel
+              sessionId={currentChatId}
+              modelConfig={modelConfig}
+              customizedPrompts={pandaConfig.customizedPrompts}
+              isLoading={internalIsSubmitting}
+              onSubmit={handleLayoutSubmit}
+            />
+            <Typography
+              hidden={isMobile}
+              sx={{
+                minWidth: { xs: "auto", md: "460px" },
+                textAlign: "center",
+                color: "var(--text-secondary)",
+                fontSize: "14px",
+                fontFamily: "Inter",
+                fontWeight: "400",
+                lineHeight: "32px",
+                wordWrap: "break-word",
+                marginBottom: "16px",
+                paddingLeft: "16px",
+                paddingRight: "16px",
+                boxSizing: "border-box",
+                backgroundColor: "var(--bg-primary)",
+              }}
+            >
+              {Locale.ChatLayout.Terms1}
+              <a
+                href="https://testinprod.notion.site/Panda-Alpha-Terms-of-Service-Privacy-Notice-2078fc57f54680349183dde6f0224da8"
+                style={{
+                  color: "var(--text-primary)",
+                  textDecoration: "none",
+                  fontWeight: "500",
+                }}
+              >
+                {Locale.ChatLayout.Terms2}
+              </a>
+              {Locale.ChatLayout.Terms3}
+              <a
+                href="https://testinprod.notion.site/Panda-Alpha-Terms-of-Service-Privacy-Notice-2078fc57f54680349183dde6f0224da8"
+                style={{
+                  color: "var(--text-primary)",
+                  textDecoration: "none",
+                  fontWeight: "500",
+                }}
+              >
+                {Locale.ChatLayout.Terms4}
+              </a>
+            </Typography>
+          </Box>
         </Box>
-      </Box>
       </Box>
     </Box>
   );

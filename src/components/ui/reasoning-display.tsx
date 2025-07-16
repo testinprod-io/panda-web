@@ -3,20 +3,18 @@ import { Box, Typography, IconButton } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
-import styles from "@/components/chat/chat.module.scss"; // Assuming some styles might be reused or new ones added here
+import styles from "@/components/chat/chat.module.scss";
 import dynamic from "next/dynamic";
 
-// Dynamically import Markdown to avoid SSR issues if it's client-heavy
 const Markdown = dynamic(async () => (await import("./markdown")).Markdown, {
   loading: () => <LoadingAnimation />,
 });
 
 interface ReasoningDisplayProps {
   reasoning: string | null | undefined;
-  isReasoningInProgress: boolean; // Derived from message.isReasoning
+  isReasoningInProgress: boolean;
   reasoningTime: number | null | undefined;
   initialCollapsed?: boolean;
-  // Props for Markdown rendering
   fontSize: number;
   fontFamily: string;
   scrollRef: React.RefObject<HTMLDivElement | null>;
@@ -26,7 +24,7 @@ export const ReasoningDisplay: React.FC<ReasoningDisplayProps> = ({
   reasoning,
   isReasoningInProgress,
   reasoningTime,
-  initialCollapsed = true, // Default to collapsed
+  initialCollapsed = true,
   fontSize,
   fontFamily,
   scrollRef,

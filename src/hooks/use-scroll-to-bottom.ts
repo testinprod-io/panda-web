@@ -4,9 +4,8 @@ import { ChatMessage } from "@/types";
 export function useScrollToBottom(
   scrollRef: RefObject<HTMLDivElement | null>,
   detach: boolean = false,
-  messages: ChatMessage[], // Assuming ChatMessage type is needed, adjust if not
+  messages: ChatMessage[]
 ) {
-  // for auto-scroll
   const [autoScroll, setAutoScroll] = useState(true);
   const scrollDomToBottom = useCallback(() => {
     const dom = scrollRef.current;
@@ -18,7 +17,6 @@ export function useScrollToBottom(
     }
   }, [scrollRef]);
 
-  // auto scroll
   useEffect(() => {
     if (autoScroll && !detach) {
       scrollDomToBottom();

@@ -24,8 +24,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { useEncryption } from "@/providers/encryption-provider";
 import Locale from "@/locales";
+import { useAuth } from "@/sdk/hooks";
+import { usePandaSDK } from "@/providers/sdk-provider";
 
 interface LoginSignupFormProps {
   mode: "login" | "signup";
@@ -44,10 +45,11 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const { ready, authenticated } = usePrivy();
-  const { isFirstTimeUser } = useEncryption();
+  const { sdk } = usePandaSDK();
+  const { encryptedId } = useAuth();
+  const isFirstTimeUser = sdk.ready ? encryptedId === null : null;
 
   useEffect(() => {
-    // Reset state on unmount
     return () => {
       setEmail("");
       setSubmittedEmail("");
@@ -55,7 +57,9 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
     };
   }, []);
 
-  const onComplete = ({ isNewUser }: {
+  const onComplete = ({
+    isNewUser,
+  }: {
     user: User;
     isNewUser: boolean;
     wasAlreadyAuthenticated: boolean;
@@ -63,15 +67,17 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
     loginAccount: LinkedAccountWithMetadata | null;
   }) => {
     if (isNewUser) {
-      router.push("/signup?step=create-password");
+      router.push("/onboarding");
     } else {
       router.replace("/");
     }
   };
 
   const onError = (error: any) => {
-    if (!error) { return; }
-    
+    if (!error) {
+      return;
+    }
+
     if (error.includes("invalid_credentials")) {
       setCode("");
       toast.dismiss();
@@ -88,25 +94,28 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
     loginWithCode,
   } = useLoginWithEmail({ onComplete, onError });
 
-  const {
-    initOAuth,
-    state: oauthState,
-  } = useLoginWithOAuth({ onComplete, onError });
+  const { initOAuth, state: oauthState } = useLoginWithOAuth({
+    onComplete,
+    onError,
+  });
   const { login } = useLogin({ onComplete, onError });
 
   useEffect(() => {
-    if (ready && authenticated) {
-      if (isFirstTimeUser === undefined) { 
+    if (sdk.ready && authenticated) {
+      if (isFirstTimeUser === undefined) {
         return;
       }
-      
-      if (window.location.pathname.includes("signup") && isFirstTimeUser === true) {
-        router.push("/signup?step=create-password");
+
+      if (
+        window.location.pathname.includes("signup") &&
+        isFirstTimeUser === true
+      ) {
+        router.push("/onboarding");
       } else {
         router.replace("/");
       }
     }
-  }, [ready, authenticated, router, isFirstTimeUser]);
+  }, [ready, authenticated, router, isFirstTimeUser, encryptedId, sdk.ready]);
 
   const isCodeEntryVisible =
     emailState.status === "awaiting-code-input" &&
@@ -124,7 +133,7 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
         }
       }
     },
-    [isCodeEntryVisible, loginWithCode, code, email, sendCode, mode],
+    [isCodeEntryVisible, loginWithCode, code, email, sendCode, mode]
   );
 
   const handleGoogleLogin = useCallback(async () => {
@@ -165,13 +174,23 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
         alignItems: "center",
         justifyContent: "flex-start",
         minHeight: "100vh",
-        bgcolor: 'background.paper',
+        bgcolor: "background.paper",
         py: 4,
         px: 2,
       }}
     >
-      <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', maxWidth: '410px', marginRight: 'auto', mb: 10 }}>
       <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "center",
+          width: "100%",
+          maxWidth: "410px",
+          marginRight: "auto",
+          mb: 10,
+        }}
+      >
+        <Box
           sx={{
             display: "block",
             ".dark &": {
@@ -201,19 +220,26 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
             height={40}
           />
         </Box>
-        <Typography fontSize="24px" fontWeight="600" color="var(--text-primary)" marginLeft="12px">
-            Panda
-          </Typography>
-        </Box>
-      <Box sx={{ width: '100%', maxWidth: '410px', marginTop: '10vh' }}>
+        <Typography
+          fontSize="24px"
+          fontWeight="600"
+          color="var(--text-primary)"
+          marginLeft="12px"
+        >
+          Panda
+        </Typography>
+      </Box>
+      <Box sx={{ width: "100%", maxWidth: "410px", marginTop: "10vh" }}>
         <Box sx={{ textAlign: "left", mb: 3 }}>
-          <Typography variant="h5" component="h1" sx={{ fontWeight: '600' }}>
+          <Typography variant="h5" component="h1" sx={{ fontWeight: "600" }}>
             {title}
           </Typography>
         </Box>
 
         <form onSubmit={handleEmailSubmit}>
-          <Typography variant="body2" sx={{ fontWeight: '500', mb: 1 }}>{Locale.Signup.Email}</Typography>
+          <Typography variant="body2" sx={{ fontWeight: "500", mb: 1 }}>
+            {Locale.Signup.Email}
+          </Typography>
           <TextField
             type="email"
             fullWidth
@@ -222,27 +248,44 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
             size="medium"
             onChange={(e) => setEmail(e.target.value)}
             disabled={isSendingCode || isSubmittingCode || isOauthLoading}
-            inputProps={{ style: { fontSize: '14px', height: '40px', padding: '0px 10px' } }}
-            sx={{ mb: 2, alignItems: 'left', '& .MuiInputBase-input': { textAlign: 'left', border: 'none' } }}
+            inputProps={{
+              style: { fontSize: "14px", height: "40px", padding: "0px 10px" },
+            }}
+            sx={{
+              mb: 2,
+              alignItems: "left",
+              "& .MuiInputBase-input": { textAlign: "left", border: "none" },
+            }}
           />
 
           {isCodeEntryVisible && (
             <>
-              <Typography variant="body2" sx={{ fontWeight: '500', mb: 1 }}>{Locale.Signup.VerificationCode}</Typography>
+              <Typography variant="body2" sx={{ fontWeight: "500", mb: 1 }}>
+                {Locale.Signup.VerificationCode}
+              </Typography>
               <TextField
                 type="text"
                 fullWidth
                 placeholder={Locale.Signup.VerificationCodePlaceholder}
                 value={code}
                 size="medium"
-                inputProps={{ style: { fontSize: '14px', height: '40px' } }}
+                inputProps={{ style: { fontSize: "14px", height: "40px" } }}
                 onChange={(e) => setCode(e.target.value)}
                 disabled={isSubmittingCode || isOauthLoading}
-                sx={{ mb: 2, alignItems: 'left', '& .MuiInputBase-input': { backgroundColor: 'transparent', textAlign: 'left', height: '20px', border: 'none' } }}
+                sx={{
+                  mb: 2,
+                  alignItems: "left",
+                  "& .MuiInputBase-input": {
+                    backgroundColor: "transparent",
+                    textAlign: "left",
+                    height: "20px",
+                    border: "none",
+                  },
+                }}
               />
             </>
           )}
-          
+
           {mode === "signup" && isCodeEntryVisible && (
             <FormControlLabel
               control={
@@ -253,17 +296,25 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
               }
               label={
                 <Typography variant="body2" color="text.secondary">
-                  {Locale.Signup.TermsOfService1} {" "}
-                  <MuiLink component={Link} href="/terms" sx={{textDecoration: 'underline', color: 'text.primary'}}>
+                  {Locale.Signup.TermsOfService1}{" "}
+                  <MuiLink
+                    component={Link}
+                    href="/terms"
+                    sx={{ textDecoration: "underline", color: "text.primary" }}
+                  >
                     {Locale.Signup.TermsOfService2}
                   </MuiLink>
                   {` ${Locale.Signup.TermsOfService3} `}
-                  <MuiLink component={Link} href="/privacy" sx={{textDecoration: 'underline', color: 'text.primary'}}>
+                  <MuiLink
+                    component={Link}
+                    href="/privacy"
+                    sx={{ textDecoration: "underline", color: "text.primary" }}
+                  >
                     {Locale.Signup.TermsOfService4}
                   </MuiLink>
                 </Typography>
               }
-              sx={{ mt: 2, alignItems: 'center' }}
+              sx={{ mt: 2, alignItems: "center" }}
             />
           )}
 
@@ -272,7 +323,16 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
             variant="contained"
             fullWidth
             size="large"
-            sx={{ mt: 2, py: 1.5, textTransform: 'none', fontSize: '1rem', backgroundColor: '#FFFFFF', color: '#000000', borderRadius: 2, '&:hover': { color: '#FFFFFF',backgroundColor: '#1E1E1E' } }}
+            sx={{
+              mt: 2,
+              py: 1.5,
+              textTransform: "none",
+              fontSize: "1rem",
+              backgroundColor: "#FFFFFF",
+              color: "#000000",
+              borderRadius: 2,
+              "&:hover": { color: "#FFFFFF", backgroundColor: "#1E1E1E" },
+            }}
             disabled={
               isSendingCode ||
               isSubmittingCode ||
@@ -285,15 +345,23 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
             {isSendingCode || isSubmittingCode ? (
               <CircularProgress size={24} color="inherit" />
             ) : isCodeEntryVisible ? (
-              mode === 'signup' ? Locale.Signup.Submit : Locale.SignIn.Submit
+              mode === "signup" ? (
+                Locale.Signup.Submit
+              ) : (
+                Locale.SignIn.Submit
+              )
             ) : (
               Locale.Signup.Continue
             )}
           </Button>
         </form>
 
-        <Divider sx={{ my: 4, '&::before, &::after': { borderColor: 'grey.300' } }}>
-            <Typography variant="body2" color="text.secondary">{Locale.Signup.OrContinueWith}</Typography>
+        <Divider
+          sx={{ my: 4, "&::before, &::after": { borderColor: "grey.300" } }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            {Locale.Signup.OrContinueWith}
+          </Typography>
         </Divider>
 
         <Box sx={{ display: "flex", flexDirection: "row", gap: 1.5 }}>
@@ -303,14 +371,22 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
             onClick={handleGoogleLogin}
             disabled={isOauthLoading || isSendingCode || isSubmittingCode}
             startIcon={
-                <Image
-                  src="/icons/google.svg"
-                  alt="Google"
-                  width={18}
-                  height={18}
-                />
+              <Image
+                src="/icons/google.svg"
+                alt="Google"
+                width={18}
+                height={18}
+              />
             }
-            sx={{ textTransform: 'none', justifyContent: 'center', py: 1.5, fontSize: '1rem', borderColor: 'grey.300', color: 'text.primary', borderRadius: 2 }}
+            sx={{
+              textTransform: "none",
+              justifyContent: "center",
+              py: 1.5,
+              fontSize: "1rem",
+              borderColor: "grey.300",
+              color: "text.primary",
+              borderRadius: 2,
+            }}
           >
             Google
           </Button>
@@ -320,23 +396,39 @@ export default function LoginSignupForm({ mode }: LoginSignupFormProps) {
             onClick={handleWalletLogin}
             disabled={isOauthLoading || isSendingCode || isSubmittingCode}
             startIcon={
-                <Image
-                  src="/icons/placeholder.svg"
-                  alt="Wallet"
-                  width={20}
-                  height={20}
-                />
+              <Image
+                src="/icons/placeholder.svg"
+                alt="Wallet"
+                width={20}
+                height={20}
+              />
             }
-            sx={{ textTransform: 'none', justifyContent: 'center', py: 1.5, fontSize: '1rem', borderColor: 'grey.300', color: 'text.primary', borderRadius: 2 }}
+            sx={{
+              textTransform: "none",
+              justifyContent: "center",
+              py: 1.5,
+              fontSize: "1rem",
+              borderColor: "grey.300",
+              color: "text.primary",
+              borderRadius: 2,
+            }}
           >
             Wallet
           </Button>
         </Box>
         <Box sx={{ mt: 4, textAlign: "center" }}>
           <Typography variant="body2" color="text.secondary">
-            {`${mode === 'signup' ? Locale.SignIn.AlreadyHaveAccount : Locale.Signup.DontHaveAccount} `}
-            <MuiLink component={Link} href={switchLinkHref} sx={{textDecoration: 'underline', color: 'text.primary', fontWeight: 500}}>
-              {mode === 'signup' ? Locale.SignIn.Title : Locale.Signup.Title}
+            {`${mode === "signup" ? Locale.SignIn.AlreadyHaveAccount : Locale.Signup.DontHaveAccount} `}
+            <MuiLink
+              component={Link}
+              href={switchLinkHref}
+              sx={{
+                textDecoration: "underline",
+                color: "text.primary",
+                fontWeight: 500,
+              }}
+            >
+              {mode === "signup" ? Locale.SignIn.Title : Locale.Signup.Title}
             </MuiLink>
           </Typography>
         </Box>

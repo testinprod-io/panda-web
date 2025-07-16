@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, IconButton, Tooltip, Typography } from "@mui/material";
+import { Box } from "@mui/material";
 import styles from "./sidebar.module.scss";
 import clsx from "clsx";
 import Image from "next/image";
@@ -21,13 +21,13 @@ export default function SidebarHeader({
     <Box
       className={clsx(
         styles.sidebarHeaderContainer,
-        isSidebarCollapsed && styles.collapsed,
+        isSidebarCollapsed && styles.collapsed
       )}
     >
       <Box
         className={clsx(
           styles.sidebarHeaderLogoRow,
-          isSidebarCollapsed && styles.collapsed,
+          isSidebarCollapsed && styles.collapsed
         )}
         onClick={handleNewChat}
       >
@@ -42,7 +42,10 @@ export default function SidebarHeader({
           <Image
             src="/icons/inverse-icon.svg"
             alt="Panda AI Logo"
-            className={clsx(styles.sidebarHeaderLogoImage, isSidebarCollapsed && styles.collapsed)}
+            className={clsx(
+              styles.sidebarHeaderLogoImage,
+              isSidebarCollapsed && styles.collapsed
+            )}
             width={32}
             height={32}
           />
@@ -58,25 +61,25 @@ export default function SidebarHeader({
           <Image
             src="/icons/icon-white.svg"
             alt="Panda AI Logo"
-            className={clsx(styles.sidebarHeaderLogoImage, isSidebarCollapsed && styles.collapsed)}
+            className={clsx(
+              styles.sidebarHeaderLogoImage,
+              isSidebarCollapsed && styles.collapsed
+            )}
             width={32}
             height={32}
           />
         </Box>
         {!isSidebarCollapsed && (
-        <Box
-          className={clsx(
-            styles.sidebarHeaderLogoTextContainer,
-            isSidebarCollapsed && styles.collapsed,
-          )}
-        >
           <Box
-            component="span"
-            className={styles.logoTextBold}
+            className={clsx(
+              styles.sidebarHeaderLogoTextContainer,
+              isSidebarCollapsed && styles.collapsed
+            )}
           >
-            PANDA
+            <Box component="span" className={styles.logoTextBold}>
+              PANDA
+            </Box>
           </Box>
-        </Box>
         )}
       </Box>
     </Box>

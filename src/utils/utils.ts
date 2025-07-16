@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import Locale from "@/locales";
-import { RequestMessage } from "@/client/api";
+import { RequestMessage } from "@/sdk/client";
 import {
   REQUEST_TIMEOUT_MS,
   REQUEST_TIMEOUT_MS_FOR_THINKING,
   ServiceProvider,
 } from "../types/constant";
 import { ModelSize } from "@/types";
-import { ModelConfig } from "@/types/constant";
 
 export function trimTopic(topic: string) {
   // Fix an issue where double quotes still show in the Indonesian language
@@ -24,7 +23,7 @@ export function trimTopic(topic: string) {
 // Helper function to safely call the global snackbar
 export function safeShowSnackbar(
   message: string,
-  severity?: import("@mui/material/Alert").AlertColor,
+  severity?: import("@mui/material/Alert").AlertColor
 ) {
   if (typeof window !== "undefined" && window.showSnackbar) {
     window.showSnackbar(message, severity);
@@ -89,7 +88,7 @@ export async function downloadAs(text: string, filename: string) {
     const element = document.createElement("a");
     element.setAttribute(
       "href",
-      "data:text/plain;charset=utf-8," + encodeURIComponent(text),
+      "data:text/plain;charset=utf-8," + encodeURIComponent(text)
     );
     element.setAttribute("download", filename);
 
@@ -222,7 +221,7 @@ export function autoGrowTextArea(dom: HTMLTextAreaElement) {
   const endWithEmptyLine = dom.value.endsWith("\n");
   const height = parseFloat(window.getComputedStyle(measureDom).height);
   const singleLineHeight = parseFloat(
-    window.getComputedStyle(singleLineDom).height,
+    window.getComputedStyle(singleLineDom).height
   );
 
   const rows =
@@ -269,7 +268,6 @@ export function getMessageImages(message: RequestMessage): string[] {
       ?.map((a) => a.image_url?.url ?? "") ?? []
   );
 }
-
 
 export function isDalle3(model: string) {
   return "dall-e-3" === model;
@@ -344,7 +342,7 @@ export function safeLocalStorage(): {
         return storage.getItem(key);
       } else {
         console.warn(
-          `Attempted to get item "${key}" from localStorage, but localStorage is not available.`,
+          `Attempted to get item "${key}" from localStorage, but localStorage is not available.`
         );
         return null;
       }
@@ -354,7 +352,7 @@ export function safeLocalStorage(): {
         storage.setItem(key, value);
       } else {
         console.warn(
-          `Attempted to set item "${key}" in localStorage, but localStorage is not available.`,
+          `Attempted to set item "${key}" in localStorage, but localStorage is not available.`
         );
       }
     },
@@ -363,7 +361,7 @@ export function safeLocalStorage(): {
         storage.removeItem(key);
       } else {
         console.warn(
-          `Attempted to remove item "${key}" from localStorage, but localStorage is not available.`,
+          `Attempted to remove item "${key}" from localStorage, but localStorage is not available.`
         );
       }
     },
@@ -372,7 +370,7 @@ export function safeLocalStorage(): {
         storage.clear();
       } else {
         console.warn(
-          "Attempted to clear localStorage, but localStorage is not available.",
+          "Attempted to clear localStorage, but localStorage is not available."
         );
       }
     },
