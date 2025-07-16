@@ -94,7 +94,6 @@ async function decryptPassword(
 
   // Check if this is the old format (starts with version byte)
   if (envelope.length > 2 && envelope[0] === VERSION) {
-    console.log("[Password] Detected old format, attempting legacy decryption");
     return await decryptPasswordLegacy(envelopeB64, serverKeyString);
   }
 

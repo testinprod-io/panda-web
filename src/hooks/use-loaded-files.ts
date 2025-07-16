@@ -45,31 +45,6 @@ export function useLoadedFiles(
   }>({});
 
   useEffect(() => {
-    // Log if dependencies have changed since the last run
-    if (prevDepsRef.current.filesDep !== undefined) {
-      // Avoid logging on the very first run
-      let changed = false;
-      if (prevDepsRef.current.filesDep !== filesDep) {
-        // console.warn("[useLoadedFiles] Dependency changed: filesDep");
-        changed = true;
-      }
-      if (prevDepsRef.current.sessionId !== sessionId) {
-        // console.warn("[useLoadedFiles] Dependency changed: sessionId");
-        changed = true;
-      }
-      if (prevDepsRef.current.getFileFunction !== getFileFunction) {
-        // console.warn("[useLoadedFiles] Dependency changed: getFileFunction");
-        changed = true;
-      }
-      if (prevDepsRef.current.isLocked !== isLocked) {
-        // console.warn("[useLoadedFiles] Dependency changed: isLocked");
-        changed = true;
-      }
-      if (changed) {
-        // console.warn("[useLoadedFiles] useEffect is re-running due to dependency changes.");
-      }
-    }
-    // Update previous dependencies ref
     prevDepsRef.current = { filesDep, sessionId, getFileFunction, isLocked };
 
     let didCancel = false;

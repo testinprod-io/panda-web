@@ -59,7 +59,6 @@ function verifyChallengeSignature(
   try {
     return verify.verify(publicKeyPem, Buffer.from(challenge.signature, "hex"));
   } catch (err) {
-    console.error("Error verifying signature:", err);
     throw err;
   }
 }
@@ -111,6 +110,5 @@ export function verifyChallenge(response: Response, challenge: string): Challeng
   if (!isValid) {
     throw new Error("Panda Challenge verification failed: Invalid signature.");
   }
-  console.log("[Panda Challenge] Verification successful.");
   return challengeResponse;
 } 

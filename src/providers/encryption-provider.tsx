@@ -83,17 +83,11 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
           const decoded = atob(stored.replace(/-/g, "+").replace(/_/g, "/"));
           if (decoded.length < 32) {
             // Minimum expected length for salt + iv + data
-            console.warn(
-              "[EncryptionProvider] Stored password appears corrupted, clearing"
-            );
             localStorage.removeItem(ENCRYPTED_PASSWORD_KEY);
             setEncryptedPassword(null);
             return;
           }
         } catch (e) {
-          console.warn(
-            "[EncryptionProvider] Stored password is not valid base64, clearing"
-          );
           localStorage.removeItem(ENCRYPTED_PASSWORD_KEY);
           setEncryptedPassword(null);
           return;
@@ -101,10 +95,6 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
       }
 
       setEncryptedPassword(stored);
-      console.log(
-        "[EncryptionProvider] Loaded encrypted password from storage:",
-        !!stored
-      );
     }
   }, []);
 
@@ -118,9 +108,6 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
       isFirstTimeUser === false &&
       authenticated
     ) {
-      console.log(
-        "[EncryptionProvider] Attempting bootstrap with stored password"
-      );
       tryBootstrap();
     }
   }, [
@@ -142,13 +129,11 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
 
   const tryBootstrap = async () => {
     if (!encryptedId || !authUser?.id || !encryptedPassword) {
-      console.log("[EncryptionProvider] Missing required data for auto-unlock");
       setBootstrapAttempted(true);
       return;
     }
 
     try {
-      console.log("[EncryptionProvider] Running bootstrap with vault");
       const response = await vaultIntegration.bootstrap(
         encryptedId,
         authUser.id,
@@ -156,20 +141,15 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
       );
 
       if (!response.ok) {
-        console.log("Bootstrap failed");
         setBootstrapAttempted(true);
       }
 
       if (response.needsPassword) {
-        console.log(
-          "[EncryptionProvider] Bootstrap indicates password input needed"
-        );
         setBootstrapAttempted(true);
         return; // Modal will show automatically
       }
 
       if (response.isValid === false) {
-        console.log("[EncryptionProvider] Bootstrap validation failed");
         setHasError(true);
         setErrorMessage("Invalid password");
         setBootstrapAttempted(true);
@@ -181,7 +161,6 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         response.encryptedPassword &&
         response.encryptedPassword !== encryptedPassword
       ) {
-        console.log("[EncryptionProvider] Password rotated during bootstrap");
         setEncryptedPassword(response.encryptedPassword);
         localStorage.setItem(
           ENCRYPTED_PASSWORD_KEY,
@@ -190,36 +169,17 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
       }
 
       // Check if user is actually authenticated before unlocking
-      console.log(
-        "[EncryptionProvider] Bootstrap successful, checking authentication before unlock:",
-        {
-          privyAuthenticated: authenticated,
-          privyReady: ready,
-          authUser: !!authUser,
-          timestamp: new Date().toISOString(),
-        }
-      );
+
 
       if (!authenticated) {
-        console.log(
-          "[EncryptionProvider] Bootstrap successful but user not authenticated - skipping unlock"
-        );
         setBootstrapAttempted(true);
         return;
       }
 
       // User is authenticated and bootstrap succeeded - safe to unlock
-      console.log(
-        "[EncryptionProvider] User authenticated and bootstrap successful - unlocking app"
-      );
       handleUnlockSuccess();
       setBootstrapAttempted(true);
-      console.log("[EncryptionProvider] Bootstrap successful, app unlocked");
     } catch (error) {
-      console.log(
-        "[EncryptionProvider] Auto-unlock failed, user needs to input password:",
-        error
-      );
       // Don't set error state, just require password input
       // The modal will show automatically since isLocked=true and isFirstTimeUser=false
       setBootstrapAttempted(true);
@@ -268,19 +228,12 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
     setEncryptedPassword(null);
     await vaultIntegration.clearKeys();
     setBootstrapAttempted(true); // Reset bootstrap attempt status
-    console.log(
-      "[EncryptionProvider] App locked. Bootstrap attempted:",
-      bootstrapAttempted,
-      isLocked,
-      isFirstTimeUser,
-      vaultIntegration.isVaultReady()
-    );
+
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
       inactivityTimerRef.current = null;
     }
     await lockAppHook();
-    console.log("[EncryptionProvider] App locked.");
   }, [lockAppHook]);
 
   const resetInactivityTimer = useCallback(() => {
@@ -315,30 +268,15 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   const contextUnlockApp = useCallback(
     async (password: string): Promise<boolean> => {
       try {
-        console.log(
-          "[EncryptionProvider] contextUnlockApp called - checking authentication:",
-          {
-            privyAuthenticated: authenticated,
-            privyReady: ready,
-            hasAuthUser: !!authUser,
-            timestamp: new Date().toISOString(),
-          }
-        );
-
         if (!authenticated) {
-          console.log(
-            "[EncryptionProvider] User not authenticated - cannot unlock"
-          );
           return false;
         }
 
         if (!vaultIntegration.isVaultReady()) {
-          console.log("Vault not ready");
           return false;
         }
 
         if (!encryptedId || !authUser?.id) {
-          console.log("Missing encryptedId or user ID for validation");
           return false;
         }
 
@@ -377,20 +315,6 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   const handleCreatePassword = useCallback(
     async (newPassword: string) => {
       try {
-        console.log(
-          "[EncryptionProvider] Creating new password for first-time user."
-        );
-
-        console.log(
-          "[EncryptionProvider] handleCreatePassword called - checking authentication:",
-          {
-            privyAuthenticated: authenticated,
-            privyReady: ready,
-            hasAuthUser: !!authUser,
-            timestamp: new Date().toISOString(),
-          }
-        );
-
         if (!authenticated) {
           throw new Error("User not authenticated - cannot create password");
         }
@@ -482,7 +406,7 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
 
   useEffect(() => {
     if (!user && !isLocked) {
-      console.log("[EncryptionProvider] Privy user logged out. Locking app.");
+      console.log("Privy user logged out. Locking app.");
       lockApp();
     }
   }, [user, isLocked, lockApp]);

@@ -51,9 +51,6 @@ export function ChatComponent({ sessionId }: { sessionId: UUID }) {
       activeChat.id === sessionId &&
       activeChat.messages.length === 0
     ) {
-      console.log(
-        `[ChatComponent] Loading initial messages for chat ${activeChat.id}`
-      );
       activeChat.loadInitial();
     }
   }, [activeChat, sessionId]);

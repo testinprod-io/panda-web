@@ -50,10 +50,6 @@ export function PandaSDKProvider({
 
   const sdk = useMemo(() => {
     if (!authAdapter) return null;
-    console.log(
-      "[PandaSDKProvider] Creating SDK with vault integration:",
-      !!vaultIntegration
-    );
     return new PandaSDK(getAccessToken, authAdapter, vaultIntegration);
   }, [getAccessToken, authAdapter, vaultIntegration]);
 

@@ -160,9 +160,6 @@ export class Chat {
    */
   public async loadInitial() {
     if (this.isLoading) return;
-    console.log(
-      `[SDK-Chat] Initializing message and summary load for chat ${this.id}.`
-    );
     this.isLoading = true;
     this.updateState();
 
@@ -200,10 +197,6 @@ export class Chat {
       }
       this.summaries = sortedSummaries;
       this.lastSummarizedMessageId = lastId;
-
-      console.log(
-        `[SDK-Chat] Initial load complete. Messages: ${this.messages.length}, Summaries: ${this.summaries.length}`
-      );
     } catch (error) {
       console.error(
         `[SDK-Chat] Error loading initial data for chat ${this.id}:`,
@@ -222,9 +215,6 @@ export class Chat {
     if (this.isLoading || !this.hasMoreMessages) return;
     if (!this.nextMessageCursor) return;
 
-    console.log(
-      `[SDK-Chat] Loading more messages for ${this.id}, cursor: ${this.nextMessageCursor}`
-    );
     this.isLoading = true;
     this.updateState();
 
@@ -249,9 +239,6 @@ export class Chat {
 
       this.hasMoreMessages = result.hasMore;
       this.nextMessageCursor = result.nextCursor;
-      console.log(
-        `[SDK-Chat] Loaded ${olderMessages.length} more messages. Total now: ${this.messages.length}.`
-      );
     } catch (error) {
       console.error(
         `[SDK-Chat] Error loading more messages for chat ${this.id}:`,
@@ -341,7 +328,6 @@ export class Chat {
     });
     await this.storage.saveMessage(this.id as string, userMessage);
     userMessage.syncState = MessageSyncState.SYNCED;
-    console.log("userMessage", userMessage);
     this.messages.push(userMessage);
     this.updateState();
 
@@ -530,10 +516,6 @@ export class Chat {
     if (this.isSummarizing) {
       return;
     }
-    console.log(
-      "[SDK-Chat] Triggering summarization",
-      this.lastSummarizedMessageId
-    );
     const SUMMARIZE_INTERVAL = 10;
     let messagesToConsiderForSummarization: ChatMessage[];
 
@@ -554,25 +536,16 @@ export class Chat {
     } else {
       messagesToConsiderForSummarization = this.messages;
     }
-    console.log(
-      "messagesToConsiderForSummarization",
-      messagesToConsiderForSummarization
-    );
     const finalMessagesToConsider = messagesToConsiderForSummarization.filter(
       (msg: ChatMessage) =>
         msg.syncState === MessageSyncState.SYNCED && !msg.isError
     );
-    console.log("finalMessagesToConsider", finalMessagesToConsider);
     if (finalMessagesToConsider.length >= SUMMARIZE_INTERVAL) {
-      console.log("[SDK-Chat] Summarizing", finalMessagesToConsider.length);
       const batchToSummarize = finalMessagesToConsider.slice(
         0,
         SUMMARIZE_INTERVAL
       );
 
-      console.log(
-        `[SDK-Chat] Triggering summarization with ${batchToSummarize.length} messages.`
-      );
       this.isSummarizing = true;
       try {
         const modelConfig = this.getModelConfig();
@@ -688,9 +661,6 @@ export class Chat {
   ) {
     const defaultTopic = Locale.Store.DefaultTopic;
     if (this.title !== defaultTopic) {
-      console.log(
-        `[Title Generation Action] Session already has a title, skipping.`
-      );
       return;
     }
 
@@ -723,9 +693,6 @@ export class Chat {
         ],
         config: llmConfig,
         onFinish: (finalContent, timestamp, _, challengeResponse) => {
-          console.log(
-            `[Title Generation Action] LLM generated title: "${finalContent}"`
-          );
           this.handleTitleGeneration(finalContent, defaultTopic);
         },
       });
@@ -831,31 +798,18 @@ export class Chat {
       if (newTitle !== defaultTopic && newTitle !== this.title) {
         this.title = newTitle;
         this.encryptedTitle = encryptedTitle;
-        console.log(
-          `[Title Generation Action] Updated local topic to: "${newTitle}"`
-        );
         this.updateState();
-
-        console.log(
-          `[Title Generation Action] Attempting to update server title for ConvID: ${this.id}`
-        );
         const updateReq: ConversationUpdateRequest = {
           title: encryptedTitle,
         };
         await this.api.app.updateConversation(this.id, updateReq);
       } else {
-        console.log(
-          `[Title Generation Action] Generated title is default or unchanged, not updating.`
-        );
       }
     } catch (error) {
       console.error("Error encrypting title:", error);
       if (finalContent !== defaultTopic && finalContent !== this.title) {
         this.title = finalContent;
         this.encryptedTitle = finalContent; // Fallback to plaintext
-        console.log(
-          `[Title Generation Action] Updated local topic to: "${finalContent}" (fallback)`
-        );
         this.updateState();
       }
     }

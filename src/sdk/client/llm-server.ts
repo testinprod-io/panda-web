@@ -48,7 +48,6 @@ export class LLMServer {
       : baseUrlToUse;
     const B = path.startsWith("/") ? path.slice(1) : path;
     const finalPath = `${A}/${B}`;
-    console.log("[Panda Endpoint Used] ", finalPath);
     return finalPath;
   }
 
@@ -128,12 +127,6 @@ export class LLMServer {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(
-          "[Panda Error] Response not OK:",
-          response.status,
-          response.statusText
-        );
-        console.error("[Panda Error] Response body:", errorText);
         throw new Error(
           `Panda API error: ${response.status} ${response.statusText} - ${errorText}`
         );
@@ -315,12 +308,6 @@ export class LLMServer {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(
-          "[Panda Error] Summary response not OK:",
-          response.status,
-          response.statusText
-        );
-        console.error("[Panda Error] Summary response body:", errorText);
         throw new Error(
           `Panda API error: ${response.status} ${response.statusText} - ${errorText}`
         );
@@ -332,7 +319,6 @@ export class LLMServer {
         challengeResponse,
       };
     } catch (error) {
-      console.error("[Panda Request] Summary failed", error);
       throw error;
     }
   }

@@ -27,13 +27,11 @@ export default function ChatPage() {
   useEffect(() => {
     const validateSession = async () => {
       if (!privyReady) {
-        console.log(`[ChatPage] Not ready`);
         setIsLoadingState(true);
         return;
       }
   
       if (!isAuthenticated) {
-        console.log(`[ChatPage] Not authenticated`);
         setIsLoadingState(false);
         setIsValidSession(false);
         setSessionDataForValidation(null);
@@ -41,7 +39,6 @@ export default function ChatPage() {
       }
   
       if (!chatId) {
-        console.log(`[ChatPage] No chatId`);
         setIsValidSession(false);
         setSessionDataForValidation(null);
         setIsLoadingState(false);
@@ -51,12 +48,10 @@ export default function ChatPage() {
       const currentSession = await sdk.chat.getChat(chatId);
       sdk.chat.setActiveChatId(chatId);
       if (currentSession) {
-        console.log(`[ChatPage] Session found`);
         sdk.chat.setActiveChat(currentSession);
         setIsValidSession(true);
         setSessionDataForValidation(currentSession);
       } else {
-        console.log(`[ChatPage] No session`);
         setIsValidSession(false);
         setSessionDataForValidation(null);
       }

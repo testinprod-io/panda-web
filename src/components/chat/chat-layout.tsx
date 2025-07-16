@@ -215,11 +215,9 @@ export default function ChatLayoutContent({
             {
               enableSearch: sessionState.enableSearch,
               onSuccess: () => {
-                console.log(`[handleLayoutSubmit] onSuccess: ${chat}`);
                 setInternalIsSubmitting(false);
               },
               onFailure: (error: Error) => {
-                console.error("[ChatComponent] Failed user input", error);
                 showSnackbar(Locale.Store.Error, "error");
                 setInternalIsSubmitting(false);
               },

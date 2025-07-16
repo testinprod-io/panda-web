@@ -16,13 +16,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('[Vault-BFF] Received deriveKey request');
-    
     // Extract access token from Authorization header or cookies
     const accessToken = getAccessToken(req);
     
     if (!accessToken) {
-      console.log('[Vault-BFF] No valid access token found');
       return res.status(401).json({ error: 'Authentication required' });
     }
 
@@ -34,7 +31,6 @@ export default async function handler(req, res) {
     }
 
     const sessionKeyUrl = `${appServerEndpoint}/me/session_encryption_key`;
-    console.log('[Vault-BFF] Calling session encryption key endpoint:', sessionKeyUrl);
 
     try {
       const apiResponse = await fetch(sessionKeyUrl, {
@@ -46,22 +42,18 @@ export default async function handler(req, res) {
       });
 
       if (!apiResponse.ok) {
-        console.error('[Vault-BFF] API request failed:', apiResponse.status, apiResponse.statusText);
         return res.status(apiResponse.status).json({ 
           error: `Failed to get session encryption key: ${apiResponse.statusText}` 
         });
       }
 
       const sessionKeyData = await apiResponse.json();
-      console.log('[Vault-BFF] Received session key data');
-
       // Parse the response format: { "old_key": "string", "new_key": "string" }
       if (!sessionKeyData.new_key) {
         console.error('[Vault-BFF] Invalid response format - missing new_key');
         return res.status(500).json({ error: 'Invalid session key response format' });
       }
 
-      console.log('[Vault-BFF] Returning session encryption key to vault');
       res.json(sessionKeyData);
 
     } catch (fetchError) {

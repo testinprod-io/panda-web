@@ -96,8 +96,6 @@ export function useVault(): UseVaultResult {
   >(undefined);
 
   const cleanup = useCallback(() => {
-    console.log("[useVault] Cleanup called.");
-    // Clear pending requests
     pendingRequestsRef.current.forEach((pending) => {
       pending.reject(new Error("Vault reset"));
     });
@@ -120,11 +118,8 @@ export function useVault(): UseVaultResult {
   }, []);
 
   const handleVaultMessage = useCallback((event: MessageEvent) => {
-    console.log("[useVault] General message handler received:", event.data);
-
     // Handle special messages from vault
     if (event.data.cmd === "passwordUpdated") {
-      console.log("[useVault] Password was updated due to key rotation");
       if (onPasswordUpdatedRef.current) {
         onPasswordUpdatedRef.current(event.data.encryptedPassword);
       }
@@ -135,10 +130,6 @@ export function useVault(): UseVaultResult {
 
     const pendingRequest = pendingRequestsRef.current.get(response.id);
     if (!pendingRequest) {
-      console.warn(
-        "[useVault] Received response for unknown request:",
-        response.id
-      );
       return;
     }
 
@@ -167,10 +158,6 @@ export function useVault(): UseVaultResult {
         ? process.env.NEXT_PUBLIC_VAULT_ENDPOINT
         : "http://localhost:3001";
 
-      console.log(
-        `[useVault] Initializing... (isReady: ${state.isReady}, isLoading: ${state.isLoading}) ${vaultOrigin}`
-      );
-
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
       try {
@@ -191,9 +178,6 @@ export function useVault(): UseVaultResult {
         // Add to DOM
         document.body.appendChild(iframe);
         iframeRef.current = iframe;
-        console.log(
-          "[useVault] Appended iframe to body. Waiting for onload..."
-        );
 
         // Wait for iframe to load
         await new Promise<void>((resolve, reject) => {
@@ -262,9 +246,8 @@ export function useVault(): UseVaultResult {
         port1.onmessage = handleVaultMessage;
 
         setState((prev) => ({ ...prev, isReady: true, isLoading: false }));
-        console.log("[useVault] Vault initialized successfully");
       } catch (error) {
-        console.error("[useVault] Vault initialization failed:", error);
+        console.log("[useVault] Vault initialization failed:", error);
         setState((prev) => ({
           ...prev,
           isLoading: false,

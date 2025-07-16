@@ -29,7 +29,6 @@ export function getAccessToken(req) {
     // First, try to get token from Authorization header (preferred for vault requests)
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      console.log('[Vault-BFF] Found access token in Authorization header');
       return authHeader.replace('Bearer ', '');
     }
 
@@ -37,7 +36,6 @@ export function getAccessToken(req) {
     const cookies = parseCookies(req.headers.cookie);
     const privyToken = cookies['privy-token'];
     if (privyToken) {
-      console.log('[Vault-BFF] Found privy-token cookie');
       return privyToken;
     }
 

@@ -34,7 +34,6 @@ export class PandaSDK {
     authProvider: AuthProvider,
     vaultIntegration?: VaultIntegration
   ) {
-    console.log("[PandaSDK] Constructor called from:", new Error().stack);
     this.api = new ApiService(getAccessToken);
 
     // Use vault-integrated encryption service if available, otherwise create new one
@@ -42,11 +41,6 @@ export class PandaSDK {
     this.encryption = vaultIntegration
       ? vaultIntegration.getEncryptionService()
       : new EncryptionService();
-
-    console.log(
-      "[PandaSDK] Using encryption service:",
-      vaultIntegration ? "vault-integrated" : "legacy"
-    );
 
     this.attestation = new AttestationManager(this.api, this.bus);
 
@@ -79,7 +73,6 @@ export class PandaSDK {
 
     this.bus.on("auth.status.updated", (isAuthenticated) => {
       if (isAuthenticated) {
-        console.log("auth.status.updated", isAuthenticated);
         this.handleAuthenticated();
       } else {
         this.ready = false;
