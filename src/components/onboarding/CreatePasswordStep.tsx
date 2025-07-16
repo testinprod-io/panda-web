@@ -152,7 +152,7 @@ export default function CreatePasswordStep({
       <Typography
         variant="body1"
         sx={{
-          color: "#131A28",
+          color: "var(--text-primary)",
           fontSize: "16px",
           fontFamily: "Inter, sans-serif",
           fontWeight: "500",
@@ -209,7 +209,7 @@ export default function CreatePasswordStep({
 
             "& .MuiOutlinedInput-root": {
               borderRadius: "8px",
-              backgroundColor: "white",
+              backgroundColor: "var(--background-primary)",
               height: "48px",
               fontFamily: "Inter, sans-serif",
               border: "none",
@@ -221,7 +221,8 @@ export default function CreatePasswordStep({
               width: "100% !important",
               padding: "0 14px",
               height: "100%",
-              color: "#131A28",
+              backgroundColor: "var(--background-primary)",
+              color: "var(--text-primary)",
               fontSize: "16px",
               fontFamily: "Inter, sans-serif",
               fontWeight: "400",
@@ -277,7 +278,7 @@ export default function CreatePasswordStep({
 
             "& .MuiOutlinedInput-root": {
               borderRadius: "8px",
-              backgroundColor: "white",
+              backgroundColor: "var(--background-primary)",
               height: "48px",
               fontFamily: "Inter, sans-serif",
               border: "none",
@@ -289,7 +290,8 @@ export default function CreatePasswordStep({
               width: "100% !important",
               padding: "0 14px",
               height: "100%",
-              color: "#131A28",
+              backgroundColor: "var(--background-primary)",
+              color: "var(--text-primary)",
               fontSize: "16px",
               fontFamily: "Inter, sans-serif",
               fontWeight: "400",

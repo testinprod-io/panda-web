@@ -318,11 +318,6 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
         if (!authenticated) {
           throw new Error("User not authenticated - cannot create password");
         }
-
-        if (!vaultIntegration.isVaultReady()) {
-          throw new Error("Vault not ready");
-        }
-
         if (!authUser?.id) {
           throw new Error("User ID not available");
         }
@@ -436,12 +431,14 @@ export function EncryptionProvider({ children }: EncryptionProviderProps) {
   }
 
   const isSignupPage = pathname.startsWith("/signup");
+  const isOnboardingPage = pathname.startsWith("/onboarding");
   const showUnlockModal =
     isLocked &&
     !isSignupPage &&
     isFirstTimeUser === false &&
     vaultIntegration.isVaultReady() &&
-    bootstrapAttempted;
+    bootstrapAttempted &&
+    !isOnboardingPage;
 
   return (
     <EncryptionContext.Provider value={contextValue}>
