@@ -176,7 +176,34 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Serve static files from dist directory (after API routes)
+// CSP headers middleware for static files
+app.use((req, res, next) => {
+  // Set Content Security Policy headers
+  const cspDirectives = [
+    "default-src 'none'",
+    "script-src 'self' https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js",
+    "connect-src 'self' https://api.panda.chat",
+    "style-src 'unsafe-inline'",
+    "img-src 'self' data:",
+    "font-src 'self'",
+    // frame-ancestors directive only works in HTTP headers, not meta tags
+    process.env.VERCEL_ENV === 'production' 
+      ? "frame-ancestors https://panda.chat https://*.panda.chat"
+      : "frame-ancestors 'self' http://localhost:3000 https://localhost:3000",
+    "base-uri 'none'",
+    "object-src 'none'",
+    "form-action 'none'"
+  ];
+  
+  res.setHeader('Content-Security-Policy', cspDirectives.join('; '));
+  
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  next();
+});
+
+// Serve static files from dist directory (after API routes and CSP middleware)
 app.use(express.static(path.join(__dirname, 'dist')));
 
 app.listen(PORT, () => {

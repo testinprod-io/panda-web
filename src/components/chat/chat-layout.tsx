@@ -264,7 +264,7 @@ export default function ChatLayoutContent({
           backgroundColor: "var(--bg-primary)",
         }}
       >
-        <CircularProgress color="primary" />
+        <CircularProgress color="inherit" />
       </Box>
     );
   }

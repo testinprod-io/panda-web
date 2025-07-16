@@ -5,11 +5,16 @@ import OnboardingView from "./onboarding-view";
 import { Box, CircularProgress } from "@mui/material";
 import { usePrivy } from "@privy-io/react-auth";
 import { usePandaSDK } from "@/providers/sdk-provider";
+import { useAuth } from "@/sdk/hooks";
+
 export default function OnboardingPage() {
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
   const router = useRouter();
   const { sdk } = usePandaSDK();
   const { ready, authenticated } = usePrivy();
+  const { encryptedId } = useAuth();
+  
+  const isFirstTimeUser = sdk.ready ? encryptedId === null : null;
 
   useEffect(() => {
     const checkOnboardingStatus = async () => {
@@ -34,13 +39,18 @@ export default function OnboardingPage() {
     if (ready && !authenticated) {
       router.push("/");
     }
+    
+    if (isFirstTimeUser === false) {
+      router.push("/");
+    }
 
     if (needsOnboarding === false) {
       router.push("/");
     }
-  }, [ready, needsOnboarding, authenticated, router]);
 
-  if (needsOnboarding === null) {
+  }, [ready, needsOnboarding, authenticated, router, isFirstTimeUser]);
+
+  if (needsOnboarding === null || isFirstTimeUser === null) {
     return (
       <Box style={{
         display: "flex",
